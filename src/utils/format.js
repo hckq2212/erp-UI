@@ -5,21 +5,23 @@
  */
 export const formatNumber = (value) => {
   if (value === null || value === undefined || value === '') return '';
-  const num = typeof value === 'string' ? parseFloat(value.replace(/\./g, '')) : value;
+  // Parse string directly without removing dots (for decimal numbers like "10000000.00")
+  const num = typeof value === 'string' ? parseFloat(value) : value;
   if (isNaN(num)) return '';
-  return num.toLocaleString('vi-VN');
+  // Round to integer to avoid decimal places
+  return Math.round(num).toLocaleString('vi-VN', { maximumFractionDigits: 0 });
 };
 
 /**
  * Parse formatted number string back to number
  * @param {string} value - The formatted string (e.g., "100.000.000")
- * @returns {number} The parsed number
+ * @returns {number} The parsed number (rounded to integer)
  */
 export const parseNumber = (value) => {
   if (!value) return 0;
   const cleaned = String(value).replace(/\./g, '').replace(/,/g, '.');
   const num = parseFloat(cleaned);
-  return isNaN(num) ? 0 : num;
+  return isNaN(num) ? 0 : Math.round(num);
 };
 
 /**

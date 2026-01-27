@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -16,9 +17,13 @@ import {
   ExternalLink,
   Download,
   Edit,
-  Trash2
+  Trash2,
+  Plus,
+  X,
+  UserPlus
 } from 'lucide-react';
-import { useGetOpportunityQuery, useDeleteOpportunityMutation } from '../../api/opportunities';
+import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation } from '../../api/opportunities';
+import { useGetCustomersQuery } from '../../api/customers';
 import { formatNumber } from '../../utils/format';
 
 const PRIORITY_LABELS = {
@@ -76,6 +81,28 @@ export const OpportunityDetailPage = () => {
   const navigate = useNavigate();
   const { data: opportunity, isLoading, error } = useGetOpportunityQuery(id);
   const [deleteOpportunity, { isLoading: isDeleting }] = useDeleteOpportunityMutation();
+  const [updateOpportunity, { isLoading: isUpdating }] = useUpdateOpportunityMutation();
+  
+  // Modal state
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [customerType, setCustomerType] = useState('DIRECT'); // DIRECT | REFERRAL
+  const [customerStatus, setCustomerStatus] = useState(''); // POTENTIAL | EXISTING
+  const [selectedReferralPartner, setSelectedReferralPartner] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [leadInfo, setLeadInfo] = useState({
+    leadName: '',
+    leadPhone: '',
+    leadEmail: '',
+    leadIdNumber: '',
+    leadTaxId: '',
+    leadAddress: ''
+  });
+  
+  // Fetch customers for dropdown
+  const { data: customers = [] } = useGetCustomersQuery();
+  
+  // Filter referral partners (customers who can be referral partners)
+  const referralPartners = customers.filter(c => c.isReferralPartner);
 
   const handleDelete = async () => {
     if (window.confirm('Bạn có chắc chắn muốn xóa cơ hội này?')) {
@@ -85,6 +112,63 @@ export const OpportunityDetailPage = () => {
       } catch (err) {
         alert(err?.data?.message || 'Có lỗi xảy ra khi xóa');
       }
+    }
+  };
+
+  const handleOpenContactModal = () => {
+    // Reset form
+    setCustomerType('DIRECT');
+    setCustomerStatus('');
+    setSelectedReferralPartner('');
+    setSelectedCustomerId('');
+    setLeadInfo({
+      leadName: '',
+      leadPhone: '',
+      leadEmail: '',
+      leadIdNumber: '',
+      leadTaxId: '',
+      leadAddress: ''
+    });
+    setShowContactModal(true);
+  };
+
+  const handleSaveContact = async () => {
+    try {
+      const formData = new FormData();
+      
+      if (customerStatus === 'EXISTING') {
+        // Chọn khách hàng hiện hữu
+        formData.append('customerId', selectedCustomerId);
+        // Clear lead info
+        formData.append('leadName', '');
+        formData.append('leadPhone', '');
+        formData.append('leadEmail', '');
+        formData.append('leadIdNumber', '');
+        formData.append('leadTaxId', '');
+        formData.append('leadAddress', '');
+        
+        if (customerType === 'REFERRAL' && selectedReferralPartner) {
+          formData.append('referralPartnerId', selectedReferralPartner);
+        }
+      } else if (customerStatus === 'POTENTIAL') {
+        // Khách hàng tiềm năng - nhập thông tin mới
+        formData.append('customerId', '');
+        if (leadInfo.leadName) formData.append('leadName', leadInfo.leadName);
+        if (leadInfo.leadPhone) formData.append('leadPhone', leadInfo.leadPhone);
+        if (leadInfo.leadEmail) formData.append('leadEmail', leadInfo.leadEmail);
+        if (leadInfo.leadIdNumber) formData.append('leadIdNumber', leadInfo.leadIdNumber);
+        if (leadInfo.leadTaxId) formData.append('leadTaxId', leadInfo.leadTaxId);
+        if (leadInfo.leadAddress) formData.append('leadAddress', leadInfo.leadAddress);
+        
+        if (customerType === 'REFERRAL' && selectedReferralPartner) {
+          formData.append('referralPartnerId', selectedReferralPartner);
+        }
+      }
+      
+      await updateOpportunity({ id, formData }).unwrap();
+      setShowContactModal(false);
+    } catch (err) {
+      alert(err?.data?.message || 'Có lỗi xảy ra khi cập nhật');
     }
   };
 
@@ -349,11 +433,19 @@ export const OpportunityDetailPage = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Thông tin liên hệ */}
+          {/* Thông tin khách hàng */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-2 mb-5">
-              <User className="w-5 h-5 text-indigo-600" />
-              <h2 className="font-semibold text-gray-900">Thông tin liên hệ</h2>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <User className="w-5 h-5 text-indigo-600" />
+                <h2 className="font-semibold text-gray-900">Thông tin khách hàng</h2>
+              </div>
+              <button
+                onClick={handleOpenContactModal}
+                className="flex items-center gap-1 text-sm border rounded-sm p-2 text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Thêm thông tin
+              </button>
             </div>
             
             {opportunity.customer ? (
@@ -361,6 +453,9 @@ export const OpportunityDetailPage = () => {
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Khách hàng</p>
                   <p className="font-medium text-gray-900">{opportunity.customer.name}</p>
+                  {opportunity.customer.taxId && (
+                    <p className="text-sm text-gray-500">Mã số thuế: {opportunity.customer.taxId}</p>
+                  )}
                 </div>
                 {opportunity.customer.phone && (
                   <div className="flex items-center gap-2 text-gray-600">
@@ -378,7 +473,7 @@ export const OpportunityDetailPage = () => {
             ) : opportunity.leadName ? (
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Người liên hệ</p>
+                  <p className="text-sm text-gray-500 mb-1">Khách hàng tiềm năng</p>
                   <p className="font-medium text-gray-900">{opportunity.leadName}</p>
                 </div>
                 {opportunity.leadPhone && (
@@ -396,12 +491,27 @@ export const OpportunityDetailPage = () => {
                 {opportunity.leadTaxId && (
                   <div className="flex items-center gap-2 text-gray-600">
                     <Hash className="w-4 h-4" />
-                    <span>MST: {opportunity.leadTaxId}</span>
+                    <span>Mã số thuế: {opportunity.leadTaxId}</span>
+                  </div>
+                )}
+                {opportunity.leadAddress && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <MapPin className="w-4 h-4" />
+                    <span>{opportunity.leadAddress}</span>
                   </div>
                 )}
               </div>
             ) : (
-              <p className="text-gray-500 text-sm">Chưa có thông tin liên hệ</p>
+              <div className="text-center py-4">
+                <p className="text-gray-500 text-sm mb-3">Chưa có thông tin khách hàng</p>
+                <button
+                  onClick={handleOpenContactModal}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Thêm khách hàng
+                </button>
+              </div>
             )}
           </div>
 
@@ -430,6 +540,210 @@ export const OpportunityDetailPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal Thêm thông tin khách hàng */}
+      {showContactModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">Thêm thông tin khách hàng</h3>
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {/* Loại khách hàng */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Loại khách hàng:
+                </label>
+                <select
+                  value={customerType}
+                  onChange={(e) => {
+                    setCustomerType(e.target.value);
+                    setCustomerStatus('');
+                    setSelectedReferralPartner('');
+                    setSelectedCustomerId('');
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="DIRECT">Khách hàng trực tiếp</option>
+                  <option value="REFERRAL">Khách hàng liên kết</option>
+                </select>
+              </div>
+
+              {/* Đối tác giới thiệu (chỉ hiện khi chọn Khách hàng liên kết) */}
+              {customerType === 'REFERRAL' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Đối tác giới thiệu:
+                  </label>
+                  <select
+                    value={selectedReferralPartner}
+                    onChange={(e) => setSelectedReferralPartner(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">-- Chọn đối tác giới thiệu --</option>
+                    {referralPartners.map((partner) => (
+                      <option key={partner.id} value={partner.id}>
+                        {partner.name} {partner.taxId ? `- ${partner.taxId}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {customerType === 'REFERRAL' && !selectedReferralPartner && (
+                    <p className="text-sm text-orange-600 mt-1">Vui lòng chọn đối tác giới thiệu trước</p>
+                  )}
+                </div>
+              )}
+
+              {/* Trạng thái khách hàng */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Trạng thái khách hàng:
+                </label>
+                <select
+                  value={customerStatus}
+                  onChange={(e) => {
+                    setCustomerStatus(e.target.value);
+                    setSelectedCustomerId('');
+                  }}
+                  disabled={customerType === 'REFERRAL' && !selectedReferralPartner}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="">-- Chọn trạng thái --</option>
+                  <option value="POTENTIAL">Khách hàng tiềm năng</option>
+                  <option value="EXISTING">Khách hàng hiện hữu</option>
+                </select>
+              </div>
+
+              {/* Chọn khách hàng hiện hữu */}
+              {customerStatus === 'EXISTING' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Chọn khách hàng hiện hữu:
+                  </label>
+                  <select
+                    value={selectedCustomerId}
+                    onChange={(e) => setSelectedCustomerId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">-- Chọn khách hàng --</option>
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name} {customer.taxId ? `- ${customer.taxId}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Form nhập thông tin khách hàng tiềm năng */}
+              {customerStatus === 'POTENTIAL' && (
+                <div className="space-y-4 pt-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tên khách hàng:
+                    </label>
+                    <input
+                      type="text"
+                      value={leadInfo.leadName}
+                      onChange={(e) => setLeadInfo({ ...leadInfo, leadName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Nhập tên khách hàng"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Điện thoại:
+                    </label>
+                    <input
+                      type="text"
+                      value={leadInfo.leadPhone}
+                      onChange={(e) => setLeadInfo({ ...leadInfo, leadPhone: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Nhập số điện thoại"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email:
+                    </label>
+                    <input
+                      type="email"
+                      value={leadInfo.leadEmail}
+                      onChange={(e) => setLeadInfo({ ...leadInfo, leadEmail: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Nhập email"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      CMND/Hộ chiếu:
+                    </label>
+                    <input
+                      type="text"
+                      value={leadInfo.leadIdNumber}
+                      onChange={(e) => setLeadInfo({ ...leadInfo, leadIdNumber: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Nhập CMND/Hộ chiếu"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Mã số thuế:
+                    </label>
+                    <input
+                      type="text"
+                      value={leadInfo.leadTaxId}
+                      onChange={(e) => setLeadInfo({ ...leadInfo, leadTaxId: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Nhập mã số thuế"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Địa chỉ:
+                    </label>
+                    <textarea
+                      value={leadInfo.leadAddress}
+                      onChange={(e) => setLeadInfo({ ...leadInfo, leadAddress: e.target.value })}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Nhập địa chỉ"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer buttons */}
+            <div className="flex gap-3 p-6 border-t border-gray-100">
+              <button
+                onClick={handleSaveContact}
+                disabled={isUpdating || !customerStatus || (customerStatus === 'EXISTING' && !selectedCustomerId) || (customerType === 'REFERRAL' && !selectedReferralPartner)}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {isUpdating ? 'Đang lưu...' : 'Lưu'}
+              </button>
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

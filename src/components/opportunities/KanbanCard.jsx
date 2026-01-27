@@ -59,7 +59,7 @@ export const KanbanCard = ({ opportunity }) => {
       )}
     >
       <div className="flex justify-between items-start mb-2">
-        <span className="text-xs font-mono text-gray-500">{opportunity.opportunityCode}</span>
+        <span className="text-xs font-mono text-gray-500">{opportunity.opportunityCode}-{opportunity.name}</span>
         <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", badgeColors[opportunity.priority] || 'bg-gray-100')}>
             {priorityLabels[opportunity.priority] || opportunity.priority}
         </span>

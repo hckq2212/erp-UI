@@ -29,10 +29,11 @@ export const opportunitiesApi = api.injectEndpoints({
       invalidatesTags: [{ type: 'Opportunities', id: 'LIST' }],
     }),
     updateOpportunity: builder.mutation({
-      query: ({ id, ...data }) => ({
+      query: ({ id, formData }) => ({
         url: `/opportunities/${id}`,
-        method: 'PUT',
-        body: data,
+        method: 'PATCH',
+        body: formData,
+        formData: true,
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Opportunities', id },
