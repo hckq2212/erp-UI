@@ -216,7 +216,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
             <div className="flex items-center gap-3">
               <div>
                 <h2 className="text-xl font-bold text-white">Tạo Cơ Hội Mới</h2>
-                <p className="text-blue-100 text-sm">Điền thông tin chi tiết về cơ hội kinh doanh</p>
+                <p className="text-blue-100 text-sm">Điền thông tin chi tiết của cơ hội </p>
               </div>
             </div>
             <button onClick={onClose} className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-all">
@@ -527,14 +527,14 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                 {/* Mô tả yêu cầu khách hàng */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Mô tả yêu cầu khách hàng</label>
-                  <textarea
+                  {/* <textarea
                     name="customerRequirements"
                     value={formData.customerRequirements}
                     onChange={handleChange}
                     placeholder="Chi tiết yêu cầu từ khách hàng..."
                     rows={3}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all resize-none"
-                  />
+                  /> */}
                 </div>
 
                 {/* Link tài liệu */}

@@ -413,12 +413,6 @@ export const OpportunityDetailPage = () => {
             </div>
             <div className="space-y-4 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">Loại khách hàng</span>
-                <span className="font-medium text-gray-900">
-                  {opportunity.customerType === 'DIRECT' ? 'Trực tiếp' : 'Đối tác'}
-                </span>
-              </div>
-              <div className="flex justify-between">
                 <span className="text-gray-500">Ngày tạo</span>
                 <span className="font-medium text-gray-900">{formatDate(opportunity.createdAt)}</span>
               </div>
