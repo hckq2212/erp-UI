@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Project Portfolio Grid</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2463eb",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-[#111318] dark:text-white font-display">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-[#f0f1f4] dark:border-[#2d3748] px-10 py-3 bg-white dark:bg-[#1a202c]">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-[#111318] dark:text-white">
+<div class="size-8 text-primary">
+<span class="material-symbols-outlined" style="font-size: 32px;">grid_view</span>
+</div>
+<h2 class="text-[#111318] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">ERP System</h2>
+</div>
+<nav class="flex items-center gap-9 hidden lg:flex">
+<a class="text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-primary text-sm font-bold leading-normal" href="#">Projects</a>
+<a class="text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Finance</a>
+<a class="text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Reports</a>
+<a class="text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-8 items-center">
+<label class="flex flex-col min-w-40 !h-10 max-w-64 hidden md:flex">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full ring-1 ring-[#dbdee6] dark:ring-[#4a5568] focus-within:ring-2 focus-within:ring-primary transition-all">
+<div class="text-[#616e89] dark:text-gray-400 flex border-none bg-transparent items-center justify-center pl-4 rounded-l-lg border-r-0">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#111318] dark:text-white focus:outline-0 focus:ring-0 border-none bg-transparent focus:border-none h-full placeholder:text-[#616e89] dark:placeholder:text-gray-500 px-4 rounded-l-none border-l-0 pl-2 text-sm font-normal leading-normal" placeholder="Search projects..." value=""/>
+</div>
+</label>
+<div class="flex items-center gap-3">
+<div class="bg-gray-100 dark:bg-gray-700 rounded-full p-2 relative">
+<span class="material-symbols-outlined text-gray-600 dark:text-gray-300">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+</div>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ring-2 ring-white dark:ring-gray-800 shadow-sm cursor-pointer" data-alt="User avatar profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD7duwb1an-2wq7NWLfBJ5Tfv7wcdiDTbdVlczqxvGvElvwv31Bo-mIq_iaNnPL_nXo2oziiqDH4nQnL_97we5rH9S5KQQUVZXe8botPQmz4g_x3Kwx06RCBtUYQcFH62UQwSUDhvHuWmXSXY34qvvK2zt1aj6xdEUqo9-_TJ5LNT7jXStG1iUW1j9A0_3EFZGHjb1dH0xY0ctCq-L-A5N-IRViYYhiEdp8EUxaPYSaU_oT4qqDucRKYNFU1zTNDI0hcluMPJ7iuPAb");'></div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col items-center py-8 px-4 sm:px-10">
+<div class="w-full max-w-[1200px] flex flex-col gap-8">
+<!-- Page Header & Actions -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div class="flex flex-col gap-1">
+<h1 class="text-[#111318] dark:text-white text-3xl font-black leading-tight tracking-[-0.033em]">Quản Lý Dự Án</h1>
+<p class="text-[#616e89] dark:text-gray-400 text-sm font-normal">Manage and track all ongoing business operations.</p>
+</div>
+<div class="flex items-center gap-3 w-full md:w-auto">
+<!-- View Toggle -->
+<div class="flex bg-[#f0f1f4] dark:bg-[#2d3748] rounded-lg p-1 hidden sm:flex">
+<button class="p-2 rounded bg-white dark:bg-[#4a5568] shadow-sm text-primary transition-all">
+<span class="material-symbols-outlined text-[20px]">grid_view</span>
+</button>
+<button class="p-2 rounded text-[#616e89] dark:text-gray-400 hover:text-[#111318] dark:hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[20px]">view_list</span>
+</button>
+</div>
+<!-- Filter Button -->
+<button class="flex items-center justify-center gap-2 h-10 px-4 bg-white dark:bg-[#2d3748] border border-[#dbdee6] dark:border-[#4a5568] text-[#111318] dark:text-white text-sm font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+<span>Filter</span>
+</button>
+<!-- Primary CTA -->
+<button class="flex-1 md:flex-none flex items-center justify-center gap-2 h-10 px-5 bg-primary hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-md hover:shadow-lg transition-all">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span class="truncate">Tạo Dự Án Mới</span>
+</button>
+</div>
+</div>
+<!-- Filters Row (Quick Access) -->
+<div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+<button class="px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium whitespace-nowrap border border-primary/20">All Projects</button>
+<button class="px-4 py-1.5 rounded-full bg-white dark:bg-[#2d3748] border border-[#dbdee6] dark:border-[#4a5568] text-[#616e89] dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap transition-colors">In Progress</button>
+<button class="px-4 py-1.5 rounded-full bg-white dark:bg-[#2d3748] border border-[#dbdee6] dark:border-[#4a5568] text-[#616e89] dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap transition-colors">Completed</button>
+<button class="px-4 py-1.5 rounded-full bg-white dark:bg-[#2d3748] border border-[#dbdee6] dark:border-[#4a5568] text-[#616e89] dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap transition-colors">Delayed</button>
+<button class="px-4 py-1.5 rounded-full bg-white dark:bg-[#2d3748] border border-[#dbdee6] dark:border-[#4a5568] text-[#616e89] dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap transition-colors">On Hold</button>
+</div>
+<!-- Projects Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Card 1: In Progress -->
+<div class="group bg-white dark:bg-[#1a202c] rounded-xl border border-[#dbdee6] dark:border-[#2d3748] p-5 shadow-sm hover:shadow-md hover:border-primary/50 transition-all duration-200 cursor-pointer flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-base font-bold text-[#111318] dark:text-white leading-tight group-hover:text-primary transition-colors">Triển khai ERP - VinGroup</h3>
+<p class="text-xs text-[#616e89] dark:text-gray-400 mt-1">#HD-2023-001 • Tập đoàn Vingroup</p>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                In Progress
+                            </span>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-xs font-medium text-[#616e89] dark:text-gray-400">
+<span>Progress</span>
+<span class="text-[#111318] dark:text-white">65%</span>
+</div>
+<div class="w-full bg-[#f0f1f4] dark:bg-[#2d3748] rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 65%"></div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-xs text-[#616e89] dark:text-gray-400 bg-background-light dark:bg-[#2d3748] p-2 rounded-lg">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>01 Jan 2024 - 30 Jun 2024</span>
+</div>
+<div class="border-t border-[#f0f1f4] dark:border-[#2d3748] pt-4 mt-auto flex items-center justify-between">
+<div class="flex -space-x-2 overflow-hidden">
+<img alt="Team member" class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a202c]" data-alt="Male team member face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqrpw7VCpLAEXwCfaxCHPGLc022peqI0MDxcl6ssRMj6FYmdiyvRvRDiVwpm_jcHRz7IyjkcF0grZDqFBBMEvskPseH9yqNvKRFVr-VbOIyExEWdTktZPcwNV9omLgTqJu1J_KJwbmwW1385Ak-HZT1ZtUAtZ22wqRCkBHUR80uoMEFnvAMICxgDhhGhzpHUuFrZM3Bo3ayrJgZq0wd-QQmN62IJimm8wGnelenML6WC8meSJoYYr5KKsmDPhUrxLbx_KFlHTz9FL5"/>
+<img alt="Team member" class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a202c]" data-alt="Female team member face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqOW2l6_n_aREuGwqiy1qEoq9cwBQTjhOXxrnLisjpwKC_staFj36uBlRa2tsWcrdNSycOb_3g8IOVW-a-pOP2vUgwIVYN4eduHLypB8LSB_-eeC9wcXp8yREq6jIDpYZJkvXX9TnqMX3sYchh3oPVMgnFUQz3hLlxK3oytCOrhQx5CbwBmWHibONLFfFoPMA8NC_5yms9Fg0IF-Bsm2qSTZFif8_Iif_jC7PpFYp0Mwo-pwGVOBexe2AC3l28jkuIOZw0naKouBsG"/>
+<img alt="Team member" class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a202c]" data-alt="Male team member face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaZ19JaJv2B6i6R1C8OxSgnjvNBJFdyIKH4dxOsOkwSgJk-kcg9E8kcJVxI7yTi6XSJR-68Ia_Sp9B9Pp5vD24jgjFhBqhKMX8_b6aT-3Q6dU4Jp4ox84m36Liw-yYpIxunskrVvjOzDeDTHqpOmYJb-TeqF6ppBMq_W5x8mYdKOzW9mp67zkfepO8aYOeXePb8oVsr-mLojupYgHNbV3wn3JuzIA6yUS4hmi-qNYzM27IO9WikXtoxxEIp4VZskSCl8bOzR4VLUhE"/>
+<div class="flex items-center justify-center h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a202c] bg-gray-100 dark:bg-gray-700 text-xs font-medium text-gray-600 dark:text-gray-300">
+                                    +2
+                                </div>
+</div>
+<div class="flex items-center gap-1 text-xs font-medium text-[#616e89] dark:text-gray-400">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>45/60 Tasks</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Completed -->
+<div class="group bg-white dark:bg-[#1a202c] rounded-xl border border-[#dbdee6] dark:border-[#2d3748] p-5 shadow-sm hover:shadow-md hover:border-primary/50 transition-all duration-200 cursor-pointer flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-base font-bold text-[#111318] dark:text-white leading-tight group-hover:text-primary transition-colors">Nâng cấp hệ thống CRM</h3>
+<p class="text-xs text-[#616e89] dark:text-gray-400 mt-1">#HD-2023-014 • Techcombank</p>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                Completed
+                            </span>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-xs font-medium text-[#616e89] dark:text-gray-400">
+<span>Progress</span>
+<span class="text-[#111318] dark:text-white">100%</span>
+</div>
+<div class="w-full bg-[#f0f1f4] dark:bg-[#2d3748] rounded-full h-2">
+<div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-xs text-[#616e89] dark:text-gray-400 bg-background-light dark:bg-[#2d3748] p-2 rounded-lg">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>15 Jan 2024 - 15 Mar 2024</span>
+</div>
+<div class="border-t border-[#f0f1f4] dark:border-[#2d3748] pt-4 mt-auto flex items-center justify-between">
+<div class="flex -space-x-2 overflow-hidden">
+<img alt="Team member" class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a202c]" data-alt="Female team member face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDP7lRLQEhYsNJPgtHUsBPwnsNj8gWi9-u867hCwu6qsnXM9C9pb5DzOaPucwNFk9IknHYgtnGOZ56Po9xm_MWyAnlXyq-iMqPytG6LiRY35uCQ9SZmgcXTN-_5HuVwd40UMZWKPAfA5V_6LznvNvP3teEDCR3yatcJ-h0AYRl6ripbs9fh4iU5Q9iFXehHddCLA4h4mYYTSiXSWtHib0umZBRfjLMjfLzycbhx5DtizGF1WkWqVZ0benSdkW5aFHOIoWi-QksK-4uo"/>
+<img alt="Team member" class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a202c]" data-alt="Male team member face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCayqf0Efjgg812xIeqDr1a-bx2yn1hKkKvtkigWIjxfvyaxc7pm22KZyUh5XuxsVCjldlghEgW1MnsETvWvav5rAP4tR5TFZ3Ss1ONCyeg54YDhGAXas9v1-_coHSGi6Jntz-hBT8u7M2wbmqrwgMX1kognVzJunVVerY6UmNqL2F7l974EVkf0Qr3EIgkIM9SWlKFldM041HQ_QX4BM-DFi-P5xWn0DwDegqdwed4Z0_myoKm6bAZROrDNshfk504DL0OFtC-RWAM"/>
+</div>
+<div class="flex items-center gap-1 text-xs font-medium text-[#616e89] dark:text-gray-400">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>32/32 Tasks</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Delayed -->
+<div class="group bg-white dark:bg-[#1a202c] rounded-xl border border-[#dbdee6] dark:border-[#2d3748] p-5 shadow-sm hover:shadow-md hover:border-primary/50 transition-all duration-200 cursor-pointer flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-base font-bold text-[#111318] dark:text-white leading-tight group-hover:text-primary transition-colors">Tích hợp API thanh toán</h3>
+<p class="text-xs text-[#616e89] dark:text-gray-400 mt-1">#HD-2024-002 • Momo Wallet</p>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                                Delayed
+                            </span>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-xs font-medium text-[#616e89] dark:text-gray-400">
+<span>Progress</span>
+<span class="text-[#111318] dark:text-white">40%</span>
+</div>
+<div class="w-full bg-[#f0f1f4] dark:bg-[#2d3748] rounded-full h-2">
+<div class="bg-orange-500 h-2 rounded-full" style="width: 40%"></div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-xs text-[#616e89] dark:text-gray-400 bg-background-light dark:bg-[#2d3748] p-2 rounded-lg">
+<span class="material-symbols-outlined text-[16px] text-orange-500">warning</span>
+<span class="text-orange-600 dark:text-orange-400 font-medium">Due: 20 Mar 2024 (Overdue)</span>
+</div>
+<div class="border-t border-[#f0f1f4] dark:border-[#2d3748] pt-4 mt-auto flex items-center justify-between">
+<div class="flex -space-x-2 overflow-hidden">
+<img alt="Team member" class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a202c]" data-alt="Male team member face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAguHMDmIQODp7zJ3KTaRItwfX4lmxG4W0oXWH7_k-EtF_YroVP6CMI1eRSnZjzogE3Bos7V-ILNlwEB7MXdgBUscsj5hmeZg4V8cIgKUERQWYqzbk2zsUk5yEM1dKZN0PFqRhM0vpBUKewUASWwaQDrM0n5vJIAXFHi15yBqabSIySwqNZuj9zStK8rRH6r9Is98339nK6w61VuE0nABAJD9y6OOsiTN3tAjZbGP-2NbMGPlilO3Sqm7gbX2xA3m77gckY1KaxuX6B"/>
+<img alt="Team member" class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a202c]" data-alt="Female team member face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIsUN1Is6W3VMAGKEedlilgOuR-neNFdmCNuGoVAml5UCFrMcbSkwVBdoF5tqIReAChp5eqLqsKV1GNw0qSgnCuT-56zQlb2AfKdpY7tmWr24O2g-DZnR0dKTksbqGMoTIjINAlevVZjsjoqxVuftTHRchMwBDs07Z7ni1nyqG_qgWzVSSt2gee541Ysg0rqzs7OGzPByfDE0mp3-NHAbV-5ZuWl_Sangw690f_f8T_xeI5SRn3ViNRKBDzts-GI35KJmV9cPbu7xF"/>
+<img alt="Team member" class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a202c]" data-alt="Female team member face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHvt8pC2b7DoN-Y0fMZMeCNmsGWBOCge9dSf9e1dsRdpl9ZtnwI7FjFgWzj0WwpnMW8YbbIK0oLBR8Nj0ars5neA64SikAST613y_mx5ZHGaNJJ6uPJm7SdZ34KDQiR6482u9TdNB5n2jz-4eZ42JeUNQMyPD3xJUf2dwSzb3IV8kQU0Ab0tgu7gM7XtYn36PEIdQ2fc07LDOO9CVBJOhez6xLzrQqx6uaaX6NlBa3ecYol0e0ySNThXoLBKo2ZDiNV4Hrx3aVc3tB"/>
+</div>
+<div class="flex items-center gap-1 text-xs font-medium text-[#616e89] dark:text-gray-400">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>12/40 Tasks</span>
+</div>
+</div>
+</div>
+<!-- Card 4: In Progress -->
+<div class="group bg-white dark:bg-[#1a202c] rounded-xl border border-[#dbdee6] dark:border-[#2d3748] p-5 shadow-sm hover:shadow-md hover:border-primary/50 transition-all duration-200 cursor-pointer flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-base font-bold text-[#111318] dark:text-white leading-tight group-hover:text-primary transition-colors">Thiết kế App Mobile</h3>
+<p class="text-xs text-[#616e89] dark:text-gray-400 mt-1">#HD-2024-005 • Shopee</p>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                In Progress
+                            </span>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-xs font-medium text-[#616e89] dark:text-gray-400">
+<span>Progress</span>
+<span class="text-[#111318] dark:text-white">25%</span>
+</div>
+<div class="w-full bg-[#f0f1f4] dark:bg-[#2d3748] rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 25%"></div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-xs text-[#616e89] dark:text-gray-400 bg-background-light dark:bg-[#2d3748] p-2 rounded-lg">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>10 Feb 2024 - 10 Aug 2024</span>
+</div>
+<div class="border-t border-[#f0f1f4] dark:border-[#2d3748] pt-4 mt-auto flex items-center justify-between">
+<div class="flex -space-x-2 overflow-hidden">
+<img alt="Team member" class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a202c]" data-alt="Female team member face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsVXeek9j8ahm6JjuR3cquG7RuCev8p9j4uOkSteRa374ZrzSUhLkMuTTvC5D5mmmkOyrYdgcFTBGiw34PMm3hYCzJBIANt3E-okzSzR1i9LvmlOv7iKNcsDnkMEaNxNbXusC1wqyqQ4xdeV4R9NJBWQ3aMyCuRMu5o0jWrZH4n4XLzM61ECx0Il2nrOx8OjCVrB-Pu41ruDCOzdGpdTQbMLSyo3TxHk4xj_tI9y9Na_oqXw1g434-WGDaNl02NZzD_tjXCSma4s7T"/>
+<div class="flex items-center justify-center h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a202c] bg-gray-100 dark:bg-gray-700 text-xs font-medium text-gray-600 dark:text-gray-300">
+                                    +5
+                                </div>
+</div>
+<div class="flex items-center gap-1 text-xs font-medium text-[#616e89] dark:text-gray-400">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>8/32 Tasks</span>
+</div>
+</div>
+</div>
+<!-- Card 5: Planning (Grey) -->
+<div class="group bg-white dark:bg-[#1a202c] rounded-xl border border-[#dbdee6] dark:border-[#2d3748] p-5 shadow-sm hover:shadow-md hover:border-primary/50 transition-all duration-200 cursor-pointer flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-base font-bold text-[#111318] dark:text-white leading-tight group-hover:text-primary transition-colors">Tư vấn Chiến lược IT</h3>
+<p class="text-xs text-[#616e89] dark:text-gray-400 mt-1">#HD-2024-008 • Masan Consumer</p>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                Planning
+                            </span>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-xs font-medium text-[#616e89] dark:text-gray-400">
+<span>Progress</span>
+<span class="text-[#111318] dark:text-white">5%</span>
+</div>
+<div class="w-full bg-[#f0f1f4] dark:bg-[#2d3748] rounded-full h-2">
+<div class="bg-gray-400 h-2 rounded-full" style="width: 5%"></div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-xs text-[#616e89] dark:text-gray-400 bg-background-light dark:bg-[#2d3748] p-2 rounded-lg">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>01 Apr 2024 - 30 Sep 2024</span>
+</div>
+<div class="border-t border-[#f0f1f4] dark:border-[#2d3748] pt-4 mt-auto flex items-center justify-between">
+<div class="flex -space-x-2 overflow-hidden">
+<img alt="Team member" class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a202c]" data-alt="Male team member face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCou29auYHr1Fvi1_Mz8OtFCV7HCYywswrNmQefq0ZISyzjBMg-VlOWzrToRrOjBhvVbiF5cPOdP2PvYvu2R6v63jdvoj2mbkisXztxoGLCFt7nbnGcsdyqcVdaSZcYvmjwZpDXmmT4nJBXvi1vthrx1pJJaY6IFl2LE8kq8FLQNFpjK2RCV6xO5nlJxkROqXOmNeEWb-ew6SvZ3U5Ffzg0tFk6QtF1fRdXhfwHuVcbzh1XRaS1LQlsLwXHASM66zaD-iBLAXb1GgWR"/>
+</div>
+<div class="flex items-center gap-1 text-xs font-medium text-[#616e89] dark:text-gray-400">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>1/15 Tasks</span>
+</div>
+</div>
+</div>
+<!-- Card 6: In Progress -->
+<div class="group bg-white dark:bg-[#1a202c] rounded-xl border border-[#dbdee6] dark:border-[#2d3748] p-5 shadow-sm hover:shadow-md hover:border-primary/50 transition-all duration-200 cursor-pointer flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-base font-bold text-[#111318] dark:text-white leading-tight group-hover:text-primary transition-colors">Bảo trì Server Farm</h3>
+<p class="text-xs text-[#616e89] dark:text-gray-400 mt-1">#HD-2023-099 • FPT Telecom</p>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                In Progress
+                            </span>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-xs font-medium text-[#616e89] dark:text-gray-400">
+<span>Progress</span>
+<span class="text-[#111318] dark:text-white">82%</span>
+</div>
+<div class="w-full bg-[#f0f1f4] dark:bg-[#2d3748] rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 82%"></div>
+</div>
+</div>
+<div class="flex items-center gap-2 text-xs text-[#616e89] dark:text-gray-400 bg-background-light dark:bg-[#2d3748] p-2 rounded-lg">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>15 Nov 2023 - 15 Apr 2024</span>
+</div>
+<div class="border-t border-[#f0f1f4] dark:border-[#2d3748] pt-4 mt-auto flex items-center justify-between">
+<div class="flex -space-x-2 overflow-hidden">
+<img alt="Team member" class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a202c]" data-alt="Female team member face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFGX7qMzF-uSG65Edf3DmqJFG9mn7E_P-LO-vVee00Pn6eKqJP4ZgIFsp9Sq6VTActPmGFoTXogNEYdh1GWf3Wa7gmbr6DQz20aHautJ1-brG7av-Qjs7PF9bZzLFrD61qgbq1uONLCIWfwSOLGxDIK5_p9RuAJcGDL3BoRg6O3-H8EziJZCSL47r37d6k5oNEyttZDDaOIUobG6a75L3uT74xTXZVdvMkYgAnoV5koxsCsf5NvLhIAe2JwRFiSpBnlGAfR_L_prIv"/>
+<img alt="Team member" class="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-[#1a202c]" data-alt="Male team member face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUmKxGhL21qOyPn41l0kKt_ZhIl6RtPBURuGCFvU3QCPnDThMqus2XCkojbxCUjwvTQIzNF-suv63qxGgmHQniTSz_yXHbJCRXEZtdhPEOSMXR6070vpKEjxBHuUrZidILFBnAA5B933eL7eaDe8qaeN5zGOe46JlZzkJhQlRW2BWcZfwmUlJLG8moQqA-uWDf1TFXE4mxHW4Q1V3-ZXU6qGnlc3kRJ_vdwBKUMqgJ-G1doRQB55AbdPUDFFeFk3S7fLzrMbGhIRc0"/>
+</div>
+<div class="flex items-center gap-1 text-xs font-medium text-[#616e89] dark:text-gray-400">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>80/95 Tasks</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Pagination -->
+<div class="flex items-center justify-between border-t border-[#dbdee6] dark:border-[#2d3748] pt-4 pb-8">
+<p class="text-sm text-[#616e89] dark:text-gray-400">Showing <span class="font-medium text-[#111318] dark:text-white">1</span> to <span class="font-medium text-[#111318] dark:text-white">6</span> of <span class="font-medium text-[#111318] dark:text-white">24</span> results</p>
+<div class="flex gap-2">
+<button class="px-3 py-1 text-sm font-medium rounded bg-white dark:bg-[#2d3748] border border-[#dbdee6] dark:border-[#4a5568] text-[#616e89] dark:text-gray-300 disabled:opacity-50" disabled="">Previous</button>
+<button class="px-3 py-1 text-sm font-medium rounded bg-white dark:bg-[#2d3748] border border-[#dbdee6] dark:border-[#4a5568] text-[#111318] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700">Next</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

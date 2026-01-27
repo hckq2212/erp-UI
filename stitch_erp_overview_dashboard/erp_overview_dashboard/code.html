@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ERP Overview Dashboard</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Theme Configuration -->
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2563EB",
+                        "primary-hover": "#1D4ED8",
+                        "background-light": "#F8FAFC",
+                        "background-dark": "#111621",
+                        "surface-light": "#FFFFFF",
+                        "surface-dark": "#1E293B",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.375rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        /* Custom Scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-hidden">
+<div class="flex h-screen w-full">
+<!-- Sidebar -->
+<aside class="flex w-64 flex-col border-r border-slate-200 dark:border-slate-800 bg-surface-light dark:bg-surface-dark hidden md:flex shrink-0 transition-all duration-300">
+<!-- Logo Area -->
+<div class="flex h-16 items-center gap-3 px-6 border-b border-slate-100 dark:border-slate-800">
+<div class="size-8 rounded bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined">grid_view</span>
+</div>
+<h2 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">Acme ERP</h2>
+</div>
+<!-- Navigation -->
+<nav class="flex-1 overflow-y-auto px-4 py-6 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary dark:text-blue-400 group" href="#">
+<span class="material-symbols-outlined fill">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<div class="pt-4 pb-2 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Modules</div>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined">lightbulb</span>
+<span class="text-sm font-medium">Opportunities</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-sm font-medium">Customers</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="text-sm font-medium">Quotations</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined">ink_pen</span>
+<span class="text-sm font-medium">Contracts</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined">work</span>
+<span class="text-sm font-medium">Projects</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined">check_box</span>
+<span class="text-sm font-medium">Tasks</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-sm font-medium">Finance</span>
+</a>
+</nav>
+<!-- Bottom Actions -->
+<div class="p-4 border-t border-slate-200 dark:border-slate-800">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark relative">
+<!-- Header -->
+<header class="h-16 flex items-center justify-between px-6 bg-surface-light dark:bg-surface-dark border-b border-slate-200 dark:border-slate-800 shrink-0 z-10">
+<!-- Search -->
+<div class="flex items-center w-full max-w-xl">
+<div class="relative w-full">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</span>
+<input class="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border-none text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-primary placeholder:text-slate-500" placeholder="Search projects, clients, invoices..." type="text"/>
+</div>
+</div>
+<!-- Right Actions -->
+<div class="flex items-center gap-4 ml-4">
+<button class="relative p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+</button>
+<div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
+<button class="flex items-center gap-2 group">
+<div class="size-9 rounded-full bg-slate-200 overflow-hidden border border-slate-200" data-alt="User Avatar Profile Picture">
+<img alt="User Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAF_0OtyzN6cbwaNL0eBFjZ1k27mSN2ZQRJ5kPHqWPxd6u0ORrJ7FNGf1-xHLlihDoxUiz1eNCu05OodyXeLIwkEc_Fcm9PjqyDubnXkjiw2NhIy9KUHq9lGZbTgRKoZhmVWTM7ZLbVcqTySqRSaiV99uCw0otS1oyEnSYiNr9oHdz8TreRuglOnycvHr2lcldEbBBeSQGiC4T2KVeRAcsEZSGMaZmHKww-vAYt8MSjLItzdSpdme5KOj5WsFw29AaGbDLQYPpxMsgt"/>
+</div>
+<div class="text-left hidden lg:block">
+<p class="text-sm font-medium text-slate-900 dark:text-white group-hover:text-primary transition-colors">Jane Doe</p>
+<p class="text-xs text-slate-500">Project Manager</p>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-sm hidden lg:block">expand_more</span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-6 lg:p-8 scroll-smooth">
+<div class="max-w-[1600px] mx-auto flex flex-col gap-6">
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Stat 1 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<p class="text-slate-500 text-sm font-medium">Total Revenue</p>
+<span class="material-symbols-outlined text-slate-400 text-[20px]">payments</span>
+</div>
+<div class="flex items-end gap-2 mt-2">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">$124,500</h3>
+<div class="flex items-center text-emerald-600 text-xs font-medium mb-1 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px] mr-0.5">trending_up</span>
+                                    12%
+                                </div>
+</div>
+</div>
+<!-- Stat 2 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<p class="text-slate-500 text-sm font-medium">Open Opportunities</p>
+<span class="material-symbols-outlined text-slate-400 text-[20px]">lightbulb</span>
+</div>
+<div class="flex items-end gap-2 mt-2">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">14</h3>
+<div class="flex items-center text-emerald-600 text-xs font-medium mb-1 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px] mr-0.5">trending_up</span>
+                                    2%
+                                </div>
+</div>
+</div>
+<!-- Stat 3 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<p class="text-slate-500 text-sm font-medium">Active Projects</p>
+<span class="material-symbols-outlined text-primary text-[20px]">folder_open</span>
+</div>
+<div class="flex items-end gap-2 mt-2">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">8</h3>
+<div class="flex items-center text-slate-500 text-xs font-medium mb-1 px-1.5 py-0.5">
+                                    0% change
+                                </div>
+</div>
+</div>
+<!-- Stat 4 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<p class="text-slate-500 text-sm font-medium">Unpaid Debt</p>
+<span class="material-symbols-outlined text-red-500 text-[20px]">warning</span>
+</div>
+<div class="flex items-end gap-2 mt-2">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">$4,200</h3>
+<div class="flex items-center text-red-600 text-xs font-medium mb-1 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px] mr-0.5">trending_down</span>
+                                    5%
+                                </div>
+</div>
+</div>
+</div>
+<!-- Charts Row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Main Line Chart -->
+<div class="lg:col-span-2 bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h3 class="text-base font-semibold text-slate-900 dark:text-white">Monthly Revenue</h3>
+<p class="text-sm text-slate-500">Income performance over last 6 months</p>
+</div>
+<button class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="h-64 w-full">
+<!-- SVG Chart (Adapted from example) -->
+<svg class="w-full h-full text-primary" fill="none" preserveaspectratio="none" viewbox="0 0 478 150" xmlns="http://www.w3.org/2000/svg">
+<!-- Gradient Definition -->
+<defs>
+<lineargradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="currentColor" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="currentColor" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<!-- Area Path -->
+<path d="M0 109C18.15 109 18.15 21 36.3 21C54.46 21 54.46 41 72.6 41C90.77 41 90.77 93 108.9 93C127.1 93 127.1 33 145.2 33C163.4 33 163.4 101 181.5 101C199.7 101 199.7 61 217.8 61C236 61 236 45 254.2 45C272.3 45 272.3 121 290.5 121C308.6 121 308.6 149 326.8 149C344.9 149 344.9 1 363.1 1C381.2 1 381.2 81 399.4 81C417.5 81 417.5 129 435.7 129C453.8 129 453.8 25 472 25V150H0V109Z" fill="url(#chartGradient)"></path>
+<!-- Stroke Path -->
+<path d="M0 109C18.15 109 18.15 21 36.3 21C54.46 21 54.46 41 72.6 41C90.77 41 90.77 93 108.9 93C127.1 93 127.1 33 145.2 33C163.4 33 163.4 101 181.5 101C199.7 101 199.7 61 217.8 61C236 61 236 45 254.2 45C272.3 45 272.3 121 290.5 121C308.6 121 308.6 149 326.8 149C344.9 149 344.9 1 363.1 1C381.2 1 381.2 81 399.4 81C417.5 81 417.5 129 435.7 129C453.8 129 453.8 25 472 25" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path>
+</svg>
+</div>
+<div class="flex justify-between mt-4 px-2">
+<span class="text-xs font-medium text-slate-400">Jan</span>
+<span class="text-xs font-medium text-slate-400">Feb</span>
+<span class="text-xs font-medium text-slate-400">Mar</span>
+<span class="text-xs font-medium text-slate-400">Apr</span>
+<span class="text-xs font-medium text-slate-400">May</span>
+<span class="text-xs font-medium text-slate-400">Jun</span>
+</div>
+</div>
+<!-- Donut Chart -->
+<div class="lg:col-span-1 bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+<h3 class="text-base font-semibold text-slate-900 dark:text-white mb-2">Opportunity Pipeline</h3>
+<p class="text-sm text-slate-500 mb-6">42 deals in progress</p>
+<div class="flex-1 flex flex-col items-center justify-center relative min-h-[200px]">
+<!-- Donut using Conic Gradient -->
+<div class="size-48 rounded-full relative" style="background: conic-gradient(#2563EB 0% 35%, #60A5FA 35% 60%, #93C5FD 60% 85%, #E2E8F0 85% 100%);">
+<div class="absolute inset-0 m-auto size-32 bg-surface-light dark:bg-surface-dark rounded-full flex flex-col items-center justify-center shadow-inner">
+<span class="text-3xl font-bold text-slate-900 dark:text-white">42</span>
+<span class="text-xs text-slate-500">Total Deals</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 mt-6">
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-[#2563EB]"></div>
+<span class="text-sm text-slate-600 dark:text-slate-300">Proposal (35%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-[#60A5FA]"></div>
+<span class="text-sm text-slate-600 dark:text-slate-300">Qualification (25%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-[#93C5FD]"></div>
+<span class="text-sm text-slate-600 dark:text-slate-300">Contacted (25%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-slate-200"></div>
+<span class="text-sm text-slate-600 dark:text-slate-300">New (15%)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Row: Table & Task List -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+<!-- Recent Opportunities Table -->
+<div class="xl:col-span-2 bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+<div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+<h3 class="text-base font-semibold text-slate-900 dark:text-white">Recent Opportunities</h3>
+<button class="text-sm text-primary font-medium hover:text-primary-hover">View All</button>
+</div>
+<div class="overflow-x-auto flex-1">
+<table class="w-full text-sm text-left">
+<thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 font-medium">
+<tr>
+<th class="px-6 py-3">Opportunity Name</th>
+<th class="px-6 py-3 hidden sm:table-cell">Client</th>
+<th class="px-6 py-3">Value</th>
+<th class="px-6 py-3">Stage</th>
+<th class="px-6 py-3 hidden md:table-cell">Probability</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<!-- Row 1 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Website Redesign</td>
+<td class="px-6 py-4 text-slate-500 hidden sm:table-cell">Acme Corp</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">$15,000</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
+                                                    Proposal
+                                                </span>
+</td>
+<td class="px-6 py-4 hidden md:table-cell">
+<div class="flex items-center gap-3">
+<div class="w-24 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 75%"></div>
+</div>
+<span class="text-xs text-slate-500">75%</span>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Mobile App Dev</td>
+<td class="px-6 py-4 text-slate-500 hidden sm:table-cell">Globex Inc</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">$45,000</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200">
+                                                    Qualification
+                                                </span>
+</td>
+<td class="px-6 py-4 hidden md:table-cell">
+<div class="flex items-center gap-3">
+<div class="w-24 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+<div class="h-full bg-purple-500 rounded-full" style="width: 40%"></div>
+</div>
+<span class="text-xs text-slate-500">40%</span>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">SEO Campaign</td>
+<td class="px-6 py-4 text-slate-500 hidden sm:table-cell">Soylent Corp</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">$5,000</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200">
+                                                    New
+                                                </span>
+</td>
+<td class="px-6 py-4 hidden md:table-cell">
+<div class="flex items-center gap-3">
+<div class="w-24 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+<div class="h-full bg-slate-400 rounded-full" style="width: 10%"></div>
+</div>
+<span class="text-xs text-slate-500">10%</span>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group border-b-0">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Cloud Migration</td>
+<td class="px-6 py-4 text-slate-500 hidden sm:table-cell">Umbrella Corp</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">$25,000</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200">
+                                                    Negotiation
+                                                </span>
+</td>
+<td class="px-6 py-4 hidden md:table-cell">
+<div class="flex items-center gap-3">
+<div class="w-24 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+<div class="h-full bg-orange-500 rounded-full" style="width: 90%"></div>
+</div>
+<span class="text-xs text-slate-500">90%</span>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Pending Tasks List -->
+<div class="xl:col-span-1 bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+<div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+<h3 class="text-base font-semibold text-slate-900 dark:text-white">Pending Tasks</h3>
+<div class="bg-red-50 text-red-600 text-xs font-bold px-2 py-1 rounded">3 Urgent</div>
+</div>
+<div class="flex flex-col p-2 gap-1 overflow-y-auto max-h-[400px]">
+<!-- Task 1 -->
+<div class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer border-l-4 border-red-500 bg-red-50/10">
+<div class="mt-0.5 text-slate-400 group-hover:text-primary">
+<span class="material-symbols-outlined">radio_button_unchecked</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium text-slate-900 dark:text-white">Review Q3 Invoices</p>
+<p class="text-xs text-slate-500">Assigned to <span class="text-slate-700 dark:text-slate-300">Finance Team</span></p>
+</div>
+<div class="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
+                                        Today
+                                    </div>
+</div>
+<!-- Task 2 -->
+<div class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer border-l-4 border-transparent hover:border-slate-300">
+<div class="mt-0.5 text-slate-400 group-hover:text-primary">
+<span class="material-symbols-outlined">radio_button_unchecked</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium text-slate-900 dark:text-white">Client Meeting Prep</p>
+<p class="text-xs text-slate-500">Project: Website Redesign</p>
+</div>
+<div class="text-xs font-medium text-orange-600 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded">
+                                        Tomorrow
+                                    </div>
+</div>
+<!-- Task 3 -->
+<div class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer border-l-4 border-red-500 bg-red-50/10">
+<div class="mt-0.5 text-slate-400 group-hover:text-primary">
+<span class="material-symbols-outlined">radio_button_unchecked</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium text-slate-900 dark:text-white">Update Service Contract</p>
+<p class="text-xs text-slate-500">Client: Globex Inc</p>
+</div>
+<div class="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
+                                        Overdue
+                                    </div>
+</div>
+<!-- Task 4 -->
+<div class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer border-l-4 border-transparent hover:border-slate-300">
+<div class="mt-0.5 text-slate-400 group-hover:text-primary">
+<span class="material-symbols-outlined">radio_button_unchecked</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium text-slate-900 dark:text-white">Quarterly Team Sync</p>
+<p class="text-xs text-slate-500">General</p>
+</div>
+<div class="text-xs font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                                        Oct 24
+                                    </div>
+</div>
+</div>
+<div class="p-3 border-t border-slate-200 dark:border-slate-800 mt-auto">
+<button class="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-primary hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                                    Add New Task
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

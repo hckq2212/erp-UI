@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Task Execution Board</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2463eb",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom Scrollbar for columns */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #475569;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white h-screen overflow-hidden flex">
+<!-- Sidebar Navigation -->
+<aside class="w-20 lg:w-64 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a202c] shrink-0 z-20 transition-all">
+<div class="h-16 flex items-center justify-center lg:justify-start lg:px-6 border-b border-slate-200 dark:border-slate-800">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-white font-bold text-lg">E</div>
+<span class="hidden lg:block ml-3 font-bold text-xl tracking-tight">ERP Core</span>
+</div>
+<nav class="flex-1 overflow-y-auto py-4 flex flex-col gap-2 px-3">
+<a class="flex items-center gap-3 p-3 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-primary dark:text-slate-400 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="hidden lg:block font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg bg-primary/10 text-primary dark:bg-primary/20 transition-colors" href="#">
+<span class="material-symbols-outlined fill-1">view_kanban</span>
+<span class="hidden lg:block font-medium">Task Board</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-primary dark:text-slate-400 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="hidden lg:block font-medium">Projects</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-primary dark:text-slate-400 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="hidden lg:block font-medium">Finance</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-primary dark:text-slate-400 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="hidden lg:block font-medium">Team</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-200 dark:border-slate-800">
+<button class="flex items-center gap-3 w-full text-left">
+<div class="w-8 h-8 rounded-full bg-slate-200 bg-cover bg-center" data-alt="User avatar of the current logged in user" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC2-EKT-sud9ME9HwPjv9P2zkdWiLlTihglofTtv8_jNojmzJEVYOdcHeaNMxy5t-aShSG5egYtq94bOi8LKVkyyAM2M7qjI9Ac-sbEzbXqGY6AijCsMQhU-ix5ZdseZ1znoTopRZX95qVHDYsjSVCpUu-NLM9tbcktwOEEOXq_dk1i_S8ZaQ6laV58LcKCcUcOhu6IxAUTkFhIgTLJHh2fgcdbEjdCc4GGDftkU5N5STSFmx7V8zY8udbCocq00wSlx3ZEu3ZQlmBe');"></div>
+<div class="hidden lg:block">
+<p class="text-sm font-semibold">Alex Morgan</p>
+<p class="text-xs text-slate-500">Product Manager</p>
+</div>
+</button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- Header Section -->
+<header class="bg-white dark:bg-[#1a202c] border-b border-slate-200 dark:border-slate-800 shrink-0">
+<div class="px-6 py-4">
+<!-- Breadcrumbs -->
+<div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-1">
+<a class="hover:text-primary transition-colors" href="#">Home</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Projects</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="text-slate-900 dark:text-white font-medium">Project Alpha</span>
+</div>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Task Execution Board</h1>
+<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Manage, track, and execute project operations across all departments.</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex -space-x-2 mr-2">
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-cover bg-center" data-alt="Team member avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA9HurF13mzCjgeO3iDb186eEttA15cRTVH3MAGX5sx1ka-JvQy-5vvzcJwMQgn2-4O7QKaLCfsau_If0cLcgc--WF0VgjYJ5selEHD1KbvI9GjHmrYxPYRBmVuiijStLj2-rVhuSDC3hJE2nOTzHNEMw_zdvdPdW8F6tCYWbxnLhhl2TC1gsAqdEI7ksC86XaQLzGgGwQ_bT1JecJAN9SUWdhNXnd8E90RVcQwLLvhPkhTB0tDdR6HcsaDHw-4w3FAQier8JgU9xKk');"></div>
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-cover bg-center" data-alt="Team member avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD9Lh1m27r3Hw1kzsljO5iOq5e-pFwlJmMroIJwbEvK32M3CMFQEwQuDogkjEnNGgxHr4b46r6qW8oTu1jsFER2knJem_8UbQZ8zWCDe9h6F3bmyIgw-PuMZ1YBNAm6mdNhEmdfphKlnkjW3AoHHBMwCwU5_wzH_sehhzHP1G8o3G30DMv109EIkvBXAzHYnB9KfZhx7fGuLEZQPP0DLzAdiP3bojZZaUzwayVF-6X-W_1wCk8UT9WMeJDKxfmJ9gvoruRBHQtp2km7');"></div>
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-cover bg-center" data-alt="Team member avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA2P9FSsiPGxH11DS7MaKUi96svTbLzrd_-A294n3mmMeoOuP37HFPViXWcPffCVlUHEWYzLRNDMNOuB_j-R4odxhxvwLiCyRaiTRfsAQ2ZxxiO7RLsWq2l0SHoI-ce0QBkMqEHG_siN4OD0ivEtGz7Z_HEZB6J7dS6vmfFPCwfsC7DtVq19pVRg-9nd_W1dM1Wc-GRVQCpJ9KqK_ijX_TGV5yLqS5dViQ1lNXOzm8Ey70PgN9Uf65zTuq4ov-zxAKIcpI1ONjshtJ_');"></div>
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-slate-100 flex items-center justify-center text-xs font-medium text-slate-600">+4</div>
+</div>
+<button class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                            Create Task
+                        </button>
+</div>
+</div>
+</div>
+<!-- Filters Toolbar -->
+<div class="px-6 pb-4 pt-2 flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between">
+<!-- Search -->
+<div class="relative w-full xl:w-96 group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white placeholder-slate-500" placeholder="Search by task ID, description, or tag..." type="text"/>
+</div>
+<!-- Chips -->
+<div class="flex flex-wrap items-center gap-2 w-full xl:w-auto overflow-x-auto pb-1 xl:pb-0 scrollbar-hide">
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 transition-colors whitespace-nowrap">
+<span class="text-xs font-medium text-slate-600 dark:text-slate-300">Project:</span>
+<span class="text-xs font-bold text-slate-900 dark:text-white">All Active</span>
+<span class="material-symbols-outlined text-[16px] text-slate-400">arrow_drop_down</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 transition-colors whitespace-nowrap">
+<span class="text-xs font-medium text-slate-600 dark:text-slate-300">Assignee:</span>
+<span class="text-xs font-bold text-slate-900 dark:text-white">Me &amp; My Team</span>
+<span class="material-symbols-outlined text-[16px] text-slate-400">arrow_drop_down</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 transition-colors whitespace-nowrap">
+<span class="text-xs font-medium text-slate-600 dark:text-slate-300">Priority:</span>
+<span class="text-xs font-bold text-slate-900 dark:text-white">Any</span>
+<span class="material-symbols-outlined text-[16px] text-slate-400">arrow_drop_down</span>
+</button>
+<div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
+<button class="text-slate-500 hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+<span class="text-xs font-medium">More Filters</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Kanban Board Area -->
+<div class="flex-1 overflow-x-auto overflow-y-hidden bg-background-light dark:bg-background-dark p-6">
+<div class="flex h-full gap-6 min-w-max">
+<!-- Column 1: Pending -->
+<div class="flex flex-col w-[320px] h-full rounded-xl bg-slate-100/80 dark:bg-[#1e2532] border border-slate-200/50 dark:border-slate-700/50">
+<div class="p-4 flex items-center justify-between shrink-0">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+<h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm uppercase tracking-wider">Pending</h3>
+<span class="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full text-xs font-bold">4</span>
+</div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto px-3 pb-3 custom-scrollbar flex flex-col gap-3">
+<!-- Card 1 -->
+<div class="bg-white dark:bg-[#2d3748] p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-primary/50 cursor-grab active:cursor-grabbing group">
+<div class="flex justify-between items-start mb-2">
+<a class="text-xs font-bold text-slate-500 hover:underline" href="#">SMGK-1024</a>
+<span class="px-2 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] font-bold uppercase tracking-wide">High</span>
+</div>
+<p class="text-sm text-slate-800 dark:text-slate-100 font-medium mb-3 leading-snug">Review Q3 Financial statements for audit compliance</p>
+<div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+<div class="w-6 h-6 rounded-full bg-cover bg-center" data-alt="Assignee avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCsleGN-gyMoCynhhNA_vC-UA2hYzlS0Xs_xLI9gIkO7gT10O05_QKZ0mrxvTi7zVS8cnkOHSgiYlBDaUKyYIqcZUIHaHFahvIWwbVRCyuLA7t0AvVK6jZ9opuTMxDZLOc0gbIOvuwAP-Z1EcNu0ntMbIz8t7SCHYx6aFMmIPcLnhUuakWALPop02T1Ystwzp9hMAA9s9rqYD2_nbGEscs_58a-y140rleshQ-dKfyK3MUdevFwqPog7CTi6JuJ5g3MvGP6d28JX4xn');"></div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-xs">
+<span class="material-symbols-outlined text-[14px]">attach_file</span>
+<span>2</span>
+</div>
+<div class="flex items-center gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span>Oct 30</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-white dark:bg-[#2d3748] p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-primary/50 cursor-grab active:cursor-grabbing group">
+<div class="flex justify-between items-start mb-2">
+<a class="text-xs font-bold text-slate-500 hover:underline" href="#">SMGK-1029</a>
+<span class="px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wide">Low</span>
+</div>
+<p class="text-sm text-slate-800 dark:text-slate-100 font-medium mb-3 leading-snug">Update asset inventory icons</p>
+<div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+<div class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500">?</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span>Nov 05</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<button class="m-2 p-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 text-slate-500 hover:text-primary hover:border-primary hover:bg-white dark:hover:bg-slate-800 transition-all text-sm font-medium flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        Add Task
+                    </button>
+</div>
+<!-- Column 2: Doing -->
+<div class="flex flex-col w-[320px] h-full rounded-xl bg-slate-100/80 dark:bg-[#1e2532] border border-slate-200/50 dark:border-slate-700/50 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-primary z-10"></div>
+<div class="p-4 flex items-center justify-between shrink-0">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
+<h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm uppercase tracking-wider">Doing</h3>
+<span class="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-bold">2</span>
+</div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto px-3 pb-3 custom-scrollbar flex flex-col gap-3">
+<!-- Card 3 -->
+<div class="bg-white dark:bg-[#2d3748] p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-primary/50 cursor-grab active:cursor-grabbing group ring-1 ring-primary/20">
+<div class="flex justify-between items-start mb-2">
+<a class="text-xs font-bold text-slate-500 hover:underline" href="#">SMGK-1026</a>
+<span class="px-2 py-0.5 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-[10px] font-bold uppercase tracking-wide">Medium</span>
+</div>
+<p class="text-sm text-slate-800 dark:text-slate-100 font-medium mb-3 leading-snug">Fix API authentication bug on login</p>
+<div class="w-full bg-slate-100 rounded-full h-1.5 mb-3 overflow-hidden">
+<div class="bg-primary h-1.5 rounded-full" style="width: 65%"></div>
+</div>
+<div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+<div class="w-6 h-6 rounded-full bg-cover bg-center" data-alt="Assignee avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCYxogod7CI7e9WlXYugkoBUn7UwlaXRNFCAvqrNsmyWVXk2CnNbEOry8ouOua-7PaJIXKQqhPPW7Pjg5ey-gtOX1n4X9S_y1X52ZwZbTzlxuiNqRFHSoj5716HwS8h1hHSwgw5TbM96lZO_SuGXKHHQmrA8xV8-sWpV3FGt4RAkJQ6ALt8YIrNpGvrbaDMlV9JWc3n5_ZSdKqrIge3hDAvtSA7OtvwmqswTOMCtFNLw06xWgsCZPCDsAyAA9xfJy44TAEMHvsTqJkU');"></div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-xs">
+<span class="material-symbols-outlined text-[14px]">chat_bubble</span>
+<span>5</span>
+</div>
+<div class="flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-bold bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+<span>Overdue</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-white dark:bg-[#2d3748] p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-primary/50 cursor-grab active:cursor-grabbing group">
+<div class="flex justify-between items-start mb-2">
+<a class="text-xs font-bold text-slate-500 hover:underline" href="#">SMGK-1033</a>
+<span class="px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wide">Low</span>
+</div>
+<p class="text-sm text-slate-800 dark:text-slate-100 font-medium mb-3 leading-snug">Draft internal newsletter for Q4</p>
+<div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+<div class="w-6 h-6 rounded-full bg-cover bg-center" data-alt="Assignee avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB92-8Lwv4Y5WUsMTRfDHg2wKNjkNVhteJvWwXzmhXbBSlPqDqfci1GKLsBoGP1eWQvd0GX6sJH6-YZshUAyFbXUVOc-NSUsIxFwwMXRosTLdZZznFbNfJiySTQs8kikwlZTI6K9xG8jK72un6Udm220Z76iINbQkEOLsOUSNm4gNw4uoJ2RXgNltWsnznK7eZPNpkCJrc1lTmLmhDh-mVRH4DqPT6_2zD6zhHB_uAVB5mtTed9XWkwQJxbiAg8dNuzUdPCZ4nxXwMf');"></div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span>Tomorrow</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column 3: Done (Dev Complete) -->
+<div class="flex flex-col w-[320px] h-full rounded-xl bg-slate-100/80 dark:bg-[#1e2532] border border-slate-200/50 dark:border-slate-700/50">
+<div class="p-4 flex items-center justify-between shrink-0">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+<h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm uppercase tracking-wider">Done</h3>
+<span class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full text-xs font-bold">3</span>
+</div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto px-3 pb-3 custom-scrollbar flex flex-col gap-3">
+<!-- Card 5 -->
+<div class="bg-white dark:bg-[#2d3748] p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-primary/50 cursor-grab active:cursor-grabbing group">
+<div class="flex justify-between items-start mb-2">
+<a class="text-xs font-bold text-slate-500 hover:underline" href="#">SMGK-1020</a>
+<span class="px-2 py-0.5 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-[10px] font-bold uppercase tracking-wide">Medium</span>
+</div>
+<p class="text-sm text-slate-800 dark:text-slate-100 font-medium mb-3 leading-snug">Refactor checkout module CSS</p>
+<div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+<div class="w-6 h-6 rounded-full bg-cover bg-center" data-alt="Assignee avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAp1s1B7Fi4Mz72pV6SBe1VvEMKked3R7ql2Eu1VL563To9KnQseNMu0Vj1SQXOkVx6WWo2NEs8GQ-NQase53eYEkzWGtFDPvwGQODo7DCQXEQbofujuZwzUMGOu4X2BwIoD6jzokAUID7nC0Oc3l6No-qKLi7prW1U-f-ZGvV5FvfH9gc24L6NFG5IhYU0YOIx74AcBpFsCROlBIPz4Gp5GTR7pmn-t7o8ZA11fEgTJ1ukj8rXa1Ld_M2v49IQ3cdU2aXqxpcmmCgC');"></div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-xs">
+<span class="material-symbols-outlined text-[14px]">commit</span>
+<span>v2.4</span>
+</div>
+<div class="flex items-center gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>Oct 20</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="bg-white dark:bg-[#2d3748] p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-primary/50 cursor-grab active:cursor-grabbing group">
+<div class="flex justify-between items-start mb-2">
+<a class="text-xs font-bold text-slate-500 hover:underline" href="#">SMGK-1018</a>
+<span class="px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wide">Low</span>
+</div>
+<p class="text-sm text-slate-800 dark:text-slate-100 font-medium mb-3 leading-snug">Update Footer Links</p>
+<div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+<div class="w-6 h-6 rounded-full bg-cover bg-center" data-alt="Assignee avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBzQJE8NX3RNCyszzOA4P8MsmZRTR3bsYSsINWAO-IlldeISD948ZABuQE5xvapQW6WRVcVPf-OdbPOvDfVx25GsNYVx66UAvRCCM7ZEKyNxjU6WYQW9nplSRAXgtPnVfJ69Rg9C5wHU-Vti9fudhXfvy5yacRoEeyYjSOBS9EW4RWhNVfYHyqmCSjuGsBauI1q6NgyuRPDrI821n4-eVpnCCcimzl7U2zizNLiWy2LwGcNr0YDIQ4xNVrPb32oJcE97mnKSOazk98g');"></div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1 text-slate-500 dark:text-slate-400 text-xs font-medium">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>Oct 19</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column 4: Awaiting Acceptance -->
+<div class="flex flex-col w-[320px] h-full rounded-xl bg-slate-100/80 dark:bg-[#1e2532] border border-slate-200/50 dark:border-slate-700/50">
+<div class="p-4 flex items-center justify-between shrink-0">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
+<h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm uppercase tracking-wider">Awaiting Acceptance</h3>
+<span class="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded-full text-xs font-bold">1</span>
+</div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto px-3 pb-3 custom-scrollbar flex flex-col gap-3">
+<!-- Card 7 -->
+<div class="bg-white dark:bg-[#2d3748] p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-primary/50 cursor-grab active:cursor-grabbing group">
+<div class="flex justify-between items-start mb-2">
+<a class="text-xs font-bold text-slate-500 hover:underline" href="#">SMGK-1015</a>
+<span class="px-2 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] font-bold uppercase tracking-wide">High</span>
+</div>
+<p class="text-sm text-slate-800 dark:text-slate-100 font-medium mb-3 leading-snug">Implement New Payment Gateway Integration</p>
+<div class="flex flex-wrap gap-1 mb-3">
+<span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-[10px]">#finance</span>
+<span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-[10px]">#backend</span>
+</div>
+<div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+<div class="w-6 h-6 rounded-full bg-cover bg-center" data-alt="Assignee avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDUVd7oATM-aXqZg25xpHl6U-mMdPgpbcWsjt8dX04Um9Xnag2B0wpX-dW5f4CHgXUh8csZQ8k22kOr5iM7uVd_mMR77th3fHPw3ZeU3OqQr0UwuuZghZWaWuvb0JcPz-ZJxIpycbpyv0obOI2HpC3lD7dKPNNgry4Z91Gl4x_cBBh4o-s6RMbTfOvUAdbYqY-LrTbcxug8qf0A1K_1oce0UcTwJT32MopNhQ5wJ4fKPlLvP0KOSVSSOujqr2RkurcUD2W66K83sujf');"></div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1 text-purple-600 dark:text-purple-400 text-xs font-medium">
+<span class="material-symbols-outlined text-[14px]">verified_user</span>
+<span>QA Pending</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column 5: Completed -->
+<div class="flex flex-col w-[320px] h-full rounded-xl bg-slate-100/80 dark:bg-[#1e2532] border border-slate-200/50 dark:border-slate-700/50 opacity-75 hover:opacity-100 transition-opacity">
+<div class="p-4 flex items-center justify-between shrink-0">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+<h3 class="font-bold text-slate-700 dark:text-slate-200 text-sm uppercase tracking-wider">Completed</h3>
+<span class="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full text-xs font-bold">12</span>
+</div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto px-3 pb-3 custom-scrollbar flex flex-col gap-3">
+<!-- Card 8 -->
+<div class="bg-slate-50 dark:bg-[#252f3e] p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700/50 hover:border-primary/50 cursor-grab active:cursor-grabbing group">
+<div class="flex justify-between items-start mb-2">
+<a class="text-xs font-bold text-slate-400 line-through decoration-slate-400" href="#">SMGK-1001</a>
+<span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wide">Done</span>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400 font-medium mb-3 leading-snug line-through decoration-slate-400">Initial Project Setup</p>
+<div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+<div class="w-6 h-6 rounded-full bg-cover bg-center grayscale opacity-60" data-alt="Assignee avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBbfqW5t2bLLDdo3tKo6CIzTAmBamaSKvlryykbhZjC4t-lo9CO9r1bU69thyOr6A6btgHQ1yB4Uahf59sr3YbajAUrjKVhlsykeiH8Jalj0LUImUBHfhzalZf_ppFd3pBNttGnYPkpaFZk8_FZooRXS53n4BymMrNB-6gPSM57z1LV2W5R1c7Qo33-Rln8YKl5zzh6feY15oJnUamplSNaOTFsCaYHNOQdj4m5BXcj8bWU7fS81fPzEk4h-1istq-3hxDlR-nW3Rwe');"></div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1 text-slate-400 text-xs font-medium">
+<span class="material-symbols-outlined text-[14px]">event_available</span>
+<span>Oct 01</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

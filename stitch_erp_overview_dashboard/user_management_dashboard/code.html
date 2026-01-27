@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>User Management Dashboard</title>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2463eb",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #2463eb;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #2463eb;
+        }
+        .toggle-checkbox:checked + .toggle-label:before {
+            transform: translateX(100%);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-[#111318] dark:text-white overflow-hidden">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- Sidebar -->
+<aside class="hidden w-64 flex-col border-r border-[#e5e7eb] bg-white dark:bg-[#1a202c] md:flex">
+<!-- Brand -->
+<div class="flex h-16 items-center gap-3 border-b border-[#f0f1f4] px-6">
+<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white">
+<span class="material-symbols-outlined">grid_view</span>
+</div>
+<div class="flex flex-col">
+<h1 class="font-display text-base font-bold leading-none text-[#111318] dark:text-white">TechCorp</h1>
+<span class="text-xs text-[#616e89]">ERP System</span>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex-1 overflow-y-auto px-4 py-6">
+<div class="flex flex-col gap-1">
+<a class="group flex items-center gap-3 rounded-lg px-3 py-2 text-[#616e89] hover:bg-[#f0f1f4] hover:text-[#111318] dark:hover:bg-gray-800 dark:text-gray-400 dark:hover:text-white" href="#">
+<span class="material-symbols-outlined text-[24px]">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg px-3 py-2 text-[#616e89] hover:bg-[#f0f1f4] hover:text-[#111318] dark:hover:bg-gray-800 dark:text-gray-400 dark:hover:text-white" href="#">
+<span class="material-symbols-outlined text-[24px]">work</span>
+<span class="text-sm font-medium">Projects</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg px-3 py-2 text-[#616e89] hover:bg-[#f0f1f4] hover:text-[#111318] dark:hover:bg-gray-800 dark:text-gray-400 dark:hover:text-white" href="#">
+<span class="material-symbols-outlined text-[24px]">check_box</span>
+<span class="text-sm font-medium">Tasks</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg px-3 py-2 text-[#616e89] hover:bg-[#f0f1f4] hover:text-[#111318] dark:hover:bg-gray-800 dark:text-gray-400 dark:hover:text-white" href="#">
+<span class="material-symbols-outlined text-[24px]">payments</span>
+<span class="text-sm font-medium">Finances</span>
+</a>
+<div class="my-2 border-t border-[#f0f1f4] dark:border-gray-700"></div>
+<a class="group flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-2 text-primary" href="#">
+<span class="material-symbols-outlined filled text-[24px]">group</span>
+<span class="text-sm font-medium">User Management</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg px-3 py-2 text-[#616e89] hover:bg-[#f0f1f4] hover:text-[#111318] dark:hover:bg-gray-800 dark:text-gray-400 dark:hover:text-white" href="#">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</div>
+</nav>
+<!-- User Profile (Bottom Sidebar) -->
+<div class="border-t border-[#f0f1f4] p-4 dark:border-gray-700">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-10 w-10" data-alt="Current user avatar showing a smiling professional" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCIrJmsy3vD6xU33tRJBJ5ZIQWFZjXZ8ivvw9TalKUdQhXnis081y6p8CQ3e2nhK7LnHp9UkIwsw-3WJ6vJ2PI5RD_QrxTVVcbrMDo7JCudHIMKieAUx2c1K2dP4KOw_OUOCAdGFvZTh9Bvni8YqyR3AM2q8evgolba0GSxE9V3On2a9h8ewcPOeweoWIwJaMD1ujVkRmj3aX57s1UcAIE8t3D85-p6GDD5nxZrGu0E3I71FcffLpyHDz0WV9C2GeJqDnV7LJh4_kP-");'></div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-[#111318] dark:text-white">Jane Doe</span>
+<span class="text-xs text-[#616e89]">Super Admin</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex flex-1 flex-col overflow-hidden relative">
+<!-- Top Header -->
+<header class="flex h-16 items-center justify-between border-b border-[#f0f1f4] bg-white px-6 dark:bg-[#1a202c] dark:border-gray-700">
+<!-- Mobile Menu Button (Visible only on small screens) -->
+<button class="mr-4 text-[#616e89] md:hidden">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<!-- Search Bar -->
+<div class="flex max-w-md flex-1 items-center gap-2 rounded-lg bg-[#f0f1f4] px-3 py-2 dark:bg-gray-800">
+<span class="material-symbols-outlined text-[#616e89]">search</span>
+<input class="flex-1 bg-transparent text-sm text-[#111318] placeholder-[#616e89] focus:outline-none dark:text-white border-none p-0 focus:ring-0" placeholder="Search globally..." type="text"/>
+</div>
+<!-- Right Actions -->
+<div class="flex items-center gap-4 ml-4">
+<button class="relative text-[#616e89] hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute right-0 top-0 h-2 w-2 rounded-full bg-red-500"></span>
+</button>
+<button class="text-[#616e89] hover:text-primary transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</header>
+<!-- Page Content Scrollable Area -->
+<div class="flex-1 overflow-y-auto bg-background-light p-6 dark:bg-background-dark">
+<div class="mx-auto max-w-7xl">
+<!-- Page Header Section -->
+<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+<div>
+<h2 class="text-3xl font-bold tracking-tight text-[#111318] dark:text-white">Quản Lý Người Dùng</h2>
+<p class="mt-1 text-sm text-[#616e89] dark:text-gray-400">Manage user access, roles, and account statuses.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 rounded-lg border border-[#dbdee6] bg-white px-4 py-2 text-sm font-medium text-[#111318] hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:bg-gray-700 transition-colors">
+<span class="material-symbols-outlined text-[20px]">file_download</span>
+                                Export
+                            </button>
+<button class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-blue-600 transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                                Thêm Người Dùng
+                            </button>
+</div>
+</div>
+<!-- Filters Section -->
+<div class="mb-6 flex flex-wrap gap-4 rounded-xl bg-white p-4 shadow-sm border border-[#e5e7eb] dark:bg-[#1a202c] dark:border-gray-700">
+<div class="flex-1 min-w-[240px]">
+<label class="mb-1 block text-xs font-medium text-[#616e89]">Search Users</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#616e89] text-[20px]">search</span>
+<input class="w-full rounded-lg border border-[#dbdee6] bg-white py-2.5 pl-10 pr-4 text-sm text-[#111318] placeholder-[#616e89] focus:border-primary focus:ring-1 focus:ring-primary dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Name or email address..." type="text"/>
+</div>
+</div>
+<div class="w-full sm:w-[200px]">
+<label class="mb-1 block text-xs font-medium text-[#616e89]">Role</label>
+<div class="relative">
+<select class="w-full appearance-none rounded-lg border border-[#dbdee6] bg-white py-2.5 pl-4 pr-10 text-sm text-[#111318] focus:border-primary focus:ring-1 focus:ring-primary dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+<option>All Roles</option>
+<option>Admin</option>
+<option>Manager</option>
+<option>Staff</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#616e89] text-[20px]">expand_more</span>
+</div>
+</div>
+<div class="w-full sm:w-[200px]">
+<label class="mb-1 block text-xs font-medium text-[#616e89]">Status</label>
+<div class="relative">
+<select class="w-full appearance-none rounded-lg border border-[#dbdee6] bg-white py-2.5 pl-4 pr-10 text-sm text-[#111318] focus:border-primary focus:ring-1 focus:ring-primary dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+<option>Any Status</option>
+<option>Active</option>
+<option>Inactive</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#616e89] text-[20px]">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Table Section -->
+<div class="overflow-hidden rounded-xl border border-[#dbdee6] bg-white shadow-sm dark:bg-[#1a202c] dark:border-gray-700">
+<div class="overflow-x-auto">
+<table class="w-full min-w-[800px] text-left">
+<thead class="border-b border-[#e5e7eb] bg-gray-50/50 dark:bg-gray-800/50 dark:border-gray-700">
+<tr>
+<th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#616e89]">User</th>
+<th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#616e89]">Role</th>
+<th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#616e89]">Status</th>
+<th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#616e89]">Joined Date</th>
+<th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-[#616e89]">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#e5e7eb] dark:divide-gray-700">
+<!-- Row 1 -->
+<tr class="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-10 w-10 ring-2 ring-white dark:ring-gray-800 shadow-sm" data-alt="Portrait of Nguyen Van A" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBQcrXshuwilX90m75HR-gh6VyfbNDQkST3It0BN6PyqNzoFemGoQ7CZk2rb2HsmlQhME2ZNz2xH92TDhSPh4d-y5mo8Te29NvC-KatinAqoI_3uCy4Yj-qBFSAgsutelOQAlOv4l-z0DUq5uNj8mUSoXvmmvzXTHVlK1wbsTtuo437jyneJReNsNjlAeXd_QEFXZ3h0bfcYMGf5VNb7ayge3R216JxqJVBZgb0zjhXmdR0_uJPsbmA1N4yA75XmRfaTYSajizJroWJ");'></div>
+<div class="flex flex-col">
+<span class="font-bold text-[#111318] dark:text-white">Nguyen Van A</span>
+<span class="text-sm text-[#616e89]">nguyen.a@techcorp.com</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-md bg-purple-100 px-2.5 py-0.5 text-xs font-semibold text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                                                Admin
+                                            </span>
+</td>
+<td class="px-6 py-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+<span class="ml-3 text-sm font-medium text-[#111318] dark:text-white">Active</span>
+</label>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-[#111318] dark:text-gray-300">12/01/2023</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="rounded-lg p-2 text-[#616e89] hover:bg-[#f0f1f4] hover:text-primary dark:hover:bg-gray-700 transition-colors" title="Edit User">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="rounded-lg p-2 text-[#616e89] hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-colors" title="Delete User">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-10 w-10 ring-2 ring-white dark:ring-gray-800 shadow-sm" data-alt="Portrait of Le Thi B" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDS_ote4bK9CO4_8zQVFRCboiHmPE38WajLSMJu3-tzo2B_jk9Z9Xd1lX1NczyWEKkdeRtXLfwrUMt9U7GEQ_FQSz_7vaIjjMxlcmsFP5UV4gRMMlPeWuXjZ-kvpn2_N-dFbNY6JVVjQtTbipArTK6lWXPgmQ89ISEix9XdPD10QHPaV8Z50Ou3rE7PNLGUt-WapK1LV6EJaq5AiwHp_dzgeirjKEbMGituVHN5rvfCi-MbCBiSP8m3dulY2WimznsootReXyH__aMF");'></div>
+<div class="flex flex-col">
+<span class="font-bold text-[#111318] dark:text-white">Le Thi B</span>
+<span class="text-sm text-[#616e89]">le.b@techcorp.com</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-md bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                                Manager
+                                            </span>
+</td>
+<td class="px-6 py-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+<span class="ml-3 text-sm font-medium text-[#111318] dark:text-white">Active</span>
+</label>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-[#111318] dark:text-gray-300">15/02/2023</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="rounded-lg p-2 text-[#616e89] hover:bg-[#f0f1f4] hover:text-primary dark:hover:bg-gray-700 transition-colors">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="rounded-lg p-2 text-[#616e89] hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-colors">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-10 w-10 ring-2 ring-white dark:ring-gray-800 shadow-sm" data-alt="Portrait of Tran Van C" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBmIq8w9AWJQZ0Y1_pvBZdiHs2u_A-Bg5ILCzOCj6hlit89oGNi90mxm-FJJ58addwpwYYweB6ZPaM-QVofFSq0DRxtJ6SYRciIPwdl4rdv79js_jEHb8dMX9SqW8i-i6ZhFMmO6pMGVJY3Lmx5ZSi3O6Dk12h9iZh2-4xXDZERphepPbkgLrJLsA5H6Lhm9QhRi3G0ec9PorStKKXmZ2-ZG37qEr-MCMYAGVYEF3wUt-n6FgbxZSjuQX9TPxypOoj2ylV--UWMcBn0");'></div>
+<div class="flex flex-col">
+<span class="font-bold text-[#111318] dark:text-white">Tran Van C</span>
+<span class="text-sm text-[#616e89]">tran.c@techcorp.com</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                                                Staff
+                                            </span>
+</td>
+<td class="px-6 py-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+<span class="ml-3 text-sm font-medium text-[#616e89] dark:text-gray-400">Inactive</span>
+</label>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-[#111318] dark:text-gray-300">20/03/2023</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="rounded-lg p-2 text-[#616e89] hover:bg-[#f0f1f4] hover:text-primary dark:hover:bg-gray-700 transition-colors">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="rounded-lg p-2 text-[#616e89] hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-colors">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-10 w-10 ring-2 ring-white dark:ring-gray-800 shadow-sm" data-alt="Portrait of Sarah Jenkins" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAKGWLGR60rsqEewpKo-Azzde3F184-Yh2FVrVhrt191vtC_vv4RPbqUOW0P1lyJ97SZ2ZtQOLU2-_u-7kep5Gx6QEeQMBUDAneK3cnV8dEj0rfCNyJ4tRvs0k7E9OWjLjlyMBaV90XYDZy8DGm5uYxMdmQ4oERMs1W2Z3x_semsItTnMwooQgFNE61D3uTXi1xydFAQom8fdryPhckvKxUeoO4ZUH3VXaqRzMzPUN_Whe6NnMf5QN3NgSzUctnaI9ohnidkSk_S73J");'></div>
+<div class="flex flex-col">
+<span class="font-bold text-[#111318] dark:text-white">Sarah Jenkins</span>
+<span class="text-sm text-[#616e89]">sarah.j@techcorp.com</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                                                Staff
+                                            </span>
+</td>
+<td class="px-6 py-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+<span class="ml-3 text-sm font-medium text-[#111318] dark:text-white">Active</span>
+</label>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-[#111318] dark:text-gray-300">05/04/2023</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="rounded-lg p-2 text-[#616e89] hover:bg-[#f0f1f4] hover:text-primary dark:hover:bg-gray-700 transition-colors">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="rounded-lg p-2 text-[#616e89] hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-colors">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-10 w-10 ring-2 ring-white dark:ring-gray-800 shadow-sm" data-alt="Portrait of Michael Chen" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCzhS8bQVzbDVJIPfTorkIKI-0ap4hxlKyjH5nVdxXwG7aWTn7BRJBb0wuQTOtCRUUPpsb7uG8oO1xpIIXQlmqVPrhL-adblnOSjRNM2ZIPmbRy-f0LbXEZkxSKy9Ivb87xx7OjMQ7IZzZP3G24pgjxCvji-uzglzD6b0zT7hfIHFmz-BYAbwah9MeOsvGRjykcVWQ6zt9I_rEavzecugw671h5-KTRwoOGjb6Nmic0f9AtM9BIjolf-8-WFRGI8rYrrc41W42Rkc4o");'></div>
+<div class="flex flex-col">
+<span class="font-bold text-[#111318] dark:text-white">Michael Chen</span>
+<span class="text-sm text-[#616e89]">michael.c@techcorp.com</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-md bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                                Manager
+                                            </span>
+</td>
+<td class="px-6 py-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+<span class="ml-3 text-sm font-medium text-[#111318] dark:text-white">Active</span>
+</label>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-[#111318] dark:text-gray-300">10/05/2023</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="rounded-lg p-2 text-[#616e89] hover:bg-[#f0f1f4] hover:text-primary dark:hover:bg-gray-700 transition-colors">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="rounded-lg p-2 text-[#616e89] hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-colors">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="flex items-center justify-between border-t border-[#e5e7eb] px-6 py-4 dark:border-gray-700">
+<span class="text-sm text-[#616e89]">Showing <span class="font-medium text-[#111318] dark:text-white">1</span> to <span class="font-medium text-[#111318] dark:text-white">5</span> of <span class="font-medium text-[#111318] dark:text-white">128</span> results</span>
+<div class="flex items-center gap-2">
+<button class="rounded-lg border border-[#e5e7eb] p-2 text-[#616e89] hover:bg-[#f0f1f4] hover:text-[#111318] disabled:opacity-50 dark:border-gray-700 dark:hover:bg-gray-800 dark:hover:text-white" disabled="">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<button class="rounded-lg border border-[#e5e7eb] p-2 text-[#616e89] hover:bg-[#f0f1f4] hover:text-[#111318] dark:border-gray-700 dark:hover:bg-gray-800 dark:hover:text-white">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,57 @@
+import { api } from '../store/api';
+
+export const servicesApi = api.injectEndpoints({
+  endpoints: (builder) => ({
+    getServices: builder.query({
+      query: (params) => ({
+        url: '/services',
+        params,
+      }),
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: 'Services', id })),
+              { type: 'Services', id: 'LIST' },
+            ]
+          : [{ type: 'Services', id: 'LIST' }],
+    }),
+    getService: builder.query({
+      query: (id) => `/services/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Services', id }],
+    }),
+    createService: builder.mutation({
+      query: (data) => ({
+        url: '/services',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: [{ type: 'Services', id: 'LIST' }],
+    }),
+    updateService: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/services/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Services', id },
+        { type: 'Services', id: 'LIST' },
+      ],
+    }),
+    deleteService: builder.mutation({
+      query: (id) => ({
+        url: `/services/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: [{ type: 'Services', id: 'LIST' }],
+    }),
+  }),
+});
+
+export const {
+  useGetServicesQuery,
+  useGetServiceQuery,
+  useCreateServiceMutation,
+  useUpdateServiceMutation,
+  useDeleteServiceMutation,
+} = servicesApi;
