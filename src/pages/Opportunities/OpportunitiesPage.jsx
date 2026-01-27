@@ -6,21 +6,23 @@ import { KanbanCard } from '../../components/opportunities/KanbanCard';
 import { Button } from '../../components/ui/Button';
 import { Plus, LayoutGrid, List } from 'lucide-react';
 import { useGetOpportunitiesQuery, useUpdateOpportunityMutation } from '../../api/opportunities';
+import { OpportunityModal } from './OpportunityModal';
 
 const COLUMNS = [
-    { id: 'Open', title: 'Mới (Open)' },
-    { id: 'Pending', title: 'Đang Xử Lý' },
-    { id: 'Approved', title: 'Đã Duyệt' },
-    { id: 'Quotation', title: 'Báo Giá' },
-    { id: 'Quote', title: 'Đã Gửi BG' },
-    { id: 'Contract', title: 'Hợp Đồng' },
-    { id: 'Impl', title: 'Triển Khai' }
+    { id: 'OPEN', title: 'Mới' },
+    { id: 'PENDING', title: 'Đang Xử Lý' },
+    { id: 'APPROVED', title: 'Đã Duyệt' },
+    { id: 'QUOTATION', title: 'Báo Giá' },
+    { id: 'QUOTED', title: 'Đã Gửi BG' },
+    { id: 'CONTRACT', title: 'Hợp Đồng' },
+    { id: 'IMPLEMENTATION', title: 'Triển Khai' }
 ];
 
 export const OpportunitiesPage = () => {
     const { data: opportunitiesData, isLoading } = useGetOpportunitiesQuery();
     const [updateOpportunity] = useUpdateOpportunityMutation();
     const [activeId, setActiveId] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const opportunities = Array.isArray(opportunitiesData) ? opportunitiesData : (opportunitiesData?.data || []);
 
@@ -73,11 +75,18 @@ export const OpportunitiesPage = () => {
                         <button className="p-1.5 text-gray-500 hover:text-gray-700"><List className="h-4 w-4" /></button>
                     </div>
                 </div>
-                <Button>
+                <Button onClick={() => setIsModalOpen(true)}>
                     <Plus className="h-5 w-5 mr-2" />
                     Tạo Cơ Hội Mới
                 </Button>
             </div>
+
+            {/* Modal */}
+            <OpportunityModal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={() => setIsModalOpen(false)}
+            />
 
             {/* Filter Bar would go here */}
 

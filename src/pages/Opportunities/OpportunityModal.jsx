@@ -1,0 +1,640 @@
+import { useState } from 'react';
+import { X, Plus, Trash2, Upload, Link as LinkIcon, Building2, FileText, MapPin, Calendar, Target, TrendingUp, Clock, Briefcase } from 'lucide-react';
+import { useCreateOpportunityMutation } from '../../api/opportunities';
+import { useGetServicesQuery } from '../../api/services';
+import { formatNumber, parseNumber } from '../../utils/format';
+
+const FIELDS = [
+  { value: '', label: '-- Chọn lĩnh vực --' },
+  { value: 'CNTT', label: 'Công nghệ thông tin' },
+  { value: 'XayDung', label: 'Xây dựng' },
+  { value: 'SanXuat', label: 'Sản xuất' },
+  { value: 'ThuongMai', label: 'Thương mại' },
+  { value: 'DichVu', label: 'Dịch vụ' },
+  { value: 'GiaoDuc', label: 'Giáo dục' },
+  { value: 'YTe', label: 'Y tế' },
+  { value: 'Khac', label: 'Khác' },
+];
+
+const PRIORITIES = [
+  { value: 'Low', label: 'Thấp' },
+  { value: 'Medium', label: 'Trung bình' },
+  { value: 'High', label: 'Cao' },
+];
+
+const REGIONS = [
+  { value: 'NATIONAL', label: 'Toàn quốc' },
+  { value: 'NORTH', label: 'Miền Bắc' },
+  { value: 'CENTRAL', label: 'Miền Trung' },
+  { value: 'SOUTH', label: 'Miền Nam' },
+];
+
+export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
+  const [createOpportunity, { isLoading }] = useCreateOpportunityMutation();
+  const { data: servicesData } = useGetServicesQuery();
+  const services = Array.isArray(servicesData) ? servicesData : (servicesData?.data || []);
+
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    field: '',
+    expectedRevenue: 0,
+    budget: 0,
+    startDate: '',
+    endDate: '',
+    priority: 'Medium',
+    successChance: 0,
+    region: 'NATIONAL',
+    durationMonths: 0,
+    customerRequirements: '',
+  });
+
+  const [selectedServices, setSelectedServices] = useState([
+    { serviceId: '', quantity: 1 }
+  ]);
+
+  const [documentLinks, setDocumentLinks] = useState(['']);
+  const [files, setFiles] = useState([]);
+  const [errors, setErrors] = useState({});
+
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'number' ? Number(value) : value
+    }));
+  };
+
+  const handleNumberChange = (name, value) => {
+    const numValue = parseNumber(value);
+    setFormData(prev => ({
+      ...prev,
+      [name]: numValue
+    }));
+  };
+
+  const handleServiceChange = (index, field, value) => {
+    const updated = [...selectedServices];
+    updated[index][field] = field === 'quantity' ? Number(value) : value;
+    setSelectedServices(updated);
+  };
+
+  const addService = () => {
+    setSelectedServices([...selectedServices, { serviceId: '', quantity: 1 }]);
+  };
+
+  const removeService = (index) => {
+    if (selectedServices.length > 1) {
+      setSelectedServices(selectedServices.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleLinkChange = (index, value) => {
+    const updated = [...documentLinks];
+    updated[index] = value;
+    setDocumentLinks(updated);
+  };
+
+  const addLink = () => {
+    setDocumentLinks([...documentLinks, '']);
+  };
+
+  const removeLink = (index) => {
+    if (documentLinks.length > 1) {
+      setDocumentLinks(documentLinks.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    const totalSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
+    
+    if (selectedFiles.length > 5) {
+      setErrors(prev => ({ ...prev, files: 'Tối đa 5 file' }));
+      return;
+    }
+    
+    if (totalSize > 25 * 1024 * 1024) {
+      setErrors(prev => ({ ...prev, files: 'Tổng dung lượng không quá 25MB' }));
+      return;
+    }
+
+    setFiles(selectedFiles);
+    setErrors(prev => ({ ...prev, files: null }));
+  };
+
+  const calculateTotal = () => {
+    return selectedServices.reduce((total, item) => {
+      if (!item.serviceId) return total;
+      const service = services.find(s => String(s.id) === String(item.serviceId));
+      return total + (service?.costPrice || 0) * item.quantity;
+    }, 0);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'Vui lòng nhập tên';
+    if (!formData.field) newErrors.field = 'Vui lòng chọn lĩnh vực';
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    try {
+      // Build FormData for multipart/form-data submission
+      const submitFormData = new FormData();
+      
+      // Add basic fields
+      Object.keys(formData).forEach(key => {
+        if (formData[key] !== '' && formData[key] !== null && formData[key] !== undefined) {
+          submitFormData.append(key, formData[key]);
+        }
+      });
+
+      // Add services as JSON string
+      const validServices = selectedServices.filter(s => s.serviceId);
+      if (validServices.length > 0) {
+        submitFormData.append('services', JSON.stringify(validServices));
+      }
+
+      // Add document links as JSON string
+      const validLinks = documentLinks
+        .filter(l => l.trim())
+        .map(url => ({ type: 'LINK', name: url, url }));
+      if (validLinks.length > 0) {
+        submitFormData.append('links', JSON.stringify(validLinks));
+      }
+
+      // Add files
+      files.forEach(file => {
+        submitFormData.append('files', file);
+      });
+
+      await createOpportunity(submitFormData).unwrap();
+      onSuccess?.();
+      onClose();
+      
+      // Reset form
+      setFormData({
+        name: '',
+        description: '',
+        field: '',
+        expectedRevenue: 0,
+        budget: 0,
+        startDate: '',
+        endDate: '',
+        priority: 'Medium',
+        successChance: 0,
+        region: 'NATIONAL',
+        durationMonths: 0,
+        customerRequirements: '',
+      });
+      setSelectedServices([{ serviceId: '', quantity: 1 }]);
+      setDocumentLinks(['']);
+      setFiles([]);
+    } catch (err) {
+      setErrors({ submit: err?.data?.message || 'Có lỗi xảy ra' });
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex min-h-full items-center justify-center p-4">
+        {/* Backdrop */}
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+
+        {/* Modal */}
+        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+          {/* Header */}
+          <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 flex items-center justify-between z-10">
+            <div className="flex items-center gap-3">
+              <div>
+                <h2 className="text-xl font-bold text-white">Tạo Cơ Hội Mới</h2>
+                <p className="text-blue-100 text-sm">Điền thông tin chi tiết về cơ hội kinh doanh</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-all">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(90vh-88px)]">
+            <div className="p-6 space-y-8">
+              {errors.submit && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  {errors.submit}
+                </div>
+              )}
+
+              {/* Section: Thông tin cơ bản */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <Building2 className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-semibold text-gray-900">Thông tin cơ bản</h3>
+                </div>
+
+                {/* Tên doanh nghiệp */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tên cơ hội / Doanh nghiệp</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="VD: GETVINI"
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}
+                  />
+                  {errors.name && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.name}</p>}
+                </div>
+
+                {/* Mô tả */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Mô tả</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="Mô tả chi tiết về cơ hội..."
+                    maxLength={200}
+                    rows={4}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all resize-none"
+                  />
+                  <div className="flex justify-end mt-1">
+                    <span className={`text-xs ${formData.description.length > 180 ? 'text-orange-500' : 'text-gray-400'}`}>
+                      {formData.description.length}/200
+                    </span>
+                  </div>
+                </div>
+
+                {/* Lĩnh vực */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Lĩnh vực</label>
+                  <select
+                    name="field"
+                    value={formData.field}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none bg-white cursor-pointer ${errors.field ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}
+                  >
+                    {FIELDS.map(f => (
+                      <option key={f.value} value={f.value}>{f.label}</option>
+                    ))}
+                  </select>
+                  {errors.field && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.field}</p>}
+                </div>
+              </div>
+
+              {/* Section: Tài chính */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <TrendingUp className="w-5 h-5 text-green-600" />
+                  <h3 className="font-semibold text-gray-900">Thông tin tài chính</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100">
+                    <label className="block text-sm font-medium text-green-700 mb-2">Doanh thu kỳ vọng</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="expectedRevenue"
+                        value={formatNumber(formData.expectedRevenue)}
+                        onChange={(e) => handleNumberChange('expectedRevenue', e.target.value)}
+                        placeholder="0"
+                        className="w-full px-4 py-3 pr-16 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 bg-white transition-all"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-green-600 font-medium text-sm">VNĐ</span>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
+                    <label className="block text-sm font-medium text-blue-700 mb-2">Ngân sách dự kiến</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="budget"
+                        value={formatNumber(formData.budget)}
+                        onChange={(e) => handleNumberChange('budget', e.target.value)}
+                        placeholder="0"
+                        className="w-full px-4 py-3 pr-16 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 font-medium text-sm">VNĐ</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section: Thời gian & Địa điểm */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <Calendar className="w-5 h-5 text-purple-600" />
+                  <h3 className="font-semibold text-gray-900">Thời gian & Địa điểm</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến khởi công</label>
+                    <input
+                      type="date"
+                      name="startDate"
+                      value={formData.startDate}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến kết thúc</label>
+                    <input
+                      type="date"
+                      name="endDate"
+                      value={formData.endDate}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <MapPin className="w-4 h-4 inline mr-1" />
+                      Vùng miền triển khai
+                    </label>
+                    <select
+                      name="region"
+                      value={formData.region}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all appearance-none bg-white cursor-pointer"
+                    >
+                      {REGIONS.map(r => (
+                        <option key={r.value} value={r.value}>{r.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Clock className="w-4 h-4 inline mr-1" />
+                      Số tháng triển khai
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        name="durationMonths"
+                        value={formData.durationMonths}
+                        onChange={handleChange}
+                        min={0}
+                        className="w-full px-4 py-3 pr-20 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">Tháng</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section: Đánh giá */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <Target className="w-5 h-5 text-orange-600" />
+                  <h3 className="font-semibold text-gray-900">Đánh giá cơ hội</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Độ ưu tiên</label>
+                    <div className="flex gap-2">
+                      {PRIORITIES.map(p => (
+                        <button
+                          key={p.value}
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, priority: p.value }))}
+                          className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                            formData.priority === p.value
+                              ? p.value === 'High' ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
+                              : p.value === 'Medium' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
+                              : 'bg-green-500 text-white shadow-lg shadow-green-500/30'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Khả năng thành công</label>
+                    <div className="relative">
+                      <input
+                        type="range"
+                        name="successChance"
+                        value={formData.successChance}
+                        onChange={handleChange}
+                        min={0}
+                        max={100}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                      />
+                      <div className="flex justify-between mt-2">
+                        <span className="text-xs text-gray-400">0%</span>
+                        <span className={`text-lg font-bold ${
+                          formData.successChance >= 70 ? 'text-green-600' 
+                          : formData.successChance >= 40 ? 'text-orange-500' 
+                          : 'text-red-500'
+                        }`}>
+                          {formData.successChance}%
+                        </span>
+                        <span className="text-xs text-gray-400">100%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section: Dịch vụ */}
+              <div className="space-y-5">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-indigo-600" />
+                    <h3 className="font-semibold text-gray-900">Dịch vụ đề xuất</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addService}
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-all"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Thêm dịch vụ
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  {selectedServices.map((item, index) => {
+                    // Filter out already selected services (except current selection)
+                    const selectedIds = selectedServices
+                      .filter((_, i) => i !== index)
+                      .map(s => String(s.serviceId))
+                      .filter(id => id);
+                    const availableServices = services.filter(s => !selectedIds.includes(String(s.id)));
+                    
+                    return (
+                      <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <select
+                          value={item.serviceId}
+                          onChange={(e) => handleServiceChange(index, 'serviceId', e.target.value)}
+                          className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all"
+                        >
+                          <option value="">-- Chọn dịch vụ --</option>
+                          {availableServices.map(s => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => handleServiceChange(index, 'quantity', e.target.value)}
+                          min={1}
+                          className="w-20 px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-center transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeService(index)}
+                          className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Total */}
+                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4 rounded-xl text-white">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Tổng giá trị dịch vụ:</span>
+                    <span className="text-2xl font-bold">{calculateTotal().toLocaleString('vi-VN')} VNĐ</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section: Yêu cầu & Tài liệu */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <FileText className="w-5 h-5 text-cyan-600" />
+                  <h3 className="font-semibold text-gray-900">Yêu cầu & Tài liệu</h3>
+                </div>
+
+                {/* Mô tả yêu cầu khách hàng */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Mô tả yêu cầu khách hàng</label>
+                  <textarea
+                    name="customerRequirements"
+                    value={formData.customerRequirements}
+                    onChange={handleChange}
+                    placeholder="Chi tiết yêu cầu từ khách hàng..."
+                    rows={3}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all resize-none"
+                  />
+                </div>
+
+                {/* Link tài liệu */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Link tài liệu tham khảo</label>
+                  <div className="space-y-3">
+                    {documentLinks.map((link, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <div className="flex-1 relative">
+                          <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="url"
+                            value={link}
+                            onChange={(e) => handleLinkChange(index, e.target.value)}
+                            placeholder="https://drive.google.com/..."
+                            className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all"
+                          />
+                        </div>
+                        {documentLinks.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeLink(index)}
+                            className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addLink}
+                    className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-all"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Thêm link
+                  </button>
+                </div>
+
+                {/* Tệp đính kèm */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tệp đính kèm</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer">
+                    <label className="cursor-pointer">
+                      <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600 font-medium">Kéo thả file hoặc click để chọn</p>
+                      <p className="text-xs text-gray-400 mt-1">Tối đa 5 file, tổng dung lượng 25MB</p>
+                      <p className="text-xs text-gray-400">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG</p>
+                      <input
+                        type="file"
+                        multiple
+                        onChange={handleFileChange}
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                      />
+                    </label>
+                  </div>
+                  {files.length > 0 && (
+                    <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <p className="text-sm text-green-700 font-medium">
+                        ✓ {files.length} file đã chọn
+                      </p>
+                    </div>
+                  )}
+                  {errors.files && <p className="mt-2 text-sm text-red-500">{errors.files}</p>}
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 rounded-xl transition-all"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex-[2] bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Đang tạo...
+                  </span>
+                ) : 'Tạo cơ hội'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default OpportunityModal;

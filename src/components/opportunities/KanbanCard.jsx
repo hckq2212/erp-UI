@@ -1,9 +1,12 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useNavigate } from 'react-router-dom';
 import { Briefcase, DollarSign, User, Calendar } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { formatNumber } from '../../utils/format';
 
 export const KanbanCard = ({ opportunity }) => {
+  const navigate = useNavigate();
   const {
     attributes,
     listeners,
@@ -19,15 +22,27 @@ export const KanbanCard = ({ opportunity }) => {
   };
 
   const priorityColors = {
-    Cao: 'border-l-red-500',
-    Trung: 'border-l-yellow-500',
-    Thấp: 'border-l-green-500',
+    High: 'border-l-red-500',
+    Medium: 'border-l-yellow-500',
+    Low: 'border-l-green-500',
   };
 
   const badgeColors = {
-    Cao: 'bg-red-100 text-red-800',
-    Trung: 'bg-yellow-100 text-yellow-800',
-    Thấp: 'bg-green-100 text-green-800',
+    High: 'bg-red-100 text-red-800',
+    Medium: 'bg-yellow-100 text-yellow-800',
+    Low: 'bg-green-100 text-green-800',
+  };
+
+  const priorityLabels = {
+    High: 'Cao',
+    Medium: 'Trung bình',
+    Low: 'Thấp',
+  };
+
+  const handleClick = (e) => {
+    // Prevent navigation when dragging
+    if (isDragging) return;
+    navigate(`/opportunities/${opportunity.id}`);
   };
 
   return (
@@ -36,16 +51,17 @@ export const KanbanCard = ({ opportunity }) => {
       style={style}
       {...attributes}
       {...listeners}
+      onClick={handleClick}
       className={cn(
-        "bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-grab hover:shadow-md transition-all mb-3 border-l-4",
+        "bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-all mb-3 border-l-4",
         priorityColors[opportunity.priority] || 'border-l-gray-300',
-        isDragging && "opacity-50"
+        isDragging && "opacity-50 cursor-grabbing"
       )}
     >
       <div className="flex justify-between items-start mb-2">
-        <span className="text-xs font-mono text-gray-500">{opportunity.code}</span>
+        <span className="text-xs font-mono text-gray-500">{opportunity.opportunityCode}</span>
         <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", badgeColors[opportunity.priority] || 'bg-gray-100')}>
-            {opportunity.priority}
+            {priorityLabels[opportunity.priority] || opportunity.priority}
         </span>
       </div>
       
@@ -54,15 +70,15 @@ export const KanbanCard = ({ opportunity }) => {
       <div className="space-y-1 text-xs text-gray-600 mb-3">
         <div className="flex items-center">
             <User className="h-3 w-3 mr-1.5 text-gray-400" />
-            <span className="truncate">{opportunity.customerName}</span>
+            <span className="truncate">{opportunity.customer?.name || opportunity.leadName || 'Chưa có KH'}</span>
         </div>
         <div className="flex items-center">
             <DollarSign className="h-3 w-3 mr-1.5 text-gray-400" />
-            <span className="font-medium text-blue-600">{opportunity.expectedRevenue}</span>
+            <span className="font-medium text-blue-600">{formatNumber(opportunity.expectedRevenue)} VNĐ</span>
         </div>
          <div className="flex items-center">
             <Calendar className="h-3 w-3 mr-1.5 text-gray-400" />
-            <span>{opportunity.expectedCloseDate}</span>
+            <span>{opportunity.endDate ? new Date(opportunity.endDate).toLocaleDateString('vi-VN') : 'Chưa xác định'}</span>
         </div>
       </div>
 
