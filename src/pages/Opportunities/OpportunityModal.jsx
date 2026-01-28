@@ -155,8 +155,13 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
         }
       });
 
-      // Add services as JSON string
-      const validServices = selectedServices.filter(s => s.serviceId);
+      // Add services as JSON string - transform serviceId to id
+      const validServices = selectedServices
+        .filter(s => s.serviceId)
+        .map(s => ({ 
+          id: parseInt(s.serviceId), 
+          quantity: s.quantity
+        }));
       if (validServices.length > 0) {
         submitFormData.append('services', JSON.stringify(validServices));
       }

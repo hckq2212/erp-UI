@@ -4,7 +4,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
 import { CustomersPage } from './pages/Customers/CustomersPage';
 import { OpportunitiesPage } from './pages/Opportunities/OpportunitiesPage';
-import { OpportunityDetailPage } from './pages/Opportunities/OpportunityDetailPage';
+import { OpportunityDetailPage } from './pages/Opportunities/OpportunityDetailPage/OpportunityDetailPage';
 import { QuotationsPage } from './pages/Quotations/QuotationsPage';
 import { ContractsPage } from './pages/Contracts/ContractsPage';
 import { ProjectsPage } from './pages/Projects/ProjectsPage';

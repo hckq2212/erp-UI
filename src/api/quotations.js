@@ -19,6 +19,16 @@ export const quotationsApi = api.injectEndpoints({
       query: (id) => `/quotations/${id}`,
       providesTags: (result, error, id) => [{ type: 'Quotations', id }],
     }),
+    getQuotationsByOpportunity: builder.query({
+      query: (opportunityId) => `/quotations/opportunity/${opportunityId}`,
+      providesTags: (result, error, opportunityId) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: 'Quotations', id })),
+              { type: 'Quotations', id: `OPPORTUNITY_${opportunityId}` },
+            ]
+          : [{ type: 'Quotations', id: `OPPORTUNITY_${opportunityId}` }],
+    }),
     createQuotation: builder.mutation({
       query: (data) => ({
         url: '/quotations',
@@ -38,6 +48,26 @@ export const quotationsApi = api.injectEndpoints({
         { type: 'Quotations', id: 'LIST' },
       ],
     }),
+    approveQuotation: builder.mutation({
+      query: (id) => ({
+        url: `/quotations/${id}/approve`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Quotations', id },
+        { type: 'Quotations', id: 'LIST' },
+      ],
+    }),
+    rejectQuotation: builder.mutation({
+      query: (id) => ({
+        url: `/quotations/${id}/reject`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Quotations', id },
+        { type: 'Quotations', id: 'LIST' },
+      ],
+    }),
     deleteQuotation: builder.mutation({
       query: (id) => ({
         url: `/quotations/${id}`,
@@ -45,36 +75,16 @@ export const quotationsApi = api.injectEndpoints({
       }),
       invalidatesTags: [{ type: 'Quotations', id: 'LIST' }],
     }),
-    updateQuotationStatus: builder.mutation({
-      query: ({ id, status }) => ({
-        url: `/quotations/${id}/status`,
-        method: 'PATCH',
-        body: { status },
-      }),
-      invalidatesTags: (result, error, { id }) => [
-        { type: 'Quotations', id },
-        { type: 'Quotations', id: 'LIST' },
-      ],
-    }),
-    convertToContract: builder.mutation({
-      query: (id) => ({
-        url: `/quotations/${id}/convert`,
-        method: 'POST',
-      }),
-      invalidatesTags: [
-        { type: 'Quotations', id: 'LIST' },
-        { type: 'Contracts', id: 'LIST' },
-      ],
-    }),
   }),
 });
 
 export const {
   useGetQuotationsQuery,
   useGetQuotationQuery,
+  useGetQuotationsByOpportunityQuery,
   useCreateQuotationMutation,
   useUpdateQuotationMutation,
+  useApproveQuotationMutation,
+  useRejectQuotationMutation,
   useDeleteQuotationMutation,
-  useUpdateQuotationStatusMutation,
-  useConvertToContractMutation,
 } = quotationsApi;
