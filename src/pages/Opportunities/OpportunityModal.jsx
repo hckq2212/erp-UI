@@ -136,8 +136,20 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     
     // Validate
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'Vui lòng nhập tên';
+    if (!formData.name.trim()) newErrors.name = 'Vui lòng nhập tên cơ hội';
+    if (!formData.description.trim()) newErrors.description = 'Vui lòng nhập mô tả';
     if (!formData.field) newErrors.field = 'Vui lòng chọn lĩnh vực';
+    if (!formData.expectedRevenue || formData.expectedRevenue <= 0) newErrors.expectedRevenue = 'Vui lòng nhập doanh thu kỳ vọng';
+    if (!formData.budget || formData.budget <= 0) newErrors.budget = 'Vui lòng nhập ngân sách dự kiến';
+    if (!formData.startDate) newErrors.startDate = 'Vui lòng chọn ngày khởi công';
+    if (!formData.endDate) newErrors.endDate = 'Vui lòng chọn ngày kết thúc';
+    if (formData.successChance <= 0) newErrors.successChance = 'Khả năng thành công phải lớn hơn 0%';
+    if (!formData.durationMonths || formData.durationMonths <= 0) newErrors.durationMonths = 'Vui lòng nhập số tháng triển khai';
+    
+    // Validate end date after start date
+    if (formData.startDate && formData.endDate && formData.endDate <= formData.startDate) {
+      newErrors.endDate = 'Ngày kết thúc phải sau ngày khởi công';
+    }
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -270,10 +282,11 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                     placeholder="Mô tả chi tiết về cơ hội..."
                     maxLength={200}
                     rows={4}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all resize-none"
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all resize-none ${errors.description ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                   />
-                  <div className="flex justify-end mt-1">
-                    <span className={`text-xs ${formData.description.length > 180 ? 'text-orange-500' : 'text-gray-400'}`}>
+                  <div className="flex justify-between items-center mt-1">
+                    {errors.description && <p className="text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.description}</p>}
+                    <span className={`text-xs ml-auto ${formData.description.length > 180 ? 'text-orange-500' : 'text-gray-400'}`}>
                       {formData.description.length}/200
                     </span>
                   </div>
@@ -304,7 +317,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100">
+                  <div className={`bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border ${errors.expectedRevenue ? 'border-red-400' : 'border-green-100'}`}>
                     <label className="block text-sm font-medium text-green-700 mb-2">Doanh thu kỳ vọng</label>
                     <div className="relative">
                       <input
@@ -313,12 +326,14 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                         value={formatNumber(formData.expectedRevenue)}
                         onChange={(e) => handleNumberChange('expectedRevenue', e.target.value)}
                         placeholder="0"
-                        className="w-full px-4 py-3 pr-16 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 bg-white transition-all"
+                        className={`w-full px-4 py-3 pr-16 border-2 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 bg-white transition-all ${errors.expectedRevenue ? 'border-red-400' : 'border-green-200'}`}
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-green-600 font-medium text-sm">VNĐ</span>
                     </div>
+                    {errors.expectedRevenue && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.expectedRevenue}</p>}
                   </div>
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
+
+                  <div className={`bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border ${errors.budget ? 'border-red-400' : 'border-blue-100'}`}>
                     <label className="block text-sm font-medium text-blue-700 mb-2">Ngân sách dự kiến</label>
                     <div className="relative">
                       <input
@@ -327,10 +342,11 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                         value={formatNumber(formData.budget)}
                         onChange={(e) => handleNumberChange('budget', e.target.value)}
                         placeholder="0"
-                        className="w-full px-4 py-3 pr-16 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all"
+                        className={`w-full px-4 py-3 pr-16 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all ${errors.budget ? 'border-red-400' : 'border-blue-200'}`}
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 font-medium text-sm">VNĐ</span>
                     </div>
+                    {errors.budget && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.budget}</p>}
                   </div>
                 </div>
               </div>
@@ -350,8 +366,9 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                       name="startDate"
                       value={formData.startDate}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all"
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all ${errors.startDate ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                     />
+                    {errors.startDate && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.startDate}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến kết thúc</label>
@@ -360,12 +377,12 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                       name="endDate"
                       value={formData.endDate}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all"
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all ${errors.endDate ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                     />
+                    {errors.endDate && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.endDate}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <MapPin className="w-4 h-4 inline mr-1" />
                       Vùng miền triển khai
                     </label>
                     <select
@@ -381,7 +398,6 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Clock className="w-4 h-4 inline mr-1" />
                       Số tháng triển khai
                     </label>
                     <div className="relative">
@@ -391,10 +407,11 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                         value={formData.durationMonths}
                         onChange={handleChange}
                         min={0}
-                        className="w-full px-4 py-3 pr-20 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all"
+                        className={`w-full px-4 py-3 pr-20 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all ${errors.durationMonths ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">Tháng</span>
                     </div>
+                    {errors.durationMonths && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.durationMonths}</p>}
                   </div>
                 </div>
               </div>
@@ -449,6 +466,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                         }`}>
                           {formData.successChance}%
                         </span>
+                    {errors.successChance && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.successChance}</p>}
                         <span className="text-xs text-gray-400">100%</span>
                       </div>
                     </div>

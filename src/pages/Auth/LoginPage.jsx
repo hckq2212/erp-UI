@@ -25,7 +25,7 @@ export const LoginPage = () => {
 
     try {
       const result = await login({ username, password }).unwrap();
-      dispatch(setCredentials({ user: result.user, token: result.token }));
+      dispatch(setCredentials({ user: result.user, accessToken: result.accessToken, refreshToken: result.refreshToken }));
       navigate(from, { replace: true });
     } catch (err) {
       setError(err?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.');

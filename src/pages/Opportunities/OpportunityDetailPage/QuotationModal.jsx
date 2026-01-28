@@ -4,17 +4,18 @@ import { formatNumber, parseNumber } from '../../../utils/format';
 import { useGetOpportunityServicesByOpportunityQuery } from '../../../api/opportunityService';
 import { useGetServicesQuery } from '../../../api/services';
 
-export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit }) => {
+export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuotation = null }) => {
   const [items, setItems] = useState([]);
   const [priceType, setPriceType] = useState('recommended'); // minimum, recommended, custom
   const [notes, setNotes] = useState('');
   const [showAddService, setShowAddService] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState('');
+  const isEditMode = !!editQuotation;
 
-  // Fetch opportunity services using RTK Query
+  // Fetch opportunity services using RTK Query (only for create mode)
   const { data: servicesData, isLoading } = useGetOpportunityServicesByOpportunityQuery(
     opportunity?.id,
-    { skip: !isOpen || !opportunity?.id }
+    { skip: !isOpen || !opportunity?.id || isEditMode }
   );
   
   // Fetch all available services
@@ -23,8 +24,36 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit }) => {
     { skip: !isOpen }
   );
 
+  // Load data for edit mode
   useEffect(() => {
-    if (isOpen && servicesData) {
+    if (isOpen && isEditMode && editQuotation) {
+      setNotes(editQuotation.note || '');
+      const loadedItems = editQuotation.details?.map(detail => {
+        const costPrice = parseFloat(detail.costAtSale) || 0;
+        const sellingPrice = parseFloat(detail.sellingPrice) || 0;
+        const minPrice = costPrice * 1.2;
+        const recommendedPrice = costPrice * 1.4;
+        
+        return {
+          serviceId: detail.service?.id || detail.serviceId,
+          serviceName: detail.service?.name || 'Unknown Service',
+          quantity: detail.quantity || 1,
+          costPrice: costPrice,
+          minPrice: minPrice,
+          recommendedPrice: recommendedPrice,
+          customPrice: sellingPrice,
+          selectedPrice: sellingPrice,
+          profitMargin: calculateProfitMargin(sellingPrice, costPrice)
+        };
+      }) || [];
+      setItems(loadedItems);
+      setPriceType('custom'); // Default to custom for edit mode
+    }
+  }, [isOpen, isEditMode, editQuotation]);
+
+  // Load data for create mode
+  useEffect(() => {
+    if (isOpen && !isEditMode && servicesData) {
       const initialItems = servicesData.map(service => {
         const costPrice = parseFloat(service.service?.costPrice || service.costPrice) || 0;
         const minPrice = costPrice * 1.2; // 20% profit
@@ -43,8 +72,10 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit }) => {
         };
       });
       setItems(initialItems);
+      setNotes('');
+      setPriceType('recommended');
     }
-  }, [isOpen, servicesData]);
+  }, [isOpen, isEditMode, servicesData]);
 
   const calculateProfitMargin = (sellingPrice, costPrice) => {
     if (sellingPrice === 0) return 0;
@@ -151,18 +182,21 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit }) => {
     : 0;
 
   const handleSubmit = () => {
-    onSubmit({
-      items: items.map(item => ({
+    const submitData = {
+      note: notes,
+      details: items.map(item => ({
         serviceId: item.serviceId,
         quantity: item.quantity,
-        unitPrice: item.selectedPrice,
-        costPrice: item.costPrice
-      })),
-      notes,
-      totalRevenue: totals.revenue,
-      totalCost: totals.cost,
-      profitMargin: overallProfitMargin
-    });
+        sellingPrice: item.selectedPrice,
+        costAtSale: item.costPrice
+      }))
+    };
+    
+    if (isEditMode) {
+      onSubmit(submitData, editQuotation.id);
+    } else {
+      onSubmit(submitData);
+    }
   };
 
   if (!isOpen) return null;
@@ -173,7 +207,9 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit }) => {
         <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Báo giá {opportunity?.name}</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {isEditMode ? 'Chỉnh sửa báo giá' : `Báo giá ${opportunity?.name}`}
+            </h3>
           </div>
           <button
             onClick={onClose}
@@ -220,7 +256,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit }) => {
                     <td className="px-4 py-3">
                       <input
                         type="number"
-                        min="1"
+                        min="0"
                         value={item.quantity}
                         onChange={(e) => handleQuantityChange(index, e.target.value)}
                         className="w-20 px-2 py-1 text-center border border-gray-300 rounded text-sm"
@@ -388,9 +424,10 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit }) => {
           <div className="flex gap-3 pt-6 border-t border-gray-100">
             <button
               onClick={handleSubmit}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              disabled={items.length === 0}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Báo giá
+              {isEditMode ? 'Cập nhật' : 'Tạo báo giá'}
             </button>
             <button
               onClick={onClose}

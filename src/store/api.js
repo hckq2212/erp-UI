@@ -8,9 +8,10 @@ export const api = createApi({
     baseUrl: BASE_URL,
     prepareHeaders: (headers, { getState }) => {
       // Get token from localStorage or state
-      const token = localStorage.getItem('token');
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
+      const accessToken = localStorage.getItem('accessToken');
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (accessToken) {
+        headers.set('Authorization', `Bearer ${accessToken}`);
       }
       return headers;
     },

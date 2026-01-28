@@ -1,15 +1,21 @@
+import { useState } from 'react';
 import { FileText, X, Plus, ExternalLink, Clock } from 'lucide-react';
 import { formatNumber } from '../../../utils/format';
+import { QuotationDetailModal } from './QuotationDetailModal';
+import { useCreateQuotationMutation } from '../../../api/quotations';
 
 export const QuotationsListModal = ({ 
   isOpen, 
   onClose, 
   quotations, 
   isLoading, 
-  onNavigate, 
   onCreateNew,
+  onEditQuotation,
+  opportunity,
   formatDate 
 }) => {
+  const [selectedQuotationId, setSelectedQuotationId] = useState(null);
+  
   if (!isOpen) return null;
 
   return (
@@ -55,14 +61,11 @@ export const QuotationsListModal = ({
                 <div
                   key={quotation.id}
                   className="p-4 border border-gray-200 rounded-xl hover:border-purple-300 hover:shadow-sm transition-all cursor-pointer"
-                  onClick={() => onNavigate(`/quotations/${quotation.id}`)}
+                  onClick={() => setSelectedQuotationId(quotation.id)}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                          {quotation.quotationCode || `QT-${quotation.id}`}
-                        </span>
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                           quotation.status === 'DRAFT' ? 'bg-gray-100 text-gray-700' :
                           quotation.status === 'SENT' ? 'bg-blue-100 text-blue-700' :
@@ -77,7 +80,7 @@ export const QuotationsListModal = ({
                            quotation.status}
                         </span>
                       </div>
-                      <h4 className="font-medium text-gray-900">{quotation.title || 'Báo giá'}</h4>
+                      <h4 className="font-medium text-gray-900"> Báo giá lần { quotation.version } </h4>
                     </div>
                     <ExternalLink className="w-4 h-4 text-gray-400" />
                   </div>
@@ -130,6 +133,19 @@ export const QuotationsListModal = ({
           </button>
         </div>
       </div>
+      
+      {/* Detail Modal */}
+      <QuotationDetailModal
+        quotationId={selectedQuotationId}
+        isOpen={!!selectedQuotationId}
+        onClose={() => setSelectedQuotationId(null)}
+        onEdit={(quotation) => {
+          setSelectedQuotationId(null);
+          onEditQuotation(quotation);
+        }}
+        opportunity={opportunity}
+        formatDate={formatDate}
+      />
     </div>
   );
 };

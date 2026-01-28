@@ -4,12 +4,10 @@ import {
   ArrowLeft,
   Edit,
   Trash2,
-  DollarSign,
-  FileText
 } from 'lucide-react';
 import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation } from '../../../api/opportunities';
 import { useGetCustomersQuery } from '../../../api/customers';
-import { useGetQuotationsByOpportunityQuery, useCreateQuotationMutation } from '../../../api/quotations';
+import { useGetQuotationsByOpportunityQuery, useCreateQuotationMutation, useUpdateQuotationMutation } from '../../../api/quotations';
 import { QuotationModal } from './QuotationModal';
 import { toast } from 'react-toastify';
 import { FinancialInfo } from './FinancialInfo';
@@ -60,11 +58,13 @@ export const OpportunityDetailPage = () => {
   const [deleteOpportunity, { isLoading: isDeleting }] = useDeleteOpportunityMutation();
   const [updateOpportunity, { isLoading: isUpdating }] = useUpdateOpportunityMutation();
   const [createQuotation] = useCreateQuotationMutation();
+  const [updateQuotation] = useUpdateQuotationMutation();
 
   // Modal state
   const [showContactModal, setShowContactModal] = useState(false);
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [showQuotationsListModal, setShowQuotationsListModal] = useState(false);
+  const [editingQuotation, setEditingQuotation] = useState(null);
   const [customerType, setCustomerType] = useState('DIRECT');
   const [customerStatus, setCustomerStatus] = useState('');
   const [selectedReferralPartner, setSelectedReferralPartner] = useState('');
@@ -151,17 +151,41 @@ export const OpportunityDetailPage = () => {
     }
   };
 
-  const handleQuotationSubmit = async (quotationData) => {
+  const handleQuotationSubmit = async (quotationData, quotationId) => {
     try {
-      await createQuotation({
-        opportunityId: id,
-        note: quotationData.note || ''
-      }).unwrap();
-      toast.success('Tạo báo giá thành công');
+      if (quotationId) {
+        // Update existing quotation
+        await updateQuotation({
+          id: quotationId,
+          ...quotationData
+        }).unwrap();
+        toast.success('Cập nhật báo giá thành công');
+      } else {
+        // Create new quotation then update with details
+        const createResponse = await createQuotation({
+          opportunityId: id,
+          note: quotationData.note || ''
+        }).unwrap();
+        
+        // Update with details immediately after creation
+        await updateQuotation({
+          id: createResponse.id,
+          ...quotationData
+        }).unwrap();
+        
+        toast.success('Tạo báo giá thành công');
+      }
       setShowQuotationModal(false);
+      setEditingQuotation(null);
     } catch (err) {
-      toast.error(err?.data?.message || 'Có lỗi xảy ra khi tạo báo giá');
+      toast.error(err?.data?.message || `Có lỗi xảy ra khi ${quotationId ? 'cập nhật' : 'tạo'} báo giá`);
     }
+  };
+
+  const handleEditQuotation = (quotation) => {
+    setEditingQuotation(quotation);
+    setShowQuotationsListModal(false);
+    setShowQuotationModal(true);
   };
 
   const formatDate = (dateString) => {
@@ -228,14 +252,12 @@ export const OpportunityDetailPage = () => {
               onClick={() => setShowQuotationsListModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
-              <FileText className="w-4 h-4" />
               Xem báo giá {quotations.length > 0 && `(${quotations.length})`}
             </button>
             <button
               onClick={() => setShowQuotationModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
-              <DollarSign className="w-4 h-4" />
               Tạo báo giá
             </button>
             <button
@@ -260,7 +282,7 @@ export const OpportunityDetailPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          <FinancialInfo opportunity={opportunity} />
+          <FinancialInfo opportunity={opportunity} formatDate={formatDate} />
           <TimeLocationInfo opportunity={opportunity} formatDate={formatDate} />
           <OpportunityEvaluation opportunity={opportunity} />
           <AttachmentsList attachments={opportunity.attachments} />
@@ -277,8 +299,12 @@ export const OpportunityDetailPage = () => {
       <QuotationModal
         opportunity={opportunity}
         isOpen={showQuotationModal}
-        onClose={() => setShowQuotationModal(false)}
+        onClose={() => {
+          setShowQuotationModal(false);
+          setEditingQuotation(null);
+        }}
         onSubmit={handleQuotationSubmit}
+        editQuotation={editingQuotation}
       />
 
       <CustomerModal
@@ -305,8 +331,9 @@ export const OpportunityDetailPage = () => {
         onClose={() => setShowQuotationsListModal(false)}
         quotations={quotations}
         isLoading={isLoadingQuotations}
-        onNavigate={navigate}
         onCreateNew={() => setShowQuotationModal(true)}
+        onEditQuotation={handleEditQuotation}
+        opportunity={opportunity}
         formatDate={formatDate}
       />
     </div>
