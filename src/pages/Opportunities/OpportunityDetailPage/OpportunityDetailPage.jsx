@@ -19,38 +19,12 @@ import { CustomerInfo } from './CustomerInfo';
 import { AdditionalInfo } from './AdditionalInfo';
 import { QuotationsListModal } from './QuotationsListModal';
 import { CustomerModal } from './CustomerModal';
-
-const PRIORITY_LABELS = {
-  Low: 'Thấp',
-  Medium: 'Trung bình',
-  High: 'Cao'
-};
-
-const PRIORITY_COLORS = {
-  Low: 'bg-green-100 text-green-800 border-green-200',
-  Medium: 'bg-orange-100 text-orange-800 border-orange-200',
-  High: 'bg-red-100 text-red-800 border-red-200'
-};
-
-const STATUS_LABELS = {
-  OPEN: 'Mới',
-  PENDING: 'Đang Xử Lý',
-  APPROVED: 'Đã Duyệt',
-  QUOTATION: 'Báo Giá',
-  QUOTED: 'Đã Gửi BG',
-  CONTRACT: 'Hợp Đồng',
-  IMPLEMENTATION: 'Triển Khai'
-};
-
-const STATUS_COLORS = {
-  OPEN: 'bg-blue-100 text-blue-800',
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  APPROVED: 'bg-green-100 text-green-800',
-  QUOTATION: 'bg-purple-100 text-purple-800',
-  QUOTED: 'bg-indigo-100 text-indigo-800',
-  CONTRACT: 'bg-cyan-100 text-cyan-800',
-  IMPLEMENTATION: 'bg-emerald-100 text-emerald-800'
-};
+import { 
+  PRIORITY_LABELS, 
+  PRIORITY_COLORS, 
+  OPPORTUNITY_STATUS_LABELS, 
+  OPPORTUNITY_STATUS_COLORS 
+} from '../../../utils/enums';
 
 export const OpportunityDetailPage = () => {
   const { id } = useParams();
@@ -236,8 +210,8 @@ export const OpportunityDetailPage = () => {
               <span className="text-sm font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
                 {opportunity.opportunityCode}
               </span>
-              <span className={`text-xs font-medium px-3 py-1 rounded-full ${STATUS_COLORS[opportunity.status]}`}>
-                {STATUS_LABELS[opportunity.status] || opportunity.status}
+              <span className={`text-xs font-medium px-3 py-1 rounded-full ${OPPORTUNITY_STATUS_COLORS[opportunity.status]}`}>
+                {OPPORTUNITY_STATUS_LABELS[opportunity.status] || opportunity.status}
               </span>
               <span className={`text-xs font-medium px-3 py-1 rounded-full border ${PRIORITY_COLORS[opportunity.priority]}`}>
                 {PRIORITY_LABELS[opportunity.priority] || opportunity.priority}

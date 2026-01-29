@@ -12,7 +12,7 @@ import { TasksPage } from './pages/Tasks/TasksPage';
 import { FinancePage } from './pages/Finance/FinancePage';
 import { SettingsPage } from './pages/Settings/SettingsPage';
 import { LoginPage } from './pages/Auth/LoginPage';
-import ContractDetailPage from './pages/Contracts/ContractDetailPage';
+import ContractDetailPage from './pages/Contracts/ContractDetailPage/ContractDetailPage';
 
 function App() {
   return (

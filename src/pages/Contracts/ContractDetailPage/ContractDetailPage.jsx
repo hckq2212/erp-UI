@@ -1,0 +1,216 @@
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import {
+  useGetContractQuery,
+  useUploadProposalMutation,
+  useApproveProposalMutation,
+  useUploadSignedMutation,
+  useAddMilestoneMutation,
+  useUpdateMilestoneMutation,
+  useDeleteMilestoneMutation,
+} from '../../../api/contracts';
+import { useGetProjectsByContractQuery } from '../../../api/projects';
+import { toast } from 'react-toastify';
+import { ContractInfo } from './ContractInfo';
+import { CustomerInfo } from './CustomerInfo';
+import { FinancialInfo } from './FinancialInfo';
+import { ProposalManagement } from './ProposalManagement';
+import { ProjectInfo } from './ProjectInfo';
+import { MilestonesSection } from './MilestonesSection';
+import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS } from '../../../utils/enums';
+
+export const ContractDetailPage = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { data: contract, isLoading, error } = useGetContractQuery(id);
+  const { data: project, isLoading: projectLoading } = useGetProjectsByContractQuery(id, {
+    skip: !id,
+  });
+
+  const [uploadProposal] = useUploadProposalMutation();
+  const [approveProposal] = useApproveProposalMutation();
+  const [uploadSigned] = useUploadSignedMutation();
+  const [addMilestone] = useAddMilestoneMutation();
+  const [updateMilestone] = useUpdateMilestoneMutation();
+  const [deleteMilestone] = useDeleteMilestoneMutation();
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Chưa xác định';
+    return new Date(dateString).toLocaleDateString('vi-VN');
+  };
+
+  const handleUploadProposal = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.doc,.docx';
+    input.onchange = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      
+      console.log('Uploading proposal file:', file);
+      console.log('File details:', { name: file.name, size: file.size, type: file.type });
+      
+      try {
+        const result = await uploadProposal({ id: contract.id, file }).unwrap();
+        console.log('Upload result:', result);
+        toast.success('Upload proposal thành công');
+      } catch (err) {
+        console.error('Upload error:', err);
+        toast.error(err?.data?.message || 'Upload thất bại');
+      }
+    };
+    input.click();
+  };
+
+  const handleApproveProposal = async () => {
+    if (!window.confirm('Bạn có chắc chắn muốn duyệt proposal này?')) return;
+    try {
+      await approveProposal(contract.id).unwrap();
+      toast.success('Duyệt proposal thành công');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Duyệt thất bại');
+    }
+  };
+
+  const handleUploadSigned = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.doc,.docx';
+    input.onchange = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      
+      console.log('Uploading signed contract file:', file);
+      console.log('File details:', { name: file.name, size: file.size, type: file.type });
+      
+      try {
+        const result = await uploadSigned({ id: contract.id, file }).unwrap();
+        console.log('Upload result:', result);
+        toast.success('Upload hợp đồng đã ký thành công');
+      } catch (err) {
+        console.error('Upload error:', err);
+        toast.error(err?.data?.message || 'Upload thất bại');
+      }
+    };
+    input.click();
+  };
+
+  const handleAddMilestone = async () => {
+    const title = window.prompt('Tiêu đề mốc thanh toán:');
+    if (!title) return;
+    const dueDate = window.prompt('Ngày đến hạn (YYYY-MM-DD):');
+    const amountStr = window.prompt('Số tiền (VNĐ):');
+    const amount = amountStr ? Number(amountStr.replace(/[^0-9.-]+/g, '')) : 0;
+    try {
+      await addMilestone({ id: contract.id, title, dueDate, amount }).unwrap();
+      toast.success('Thêm mốc thanh toán thành công');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Thêm thất bại');
+    }
+  };
+
+  const handleEditMilestone = async (milestone) => {
+    const title = window.prompt('Tiêu đề mốc thanh toán:', milestone.title) || milestone.title;
+    const dueDate = window.prompt('Ngày đến hạn (YYYY-MM-DD):', milestone.dueDate) || milestone.dueDate;
+    const amountStr = window.prompt('Số tiền (VNĐ):', milestone.amount) || String(milestone.amount || '0');
+    const amount = Number(amountStr.replace(/[^0-9.-]+/g, ''));
+    try {
+      await updateMilestone({ id: milestone.id, title, dueDate, amount }).unwrap();
+      toast.success('Cập nhật mốc thanh toán thành công');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Cập nhật thất bại');
+    }
+  };
+
+  const handleDeleteMilestone = async (milestone) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa mốc "${milestone.title}"?`)) return;
+    try {
+      await deleteMilestone(milestone.id).unwrap();
+      toast.success('Xóa mốc thanh toán thành công');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Xóa thất bại');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error || !contract) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96">
+        <p className="text-gray-500 mb-4">Không tìm thấy hợp đồng</p>
+        <button
+          onClick={() => navigate('/contracts')}
+          className="text-blue-600 hover:text-blue-700 flex items-center gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Quay lại danh sách
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="mb-6">
+        <button
+          onClick={() => navigate('/contracts')}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Quay lại danh sách hợp đồng</span>
+        </button>
+
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-sm font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                {contract.contractCode || contract.contract_code || '—'}
+              </span>
+              <span className={`text-xs font-medium px-3 py-1 rounded-full ${CONTRACT_STATUS_COLORS[contract.status] || 'bg-gray-100 text-gray-800'}`}>
+                {CONTRACT_STATUS_LABELS[contract.status] || contract.status}
+              </span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{contract.name}</h1>
+          </div>
+        </div>
+      </div>
+
+      {/* Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content - Left Side (2/3) */}
+        <div className="lg:col-span-2 space-y-6">
+          <ContractInfo contract={contract} formatDate={formatDate} />
+          {project && <ProjectInfo project={project} formatDate={formatDate} navigate={navigate} />}
+          <ProposalManagement
+            contract={contract}
+            onUploadProposal={handleUploadProposal}
+            onApproveProposal={handleApproveProposal}
+            onUploadSigned={handleUploadSigned}
+          />
+          <MilestonesSection
+            contract={contract}
+            onAddMilestone={handleAddMilestone}
+            onEditMilestone={handleEditMilestone}
+            onDeleteMilestone={handleDeleteMilestone}
+            formatDate={formatDate}
+          />
+        </div>
+
+        {/* Sidebar - Right Side (1/3) */}
+        <div className="space-y-6">
+          <CustomerInfo contract={contract} />
+          <FinancialInfo contract={contract} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ContractDetailPage;

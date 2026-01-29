@@ -1,27 +1,5 @@
 import { Target, Briefcase } from 'lucide-react';
-
-const PRIORITY_LABELS = {
-  Low: 'Thấp',
-  Medium: 'Trung bình',
-  High: 'Cao'
-};
-
-const PRIORITY_COLORS = {
-  Low: 'bg-green-100 text-green-800 border-green-200',
-  Medium: 'bg-orange-100 text-orange-800 border-orange-200',
-  High: 'bg-red-100 text-red-800 border-red-200'
-};
-
-const FIELD_LABELS = {
-  CNTT: 'Công nghệ thông tin',
-  XayDung: 'Xây dựng',
-  SanXuat: 'Sản xuất',
-  ThuongMai: 'Thương mại',
-  DichVu: 'Dịch vụ',
-  GiaoDuc: 'Giáo dục',
-  YTe: 'Y tế',
-  Khac: 'Khác'
-};
+import { PRIORITY_LABELS, PRIORITY_COLORS, FIELD_LABELS } from '../../../utils/enums';
 
 export const OpportunityEvaluation = ({ opportunity }) => {
   return (
