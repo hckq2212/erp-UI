@@ -4,8 +4,8 @@ export const TaskStatistics = ({ tasks = [] }) => {
     const stats = {
         total: tasks.length,
         overdue: tasks.filter(t => t.status === 'OVERDUE').length,
-        inProgress: tasks.filter(t => t.status === 'DOING' || t.status === 'PROCESSING').length,
-        completed: tasks.filter(t => t.status === 'COMPLETED' || t.status === 'DONE').length
+        inProgress: tasks.filter(t => t.status === 'DOING' || t.status === 'AWAITING_REVIEW' || t.status === 'AWAITING_ACCEPTANCE').length,
+        completed: tasks.filter(t => t.status === 'DONE').length
     };
 
     return (

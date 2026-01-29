@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Calendar, Users, FileText, Search, UserPlus } from 'lucide-react';
 import { TaskAssignModal } from './TaskAssignModal';
+import { useNavigate } from 'react-router-dom';
 
 export const TaskTable = ({ tasks = [], project }) => {
+    const navigate = useNavigate();
     const [filter, setFilter] = useState({
         status: 'ALL',
         search: ''
@@ -16,11 +18,9 @@ export const TaskTable = ({ tasks = [], project }) => {
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'COMPLETED':
             case 'DONE':
                 return <span className="flex items-center gap-1.5 text-md font-medium text-green-600"> Hoàn thành</span>;
-            case 'PROCESSING':
-            case 'IN_PROGRESS':
+            case 'DOING':
                 return <span className="flex items-center gap-1.5 text-md font-medium text-amber-600"> Đang thực hiện</span>;
             case 'PENDING':
                 return <span className="flex items-center gap-1.5 text-md font-medium text-blue-600"> Chưa phân công</span>;
@@ -74,17 +74,17 @@ export const TaskTable = ({ tasks = [], project }) => {
 
             {/* Table */}
             <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left min-w-[1000px]">
+                <table className="w-full text-sm text-left min-w-[1300px]">
                     <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100">
                         <tr>
                             <th className="px-6 py-4 font-medium">STT</th>
-                            <th className="px-6 py-4 font-medium text-blue-600">Mã Công việc</th>
-                            <th className="px-6 py-4 font-medium text-blue-600">Tên công việc</th>
+                            <th className="px-6 py-4 font-medium ">Mã Công việc</th>
+                            <th className="px-6 py-4 font-medium ">Tên công việc</th>
                             <th className="px-6 py-4 font-medium">Thời gian</th>
-                            <th className="px-6 py-4 font-medium text-center">Nhân sự</th>
-                            <th className="px-6 py-4 font-medium text-center">Trạng thái</th>
+                            <th className="px-6 py-4 font-medium text-center">Người thực hiện</th>
+                            <th className="px-6 py-4 font-medium text-center ">Trạng thái</th>
                             {isProjectInProgress && (
-                                <th className="px-6 py-4 font-medium text-blue-600 text-center">Hành động</th>
+                                <th className="px-6 py-4 font-medium text-center">Hành động</th>
                             )}
                         </tr>
                     </thead>
@@ -117,16 +117,26 @@ export const TaskTable = ({ tasks = [], project }) => {
                                     <td className="px-6 py-4 text-center">
                                         <span className="font-medium text-gray-700">{getStatusBadge(task.status)}</span>
                                     </td>
-                                    {isProjectInProgress && (
-                                        <td className="px-6 py-4 text-center">
+
+                                    <td className="px-6 py-4 text-center">
+                                        <div className="flex justify-center gap-2">
+                                            {isProjectInProgress && task.status === 'PENDING' && (
+                                                <button
+                                                    onClick={() => setAssigningTask(task)}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                >
+                                                    Phân công
+                                                </button>
+                                            )}
                                             <button
-                                                onClick={() => setAssigningTask(task)}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                onClick={() => navigate(`/tasks/${task.id}`)}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-200 transition-all active:scale-95 text-xs font-bold uppercase"
                                             >
-                                                Phân công
+                                                Xem chi tiết
                                             </button>
-                                        </td>
-                                    )}
+                                        </div>
+                                    </td>
+
                                 </tr>
                             ))
                         ) : (

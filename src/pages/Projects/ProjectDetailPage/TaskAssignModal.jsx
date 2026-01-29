@@ -13,7 +13,8 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     const [formData, setFormData] = useState({
         assigneeId: '',
         plannedEndDate: '',
-        plannedStartDate:'',
+        plannedStartDate: '',
+        description: '',
         links: [''],
     });
     const [files, setFiles] = useState([]);
@@ -71,6 +72,9 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
             }
             if (formData.plannedStartDate) {
                 data.append('plannedStartDate', formData.plannedStartDate);
+            }
+            if (formData.description) {
+                data.append('description', formData.description);
             }
             const links = formData.links.filter(link => link.trim() !== '');
             if (links.length > 0) {
@@ -150,6 +154,19 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                 className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                 value={formData.plannedEndDate}
                                 onChange={(e) => setFormData({ ...formData, plannedEndDate: e.target.value })}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">Mô tả</label>
+                        <div className="relative">
+                            <FileText className="absolute left-3 top-1/3 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <textarea
+                                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             />
                         </div>
                     </div>

@@ -114,4 +114,18 @@ export const FIELD_LABELS = {
   Khac: 'Khác'
 };
 
+export const JOB_PERFORMER_TYPE = {
+  INTERNAL: "Nội bộ",
+  PARTNER: "Đối tác"
+};
+
+export const TASK_STATUS = {
+  PENDING: "Chờ xử lý",
+  DOING: "Đang thực hiện",
+  DONE: "Hoàn thành",
+  AWAITING_ACCEPTANCE: "Đang chờ nghiệm thu",
+  AWAITING_REVIEW: "Đang chờ duyệt",
+  CANCELLED: "Đã hủy",
+  OVERDUE: "Quá hạn"
+};
 

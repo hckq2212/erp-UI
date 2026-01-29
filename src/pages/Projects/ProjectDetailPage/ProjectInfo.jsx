@@ -10,32 +10,21 @@ export const ProjectInfo = ({ project, formatDate }) => {
             </div>
 
             <div className="space-y-4">
-                <div>
-                    <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-2">Trạng thái</p>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${PROJECT_STATUS_COLORS[project.status]}`}>
-                        {PROJECT_STATUS_LABELS[project.status] || project.status}
-                    </span>
-                </div>
-
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Dự kiến bắt đầu</p>
-                        <p className="text-sm font-medium text-gray-700">{formatDate(project.plannedStartDate)}</p>
+                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Mã hợp đồng</p>
+                        <p className="text-sm font-medium text-gray-700">{project.contract.contractCode}</p>
                     </div>
                     <div>
-                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Dự kiến kết thúc</p>
-                        <p className="text-sm font-medium text-gray-700">{formatDate(project.plannedEndDate)}</p>
+                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Tên hợp đồng</p>
+                        <p className="text-sm font-medium text-gray-700">{project.contract.name}</p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Thực tế bắt đầu</p>
-                        <p className="text-sm font-medium text-gray-700">{formatDate(project.actualStartDate)}</p>
-                    </div>
-                    <div>
-                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Thực tế kết thúc</p>
-                        <p className="text-sm font-medium text-gray-700">{formatDate(project.actualEndDate)}</p>
+                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Đội thực hiện</p>
+                        <p className="text-sm font-medium text-gray-700">{project.team.name}</p>
                     </div>
                 </div>
             </div>

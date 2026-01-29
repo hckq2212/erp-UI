@@ -10,6 +10,7 @@ import { ContractsPage } from './pages/Contracts/ContractsPage';
 import { ProjectsPage } from './pages/Projects/ProjectsPage';
 import { ProjectDetailPage } from './pages/Projects/ProjectDetailPage/ProjectDetailPage';
 import { TasksPage } from './pages/Tasks/TasksPage';
+import { TaskDetailPage } from './pages/Tasks/TaskDetailPage';
 import { FinancePage } from './pages/Finance/FinancePage';
 import { SettingsPage } from './pages/Settings/SettingsPage';
 import { LoginPage } from './pages/Auth/LoginPage';
@@ -120,6 +121,16 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <TasksPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/tasks/:id'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TaskDetailPage />
               </Layout>
             </ProtectedRoute>
           }

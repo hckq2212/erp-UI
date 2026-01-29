@@ -1,11 +1,13 @@
 import { Eye, Edit, Trash2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../utils/enums';
+import { useNavigate } from 'react-router-dom';
 
 const getStatusColor = (status) => PROJECT_STATUS_COLORS[status] || 'bg-gray-100 text-gray-800';
 const getStatusLabel = (status) => PROJECT_STATUS_LABELS[status] || status;
 
 export const ProjectTable = ({ projects, onView, onEdit, onDelete }) => {
+    const navigate = useNavigate();
     return (
         <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -33,14 +35,8 @@ export const ProjectTable = ({ projects, onView, onEdit, onDelete }) => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div className="flex justify-end space-x-2">
-                                    <button onClick={() => onView(project)} className="text-gray-400 hover:text-gray-600">
-                                        <Eye className="h-5 w-5" />
-                                    </button>
-                                    <button onClick={() => onEdit(project)} className="text-blue-400 hover:text-blue-600">
-                                        <Edit className="h-5 w-5" />
-                                    </button>
-                                    <button onClick={() => onDelete(project.id)} className="text-red-400 hover:text-red-600">
-                                        <Trash2 className="h-5 w-5" />
+                                    <button onClick={() => navigate(`/projects/${project.id}`)} className="text-white bg-blue-600 hover:bg-blue-600 px-3 py-1.5 rounded-lg">
+                                        Xem chi tiết
                                     </button>
                                 </div>
                             </td>
