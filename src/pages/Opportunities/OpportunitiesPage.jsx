@@ -3,10 +3,12 @@ import { DndContext, DragOverlay, closestCorners, PointerSensor, useSensor, useS
 import { arrayMove } from '@dnd-kit/sortable';
 import { KanbanColumn } from '../../components/opportunities/KanbanColumn';
 import { KanbanCard } from '../../components/opportunities/KanbanCard';
+import { OpportunityTable } from './OpportunityTable';
 import { Button } from '../../components/ui/Button';
 import { Plus, LayoutGrid, List } from 'lucide-react';
 import { useGetOpportunitiesQuery, useUpdateOpportunityMutation } from '../../api/opportunities';
 import { OpportunityModal } from './OpportunityModal';
+import { cn } from '../../utils/cn';
 
 const COLUMNS = [
     { id: 'OPEN', title: 'Mới' },
@@ -25,6 +27,7 @@ export const OpportunitiesPage = () => {
     const [updateOpportunity] = useUpdateOpportunityMutation();
     const [activeId, setActiveId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [viewType, setViewType] = useState('kanban'); // 'kanban' | 'list'
 
     const opportunities = Array.isArray(opportunitiesData) ? opportunitiesData : (opportunitiesData?.data || []);
 
@@ -65,19 +68,40 @@ export const OpportunitiesPage = () => {
 
     const activeItem = activeId ? opportunities.find(i => i.id === activeId) : null;
 
-    if (isLoading) return <div className="p-6">Loading opportunities...</div>;
+    if (isLoading) return (
+        <div className="flex flex-col items-center justify-center py-32 gap-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className="text-gray-500 font-medium animate-pulse">Đang tải danh sách cơ hội...</p>
+        </div>
+    );
 
     return (
         <div className="h-[calc(100vh-8rem)] flex flex-col">
             <div className="flex justify-between items-center mb-6 px-1">
-                <div className="flex items-center space-x-4">
-                    <h1 className="text-3xl font-bold text-gray-900">Quản Lý Cơ Hội</h1>
-                    <div className="flex bg-gray-100 rounded-lg p-1">
-                        <button className="p-1.5 bg-white rounded shadow-sm text-blue-600"><LayoutGrid className="h-4 w-4" /></button>
-                        <button className="p-1.5 text-gray-500 hover:text-gray-700"><List className="h-4 w-4" /></button>
+                <div className="flex items-center space-x-6">
+                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Quản Lý Cơ Hội</h1>
+                    <div className="flex bg-gray-100 rounded-xl p-1 shadow-inner border border-gray-200">
+                        <button
+                            onClick={() => setViewType('kanban')}
+                            className={cn(
+                                "p-2 rounded-lg transition-all",
+                                viewType === 'kanban' ? "bg-white shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"
+                            )}
+                        >
+                            <LayoutGrid className="h-5 w-5" />
+                        </button>
+                        <button
+                            onClick={() => setViewType('list')}
+                            className={cn(
+                                "p-2 rounded-lg transition-all",
+                                viewType === 'list' ? "bg-white shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"
+                            )}
+                        >
+                            <List className="h-5 w-5" />
+                        </button>
                     </div>
                 </div>
-                <Button onClick={() => setIsModalOpen(true)}>
+                <Button onClick={() => setIsModalOpen(true)} className="shadow-lg shadow-blue-500/20">
                     <Plus className="h-5 w-5 mr-2" />
                     Tạo Cơ Hội Mới
                 </Button>
@@ -90,32 +114,44 @@ export const OpportunitiesPage = () => {
                 onSuccess={() => setIsModalOpen(false)}
             />
 
-            {/* Filter Bar would go here */}
+            <div className="flex-1 overflow-auto">
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 h-full">
+                    {viewType === 'kanban' ? (
+                        <div className="flex-1 overflow-x-auto overflow-y-hidden h-full">
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCorners}
+                                onDragStart={handleDragStart}
+                                onDragEnd={handleDragEnd}
+                                onDragOver={handleDragOver}
+                            >
+                                <div className="flex h-full space-x-4 pb-4 min-w-max">
+                                    {COLUMNS.map(col => (
+                                        <KanbanColumn
+                                            key={col.id}
+                                            id={col.id}
+                                            title={col.title}
+                                            count={opportunities.filter(o => o.status === col.id).length}
+                                            opportunities={opportunities.filter(o => o.status === col.id)}
+                                        />
+                                    ))}
+                                </div>
 
-            <div className="flex-1 overflow-x-auto overflow-y-hidden">
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCorners}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={handleDragOver}
-                >
-                    <div className="flex h-full space-x-4 pb-4 min-w-max">
-                        {COLUMNS.map(col => (
-                            <KanbanColumn
-                                key={col.id}
-                                id={col.id}
-                                title={col.title}
-                                count={opportunities.filter(o => o.status === col.id).length}
-                                opportunities={opportunities.filter(o => o.status === col.id)}
-                            />
-                        ))}
-                    </div>
-
-                    <DragOverlay>
-                        {activeItem ? <KanbanCard opportunity={activeItem} /> : null}
-                    </DragOverlay>
-                </DndContext>
+                                <DragOverlay>
+                                    {activeItem ? <KanbanCard opportunity={activeItem} /> : null}
+                                </DragOverlay>
+                            </DndContext>
+                        </div>
+                    ) : (
+                        <OpportunityTable
+                            opportunities={opportunities}
+                            onEdit={(opp) => {
+                                // Logic for editing could be added here
+                                console.log('Editing:', opp.name);
+                            }}
+                        />
+                    )}
+                </div>
             </div>
         </div>
     );
