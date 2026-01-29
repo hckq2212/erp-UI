@@ -8,6 +8,7 @@ import {
 import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation } from '../../../api/opportunities';
 import { useGetCustomersQuery } from '../../../api/customers';
 import { useGetQuotationsByOpportunityQuery, useCreateQuotationMutation, useUpdateQuotationMutation } from '../../../api/quotations';
+import { useCreateContractMutation } from '../../../api/contracts';
 import { QuotationModal } from './QuotationModal';
 import { toast } from 'react-toastify';
 import { FinancialInfo } from './FinancialInfo';
@@ -59,6 +60,7 @@ export const OpportunityDetailPage = () => {
   const [updateOpportunity, { isLoading: isUpdating }] = useUpdateOpportunityMutation();
   const [createQuotation] = useCreateQuotationMutation();
   const [updateQuotation] = useUpdateQuotationMutation();
+  const [createContract, { isLoading: isCreatingContract }] = useCreateContractMutation();
 
   // Modal state
   const [showContactModal, setShowContactModal] = useState(false);
@@ -260,6 +262,22 @@ export const OpportunityDetailPage = () => {
             >
               Tạo báo giá
             </button>
+            {opportunity.status === 'QUOTE_APPROVED' && (
+              <button
+                onClick={async () => {
+                  try {
+                    await createContract({ opportunityId: Number(id), name: opportunity.name || `Hợp đồng ${opportunity.opportunityCode}` }).unwrap();
+                    toast.success('Tạo hợp đồng thành công');
+                  } catch (err) {
+                    toast.error(err?.data?.message || 'Tạo hợp đồng thất bại');
+                  }
+                }}
+                disabled={isCreatingContract}
+                className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-60"
+              >
+                {isCreatingContract ? 'Đang tạo...' : 'Tạo hợp đồng'}
+              </button>
+            )}
             <button
               onClick={() => navigate(`/opportunities/${id}/edit`)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

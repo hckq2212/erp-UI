@@ -12,6 +12,7 @@ import { TasksPage } from './pages/Tasks/TasksPage';
 import { FinancePage } from './pages/Finance/FinancePage';
 import { SettingsPage } from './pages/Settings/SettingsPage';
 import { LoginPage } from './pages/Auth/LoginPage';
+import ContractDetailPage from './pages/Contracts/ContractDetailPage';
 
 function App() {
   return (
@@ -77,6 +78,16 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <ContractsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/contracts/:id'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ContractDetailPage />
               </Layout>
             </ProtectedRoute>
           }
