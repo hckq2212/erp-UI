@@ -1,84 +1,92 @@
-import { Edit, Trash2, Eye } from 'lucide-react';
+import { Edit, Trash2, Eye, Phone, Mail, MapPin, Hash } from 'lucide-react';
+import { cn } from '../../utils/cn';
+import { useNavigate } from 'react-router-dom';
 
-export const CustomerTable = ({ customers, onEdit, onDelete, onView }) => {
+export const CustomerTable = ({ customers = [], onEdit, onDelete, onView }) => {
+  const navigate = useNavigate();
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className="w-full text-sm text-left min-w-[1300px]">
+        <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100">
           <tr>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <input type="checkbox" className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" />
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Tên Khách Hàng
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Liên Hệ
-            </th>
-             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Địa Chỉ
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Nguồn
-            </th>
-            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
+            <th className="px-6 py-4 font-semibold">Khách Hàng</th>
+            <th className="px-6 py-4 font-semibold">Mã số thuế</th>
+            <th className="px-6 py-4 font-semibold">Thông tin liên hệ</th>
+            <th className="px-6 py-4 font-semibold">Địa Chỉ</th>
+            <th className="px-6 py-4 font-semibold text-center">Nguồn</th>
+            <th className="px-6 py-4 font-semibold text-right">Xem chi tiết</th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="divide-y divide-gray-100 bg-white">
           {customers && customers.length > 0 ? (
             customers.map((customer) => (
-              <tr key={customer.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                   <input type="checkbox" className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10">
-                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                        {customer.name.charAt(0)}
-                      </div>
+              <tr key={customer.id} className="hover:bg-blue-50/30 transition-colors group">
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0 h-11 w-11 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm group-hover:scale-105 transition-transform">
+                      {customer.name.charAt(0)}
                     </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{customer.name}</div>
-                      <div className="text-sm text-gray-500">{customer.taxId || 'N/A'}</div>
+                    <div>
+                      <div className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors uppercase">{customer.name}</div>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{customer.phone}</div>
-                  <div className="text-sm text-gray-500">{customer.email}</div>
+                <td className="px-6 py-4">
+                  {customer.taxId || '---'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                   <div className="text-sm text-gray-900 truncate max-w-xs" title={customer.address}>{customer.address}</div>
+                <td className="px-6 py-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center text-gray-600 gap-2">
+                      <Phone className="w-3.5 h-3.5 text-blue-400" />
+                      <span className="font-medium">{customer.phone}</span>
+                    </div>
+                    <div className="flex items-center text-gray-400 gap-2">
+                      <Mail className="w-3.5 h-3.5 text-gray-300" />
+                      <span className="truncate max-w-[150px]">{customer.email}</span>
+                    </div>
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    customer.source === 'INTERNAL' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {customer.source === 'INTERNAL' ? 'Internal' : 'Partner'}
+                <td className="px-6 py-4">
+                  <div className="flex items-start gap-2 text-gray-500 max-w-[200px]">
+                    <MapPin className="w-3.5 h-3.5 mt-0.5 text-red-300 flex-shrink-0" />
+                    <span className="text-xs line-clamp-2" title={customer.address}>
+                      {customer.address}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-center">
+                  <span className={cn(
+                    "px-3 py-1 inline-flex text-[10px] font-bold uppercase rounded-lg tracking-wider",
+                    customer.source === 'INTERNAL'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                      : 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                  )}>
+                    {customer.source === 'INTERNAL' ? 'Nội bộ' : 'Đối tác'}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button onClick={() => onView(customer)} className="text-gray-400 hover:text-gray-600 mx-1">
-                    <Eye className="h-5 w-5" />
-                  </button>
-                  <button onClick={() => onEdit(customer)} className="text-blue-600 hover:text-blue-900 mx-1">
-                    <Edit className="h-5 w-5" />
-                  </button>
-                  <button onClick={() => onDelete(customer.id)} className="text-red-600 hover:text-red-900 mx-1">
-                    <Trash2 className="h-5 w-5" />
-                  </button>
+                <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <div className="flex justify-end gap-1">
+                    <button
+                      onClick={() => navigate(`/customers/${customer.id}`)}
+                      className="p-2 text-white bg-blue-600 rounded-xl transition-all"
+                    >
+                      Xem chi tiết
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))
           ) : (
-             <tr>
-                <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                    Chưa có khách hàng nào.
-                </td>
-             </tr>
+            <tr>
+              <td colSpan="5" className="px-6 py-16 text-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="p-4 bg-gray-50 rounded-full">
+                    <Users className="w-8 h-8 text-gray-300" />
+                  </div>
+                  <p className="text-gray-400 font-medium font-italic">Chưa có khách hàng nào trong hệ thống</p>
+                </div>
+              </td>
+            </tr>
           )}
         </tbody>
       </table>

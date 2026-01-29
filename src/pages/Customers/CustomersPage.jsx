@@ -5,15 +5,26 @@ import { CustomerModal } from './CustomerModal';
 import { CustomerFilters } from '../../components/customers/CustomerFilters';
 import { CustomerTable } from '../../components/customers/CustomerTable';
 import { Plus } from 'lucide-react';
+import {
+  useGetCustomersQuery,
+  useDeleteCustomerMutation,
+  useCreateCustomerMutation,
+  useUpdateCustomerMutation
+} from '../../api/customers';
+import { toast } from 'react-toastify';
 
 export const CustomersPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  
-  const { data: customers, isLoading } = useCustomers();
-  const deleteCustomer = useDeleteCustomer();
-  const createCustomer = useCreateCustomer();
-  const updateCustomer = useUpdateCustomer();
+  const [filters, setFilters] = useState({
+    search: '',
+    source: ''
+  });
+
+  const { data: customers = [], isLoading } = useGetCustomersQuery(filters);
+  const [deleteCustomer] = useDeleteCustomerMutation();
+  const [createCustomer, { isLoading: isCreating }] = useCreateCustomerMutation();
+  const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
 
   const handleCreate = () => {
     setSelectedCustomer(null);
@@ -26,79 +37,81 @@ export const CustomersPage = () => {
   };
 
   const handleView = (customer) => {
-      alert('Viewing details for');
+    // Navigation to detail page could be added here
+    console.log('Viewing details for:', customer.name);
   }
 
   const handleDelete = async (id) => {
-    if (confirm('Bạn có chắc muốn xóa khách hàng này?')) {
-      await deleteCustomer.mutateAsync(id);
+    if (window.confirm('Bạn có chắc muốn xóa khách hàng này?')) {
+      try {
+        await deleteCustomer(id).unwrap();
+        toast.success('Xóa khách hàng thành công');
+      } catch (err) {
+        toast.error(err?.data?.message || 'Có lỗi xảy ra khi xóa');
+      }
     }
   };
 
   const handleSubmit = async (data) => {
-    if (selectedCustomer) {
-        await updateCustomer.mutateAsync({ id: selectedCustomer.id, data });
-    } else {
-        await createCustomer.mutateAsync(data);
+    try {
+      if (selectedCustomer) {
+        await updateCustomer({ id: selectedCustomer.id, ...data }).unwrap();
+        toast.success('Cập nhật khách hàng thành công');
+      } else {
+        await createCustomer(data).unwrap();
+        toast.success('Tạo khách hàng thành công');
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Có lỗi xảy ra');
     }
-    setIsModalOpen(false);
   };
 
-  const handleSearch = (term) => console.log('Searching:', term);
-  const handleFilterSource = (source) => console.log('Filtering source:', source);
-  const handleReset = () => console.log('Resetting filters');
+  const handleSearch = (term) => {
+    setFilters(prev => ({ ...prev, search: term }));
+  };
 
-  if (isLoading) return <div>Loading...</div>;
+  const handleFilterSource = (source) => {
+    setFilters(prev => ({ ...prev, source }));
+  };
+
+  const handleReset = () => {
+    setFilters({ search: '', source: '' });
+  };
 
   return (
-    <div>
-      <div className='flex justify-between items-center mb-6'>
-        <h1 className='text-3xl font-bold text-gray-900'>Quản Lý Khách Hàng</h1>
-        <Button onClick={handleCreate}>
-            <Plus className='h-5 w-5 mr-2' />
-            Thêm Khách Hàng
+    <div className="animate-in fade-in duration-500 space-y-6">
+      <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-4'>
+        <div>
+          <h1 className='text-3xl font-bold text-gray-900 tracking-tight'>Quản Lý Khách Hàng</h1>
+          <p className="text-gray-500 text-sm mt-1">Danh sách thông tin khách hàng </p>
+        </div>
+        <Button onClick={handleCreate} className="w-full md:w-auto shadow-lg shadow-blue-500/20">
+          <Plus className='h-5 w-5 mr-2' />
+          Thêm Khách Hàng
         </Button>
       </div>
 
-      <CustomerFilters 
+      <CustomerFilters
         onSearch={handleSearch}
         onFilterSource={handleFilterSource}
         onReset={handleReset}
       />
 
-      <div className='bg-white rounded-lg shadow overflow-hidden'>
-        <CustomerTable 
-            customers={customers} 
-            onEdit={handleEdit} 
+      <div className='bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden'>
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+            <p className="text-gray-500 font-medium animate-pulse">Đang tải danh sách khách hàng...</p>
+          </div>
+        ) : (
+          <CustomerTable
+            customers={customers}
+            onEdit={handleEdit}
             onDelete={handleDelete}
             onView={handleView}
-        />
-        
-        <div className='bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6'>
-            <div className='hidden sm:flex-1 sm:flex sm:items-center sm:justify-between'>
-                <div>
-                    <p className='text-sm text-gray-700'>
-                        Showing <span className='font-medium'>1</span> to <span className='font-medium'>10</span> of <span className='font-medium'>20</span> results
-                    </p>
-                </div>
-                <div>
-                   <nav className='relative z-0 inline-flex rounded-md shadow-sm -space-x-px' aria-label='Pagination'>
-                        <button className='relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50'>
-                            Previous
-                        </button>
-                        <button className='relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50'>
-                            1
-                        </button>
-                         <button className='relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50'>
-                            2
-                        </button>
-                        <button className='relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50'>
-                            Next
-                        </button>
-                   </nav>
-                </div>
-            </div>
-        </div>
+          />
+        )}
       </div>
 
       <CustomerModal
@@ -106,7 +119,7 @@ export const CustomersPage = () => {
         onClose={() => setIsModalOpen(false)}
         customer={selectedCustomer}
         onSubmit={handleSubmit}
-        isSubmitting={false}
+        isSubmitting={isCreating || isUpdating}
       />
     </div>
   );

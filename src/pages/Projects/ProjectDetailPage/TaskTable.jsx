@@ -2,12 +2,17 @@ import { useState } from 'react';
 import { Calendar, Users, FileText, Search, UserPlus } from 'lucide-react';
 import { TaskAssignModal } from './TaskAssignModal';
 import { useNavigate } from 'react-router-dom';
+import { useGetTeamMembersQuery } from '../../../api/teams';
 
 export const TaskTable = ({ tasks = [], project }) => {
     const navigate = useNavigate();
+    const teamId = project?.team?.id;
+    const { data: members = [] } = useGetTeamMembersQuery(teamId, { skip: !teamId });
+
     const [filter, setFilter] = useState({
         status: 'ALL',
-        search: ''
+        search: '',
+        assigneeId: 'ALL'
     });
     const [assigningTask, setAssigningTask] = useState(null);
 
@@ -37,7 +42,8 @@ export const TaskTable = ({ tasks = [], project }) => {
         const matchesSearch = task.name.toLowerCase().includes(filter.search.toLowerCase()) ||
             task.code.toLowerCase().includes(filter.search.toLowerCase());
         const matchesStatus = filter.status === 'ALL' || task.status === filter.status;
-        return matchesSearch && matchesStatus;
+        const matchesAssignee = filter.assigneeId === 'ALL' || task.assigneeId?.toString() === filter.assigneeId;
+        return matchesSearch && matchesStatus && matchesAssignee;
     });
 
     const isProjectInProgress = project?.status === 'IN_PROGRESS';
@@ -67,8 +73,17 @@ export const TaskTable = ({ tasks = [], project }) => {
                     <option value="DONE">Hoàn thành</option>
                     <option value="OVERDUE">Quá hạn</option>
                 </select>
-                <select className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 outline-none hover:bg-gray-100">
-                    <option>Tất cả nhân sự</option>
+                <select
+                    className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 outline-none hover:bg-gray-100"
+                    value={filter.assigneeId}
+                    onChange={(e) => setFilter({ ...filter, assigneeId: e.target.value })}
+                >
+                    <option value="ALL">Tất cả nhân sự</option>
+                    {members.map((member) => (
+                        <option key={member.user.id} value={member.user.id}>
+                            {member.user.fullName}
+                        </option>
+                    ))}
                 </select>
             </div>
 

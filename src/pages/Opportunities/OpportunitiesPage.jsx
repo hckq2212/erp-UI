@@ -10,11 +10,13 @@ import { OpportunityModal } from './OpportunityModal';
 
 const COLUMNS = [
     { id: 'OPEN', title: 'Mới' },
-    { id: 'PENDING', title: 'Đang Xử Lý' },
-    { id: 'APPROVED', title: 'Đã Duyệt' },
+    { id: 'PENDING_OPP_APPROVAL', title: 'Đang chờ duyệt' },
+    { id: 'OPP_APPROVED', title: 'Đã Duyệt' },
     { id: 'QUOTATION', title: 'Báo Giá' },
-    { id: 'QUOTED', title: 'Đã Gửi BG' },
-    { id: 'CONTRACT', title: 'Hợp Đồng' },
+    { id: 'QUOTATION_DRAFTING', title: 'Đang làm báo giá' },
+    { id: 'PENDING_QUOTE_APPROVAL', title: 'Chờ duyệt báo giá' },
+    { id: 'QUOTE_APPROVED', title: 'Đã duyệt báo giá' },
+    { id: 'CONTRACT_CREATED', title: 'Đã tạo hợp đồng' },
     { id: 'IMPLEMENTATION', title: 'Triển Khai' }
 ];
 
@@ -47,13 +49,13 @@ export const OpportunitiesPage = () => {
         const overId = over.id;
 
         const activeItem = opportunities.find(item => item.id === activeId);
-        
+
         if (!activeItem) return;
 
         if (COLUMNS.find(col => col.id === overId) && activeItem.status !== overId) {
-             updateOpportunity({ id: activeId, status: overId });
+            updateOpportunity({ id: activeId, status: overId });
         }
-        
+
         setActiveId(null);
     };
 
@@ -82,8 +84,8 @@ export const OpportunitiesPage = () => {
             </div>
 
             {/* Modal */}
-            <OpportunityModal 
-                isOpen={isModalOpen} 
+            <OpportunityModal
+                isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSuccess={() => setIsModalOpen(false)}
             />
@@ -91,25 +93,25 @@ export const OpportunitiesPage = () => {
             {/* Filter Bar would go here */}
 
             <div className="flex-1 overflow-x-auto overflow-y-hidden">
-                <DndContext 
-                    sensors={sensors} 
-                    collisionDetection={closestCorners} 
-                    onDragStart={handleDragStart} 
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCorners}
+                    onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                     onDragOver={handleDragOver}
                 >
                     <div className="flex h-full space-x-4 pb-4 min-w-max">
                         {COLUMNS.map(col => (
-                            <KanbanColumn 
-                                key={col.id} 
-                                id={col.id} 
-                                title={col.title} 
+                            <KanbanColumn
+                                key={col.id}
+                                id={col.id}
+                                title={col.title}
                                 count={opportunities.filter(o => o.status === col.id).length}
-                                opportunities={opportunities.filter(o => o.status === col.id)} 
+                                opportunities={opportunities.filter(o => o.status === col.id)}
                             />
                         ))}
                     </div>
-                    
+
                     <DragOverlay>
                         {activeItem ? <KanbanCard opportunity={activeItem} /> : null}
                     </DragOverlay>

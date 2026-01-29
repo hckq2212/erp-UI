@@ -15,7 +15,7 @@ export const TaskStatistics = ({ tasks = [] }) => {
                     <ClipboardList className="w-6 h-6" />
                 </div>
                 <div>
-                    <p className="text-sm font-medium text-blue-600">Tổng CV (đang lọc)</p>
+                    <p className="text-sm font-medium text-blue-600">Tổng số lượng công việc</p>
                     <p className="text-2xl font-bold text-blue-900">{stats.total}</p>
                 </div>
             </div>

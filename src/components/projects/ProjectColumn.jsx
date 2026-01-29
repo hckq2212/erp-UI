@@ -13,9 +13,9 @@ export const ProjectColumn = ({ id, title, count, projects }) => {
           {count}
         </span>
       </div>
-      
-      <div 
-        ref={setNodeRef} 
+
+      <div
+        ref={setNodeRef}
         className="flex-1 bg-gray-50 p-2 overflow-y-auto min-h-[150px] rounded-b-lg border border-t-0 border-gray-200"
       >
         <SortableContext id={id} items={projects.map(p => p.id)} strategy={verticalListSortingStrategy}>
@@ -23,11 +23,6 @@ export const ProjectColumn = ({ id, title, count, projects }) => {
             <ProjectCard key={project.id} project={project} />
           ))}
         </SortableContext>
-        {projects.length === 0 && (
-            <div className="h-full flex items-center justify-center text-gray-400 text-xs italic p-4">
-                Kéo thả vào đây
-            </div>
-        )}
       </div>
     </div>
   );

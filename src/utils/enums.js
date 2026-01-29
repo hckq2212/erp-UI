@@ -6,7 +6,8 @@ export const CONTRACT_STATUS_LABELS = {
   PROPOSAL_APPROVED: 'Đã duyệt proposal',
   ACTIVE: 'Đang thực hiện',
   COMPLETED: 'Hoàn thành',
-  CANCELLED: 'Đã hủy'
+  CANCELLED: 'Đã hủy',
+  SIGNED: 'Đã ký'
 };
 
 export const CONTRACT_STATUS_COLORS = {
@@ -16,7 +17,8 @@ export const CONTRACT_STATUS_COLORS = {
   PROPOSAL_APPROVED: 'bg-green-100 text-green-800',
   ACTIVE: 'bg-blue-100 text-blue-800',
   COMPLETED: 'bg-purple-100 text-purple-800',
-  CANCELLED: 'bg-red-100 text-red-800'
+  CANCELLED: 'bg-red-100 text-red-800',
+  SIGNED: 'bg-green-100 text-green-800'
 };
 
 // Project Status
@@ -42,28 +44,26 @@ export const PROJECT_STATUS_COLORS = {
 // Opportunity Status
 export const OPPORTUNITY_STATUS_LABELS = {
   OPEN: 'Mới',
-  PENDING: 'Đang Xử Lý',
-  APPROVED: 'Đã Duyệt',
-  QUOTATION: 'Báo Giá',
-  QUOTED: 'Đã Gửi BG',
-  CONTRACT: 'Hợp Đồng',
-  IMPLEMENTATION: 'Triển Khai',
-  LEAD: 'Tiềm năng',
-  QUALIFIED: 'Đủ điều kiện',
-  PROPOSAL: 'Đề xuất',
-  NEGOTIATION: 'Thương lượng',
-  WON: 'Thành công',
-  LOST: 'Thất bại'
+  PENDING_OPP_APPROVAL: 'Đang chờ duyệt',
+  OPP_APPROVED: 'Đã duyệt',
+  QUOTATION: 'Báo giá',
+  QUOTATION_DRAFTING: 'Đang làm báo giá',
+  PENDING_QUOTE_APPROVAL: 'Chờ duyệt báo giá',
+  QUOTE_APPROVED: 'Đã duyệt báo giá',
+  CONTRACT_CREATED: 'Đã tạo hợp đồng',
+  IMPLEMENTATION: 'Đã triển khai'
 };
 
 export const OPPORTUNITY_STATUS_COLORS = {
   OPEN: 'bg-blue-100 text-blue-800',
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  APPROVED: 'bg-green-100 text-green-800',
-  QUOTATION: 'bg-purple-100 text-purple-800',
-  QUOTED: 'bg-indigo-100 text-indigo-800',
-  CONTRACT: 'bg-cyan-100 text-cyan-800',
-  IMPLEMENTATION: 'bg-emerald-100 text-emerald-800',
+  PENDING_OPP_APPROVAL: 'bg-yellow-100 text-yellow-800',
+  OPP_APPROVED: 'bg-green-100 text-green-800',
+  QUOTATION: 'bg-indigo-100 text-indigo-800',
+  QUOTATION_DRAFTING: 'bg-purple-100 text-purple-800',
+  PENDING_QUOTE_APPROVAL: 'bg-amber-100 text-amber-800',
+  QUOTE_APPROVED: 'bg-emerald-100 text-emerald-800',
+  CONTRACT_CREATED: 'bg-cyan-100 text-cyan-800',
+  IMPLEMENTATION: 'bg-teal-100 text-teal-800',
   LEAD: 'bg-gray-100 text-gray-800',
   QUALIFIED: 'bg-blue-100 text-blue-800',
   PROPOSAL: 'bg-yellow-100 text-yellow-800',
