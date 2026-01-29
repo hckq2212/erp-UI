@@ -23,6 +23,7 @@ export const CONTRACT_STATUS_COLORS = {
 export const PROJECT_STATUS_LABELS = {
   PENDING_CONFIRMATION: 'Chờ xác nhận',
   PLANNING: 'Lập kế hoạch',
+  CONFIRMED: 'Đã xác nhận',
   IN_PROGRESS: 'Đang thực hiện',
   ON_HOLD: 'Tạm dừng',
   COMPLETED: 'Hoàn thành',
@@ -31,7 +32,7 @@ export const PROJECT_STATUS_LABELS = {
 
 export const PROJECT_STATUS_COLORS = {
   PENDING_CONFIRMATION: 'bg-orange-100 text-orange-800',
-  PLANNING: 'bg-blue-100 text-blue-800',
+  CONFIRMED: 'bg-blue-100 text-blue-800',
   IN_PROGRESS: 'bg-green-100 text-green-800',
   ON_HOLD: 'bg-yellow-100 text-yellow-800',
   COMPLETED: 'bg-purple-100 text-purple-800',

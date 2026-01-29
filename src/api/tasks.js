@@ -10,9 +10,9 @@ export const tasksApi = api.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'Tasks', id })),
-              { type: 'Tasks', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'Tasks', id })),
+            { type: 'Tasks', id: 'LIST' },
+          ]
           : [{ type: 'Tasks', id: 'LIST' }],
     }),
     getTask: builder.query({
@@ -24,9 +24,9 @@ export const tasksApi = api.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'Tasks', id })),
-              { type: 'Tasks', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'Tasks', id })),
+            { type: 'Tasks', id: 'LIST' },
+          ]
           : [{ type: 'Tasks', id: 'LIST' }],
     }),
     getTasksByAssignee: builder.query({
@@ -34,9 +34,9 @@ export const tasksApi = api.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'Tasks', id })),
-              { type: 'Tasks', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'Tasks', id })),
+            { type: 'Tasks', id: 'LIST' },
+          ]
           : [{ type: 'Tasks', id: 'LIST' }],
     }),
     createTask: builder.mutation({
@@ -78,14 +78,15 @@ export const tasksApi = api.injectEndpoints({
       ],
     }),
     assignTask: builder.mutation({
-      query: ({ id, assigneeId }) => ({
+      query: ({ id, formData }) => ({
         url: `/tasks/${id}/assign`,
-        method: 'PATCH',
-        body: { assigneeId },
+        method: 'PUT',
+        body: formData,
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
+        { type: 'Projects', id: 'LIST' },
       ],
     }),
   }),

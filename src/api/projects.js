@@ -10,9 +10,9 @@ export const projectsApi = api.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'Projects', id })),
-              { type: 'Projects', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'Projects', id })),
+            { type: 'Projects', id: 'LIST' },
+          ]
           : [{ type: 'Projects', id: 'LIST' }],
     }),
     getProject: builder.query({
@@ -24,9 +24,9 @@ export const projectsApi = api.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              { type: 'Projects', id: result.id },
-              { type: 'Projects', id: 'LIST' },
-            ]
+            { type: 'Projects', id: result.id },
+            { type: 'Projects', id: 'LIST' },
+          ]
           : [{ type: 'Projects', id: 'LIST' }],
     }),
     createProject: builder.mutation({
@@ -85,6 +85,16 @@ export const projectsApi = api.injectEndpoints({
       }),
       invalidatesTags: [{ type: 'Projects', id: 'LIST' }],
     }),
+    confirmProject: builder.mutation({
+      query: (id) => ({
+        url: `/projects/${id}/confirm`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Projects', id },
+        { type: 'Projects', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -98,4 +108,5 @@ export const {
   useUpdateProjectStatusMutation,
   useUpdateProjectProgressMutation,
   useAssignProjectMutation,
+  useConfirmProjectMutation,
 } = projectsApi;

@@ -8,6 +8,7 @@ import { OpportunityDetailPage } from './pages/Opportunities/OpportunityDetailPa
 import { QuotationsPage } from './pages/Quotations/QuotationsPage';
 import { ContractsPage } from './pages/Contracts/ContractsPage';
 import { ProjectsPage } from './pages/Projects/ProjectsPage';
+import { ProjectDetailPage } from './pages/Projects/ProjectDetailPage/ProjectDetailPage';
 import { TasksPage } from './pages/Tasks/TasksPage';
 import { FinancePage } from './pages/Finance/FinancePage';
 import { SettingsPage } from './pages/Settings/SettingsPage';
@@ -21,7 +22,7 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path='/login' element={<LoginPage />} />
-        
+
         {/* Protected routes */}
         <Route
           path='/'
@@ -99,6 +100,16 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <ProjectsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/:id'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ProjectDetailPage />
               </Layout>
             </ProtectedRoute>
           }

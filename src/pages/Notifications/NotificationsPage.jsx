@@ -56,13 +56,12 @@ export const NotificationsPage = () => {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-4 hover:bg-gray-50 transition-colors ${
-                    !notification.isRead ? 'bg-blue-50' : ''
-                  }`}
+                  className={`p-4 hover:bg-gray-50 transition-colors ${!notification.isRead ? 'bg-blue-50' : ''
+                    }`}
                 >
-                  <button 
-                    onClick={()=> navigate(notification.link)}
-                    className="flex items-start justify-between">
+                  <div
+                    onClick={() => navigate(notification.link)}
+                    className="flex items-start justify-between cursor-pointer">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
                         <h3 className="font-medium text-gray-900">
@@ -75,7 +74,7 @@ export const NotificationsPage = () => {
                         )}
                       </div>
                       <p className="text-sm text-gray-600 mb-2">
-                        {notification.message}
+                        {notification.content}
                       </p>
                       <div className="flex items-center space-x-4 text-xs text-gray-500">
                         <div className="flex items-center space-x-1">
@@ -95,14 +94,17 @@ export const NotificationsPage = () => {
                     </div>
                     {!notification.isRead && (
                       <button
-                        onClick={() => handleMarkAsRead(notification.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMarkAsRead(notification.id);
+                        }}
                         className="ml-4 p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                         title="Đánh dấu đã đọc"
                       >
                         <Check className="h-5 w-5" />
                       </button>
                     )}
-                  </button>
+                  </div>
                 </div>
               ))}
             </div>

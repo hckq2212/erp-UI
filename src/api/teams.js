@@ -16,6 +16,13 @@ export const teamsApi = api.injectEndpoints({
       query: (id) => `/teams/${id}`,
       providesTags: (result, error, id) => [{ type: 'Teams', id }],
     }),
+    getTeamMembers: builder.query({
+      query: (teamId) => `/teams/${teamId}/members`,
+      providesTags: (result, error, teamId) => [
+        { type: 'Teams', id: teamId },
+        { type: 'Teams', id: 'LIST' },
+      ],
+    }),
     createTeam: builder.mutation({
       query: (data) => ({
         url: '/teams',
@@ -66,6 +73,7 @@ export const teamsApi = api.injectEndpoints({
 export const {
   useGetTeamsQuery,
   useGetTeamQuery,
+  useGetTeamMembersQuery,
   useCreateTeamMutation,
   useUpdateTeamMutation,
   useDeleteTeamMutation,
