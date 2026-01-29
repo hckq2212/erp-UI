@@ -2,6 +2,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Calendar, User } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { PROJECT_STATUS_COLORS } from '../../utils/enums';
 
 export const ProjectCard = ({ project }) => {
   const {
@@ -18,13 +19,7 @@ export const ProjectCard = ({ project }) => {
     transition,
   };
 
-  const statusColors = {
-    Planning: 'border-l-blue-500',
-    InProgress: 'border-l-yellow-500',
-    Completed: 'border-l-green-500',
-    OnHold: 'border-l-orange-500',
-    Cancelled: 'border-l-red-500',
-  };
+  const statusColors = PROJECT_STATUS_COLORS;
 
   return (
     <div
@@ -39,18 +34,15 @@ export const ProjectCard = ({ project }) => {
       )}
     >
       <div className="flex justify-between items-start mb-2">
-        <span className="text-xs font-mono text-gray-500">{project.code}</span>
-        <span className="text-xs font-semibold text-gray-700 truncate max-w-[120px]">{project.name}</span>
+        <span className="text-xs font-mono text-gray-500">{project.contract?.contractCode || 'N/A'}</span>
       </div>
       
+      <h3 className="font-semibold text-gray-900 mb-2 truncate">{project.name}</h3>
+      
       <div className="space-y-2">
-        <div className="flex items-center text-gray-600 text-sm">
+        <div className="flex items-center text-gray-600 text-xs">
             <User className="w-3 h-3 mr-2" />
-            <span className="truncate">{project.customerName}</span>
-        </div>
-         <div className="flex items-center text-gray-500 text-xs">
-            <Calendar className="w-3 h-3 mr-2" />
-            <span>{project.startDate} - {project.endDate}</span>
+            <span className="truncate">{project.team?.name || 'Chưa phân công'}</span>
         </div>
       </div>
     </div>

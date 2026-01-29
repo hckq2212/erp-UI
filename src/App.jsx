@@ -13,6 +13,7 @@ import { FinancePage } from './pages/Finance/FinancePage';
 import { SettingsPage } from './pages/Settings/SettingsPage';
 import { LoginPage } from './pages/Auth/LoginPage';
 import ContractDetailPage from './pages/Contracts/ContractDetailPage/ContractDetailPage';
+import { NotificationsPage } from './pages/Notifications/NotificationsPage';
 
 function App() {
   return (
@@ -118,6 +119,16 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <FinancePage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/notifications'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <NotificationsPage />
               </Layout>
             </ProtectedRoute>
           }

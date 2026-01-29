@@ -187,7 +187,7 @@ export const ContractDetailPage = () => {
         {/* Main Content - Left Side (2/3) */}
         <div className="lg:col-span-2 space-y-6">
           <ContractInfo contract={contract} formatDate={formatDate} />
-          {project && <ProjectInfo project={project} formatDate={formatDate} navigate={navigate} />}
+          {project && <ProjectInfo project={project} formatDate={formatDate} navigate={navigate} contractId={contract.id} />}
           <ProposalManagement
             contract={contract}
             onUploadProposal={handleUploadProposal}

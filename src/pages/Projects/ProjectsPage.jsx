@@ -5,23 +5,21 @@ import { ProjectColumn } from '../../components/projects/ProjectColumn';
 import { ProjectCard } from '../../components/projects/ProjectCard';
 import { Button } from '../../components/ui/Button';
 import { Plus, LayoutGrid, List } from 'lucide-react';
+import { useGetProjectsQuery, useUpdateProjectStatusMutation } from '../../api/projects';
+import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../utils/enums';
 
 const PROJECT_STATUSES = [
-    { id: 'Planning', title: 'Lên Kế Hoạch' },
-    { id: 'InProgress', title: 'Đang Thực Hiện' },
-    { id: 'OnHold', title: 'Tạm Hoãn' },
-    { id: 'Completed', title: 'Hoàn Thành' },
-    { id: 'Cancelled', title: 'Đã Hủy' }
+    { id: 'PENDING_CONFIRMATION', title: PROJECT_STATUS_LABELS.PENDING_CONFIRMATION },
+    { id: 'IN_PROGRESS', title: PROJECT_STATUS_LABELS.IN_PROGRESS },
+    { id: 'COMPLETED', title: PROJECT_STATUS_LABELS.COMPLETED },
+    { id: 'CANCELLED', title: PROJECT_STATUS_LABELS.CANCELLED },
 ];
 
 export const ProjectsPage = () => {
     const [viewMode, setViewMode] = useState('list'); // 'list' | 'kanban'
-    const { data: projectsData, isLoading, refetch } = useProjects();
-    const updateProject = useUpdateProject();
+    const { data: projects = [], isLoading } = useGetProjectsQuery();
+    const [updateProjectStatus] = useUpdateProjectStatusMutation();
     const [activeId, setActiveId] = useState(null);
-
-    // If using real API, projectsData depends on response structure. default to [] 
-    const projects = Array.isArray(projectsData) ? projectsData : (projectsData?.data || []);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -42,9 +40,7 @@ export const ProjectsPage = () => {
 
         // Check if dropped on a column
         if (PROJECT_STATUSES.find(s => s.id === overId) && activeProject.status !== overId) {
-             // Optimistic update locally if we had local state, but here we rely on React Query invalidation
-             // or we can manually update cache. For simplicity, just call mutation
-             updateProject.mutateAsync({ id: activeId, data: { status: overId } });
+             updateProjectStatus({ id: activeId, status: overId });
         }
         
         setActiveId(null);

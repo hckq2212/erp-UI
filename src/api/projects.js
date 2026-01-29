@@ -77,6 +77,14 @@ export const projectsApi = api.injectEndpoints({
         { type: 'Projects', id: 'LIST' },
       ],
     }),
+    assignProject: builder.mutation({
+      query: (data) => ({
+        url: '/projects/assign',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: [{ type: 'Projects', id: 'LIST' }],
+    }),
   }),
 });
 
@@ -89,4 +97,5 @@ export const {
   useDeleteProjectMutation,
   useUpdateProjectStatusMutation,
   useUpdateProjectProgressMutation,
+  useAssignProjectMutation,
 } = projectsApi;

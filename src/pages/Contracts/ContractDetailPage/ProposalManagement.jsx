@@ -28,7 +28,7 @@ export const ProposalManagement = ({ contract, onUploadProposal, onApprovePropos
                   <FileText className="w-4 h-4" />
                   Xem
                 </a>
-                {contract.status !== 'APPROVED' && (
+                {contract.status === 'PROPOSAL_UPLOADED' && (
                   <button
                     onClick={onApproveProposal}
                     className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
