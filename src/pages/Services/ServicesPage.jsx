@@ -1,10 +1,15 @@
 import { useNavigate } from 'react-router-dom';
 import { useGetServicesQuery } from '../../api/services';
 import { formatCurrency } from '../../utils/format';
+import { Plus } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
+import { useState } from 'react';
+import { CreateServiceModal } from './CreateServiceModal';
 
 export const ServicesPage = () => {
     const navigate = useNavigate();
     const { data: services = [], isLoading } = useGetServicesQuery();
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     return (
         <div className="animate-in fade-in duration-500 space-y-6">
@@ -13,6 +18,10 @@ export const ServicesPage = () => {
                     <h1 className='text-3xl font-bold text-gray-900 tracking-tight'>Quản Lý Dịch Vụ</h1>
                     <p className="text-gray-500 text-sm mt-1">Danh sách các dịch vụ cung cấp</p>
                 </div>
+                <Button onClick={() => setIsCreateModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Thêm Dịch Vụ
+                </Button>
             </div>
 
             <div className='bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden'>
@@ -58,6 +67,11 @@ export const ServicesPage = () => {
                     </div>
                 )}
             </div>
+
+            <CreateServiceModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+            />
         </div>
     );
 };

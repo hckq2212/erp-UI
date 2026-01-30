@@ -91,6 +91,12 @@ export const ServiceDetailPage = () => {
                                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Giá vốn</label>
                                 <p className="text-md font-bold text-blue-600">{formatCurrency(service.costPrice)}</p>
                             </div>
+                            {service.description && (
+                                <div>
+                                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Mô tả</label>
+                                    <p className="text-md font-bold text-blue-600">{service.description}</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

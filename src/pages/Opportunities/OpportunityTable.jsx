@@ -30,11 +30,11 @@ export const OpportunityTable = ({ opportunities = [], onEdit }) => {
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
                                         <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-sm">
-                                            {opp.customer?.name?.charAt(0) || <User className="w-4 h-4" />}
+                                            {opp.customer?.name?.charAt(0) || opp.leadName?.charAt(0) || <User className="w-4 h-4" />}
                                         </div>
                                         <div>
                                             <div className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                                {opp.customer?.name || '---'}
+                                                {opp.customer?.name || opp.leadName || '---'}
                                             </div>
                                             <div className="text-[10px] text-gray-400 font-medium">Tên cơ hội: {opp.opportunityCode}-{opp.name}</div>
                                         </div>
@@ -44,11 +44,11 @@ export const OpportunityTable = ({ opportunities = [], onEdit }) => {
                                     <div className="space-y-1">
                                         <div className="flex items-center text-gray-600 gap-2">
                                             <Phone className="w-3.5 h-3.5 text-blue-400" />
-                                            <span className="font-medium">{opp.customer?.phone || '---'}</span>
+                                            <span className="font-medium">{opp.customer?.phone || opp.leadPhone || '---'}</span>
                                         </div>
                                         <div className="flex items-center text-gray-400 gap-2">
                                             <Mail className="w-3.5 h-3.5 text-gray-300" />
-                                            <span className="truncate max-w-[150px]">{opp.customer?.email || '---'}</span>
+                                            <span className="truncate max-w-[150px]">{opp.customer?.email || opp.leadEmail || '---'}</span>
                                         </div>
                                     </div>
                                 </td>

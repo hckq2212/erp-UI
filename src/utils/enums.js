@@ -51,7 +51,8 @@ export const OPPORTUNITY_STATUS_LABELS = {
   PENDING_QUOTE_APPROVAL: 'Chờ duyệt báo giá',
   QUOTE_APPROVED: 'Đã duyệt báo giá',
   CONTRACT_CREATED: 'Đã tạo hợp đồng',
-  IMPLEMENTATION: 'Đã triển khai'
+  IMPLEMENTATION: 'Đã triển khai',
+  PROJECT_ASSIGNED: 'Đã giao dự án'
 };
 
 export const OPPORTUNITY_STATUS_COLORS = {

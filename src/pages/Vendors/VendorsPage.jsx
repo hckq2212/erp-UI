@@ -1,11 +1,15 @@
 import { useGetVendorsQuery } from '../../api/vendors';
 import { formatCurrency } from '../../utils/format';
-import { Store, Mail, Phone, MapPin } from 'lucide-react';
+import { Store, Mail, Phone, MapPin, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '../../components/ui/Button';
+import { useState } from 'react';
+import { CreateVendorModal } from './CreateVendorModal';
 
 export const VendorsPage = () => {
     const { data: vendors = [], isLoading } = useGetVendorsQuery();
     const navigate = useNavigate();
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     return (
         <div className="animate-in fade-in duration-500 space-y-6">
@@ -14,6 +18,10 @@ export const VendorsPage = () => {
                     <h1 className='text-3xl font-bold text-gray-900 tracking-tight'>Quản Lý Vendor</h1>
                     <p className="text-gray-500 text-sm mt-1">Danh sách các đối tác cung cấp dịch vụ</p>
                 </div>
+                <Button onClick={() => setIsCreateModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Thêm Vendor
+                </Button>
             </div>
 
             <div className='bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden'>
@@ -43,7 +51,6 @@ export const VendorsPage = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-medium text-gray-900">{vendor.name}</p>
-                                                    <p className="text-xs text-gray-500">{vendor.code || `VND-${vendor.id}`}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -87,6 +94,11 @@ export const VendorsPage = () => {
                     </div>
                 )}
             </div>
+
+            <CreateVendorModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+            />
         </div>
     );
 };

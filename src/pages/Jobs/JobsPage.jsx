@@ -1,8 +1,13 @@
 import { useGetJobsQuery } from '../../api/jobs';
 import { formatCurrency } from '../../utils/format';
+import { Plus } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
+import { useState } from 'react';
+import { CreateJobModal } from './CreateJobModal';
 
 export const JobsPage = () => {
     const { data: jobs = [], isLoading } = useGetJobsQuery();
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     return (
         <div className="animate-in fade-in duration-500 space-y-6">
@@ -11,6 +16,10 @@ export const JobsPage = () => {
                     <h1 className='text-3xl font-bold text-gray-900 tracking-tight'>Quản Lý Hạng Mục Dịch Vụ</h1>
                     <p className="text-gray-500 text-sm mt-1">Danh sách chi tiết các hạng mục công việc</p>
                 </div>
+                <Button onClick={() => setIsCreateModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Thêm Hạng Mục
+                </Button>
             </div>
 
             <div className='bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden'>
@@ -53,6 +62,11 @@ export const JobsPage = () => {
                     </div>
                 )}
             </div>
+
+            <CreateJobModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+            />
         </div>
     );
 };
