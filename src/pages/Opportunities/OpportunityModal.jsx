@@ -108,12 +108,12 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     const totalSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
-    
+
     if (selectedFiles.length > 5) {
       setErrors(prev => ({ ...prev, files: 'Tối đa 5 file' }));
       return;
     }
-    
+
     if (totalSize > 25 * 1024 * 1024) {
       setErrors(prev => ({ ...prev, files: 'Tổng dung lượng không quá 25MB' }));
       return;
@@ -121,6 +121,10 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
     setFiles(selectedFiles);
     setErrors(prev => ({ ...prev, files: null }));
+  };
+
+  const removeFile = (index) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const calculateTotal = () => {
@@ -133,7 +137,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Vui lòng nhập tên cơ hội';
@@ -145,12 +149,12 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     if (!formData.endDate) newErrors.endDate = 'Vui lòng chọn ngày kết thúc';
     if (formData.successChance <= 0) newErrors.successChance = 'Khả năng thành công phải lớn hơn 0%';
     if (!formData.durationMonths || formData.durationMonths <= 0) newErrors.durationMonths = 'Vui lòng nhập số tháng triển khai';
-    
+
     // Validate end date after start date
     if (formData.startDate && formData.endDate && formData.endDate <= formData.startDate) {
       newErrors.endDate = 'Ngày kết thúc phải sau ngày khởi công';
     }
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -159,7 +163,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     try {
       // Build FormData for multipart/form-data submission
       const submitFormData = new FormData();
-      
+
       // Add basic fields
       Object.keys(formData).forEach(key => {
         if (formData[key] !== '' && formData[key] !== null && formData[key] !== undefined) {
@@ -170,8 +174,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       // Add services as JSON string - transform serviceId to id
       const validServices = selectedServices
         .filter(s => s.serviceId)
-        .map(s => ({ 
-          id: parseInt(s.serviceId), 
+        .map(s => ({
+          id: parseInt(s.serviceId),
           quantity: s.quantity
         }));
       if (validServices.length > 0) {
@@ -194,7 +198,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       await createOpportunity(submitFormData).unwrap();
       onSuccess?.();
       onClose();
-      
+
       // Reset form
       setFormData({
         name: '',
@@ -432,13 +436,12 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                           key={p.value}
                           type="button"
                           onClick={() => setFormData(prev => ({ ...prev, priority: p.value }))}
-                          className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
-                            formData.priority === p.value
+                          className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${formData.priority === p.value
                               ? p.value === 'High' ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
-                              : p.value === 'Medium' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
-                              : 'bg-green-500 text-white shadow-lg shadow-green-500/30'
+                                : p.value === 'Medium' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
+                                  : 'bg-green-500 text-white shadow-lg shadow-green-500/30'
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
+                            }`}
                         >
                           {p.label}
                         </button>
@@ -459,14 +462,13 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                       />
                       <div className="flex justify-between mt-2">
                         <span className="text-xs text-gray-400">0%</span>
-                        <span className={`text-lg font-bold ${
-                          formData.successChance >= 70 ? 'text-green-600' 
-                          : formData.successChance >= 40 ? 'text-orange-500' 
-                          : 'text-red-500'
-                        }`}>
+                        <span className={`text-lg font-bold ${formData.successChance >= 70 ? 'text-green-600'
+                            : formData.successChance >= 40 ? 'text-orange-500'
+                              : 'text-red-500'
+                          }`}>
                           {formData.successChance}%
                         </span>
-                    {errors.successChance && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.successChance}</p>}
+                        {errors.successChance && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.successChance}</p>}
                         <span className="text-xs text-gray-400">100%</span>
                       </div>
                     </div>
@@ -490,7 +492,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                     Thêm dịch vụ
                   </button>
                 </div>
-                
+
                 <div className="space-y-3">
                   {selectedServices.map((item, index) => {
                     // Filter out already selected services (except current selection)
@@ -499,7 +501,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                       .map(s => String(s.serviceId))
                       .filter(id => id);
                     const availableServices = services.filter(s => !selectedIds.includes(String(s.id)));
-                    
+
                     return (
                       <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                         <select
@@ -617,10 +619,30 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                     </label>
                   </div>
                   {files.length > 0 && (
-                    <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                      <p className="text-sm text-green-700 font-medium">
-                        ✓ {files.length} file đã chọn
-                      </p>
+                    <div className="mt-4 space-y-2">
+                      <p className="text-sm font-medium text-gray-700">Tệp đã chọn ({files.length}):</p>
+                      <div className="grid grid-cols-1 gap-2">
+                        {files.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 group hover:bg-white hover:border-blue-300 transition-all">
+                            <div className="flex items-center gap-3 overflow-hidden">
+                              <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                                <FileText className="w-4 h-4" />
+                              </div>
+                              <div className="overflow-hidden">
+                                <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                                <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeFile(index)}
+                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                   {errors.files && <p className="mt-2 text-sm text-red-500">{errors.files}</p>}

@@ -83,11 +83,12 @@ export const tasksApi = api.injectEndpoints({
         method: 'PUT',
         body: formData,
       }),
-      invalidatesTags: (result, error, { id }) => [
+      invalidatesTags: (result, error, { id, task }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
         { type: 'Projects', id: 'LIST' },
-      ],
+        task?.projectId ? { type: 'Projects', id: task.projectId } : null
+      ].filter(Boolean),
     }),
   }),
 });

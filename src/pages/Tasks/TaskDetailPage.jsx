@@ -180,7 +180,7 @@ export const TaskDetailPage = () => {
                                 {task.assignee?.fullName?.charAt(0) || <User className="w-6 h-6" />}
                             </div>
                             <div>
-                                <p className="text-gray-900 font-bold">{task.assignee?.fullName || 'Chưa có người thực hiện'}</p>
+                                <p className="text-gray-900 font-bold">{task.assignee?.fullName || task.assignee?.name || 'Chưa có người thực hiện'}</p>
                                 <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">{JOB_PERFORMER_TYPE[task.performerType] || 'INTERNAL'}</p>
                             </div>
                         </div>

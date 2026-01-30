@@ -19,6 +19,7 @@ import { VendorDetailPage } from './pages/Vendors/VendorDetailPage';
 import { LoginPage } from './pages/Auth/LoginPage';
 import ContractDetailPage from './pages/Contracts/ContractDetailPage/ContractDetailPage';
 import { NotificationsPage } from './pages/Notifications/NotificationsPage';
+import { ReferralPartnersPage } from './pages/ReferralPartners/ReferralPartnersPage';
 
 function App() {
   return (
@@ -184,6 +185,16 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <FinancePage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/referral-partners'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ReferralPartnersPage />
               </Layout>
             </ProtectedRoute>
           }

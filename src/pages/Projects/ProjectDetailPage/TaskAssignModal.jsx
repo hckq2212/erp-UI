@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { X, Upload, Link as LinkIcon, Calendar, User, FileText, Trash2, Plus } from 'lucide-react';
 import { useGetTeamMembersQuery } from '../../../api/teams';
 import { useAssignTaskMutation } from '../../../api/tasks';
+import { useGetVendorsByJobQuery } from '../../../api/vendors';
 import { toast } from 'react-toastify';
 
 export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
@@ -12,11 +13,18 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
 
     const [formData, setFormData] = useState({
         assigneeId: '',
+        performerType: 'INTERNAL',
         plannedEndDate: '',
         plannedStartDate: '',
         description: '',
         links: [''],
     });
+
+    const jobId = task?.jobId || task?.job?.id;
+    const { data: vendorsResult, isLoading: isLoadingVendors } = useGetVendorsByJobQuery(jobId, {
+        skip: formData.performerType !== 'VENDOR' || !jobId
+    });
+    const vendors = Array.isArray(vendorsResult) ? vendorsResult : (vendorsResult?.data || []);
     const [files, setFiles] = useState([]);
 
     if (!isOpen) return null;
@@ -67,6 +75,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
         try {
             const data = new FormData();
             data.append('assigneeId', formData.assigneeId);
+            data.append('performerType', formData.performerType);
             if (formData.plannedEndDate) {
                 data.append('plannedEndDate', formData.plannedEndDate);
             }
@@ -112,9 +121,24 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto">
+                    {/* Performer Type */}
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">Bên thực hiện</label>
+                        <select
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                            value={formData.performerType}
+                            onChange={(e) => setFormData({ ...formData, performerType: e.target.value, assigneeId: '' })}
+                        >
+                            <option value="INTERNAL">Nội bộ</option>
+                            <option value="VENDOR">Vendor</option>
+                        </select>
+                    </div>
+
                     {/* Assignee */}
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">Người thực hiện</label>
+                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">
+                            {formData.performerType === 'INTERNAL' ? 'Người thực hiện' : 'Chọn Vendor'}
+                        </label>
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <select
@@ -122,10 +146,22 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                 value={formData.assigneeId}
                                 onChange={(e) => setFormData({ ...formData, assigneeId: e.target.value })}
                             >
-                                <option value="">Chọn người thực hiện</option>
-                                {members.map(m => (
-                                    <option key={m.user.id} value={m.user.id}>{m.user.fullName}</option>
-                                ))}
+                                <option value="">
+                                    {formData.performerType === 'VENDOR' && isLoadingVendors
+                                        ? 'Đang tải danh sách vendor...'
+                                        : formData.performerType === 'VENDOR' && vendors.length === 0
+                                            ? 'Chưa có vendor nào cung cấp dịch vụ này'
+                                            : `Chọn ${formData.performerType === 'INTERNAL' ? 'người thực hiện' : 'vendor'}`}
+                                </option>
+                                {formData.performerType === 'INTERNAL' ? (
+                                    members.map(m => (
+                                        <option key={m.user.id} value={m.user.id}>{m.user.fullName}</option>
+                                    ))
+                                ) : (
+                                    vendors.map(v => (
+                                        <option key={v.id} value={v.id}>{v.name} {v.taxId ? `(${v.taxId})` : ''}</option>
+                                    ))
+                                )}
                             </select>
                         </div>
                     </div>

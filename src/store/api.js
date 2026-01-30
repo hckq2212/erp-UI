@@ -30,6 +30,8 @@ export const api = createApi({
     'Customers',
     'Teams',
     'Notifications',
+    'ReferralPartners',
+    'Vendors',
   ],
   endpoints: () => ({}),
 });

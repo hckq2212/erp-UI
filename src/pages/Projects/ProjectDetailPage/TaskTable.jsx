@@ -96,6 +96,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                             <th className="px-6 py-4 font-medium ">Mã Công việc</th>
                             <th className="px-6 py-4 font-medium ">Tên công việc</th>
                             <th className="px-6 py-4 font-medium">Thời gian</th>
+                            <th className="px-6 py-4 font-medium">Bên thực hiện</th>
                             <th className="px-6 py-4 font-medium text-center">Người thực hiện</th>
                             <th className="px-6 py-4 font-medium text-center ">Trạng thái</th>
                             {isProjectInProgress && (
@@ -126,8 +127,13 @@ export const TaskTable = ({ tasks = [], project }) => {
                                             {formatDate(task.plannedStartDate)} <span className="text-gray-400">→</span> {formatDate(task.plannedEndDate)}
                                         </div>
                                     </td>
+                                    <td className="px-6 py-4 text-gray-600">
+                                        <div className="flex items-center gap-1 whitespace-nowrap">
+                                            {task.performerType}
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 text-center">
-                                        <span className="font-medium text-gray-700">{task.assignee?.fullName || '---'}</span>
+                                        <span className="font-medium text-gray-700">{task.assignee?.fullName || task.vendorId || '---'}</span>
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         <span className="font-medium text-gray-700">{getStatusBadge(task.status)}</span>

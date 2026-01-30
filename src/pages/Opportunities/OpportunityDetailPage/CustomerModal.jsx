@@ -97,7 +97,6 @@ export const CustomerModal = ({
               <option value="EXISTING">Khách hàng hiện hữu</option>
             </select>
           </div>
-
           {/* Chọn khách hàng hiện hữu */}
           {customerStatus === 'EXISTING' && (
             <div>
@@ -109,15 +108,21 @@ export const CustomerModal = ({
                 onChange={(e) => setSelectedCustomerId(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="">-- Chọn khách hàng --</option>
+                <option value="">
+                  {isUpdating ? 'Đang tải danh sách...' : '-- Chọn khách hàng --'}
+                </option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.name} {customer.taxId ? `- ${customer.taxId}` : ''}
                   </option>
                 ))}
               </select>
+              {customerType === 'REFERRAL' && customers.length === 0 && !isUpdating && selectedReferralPartner && (
+                <p className="text-sm text-gray-500 mt-1 italic">Đối tác này chưa có khách hàng liên kết nào.</p>
+              )}
             </div>
           )}
+
 
           {/* Form nhập thông tin khách hàng tiềm năng */}
           {customerStatus === 'POTENTIAL' && (

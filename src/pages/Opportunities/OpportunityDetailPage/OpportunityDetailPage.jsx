@@ -9,6 +9,7 @@ import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportun
 import { useGetCustomersQuery } from '../../../api/customers';
 import { useGetQuotationsByOpportunityQuery, useCreateQuotationMutation, useUpdateQuotationMutation } from '../../../api/quotations';
 import { useCreateContractMutation } from '../../../api/contracts';
+import { useGetReferralPartnersQuery, useGetReferralPartnerQuery } from '../../../api/referralPartners';
 import { QuotationModal } from './QuotationModal';
 import { toast } from 'react-toastify';
 import { FinancialInfo } from './FinancialInfo';
@@ -19,11 +20,11 @@ import { CustomerInfo } from './CustomerInfo';
 import { AdditionalInfo } from './AdditionalInfo';
 import { QuotationsListModal } from './QuotationsListModal';
 import { CustomerModal } from './CustomerModal';
-import { 
-  PRIORITY_LABELS, 
-  PRIORITY_COLORS, 
-  OPPORTUNITY_STATUS_LABELS, 
-  OPPORTUNITY_STATUS_COLORS 
+import {
+  PRIORITY_LABELS,
+  PRIORITY_COLORS,
+  OPPORTUNITY_STATUS_LABELS,
+  OPPORTUNITY_STATUS_COLORS
 } from '../../../utils/enums';
 
 export const OpportunityDetailPage = () => {
@@ -60,8 +61,20 @@ export const OpportunityDetailPage = () => {
   // Fetch quotations for this opportunity
   const { data: quotations = [], isLoading: isLoadingQuotations } = useGetQuotationsByOpportunityQuery(id);
 
-  // Filter referral partners
-  const referralPartners = customers.filter(c => c.isReferralPartner);
+  // Fetch referral partners
+  const { data: referralPartnersResult = [] } = useGetReferralPartnersQuery();
+  const referralPartners = Array.isArray(referralPartnersResult) ? referralPartnersResult : (referralPartnersResult?.data || []);
+
+  // Fetch specific referral partner details if one is selected
+  const { data: partnerDetails, isLoading: isLoadingPartnerDetails } = useGetReferralPartnerQuery(
+    selectedReferralPartner,
+    { skip: !selectedReferralPartner || customerType !== 'REFERRAL' }
+  );
+
+  // Determine which customer list to pass to the modal
+  const displayCustomers = customerType === 'REFERRAL'
+    ? (partnerDetails?.customers || [])
+    : (Array.isArray(customers) ? customers : (customers?.data || []));
 
   const handleDelete = async () => {
     if (window.confirm('Bạn có chắc chắn muốn xóa cơ hội này?')) {
@@ -103,11 +116,20 @@ export const OpportunityDetailPage = () => {
         formData.append('leadTaxId', '');
         formData.append('leadAddress', '');
 
+        // Map frontend type to backend source enum
+        const backendSource = customerType === 'REFERRAL' ? 'REFERRAL_PARTNER' : 'INTERNAL';
+        formData.append('source', backendSource);
+
         if (customerType === 'REFERRAL' && selectedReferralPartner) {
           formData.append('referralPartnerId', selectedReferralPartner);
         }
       } else if (customerStatus === 'POTENTIAL') {
         formData.append('customerId', '');
+
+        // Map frontend type to backend source enum
+        const backendSource = customerType === 'REFERRAL' ? 'REFERRAL_PARTNER' : 'INTERNAL';
+        formData.append('source', backendSource);
+
         if (leadInfo.leadName) formData.append('leadName', leadInfo.leadName);
         if (leadInfo.leadPhone) formData.append('leadPhone', leadInfo.leadPhone);
         if (leadInfo.leadEmail) formData.append('leadEmail', leadInfo.leadEmail);
@@ -142,13 +164,13 @@ export const OpportunityDetailPage = () => {
           opportunityId: id,
           note: quotationData.note || ''
         }).unwrap();
-        
+
         // Update with details immediately after creation
         await updateQuotation({
           id: createResponse.id,
           ...quotationData
         }).unwrap();
-        
+
         toast.success('Tạo báo giá thành công');
       }
       setShowQuotationModal(false);
@@ -224,18 +246,22 @@ export const OpportunityDetailPage = () => {
           </div>
 
           <div className="flex gap-2">
-            <button
-              onClick={() => setShowQuotationsListModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              Xem báo giá {quotations.length > 0 && `(${quotations.length})`}
-            </button>
-            <button
-              onClick={() => setShowQuotationModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Tạo báo giá
-            </button>
+            {(opportunity.customer || opportunity.leadName) && (
+              <>
+                <button
+                  onClick={() => setShowQuotationsListModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Xem báo giá {quotations.length > 0 && `(${quotations.length})`}
+                </button>
+                <button
+                  onClick={() => setShowQuotationModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Tạo báo giá
+                </button>
+              </>
+            )}
             {opportunity.status === 'QUOTE_APPROVED' && (
               <button
                 onClick={async () => {
@@ -313,9 +339,9 @@ export const OpportunityDetailPage = () => {
         leadInfo={leadInfo}
         setLeadInfo={setLeadInfo}
         referralPartners={referralPartners}
-        customers={customers}
+        customers={displayCustomers}
         onSave={handleSaveContact}
-        isUpdating={isUpdating}
+        isUpdating={isUpdating || isLoadingPartnerDetails}
       />
 
       <QuotationsListModal

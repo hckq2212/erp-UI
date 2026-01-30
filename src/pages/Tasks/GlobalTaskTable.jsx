@@ -51,9 +51,9 @@ export const GlobalTaskTable = ({ tasks = [] }) => {
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-2 text-gray-600">
                                         <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 border border-gray-200">
-                                            {task.assignee?.fullName?.charAt(0) || <User className="w-3.5 h-3.5" />}
+                                            {(task.assignee?.fullName || task.assignee?.name)?.charAt(0) || <User className="w-3.5 h-3.5" />}
                                         </div>
-                                        <span className="text-xs font-medium line-clamp-1">{task.assignee?.fullName || 'Chưa phân công'}</span>
+                                        <span className="text-xs font-medium line-clamp-1">{task.assignee?.fullName || task.assignee?.name || 'Chưa phân công'}</span>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">

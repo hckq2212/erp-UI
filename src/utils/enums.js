@@ -117,7 +117,8 @@ export const FIELD_LABELS = {
 
 export const JOB_PERFORMER_TYPE = {
   INTERNAL: "Nội bộ",
-  PARTNER: "Đối tác"
+  PARTNER: "Đối tác",
+  VENDOR: "Vendor"
 };
 
 export const TASK_STATUS = {
@@ -129,4 +130,10 @@ export const TASK_STATUS = {
   CANCELLED: "Đã hủy",
   OVERDUE: "Quá hạn"
 };
+
+export const PARTNER_TYPE_LABELS = {
+  BUSINESS: 'Doanh nghiệp',
+  INDIVIDUAL: 'Cá nhân'
+};
+
 

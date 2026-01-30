@@ -1,5 +1,6 @@
 import { Calendar, Tag } from 'lucide-react';
 import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../../utils/enums';
+import { FileText } from 'lucide-react';
 
 export const ProjectInfo = ({ project, formatDate }) => {
     return (
@@ -24,9 +25,38 @@ export const ProjectInfo = ({ project, formatDate }) => {
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Đội thực hiện</p>
-                        <p className="text-sm font-medium text-gray-700">{project.team.name}</p>
+                        <p className="text-sm font-medium text-gray-700">{project?.team?.name || 'Chưa phân công'}</p>
                     </div>
                 </div>
+                {project?.contract?.attachments && project?.contract?.attachments.length > 0 ? (
+                    <div className="flex flex-col items-start gap-2 mb-5">
+                        <div>
+                            <h2 className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Mô tả khách hàng</h2>
+                        </div>
+
+                        <div className="space-y-3">
+                            {project?.contract?.attachments.map((file, idx) => (
+                                <a
+                                    key={idx}
+                                    href={file.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-blue-200 hover:bg-white transition-all"
+                                >
+                                    <div className="w-8 h-8 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
+                                        <FileText className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-gray-700 truncate">{file.name}</p>
+                                        <p className="text-[10px] text-gray-400 uppercase font-bold">{file.type}</p>
+                                    </div>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-sm text-gray-400 italic text-center py-4">Không có tài liệu đính kèm</p>
+                )}
             </div>
         </div>
     );

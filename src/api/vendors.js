@@ -81,6 +81,16 @@ export const vendorsApi = api.injectEndpoints({
                 { type: 'Vendors', id },
             ],
         }),
+        getVendorsByJob: builder.query({
+            query: (jobId) => `/vendors/by-job/${jobId}`,
+            providesTags: (result) =>
+                result
+                    ? [
+                        ...result.map(({ id }) => ({ type: 'Vendors', id })),
+                        { type: 'Vendors', id: 'LIST' },
+                    ]
+                    : [{ type: 'Vendors', id: 'LIST' }],
+        }),
     }),
 });
 
@@ -94,4 +104,5 @@ export const {
     useAddVendorJobMutation,
     useUpdateVendorJobMutation,
     useRemoveVendorJobMutation,
+    useGetVendorsByJobQuery,
 } = vendorsApi;
