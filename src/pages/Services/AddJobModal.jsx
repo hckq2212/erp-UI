@@ -8,7 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { useGetJobsQuery, useCreateJobMutation } from '../../api/jobs';
 import { Plus, Search, Check, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, formatNumber } from '../../utils/format';
 
 const jobSchema = z.object({
     name: z.string().min(1, 'Tên hạng mục là bắt buộc'),
@@ -20,13 +20,15 @@ const jobSchema = z.object({
 export const AddJobModal = ({ isOpen, onClose, onAddJob, serviceId, existingJobIds = [] }) => {
     const [isCreatingNew, setIsCreatingNew] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const { data: allJobs = [], isLoading: isLoadingJobs } = useGetJobsQuery({ search: searchTerm });
+    const { data: allJobs = [], isLoading: isLoadingJobs } = useGetJobsQuery();
     const [createJob, { isLoading: isCreating }] = useCreateJobMutation();
 
     const {
         register,
         handleSubmit,
         reset,
+        watch,
+        setValue,
         formState: { errors },
     } = useForm({
         resolver: zodResolver(jobSchema),
@@ -37,6 +39,8 @@ export const AddJobModal = ({ isOpen, onClose, onAddJob, serviceId, existingJobI
             performerType: 'INTERNAL',
         },
     });
+
+    const costPriceValue = watch('costPrice');
 
     useEffect(() => {
         if (!isOpen) {
@@ -57,7 +61,12 @@ export const AddJobModal = ({ isOpen, onClose, onAddJob, serviceId, existingJobI
         }
     };
 
-    const filteredJobs = allJobs.filter(job => !existingJobIds.includes(job.id));
+    const filteredJobs = allJobs
+        .filter(job => !existingJobIds.includes(job.id))
+        .filter(job =>
+            job.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            job.code.toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
     return (
         <Modal
@@ -81,6 +90,11 @@ export const AddJobModal = ({ isOpen, onClose, onAddJob, serviceId, existingJobI
                         <Input
                             label="Giá vốn"
                             {...register('costPrice')}
+                            value={formatNumber(costPriceValue)}
+                            onChange={(e) => {
+                                const rawValue = e.target.value.replace(/\D/g, '');
+                                setValue('costPrice', rawValue);
+                            }}
                             error={errors.costPrice?.message}
                         />
                         <div className="w-full">

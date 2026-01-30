@@ -14,6 +14,8 @@ import { ProjectDetailPage } from './pages/Projects/ProjectDetailPage/ProjectDet
 import { TasksPage } from './pages/Tasks/TasksPage';
 import { TaskDetailPage } from './pages/Tasks/TaskDetailPage';
 import { FinancePage } from './pages/Finance/FinancePage';
+import { VendorsPage } from './pages/Vendors/VendorsPage';
+import { VendorDetailPage } from './pages/Vendors/VendorDetailPage';
 import { LoginPage } from './pages/Auth/LoginPage';
 import ContractDetailPage from './pages/Contracts/ContractDetailPage/ContractDetailPage';
 import { NotificationsPage } from './pages/Notifications/NotificationsPage';
@@ -152,6 +154,26 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <TaskDetailPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/vendors'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <VendorsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/vendors/:id'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <VendorDetailPage />
               </Layout>
             </ProtectedRoute>
           }

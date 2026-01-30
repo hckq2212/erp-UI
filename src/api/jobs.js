@@ -3,16 +3,13 @@ import { api } from '../store/api';
 export const jobsApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getJobs: builder.query({
-      query: (params) => ({
-        url: '/jobs',
-        params,
-      }),
+      query: () => '/jobs',
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'Jobs', id })),
-              { type: 'Jobs', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'Jobs', id })),
+            { type: 'Jobs', id: 'LIST' },
+          ]
           : [{ type: 'Jobs', id: 'LIST' }],
     }),
     getJob: builder.query({

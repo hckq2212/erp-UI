@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Briefcase, FileText,
-  FileSignature, Rocket, CheckSquare, DollarSign, Settings
+  FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -9,6 +9,7 @@ const menuItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/customers', icon: Users, label: 'Khách Hàng' },
   { path: '/opportunities', icon: Briefcase, label: 'Cơ Hội' },
+  { path: '/vendors', icon: Store, label: 'Vendor' },
   { path: '/contracts', icon: FileSignature, label: 'Hợp Đồng' },
   { path: '/projects', icon: Rocket, label: 'Dự Án' },
   { path: '/tasks', icon: CheckSquare, label: 'Công Việc' },

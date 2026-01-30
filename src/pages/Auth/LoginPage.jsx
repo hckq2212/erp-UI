@@ -5,6 +5,9 @@ import { useLoginMutation } from '../../api/auth';
 import { setCredentials } from '../../store/authSlice';
 import { User, Lock, Eye, EyeOff, Grid3X3, ShieldCheck, TrendingUp, Headphones, Box } from 'lucide-react';
 
+import bg from '../../assets/bg.jpg';
+import logo from '../../assets/logo.png';
+
 export const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -38,38 +41,17 @@ export const LoginPage = () => {
       <div className="relative hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 overflow-hidden bg-blue-600/5">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
-          <img
-            alt="Office Background"
-            className="h-full w-full object-cover"
-            src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80"
-          />
-          <div className="absolute inset-0 bg-blue-600/90 mix-blend-multiply"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+
+          <div className="absolute inset-0 bg-[#f38820] mix-blend-multiply"></div>
         </div>
 
         {/* Content */}
-        <div className="relative z-10 flex flex-col items-start gap-6 max-w-lg">
-          <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-white/20 backdrop-blur-sm text-white mb-4">
-            <Grid3X3 className="w-8 h-8" />
-          </div>
-          <h1 className="text-white text-5xl font-black leading-tight tracking-tight">
-            Chào mừng trở lại!
-          </h1>
-          <p className="text-white/90 text-xl font-normal leading-relaxed">
-            Quản lý dự án, tài chính và vận hành doanh nghiệp hiệu quả hơn bao giờ hết với hệ thống ERP toàn diện.
-          </p>
-
-          {/* Ornamental UI elements */}
-          <div className="mt-8 flex gap-4">
-            <div className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur-md border border-white/10">
-              <ShieldCheck className="w-4 h-4 text-white" />
-              <span className="text-white text-sm font-medium">An toàn & Bảo mật</span>
-            </div>
-            <div className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur-md border border-white/10">
-              <TrendingUp className="w-4 h-4 text-white" />
-              <span className="text-white text-sm font-medium">Tối ưu hiệu suất</span>
-            </div>
-          </div>
+        <div className="relative z-10 flex flex-col items-start gap-6 max-w-full">
+          <img
+            alt="Office Background"
+            className="h-full w-full object-cover"
+            src={bg}
+          />
         </div>
       </div>
 
@@ -169,30 +151,6 @@ export const LoginPage = () => {
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-gray-200"></div>
-            <span className="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase tracking-wider">Hoặc</span>
-            <div className="flex-grow border-t border-gray-200"></div>
-          </div>
-
-          {/* SSO Button */}
-          <button className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white h-12 px-5 text-slate-900 text-sm font-semibold hover:bg-gray-50 transition-colors">
-            <img
-              alt="Google"
-              className="w-5 h-5"
-              src="https://www.google.com/favicon.ico"
-            />
-            <span>Đăng nhập với Google</span>
-          </button>
-
-          {/* Footer Support */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-slate-400 flex items-center justify-center gap-1">
-              <Headphones className="w-4 h-4" />
-              Hỗ trợ kỹ thuật: <span className="font-medium text-slate-600">1900 8888</span>
-            </p>
-          </div>
         </div>
 
         {/* Bottom decorative fade (mobile only) */}

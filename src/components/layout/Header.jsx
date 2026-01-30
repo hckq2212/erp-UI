@@ -3,20 +3,25 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { selectCurrentUser } from '../../store/authSlice';
 import { useGetMyNotificationsQuery } from '../../api/notifications';
+import logo from '../../assets/logo.png';
 
 export const Header = () => {
   const user = useSelector(selectCurrentUser);
   const navigate = useNavigate();
   const { data: notifications = [] } = useGetMyNotificationsQuery();
-  
+
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-30 flex items-center justify-between px-6">
       <div className="flex items-center">
-        <span className="text-xl font-bold text-blue-600">GETVINI</span>
+        <img
+          alt="Office Logo"
+          className="h-15 w-15  object-contain"
+          src={logo}
+        />
       </div>
-      
+
       <div className="flex-1 max-w-lg mx-8">
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -28,7 +33,7 @@ export const Header = () => {
             placeholder="Search..."
           />
         </div>
-        </div>
+      </div>
 
       <div className="flex items-center space-x-4">
         <button
@@ -43,10 +48,10 @@ export const Header = () => {
           )}
         </button>
         <div className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded-lg">
-            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                <User className="h-5 w-5 text-gray-500" />
-            </div>
-            <span className="text-sm font-medium text-gray-700">{user?.fullName || 'User'}</span>
+          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+            <User className="h-5 w-5 text-gray-500" />
+          </div>
+          <span className="text-sm font-medium text-gray-700">{user?.fullName || 'User'}</span>
         </div>
       </div>
     </header>
