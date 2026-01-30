@@ -1,0 +1,166 @@
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Modal } from '../../components/ui/Modal';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { useGetJobsQuery, useCreateJobMutation } from '../../api/jobs';
+import { Plus, Search, Check, Loader2 } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { formatCurrency } from '../../utils/format';
+
+const jobSchema = z.object({
+    name: z.string().min(1, 'Tên hạng mục là bắt buộc'),
+    code: z.string().min(1, 'Mã hạng mục là bắt buộc'),
+    costPrice: z.string().transform((val) => val.replace(/\D/g, '')).optional(),
+    performerType: z.enum(['INTERNAL', 'EXTERNAL']),
+});
+
+export const AddJobModal = ({ isOpen, onClose, onAddJob, serviceId, existingJobIds = [] }) => {
+    const [isCreatingNew, setIsCreatingNew] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const { data: allJobs = [], isLoading: isLoadingJobs } = useGetJobsQuery({ search: searchTerm });
+    const [createJob, { isLoading: isCreating }] = useCreateJobMutation();
+
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors },
+    } = useForm({
+        resolver: zodResolver(jobSchema),
+        defaultValues: {
+            name: '',
+            code: '',
+            costPrice: '',
+            performerType: 'INTERNAL',
+        },
+    });
+
+    useEffect(() => {
+        if (!isOpen) {
+            setIsCreatingNew(false);
+            setSearchTerm('');
+            reset();
+        }
+    }, [isOpen, reset]);
+
+    const handleCreateJob = async (data) => {
+        try {
+            const newJob = await createJob(data).unwrap();
+            await onAddJob(newJob.id);
+            toast.success('Tạo và thêm hạng mục mới thành công');
+            onClose();
+        } catch (err) {
+            toast.error(err?.data?.message || 'Có lỗi xảy ra khi tạo hạng mục');
+        }
+    };
+
+    const filteredJobs = allJobs.filter(job => !existingJobIds.includes(job.id));
+
+    return (
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={isCreatingNew ? 'Tạo Hạng Mục Mới' : 'Thêm Hạng Mục Công Việc'}
+        >
+            {isCreatingNew ? (
+                <form onSubmit={handleSubmit(handleCreateJob)} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input
+                            label="Tên hạng mục *"
+                            {...register('name')}
+                            error={errors.name?.message}
+                        />
+                        <Input
+                            label="Mã hạng mục *"
+                            {...register('code')}
+                            error={errors.code?.message}
+                        />
+                        <Input
+                            label="Giá vốn"
+                            {...register('costPrice')}
+                            error={errors.costPrice?.message}
+                        />
+                        <div className="w-full">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Loại thực hiện *</label>
+                            <select
+                                {...register('performerType')}
+                                className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                            >
+                                <option value="INTERNAL">Nội bộ</option>
+                                <option value="EXTERNAL">Bên ngoài</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="flex justify-between items-center pt-4 border-t mt-6">
+                        <Button type="button" variant="outline" onClick={() => setIsCreatingNew(false)}>
+                            Quay lại tìm kiếm
+                        </Button>
+                        <div className="space-x-3">
+                            <Button type="button" variant="outline" onClick={onClose}>Hủy</Button>
+                            <Button type="submit" isLoading={isCreating}>Tạo & Thêm</Button>
+                        </div>
+                    </div>
+                </form>
+            ) : (
+                <div className="space-y-6">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Tìm kiếm hạng mục hiện có..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition-all"
+                        />
+                    </div>
+
+                    <div className="max-h-60 overflow-y-auto border border-gray-100 rounded-lg divide-y divide-gray-50">
+                        {isLoadingJobs ? (
+                            <div className="p-10 flex justify-center">
+                                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                            </div>
+                        ) : filteredJobs.length > 0 ? (
+                            filteredJobs.map((job) => (
+                                <div key={job.id} className="p-4 flex justify-between items-center hover:bg-gray-50 transition-colors">
+                                    <div>
+                                        <h4 className="font-medium text-gray-900 text-sm">{job.name}</h4>
+                                        <p className="text-xs text-gray-500">{job.code} • {formatCurrency(job.costPrice)}</p>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => onAddJob(job.id)}
+                                        className="group hover:bg-blue-600 hover:text-white hover:border-blue-600"
+                                    >
+                                        <Plus className="h-4 w-4 mr-1 transition-transform group-active:scale-95" />
+                                        Thêm
+                                    </Button>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-10 text-center text-gray-500 text-sm">
+                                {searchTerm ? 'Không tìm thấy hạng mục nào' : 'Bắt đầu nhập để tìm hạng mục...'}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex flex-col gap-3 py-4 border-t">
+                        <p className="text-sm text-gray-500 text-center">Hoặc bạn có thể tạo một hạng mục hoàn toàn mới</p>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full border-dashed"
+                            onClick={() => setIsCreatingNew(true)}
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Tạo hạng mục mới
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </Modal>
+    );
+};

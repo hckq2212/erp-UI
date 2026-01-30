@@ -5,14 +5,15 @@ import { DashboardPage } from './pages/Dashboard/DashboardPage';
 import { CustomersPage } from './pages/Customers/CustomersPage';
 import { OpportunitiesPage } from './pages/Opportunities/OpportunitiesPage';
 import { OpportunityDetailPage } from './pages/Opportunities/OpportunityDetailPage/OpportunityDetailPage';
-import { QuotationsPage } from './pages/Quotations/QuotationsPage';
+import { ServicesPage } from './pages/Services/ServicesPage';
+import { ServiceDetailPage } from './pages/Services/ServiceDetailPage';
+import { JobsPage } from './pages/Jobs/JobsPage';
 import { ContractsPage } from './pages/Contracts/ContractsPage';
 import { ProjectsPage } from './pages/Projects/ProjectsPage';
 import { ProjectDetailPage } from './pages/Projects/ProjectDetailPage/ProjectDetailPage';
 import { TasksPage } from './pages/Tasks/TasksPage';
 import { TaskDetailPage } from './pages/Tasks/TaskDetailPage';
 import { FinancePage } from './pages/Finance/FinancePage';
-import { SettingsPage } from './pages/Settings/SettingsPage';
 import { LoginPage } from './pages/Auth/LoginPage';
 import ContractDetailPage from './pages/Contracts/ContractDetailPage/ContractDetailPage';
 import { NotificationsPage } from './pages/Notifications/NotificationsPage';
@@ -66,11 +67,31 @@ function App() {
           }
         />
         <Route
-          path='/quotations'
+          path='/services'
           element={
             <ProtectedRoute>
               <Layout>
-                <QuotationsPage />
+                <ServicesPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/services/:id'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ServiceDetailPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/jobs'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <JobsPage />
               </Layout>
             </ProtectedRoute>
           }
@@ -155,16 +176,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path='/settings'
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <SettingsPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
+
         <Route path='*' element={<Navigate to='/' replace />} />
       </Routes>
     </BrowserRouter>

@@ -10,9 +10,9 @@ export const servicesApi = api.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'Services', id })),
-              { type: 'Services', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'Services', id })),
+            { type: 'Services', id: 'LIST' },
+          ]
           : [{ type: 'Services', id: 'LIST' }],
     }),
     getService: builder.query({
@@ -45,6 +45,26 @@ export const servicesApi = api.injectEndpoints({
       }),
       invalidatesTags: [{ type: 'Services', id: 'LIST' }],
     }),
+    addJob: builder.mutation({
+      query: ({ id, jobId }) => ({
+        url: `/services/${id}/jobs/${jobId}`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Services', id },
+        { type: 'Services', id: 'LIST' },
+      ],
+    }),
+    removeJob: builder.mutation({
+      query: ({ id, jobId }) => ({
+        url: `/services/${id}/jobs/${jobId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Services', id },
+        { type: 'Services', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -54,4 +74,6 @@ export const {
   useCreateServiceMutation,
   useUpdateServiceMutation,
   useDeleteServiceMutation,
+  useAddJobMutation,
+  useRemoveJobMutation,
 } = servicesApi;

@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, Users, Briefcase, FileText, 
-  FileSignature, Rocket, CheckSquare, DollarSign, Settings 
+import {
+  LayoutDashboard, Users, Briefcase, FileText,
+  FileSignature, Rocket, CheckSquare, DollarSign, Settings
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -9,12 +9,12 @@ const menuItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/customers', icon: Users, label: 'Khách Hàng' },
   { path: '/opportunities', icon: Briefcase, label: 'Cơ Hội' },
-  { path: '/quotations', icon: FileText, label: 'Báo Giá' },
   { path: '/contracts', icon: FileSignature, label: 'Hợp Đồng' },
   { path: '/projects', icon: Rocket, label: 'Dự Án' },
   { path: '/tasks', icon: CheckSquare, label: 'Công Việc' },
+  { path: '/services', icon: Briefcase, label: 'Dịch vụ' },
+  { path: '/jobs', icon: CheckSquare, label: 'Hạng mục dịch vụ' },
   { path: '/finance', icon: DollarSign, label: 'Tài Chính' },
-  { path: '/settings', icon: Settings, label: 'Cài Đặt' },
 ];
 
 export const Sidebar = () => {
