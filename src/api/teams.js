@@ -7,9 +7,9 @@ export const teamsApi = api.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'Teams', id })),
-              { type: 'Teams', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'Teams', id })),
+            { type: 'Teams', id: 'LIST' },
+          ]
           : [{ type: 'Teams', id: 'LIST' }],
     }),
     getTeam: builder.query({
@@ -50,10 +50,32 @@ export const teamsApi = api.injectEndpoints({
       invalidatesTags: [{ type: 'Teams', id: 'LIST' }],
     }),
     addTeamMember: builder.mutation({
-      query: ({ id, userId }) => ({
+      query: ({ id, userId, role }) => ({
         url: `/teams/${id}/members`,
         method: 'POST',
-        body: { userId },
+        body: { userId, role },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Teams', id },
+        { type: 'Teams', id: 'LIST' },
+      ],
+    }),
+    updateTeamMember: builder.mutation({
+      query: ({ memberId, ...data }) => ({
+        url: `/teams/members/${memberId}`,
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { teamId }) => [
+        { type: 'Teams', id: teamId },
+        { type: 'Teams', id: 'LIST' },
+      ],
+    }),
+    changeLead: builder.mutation({
+      query: ({ id, newLeadId }) => ({
+        url: `/teams/${id}/lead`,
+        method: 'PUT',
+        body: { newLeadId },
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Teams', id },
@@ -78,5 +100,7 @@ export const {
   useUpdateTeamMutation,
   useDeleteTeamMutation,
   useAddTeamMemberMutation,
+  useUpdateTeamMemberMutation,
   useRemoveTeamMemberMutation,
+  useChangeLeadMutation,
 } = teamsApi;

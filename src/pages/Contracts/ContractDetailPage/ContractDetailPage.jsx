@@ -27,9 +27,9 @@ export const ContractDetailPage = () => {
     skip: !id,
   });
 
-  const [uploadProposal] = useUploadProposalMutation();
+  const [uploadProposal, { isLoading: isUploadingProposal }] = useUploadProposalMutation();
   const [approveProposal] = useApproveProposalMutation();
-  const [uploadSigned] = useUploadSignedMutation();
+  const [uploadSigned, { isLoading: isUploadingSigned }] = useUploadSignedMutation();
   const [addMilestone] = useAddMilestoneMutation();
   const [updateMilestone] = useUpdateMilestoneMutation();
   const [deleteMilestone] = useDeleteMilestoneMutation();
@@ -46,10 +46,10 @@ export const ContractDetailPage = () => {
     input.onchange = async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      
+
       console.log('Uploading proposal file:', file);
       console.log('File details:', { name: file.name, size: file.size, type: file.type });
-      
+
       try {
         const result = await uploadProposal({ id: contract.id, file }).unwrap();
         console.log('Upload result:', result);
@@ -79,10 +79,10 @@ export const ContractDetailPage = () => {
     input.onchange = async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      
+
       console.log('Uploading signed contract file:', file);
       console.log('File details:', { name: file.name, size: file.size, type: file.type });
-      
+
       try {
         const result = await uploadSigned({ id: contract.id, file }).unwrap();
         console.log('Upload result:', result);
@@ -193,6 +193,8 @@ export const ContractDetailPage = () => {
             onUploadProposal={handleUploadProposal}
             onApproveProposal={handleApproveProposal}
             onUploadSigned={handleUploadSigned}
+            isUploadingProposal={isUploadingProposal}
+            isUploadingSigned={isUploadingSigned}
           />
           <MilestonesSection
             contract={contract}

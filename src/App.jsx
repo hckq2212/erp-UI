@@ -20,6 +20,8 @@ import { LoginPage } from './pages/Auth/LoginPage';
 import ContractDetailPage from './pages/Contracts/ContractDetailPage/ContractDetailPage';
 import { NotificationsPage } from './pages/Notifications/NotificationsPage';
 import { ReferralPartnersPage } from './pages/ReferralPartners/ReferralPartnersPage';
+import { TeamsPage } from './pages/Teams/TeamsPage';
+import { TeamDetailPage } from './pages/Teams/TeamDetailPage';
 
 function App() {
   return (
@@ -195,6 +197,26 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <ReferralPartnersPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/teams'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TeamsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/teams/:id'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TeamDetailPage />
               </Layout>
             </ProtectedRoute>
           }

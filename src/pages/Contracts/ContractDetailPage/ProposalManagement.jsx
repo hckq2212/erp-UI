@@ -1,6 +1,13 @@
-import { FileText, Upload, CheckCircle, FileCheck } from 'lucide-react';
+import { FileText, Upload, CheckCircle, FileCheck, Loader2 } from 'lucide-react';
 
-export const ProposalManagement = ({ contract, onUploadProposal, onApproveProposal, onUploadSigned }) => (
+export const ProposalManagement = ({
+  contract,
+  onUploadProposal,
+  onApproveProposal,
+  onUploadSigned,
+  isUploadingProposal,
+  isUploadingSigned
+}) => (
   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
       <FileText className="w-5 h-5 text-purple-600" />
@@ -41,10 +48,16 @@ export const ProposalManagement = ({ contract, onUploadProposal, onApprovePropos
             ) : (
               <button
                 onClick={onUploadProposal}
-                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                disabled={isUploadingProposal}
+                className={`flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm ${isUploadingProposal ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
               >
-                <Upload className="w-4 h-4" />
-                Upload
+                {isUploadingProposal ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                {isUploadingProposal ? 'Đang upload...' : 'Upload'}
               </button>
             )}
           </div>
@@ -74,10 +87,16 @@ export const ProposalManagement = ({ contract, onUploadProposal, onApprovePropos
             ) : (
               <button
                 onClick={onUploadSigned}
-                className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+                disabled={isUploadingSigned}
+                className={`flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all text-sm ${isUploadingSigned ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
               >
-                <Upload className="w-4 h-4" />
-                Upload
+                {isUploadingSigned ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                {isUploadingSigned ? 'Đang upload...' : 'Upload'}
               </button>
             )}
           </div>

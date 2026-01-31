@@ -15,6 +15,7 @@ const menuItems = [
   { path: '/tasks', icon: CheckSquare, label: 'Công Việc' },
   { path: '/services', icon: Briefcase, label: 'Dịch vụ' },
   { path: '/jobs', icon: CheckSquare, label: 'Hạng mục dịch vụ' },
+  { path: '/teams', icon: Users, label: 'Đội dự án' },
   { path: '/referral-partners', icon: Users, label: 'Đối tác' },
   { path: '/finance', icon: DollarSign, label: 'Tài Chính' },
 ];
