@@ -196,19 +196,20 @@ export const ContractDetailPage = () => {
             isUploadingProposal={isUploadingProposal}
             isUploadingSigned={isUploadingSigned}
           />
-          <MilestonesSection
+          {/* <MilestonesSection
             contract={contract}
             onAddMilestone={handleAddMilestone}
             onEditMilestone={handleEditMilestone}
             onDeleteMilestone={handleDeleteMilestone}
             formatDate={formatDate}
-          />
+          /> */}
+          <FinancialInfo contract={contract} />
         </div>
 
         {/* Sidebar - Right Side (1/3) */}
         <div className="space-y-6">
           <CustomerInfo contract={contract} />
-          <FinancialInfo contract={contract} />
+
         </div>
       </div>
     </div>

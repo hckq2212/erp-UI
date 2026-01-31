@@ -10,9 +10,9 @@ export const paymentMilestonesApi = api.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'PaymentMilestones', id })),
-              { type: 'PaymentMilestones', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'PaymentMilestones', id })),
+            { type: 'PaymentMilestones', id: 'LIST' },
+          ]
           : [{ type: 'PaymentMilestones', id: 'LIST' }],
     }),
     getPaymentMilestone: builder.query({
@@ -24,9 +24,9 @@ export const paymentMilestonesApi = api.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'PaymentMilestones', id })),
-              { type: 'PaymentMilestones', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'PaymentMilestones', id })),
+            { type: 'PaymentMilestones', id: 'LIST' },
+          ]
           : [{ type: 'PaymentMilestones', id: 'LIST' }],
     }),
     getPaymentMilestonesByProject: builder.query({
@@ -34,9 +34,9 @@ export const paymentMilestonesApi = api.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'PaymentMilestones', id })),
-              { type: 'PaymentMilestones', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'PaymentMilestones', id })),
+            { type: 'PaymentMilestones', id: 'LIST' },
+          ]
           : [{ type: 'PaymentMilestones', id: 'LIST' }],
     }),
     createPaymentMilestone: builder.mutation({
@@ -76,6 +76,14 @@ export const paymentMilestonesApi = api.injectEndpoints({
         { type: 'PaymentMilestones', id: 'LIST' },
       ],
     }),
+    bulkSavePaymentMilestones: builder.mutation({
+      query: ({ contractId, milestones }) => ({
+        url: `/payment-milestones/contract/${contractId}/bulk`,
+        method: 'PUT',
+        body: { milestones },
+      }),
+      invalidatesTags: [{ type: 'PaymentMilestones', id: 'LIST' }],
+    }),
   }),
 });
 
@@ -88,4 +96,5 @@ export const {
   useUpdatePaymentMilestoneMutation,
   useDeletePaymentMilestoneMutation,
   useUpdatePaymentStatusMutation,
+  useBulkSavePaymentMilestonesMutation,
 } = paymentMilestonesApi;

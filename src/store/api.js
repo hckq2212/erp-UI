@@ -32,6 +32,7 @@ export const api = createApi({
     'Notifications',
     'ReferralPartners',
     'Vendors',
+    'Debts',
   ],
   endpoints: () => ({}),
 });

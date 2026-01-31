@@ -10,3 +10,4 @@ export * from './projects';
 export * from './tasks';
 export * from './customers';
 export * from './users';
+export * from './debts';
