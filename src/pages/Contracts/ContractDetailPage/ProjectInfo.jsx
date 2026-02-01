@@ -47,14 +47,13 @@ export const ProjectInfo = ({ project, formatDate, navigate, contractId }) => {
             Xem
           </button>
         </div>
-        
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-sm font-medium text-gray-500">Trạng thái</label>
             <p className="mt-1">
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                PROJECT_STATUS_COLORS[project.status] || 'bg-gray-100 text-gray-800'
-              }`}>
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${PROJECT_STATUS_COLORS[project.status] || 'bg-gray-100 text-gray-800'
+                }`}>
                 {PROJECT_STATUS_LABELS[project.status] || project.status}
               </span>
             </p>

@@ -11,3 +11,5 @@ export * from './tasks';
 export * from './customers';
 export * from './users';
 export * from './debts';
+export * from './jobCriterias';
+export * from './taskReviews';

@@ -4,8 +4,10 @@ import { Plus } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useState } from 'react';
 import { CreateJobModal } from './CreateJobModal';
+import { useNavigate } from 'react-router-dom'
 
 export const JobsPage = () => {
+    const navigate = useNavigate();
     const { data: jobs = [], isLoading } = useGetJobsQuery();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
@@ -46,7 +48,9 @@ export const JobsPage = () => {
                                         <td className="px-6 py-4 text-sm text-gray-600">{job.name}</td>
                                         <td className="px-6 py-4 text-sm text-gray-500">{formatCurrency(job.costPrice)}</td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
-                                            <button className="text-white bg-blue-600 rounded-md px-2 py-1">Xem chi tiết</button>
+                                            <button
+                                                onClick={() => navigate(`/jobs/${job.id}`)}
+                                                className="text-white bg-blue-600 rounded-md px-2 py-1">Xem chi tiết</button>
                                         </td>
                                     </tr>
                                 ))}

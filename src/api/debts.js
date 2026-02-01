@@ -52,6 +52,16 @@ export const debtsApi = api.injectEndpoints({
             }),
             invalidatesTags: [{ type: 'Debts', id: 'LIST' }],
         }),
+        getDebtsByContract: builder.query({
+            query: (contractId) => `/debts/contract/${contractId}`,
+            providesTags: (result) =>
+                result
+                    ? [
+                        ...result.map(({ id }) => ({ type: 'Debts', id })),
+                        { type: 'Debts', id: 'LIST' },
+                    ]
+                    : [{ type: 'Debts', id: 'LIST' }],
+        }),
     }),
 });
 
@@ -62,4 +72,5 @@ export const {
     useDeleteDebtMutation,
     useCreatePaymentMutation,
     useDeletePaymentMutation,
+    useGetDebtsByContractQuery,
 } = debtsApi;

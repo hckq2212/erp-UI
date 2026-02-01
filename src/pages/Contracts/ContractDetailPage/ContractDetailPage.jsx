@@ -187,7 +187,9 @@ export const ContractDetailPage = () => {
         {/* Main Content - Left Side (2/3) */}
         <div className="lg:col-span-2 space-y-6">
           <ContractInfo contract={contract} formatDate={formatDate} />
-          {project && <ProjectInfo project={project} formatDate={formatDate} navigate={navigate} contractId={contract.id} />}
+          {project &&
+            <ProjectInfo project={project} formatDate={formatDate} navigate={navigate} contractId={contract.id}
+            />}
           <ProposalManagement
             contract={contract}
             onUploadProposal={handleUploadProposal}
@@ -209,7 +211,6 @@ export const ContractDetailPage = () => {
         {/* Sidebar - Right Side (1/3) */}
         <div className="space-y-6">
           <CustomerInfo contract={contract} />
-
         </div>
       </div>
     </div>

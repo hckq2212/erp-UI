@@ -8,6 +8,7 @@ import { OpportunityDetailPage } from './pages/Opportunities/OpportunityDetailPa
 import { ServicesPage } from './pages/Services/ServicesPage';
 import { ServiceDetailPage } from './pages/Services/ServiceDetailPage';
 import { JobsPage } from './pages/Jobs/JobsPage';
+import { JobDetailPage } from './pages/Jobs/JobDetailPage';
 import { ContractsPage } from './pages/Contracts/ContractsPage';
 import { ProjectsPage } from './pages/Projects/ProjectsPage';
 import { ProjectDetailPage } from './pages/Projects/ProjectDetailPage/ProjectDetailPage';
@@ -97,6 +98,16 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <JobsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/jobs/:id'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <JobDetailPage />
               </Layout>
             </ProtectedRoute>
           }
