@@ -10,9 +10,9 @@ export const quotationsApi = api.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'Quotations', id })),
-              { type: 'Quotations', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'Quotations', id })),
+            { type: 'Quotations', id: 'LIST' },
+          ]
           : [{ type: 'Quotations', id: 'LIST' }],
     }),
     getQuotation: builder.query({
@@ -24,9 +24,9 @@ export const quotationsApi = api.injectEndpoints({
       providesTags: (result, error, opportunityId) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'Quotations', id })),
-              { type: 'Quotations', id: `OPPORTUNITY_${opportunityId}` },
-            ]
+            ...result.map(({ id }) => ({ type: 'Quotations', id })),
+            { type: 'Quotations', id: `OPPORTUNITY_${opportunityId}` },
+          ]
           : [{ type: 'Quotations', id: `OPPORTUNITY_${opportunityId}` }],
     }),
     createQuotation: builder.mutation({
@@ -38,6 +38,8 @@ export const quotationsApi = api.injectEndpoints({
       invalidatesTags: (result, error, data) => [
         { type: 'Quotations', id: 'LIST' },
         { type: 'Quotations', id: `OPPORTUNITY_${data.opportunityId}` },
+        { type: 'Opportunities', id: data.opportunityId },
+        { type: 'Opportunities', id: 'LIST' },
       ],
     }),
     updateQuotation: builder.mutation({
@@ -49,8 +51,12 @@ export const quotationsApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [
         { type: 'Quotations', id },
         { type: 'Quotations', id: 'LIST' },
-        // Also invalidate the opportunity-specific list
-        ...(result?.opportunityId ? [{ type: 'Quotations', id: `OPPORTUNITY_${result.opportunityId}` }] : []),
+        // Also invalidate the opportunity-specific list and the opportunity itself
+        ...(result?.opportunityId ? [
+          { type: 'Quotations', id: `OPPORTUNITY_${result.opportunityId}` },
+          { type: 'Opportunities', id: result.opportunityId },
+        ] : []),
+        { type: 'Opportunities', id: 'LIST' },
       ],
     }),
     approveQuotation: builder.mutation({
@@ -61,6 +67,9 @@ export const quotationsApi = api.injectEndpoints({
       invalidatesTags: (result, error, id) => [
         { type: 'Quotations', id },
         { type: 'Quotations', id: 'LIST' },
+        { type: 'Opportunities', id: result?.opportunityId },
+        { type: 'Opportunities', id: 'LIST' },
+        { type: 'Contracts', id: 'LIST' },
       ],
     }),
     rejectQuotation: builder.mutation({
@@ -71,6 +80,8 @@ export const quotationsApi = api.injectEndpoints({
       invalidatesTags: (result, error, id) => [
         { type: 'Quotations', id },
         { type: 'Quotations', id: 'LIST' },
+        { type: 'Opportunities', id: result?.opportunityId },
+        { type: 'Opportunities', id: 'LIST' },
       ],
     }),
     deleteQuotation: builder.mutation({

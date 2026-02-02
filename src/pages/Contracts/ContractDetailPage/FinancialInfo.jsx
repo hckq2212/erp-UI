@@ -24,7 +24,7 @@ import { MilestoneModal } from './MilestoneModal';
 import { DebtDetailsModal } from '../../../components/finance/DebtDetailsModal';
 import { toast } from 'react-toastify';
 import { cn } from '../../../utils/cn';
-import { formatCurrency } from '../../../utils/format';
+import { formatCurrency, formatDate } from '../../../utils/format';
 
 export const FinancialInfo = ({ contract }) => {
   const contractId = contract.id;
@@ -109,11 +109,11 @@ export const FinancialInfo = ({ contract }) => {
       {/* Premium Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-2xl shadow-lg shadow-blue-100 text-white relative overflow-hidden group">
-          <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
+          {/* <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
             <DollarSign size={120} />
-          </div>
+          </div> */}
           <p className="text-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Tổng giá trị hợp đồng</p>
-          <div className="text-3xl font-black">{formatCurrency(sellingPrice)}</div>
+          <div className="text-xl font-black">{formatCurrency(sellingPrice)}</div>
           <div className="mt-4 flex items-center gap-2">
             <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
               <div className="h-full bg-white transition-all duration-1000" style={{ width: `${progressPercent}%` }} />
@@ -130,7 +130,7 @@ export const FinancialInfo = ({ contract }) => {
                 <TrendingUp size={16} />
               </div>
             </div>
-            <div className="text-2xl font-black text-green-600">{formatCurrency(totalPaid)}</div>
+            <div className="text-xl font-black text-green-600">{formatCurrency(totalPaid)}</div>
           </div>
           <p className="text-[10px] text-gray-400 mt-2 italic font-medium">Bạn đã thu về {progressPercent}% doanh thu</p>
         </div>
@@ -143,7 +143,7 @@ export const FinancialInfo = ({ contract }) => {
                 <AlertCircle size={16} />
               </div>
             </div>
-            <div className="text-2xl font-black text-red-600">{formatCurrency(totalDebt)}</div>
+            <div className="text-xl font-black text-red-600">{formatCurrency(totalDebt)}</div>
           </div>
           <p className="text-[10px] text-gray-400 mt-2 italic font-medium">Tổng nợ từ các đợt đã kích hoạt</p>
         </div>
@@ -155,7 +155,7 @@ export const FinancialInfo = ({ contract }) => {
           <div>
             <h2 className="text-xl font-black text-gray-900 flex items-center gap-3">
               <Calendar className="w-6 h-6 text-indigo-600" />
-              Hành Trình Thanh Toán
+              Lộ trình Thanh Toán
             </h2>
             <p className="text-sm text-gray-500 font-medium">Theo dõi tiến độ từ lập kế hoạch đến khi thanh toán đủ</p>
           </div>
@@ -171,8 +171,6 @@ export const FinancialInfo = ({ contract }) => {
 
         <div className="p-8">
           <div className="relative space-y-12">
-            {/* Vertical Journey Line */}
-            <div className="absolute left-[27px] top-4 bottom-4 w-0.5 bg-gradient-to-b from-blue-500 via-indigo-100 to-transparent" />
 
             {processedMilestones.map((m, idx) => {
               const overdue = m.isActive && !m.isCompleted && m.dueDate && new Date(m.dueDate) < new Date();
@@ -180,7 +178,7 @@ export const FinancialInfo = ({ contract }) => {
               return (
                 <div key={m.id} className="relative flex gap-8 group animate-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${idx * 100}ms` }}>
                   {/* Timeline Icon Node */}
-                  <div className={cn(
+                  {/* <div className={cn(
                     "relative z-10 w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm border-2",
                     m.isCompleted ? "bg-green-600 border-green-500 text-white shadow-green-100" :
                       m.isActive ? "bg-white border-indigo-600 text-indigo-600 shadow-indigo-100" :
@@ -188,16 +186,16 @@ export const FinancialInfo = ({ contract }) => {
                   )}>
                     {m.isCompleted ? <CheckCircle2 size={24} /> :
                       m.isActive ? <CreditCard size={24} className={cn(overdue && "animate-pulse text-red-500")} /> :
-                        <Clock size={24} />}
+                        <Clock size={24} />} */}
 
-                    {/* Step Number Badge */}
-                    <div className={cn(
+                  {/* Step Number Badge */}
+                  {/* <div className={cn(
                       "absolute -top-2 -right-2 w-6 h-6 rounded-lg text-[10px] font-black flex items-center justify-center border-2 border-white",
                       m.isActive || m.isCompleted ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-400"
                     )}>
                       {idx + 1}
-                    </div>
-                  </div>
+                    </div> */}
+                  {/* </div> */}
 
                   {/* Content Card */}
                   <div className={cn(
@@ -220,7 +218,7 @@ export const FinancialInfo = ({ contract }) => {
                         <div className="flex items-center gap-4 text-[11px] font-medium text-gray-400">
                           <span className="flex items-center gap-1">
                             <Calendar size={13} className="text-gray-300" />
-                            Hạn: {m.dueDate ? new Date(m.dueDate).toLocaleDateString('vi-VN') : 'N/A'}
+                            Hạn: {formatDate(m.dueDate) || 'N/A'}
                           </span>
                           <span className="w-1 h-1 rounded-full bg-gray-200" />
                           <span className="text-gray-600 font-bold">Giá trị: {formatCurrency(m.amount)}</span>

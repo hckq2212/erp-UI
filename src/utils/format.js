@@ -1,3 +1,5 @@
+import { format } from 'date-fns';
+
 /**
  * Format number with thousand separators (Vietnamese format)
  * @param {number|string} value - The number to format
@@ -43,7 +45,7 @@ export const formatDate = (date) => {
   if (!date) return '';
   const d = new Date(date);
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('vi-VN');
+  return format(d, 'dd/MM/yyyy');
 };
 
 /**

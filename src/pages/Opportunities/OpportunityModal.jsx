@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { X, Plus, Trash2, Upload, Link as LinkIcon, Building2, FileText, MapPin, Calendar, Target, TrendingUp, Clock, Briefcase } from 'lucide-react';
 import { useCreateOpportunityMutation } from '../../api/opportunities';
 import { useGetServicesQuery } from '../../api/services';
-import { formatNumber, parseNumber } from '../../utils/format';
+import { formatNumber, parseNumber, formatDate } from '../../utils/format';
 
 const FIELDS = [
   { value: '', label: '-- Chọn lĩnh vực --' },
@@ -29,10 +29,84 @@ const REGIONS = [
   { value: 'SOUTH', label: 'Miền Nam' },
 ];
 
+const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onRemove }) => (
+  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+    <select
+      value={item.serviceId}
+      onChange={(e) => onServiceChange(index, 'serviceId', e.target.value)}
+      className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all"
+    >
+      <option value="">-- Chọn dịch vụ --</option>
+      {availableServices.map(s => (
+        <option key={s.id} value={s.id}>{s.name}</option>
+      ))}
+    </select>
+    <input
+      type="number"
+      value={item.quantity}
+      onChange={(e) => onServiceChange(index, 'quantity', e.target.value)}
+      min={1}
+      className="w-20 px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-center transition-all"
+    />
+    <button
+      type="button"
+      onClick={() => onRemove(index)}
+      className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all"
+    >
+      <Trash2 className="w-5 h-5" />
+    </button>
+  </div>
+));
+
+const LinkItem = memo(({ link, index, onLinkChange, onRemove, showRemove }) => (
+  <div className="flex items-center gap-3">
+    <div className="flex-1 relative">
+      <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <input
+        type="url"
+        value={link}
+        onChange={(e) => onLinkChange(index, e.target.value)}
+        placeholder="https://drive.google.com/..."
+        className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all"
+      />
+    </div>
+    {showRemove && (
+      <button
+        type="button"
+        onClick={() => onRemove(index)}
+        className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all"
+      >
+        <Trash2 className="w-5 h-5" />
+      </button>
+    )}
+  </div>
+));
+
+const FileItem = memo(({ file, index, onRemove }) => (
+  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 group hover:bg-white hover:border-blue-300 transition-all">
+    <div className="flex items-center gap-3 overflow-hidden">
+      <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+        <FileText className="w-4 h-4" />
+      </div>
+      <div className="overflow-hidden">
+        <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+        <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+      </div>
+    </div>
+    <button
+      type="button"
+      onClick={() => onRemove(index)}
+      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+    >
+      <X className="w-4 h-4" />
+    </button>
+  </div>
+));
+
 export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
   const [createOpportunity, { isLoading }] = useCreateOpportunityMutation();
   const { data: servicesData } = useGetServicesQuery();
-  const services = Array.isArray(servicesData) ? servicesData : (servicesData?.data || []);
+  const services = useMemo(() => Array.isArray(servicesData) ? servicesData : (servicesData?.data || []), [servicesData]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -57,55 +131,65 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
   const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
 
-  const handleChange = (e) => {
+  const handleChange = useCallback((e) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'number' ? Number(value) : value
     }));
-  };
+  }, []);
 
-  const handleNumberChange = (name, value) => {
+  const handleNumberChange = useCallback((name, value) => {
     const numValue = parseNumber(value);
     setFormData(prev => ({
       ...prev,
       [name]: numValue
     }));
-  };
+  }, []);
 
-  const handleServiceChange = (index, field, value) => {
-    const updated = [...selectedServices];
-    updated[index][field] = field === 'quantity' ? Number(value) : value;
-    setSelectedServices(updated);
-  };
+  const handleServiceChange = useCallback((index, field, value) => {
+    setSelectedServices(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: field === 'quantity' ? Number(value) : value };
+      return updated;
+    });
+  }, []);
 
-  const addService = () => {
-    setSelectedServices([...selectedServices, { serviceId: '', quantity: 1 }]);
-  };
+  const addService = useCallback(() => {
+    setSelectedServices(prev => [...prev, { serviceId: '', quantity: 1 }]);
+  }, []);
 
-  const removeService = (index) => {
-    if (selectedServices.length > 1) {
-      setSelectedServices(selectedServices.filter((_, i) => i !== index));
-    }
-  };
+  const removeService = useCallback((index) => {
+    setSelectedServices(prev => {
+      if (prev.length > 1) {
+        return prev.filter((_, i) => i !== index);
+      }
+      return prev;
+    });
+  }, []);
 
-  const handleLinkChange = (index, value) => {
-    const updated = [...documentLinks];
-    updated[index] = value;
-    setDocumentLinks(updated);
-  };
+  const handleLinkChange = useCallback((index, value) => {
+    setDocumentLinks(prev => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  }, []);
 
-  const addLink = () => {
-    setDocumentLinks([...documentLinks, '']);
-  };
+  const addLink = useCallback(() => {
+    setDocumentLinks(prev => [...prev, '']);
+  }, []);
 
-  const removeLink = (index) => {
-    if (documentLinks.length > 1) {
-      setDocumentLinks(documentLinks.filter((_, i) => i !== index));
-    }
-  };
+  const removeLink = useCallback((index) => {
+    setDocumentLinks(prev => {
+      if (prev.length > 1) {
+        return prev.filter((_, i) => i !== index);
+      }
+      return prev;
+    });
+  }, []);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = useCallback((e) => {
     const selectedFiles = Array.from(e.target.files);
     const totalSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
 
@@ -121,19 +205,19 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
     setFiles(selectedFiles);
     setErrors(prev => ({ ...prev, files: null }));
-  };
+  }, []);
 
-  const removeFile = (index) => {
+  const removeFile = useCallback((index) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
-  };
+  }, []);
 
-  const calculateTotal = () => {
+  const totalValue = useMemo(() => {
     return selectedServices.reduce((total, item) => {
       if (!item.serviceId) return total;
       const service = services.find(s => String(s.id) === String(item.serviceId));
       return total + (service?.costPrice || 0) * item.quantity;
     }, 0);
-  };
+  }, [selectedServices, services]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -228,7 +312,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-full items-center justify-center p-4">
         {/* Backdrop */}
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/50" onClick={onClose} />
 
         {/* Modal */}
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
@@ -437,10 +521,10 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                           type="button"
                           onClick={() => setFormData(prev => ({ ...prev, priority: p.value }))}
                           className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${formData.priority === p.value
-                              ? p.value === 'High' ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
-                                : p.value === 'Medium' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
-                                  : 'bg-green-500 text-white shadow-lg shadow-green-500/30'
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            ? p.value === 'High' ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
+                              : p.value === 'Medium' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
+                                : 'bg-green-500 text-white shadow-lg shadow-green-500/30'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                         >
                           {p.label}
@@ -463,8 +547,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                       <div className="flex justify-between mt-2">
                         <span className="text-xs text-gray-400">0%</span>
                         <span className={`text-lg font-bold ${formData.successChance >= 70 ? 'text-green-600'
-                            : formData.successChance >= 40 ? 'text-orange-500'
-                              : 'text-red-500'
+                          : formData.successChance >= 40 ? 'text-orange-500'
+                            : 'text-red-500'
                           }`}>
                           {formData.successChance}%
                         </span>
@@ -503,32 +587,14 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                     const availableServices = services.filter(s => !selectedIds.includes(String(s.id)));
 
                     return (
-                      <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <select
-                          value={item.serviceId}
-                          onChange={(e) => handleServiceChange(index, 'serviceId', e.target.value)}
-                          className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all"
-                        >
-                          <option value="">-- Chọn dịch vụ --</option>
-                          {availableServices.map(s => (
-                            <option key={s.id} value={s.id}>{s.name}</option>
-                          ))}
-                        </select>
-                        <input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => handleServiceChange(index, 'quantity', e.target.value)}
-                          min={1}
-                          className="w-20 px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-center transition-all"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeService(index)}
-                          className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
+                      <ServiceItem
+                        key={index}
+                        index={index}
+                        item={item}
+                        availableServices={availableServices}
+                        onServiceChange={handleServiceChange}
+                        onRemove={removeService}
+                      />
                     );
                   })}
                 </div>
@@ -537,7 +603,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                 <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4 rounded-xl text-white">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Tổng giá trị dịch vụ:</span>
-                    <span className="text-2xl font-bold">{calculateTotal().toLocaleString('vi-VN')} VNĐ</span>
+                    <span className="text-2xl font-bold">{totalValue.toLocaleString('vi-VN')} VNĐ</span>
                   </div>
                 </div>
               </div>
@@ -567,27 +633,14 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Link tài liệu tham khảo</label>
                   <div className="space-y-3">
                     {documentLinks.map((link, index) => (
-                      <div key={index} className="flex items-center gap-3">
-                        <div className="flex-1 relative">
-                          <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                          <input
-                            type="url"
-                            value={link}
-                            onChange={(e) => handleLinkChange(index, e.target.value)}
-                            placeholder="https://drive.google.com/..."
-                            className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all"
-                          />
-                        </div>
-                        {documentLinks.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeLink(index)}
-                            className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        )}
-                      </div>
+                      <LinkItem
+                        key={index}
+                        index={index}
+                        link={link}
+                        onLinkChange={handleLinkChange}
+                        onRemove={removeLink}
+                        showRemove={documentLinks.length > 1}
+                      />
                     ))}
                   </div>
                   <button
@@ -623,24 +676,12 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                       <p className="text-sm font-medium text-gray-700">Tệp đã chọn ({files.length}):</p>
                       <div className="grid grid-cols-1 gap-2">
                         {files.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 group hover:bg-white hover:border-blue-300 transition-all">
-                            <div className="flex items-center gap-3 overflow-hidden">
-                              <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-                                <FileText className="w-4 h-4" />
-                              </div>
-                              <div className="overflow-hidden">
-                                <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-                                <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeFile(index)}
-                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
+                          <FileItem
+                            key={index}
+                            index={index}
+                            file={file}
+                            onRemove={removeFile}
+                          />
                         ))}
                       </div>
                     </div>

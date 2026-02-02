@@ -7,7 +7,8 @@ export const CONTRACT_STATUS_LABELS = {
   ACTIVE: 'Đang thực hiện',
   COMPLETED: 'Hoàn thành',
   CANCELLED: 'Đã hủy',
-  SIGNED: 'Đã ký'
+  SIGNED: 'Đã ký',
+  PROPOSAL_UPLOADED: 'Đã tải lên proposal',
 };
 
 export const CONTRACT_STATUS_COLORS = {
@@ -18,7 +19,8 @@ export const CONTRACT_STATUS_COLORS = {
   ACTIVE: 'bg-blue-100 text-blue-800',
   COMPLETED: 'bg-purple-100 text-purple-800',
   CANCELLED: 'bg-red-100 text-red-800',
-  SIGNED: 'bg-green-100 text-green-800'
+  SIGNED: 'bg-green-100 text-green-800',
+  PROPOSAL_UPLOADED: 'bg-green-100 text-green-800',
 };
 
 // Project Status

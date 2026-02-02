@@ -10,9 +10,9 @@ export const contractsApi = api.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'Contracts', id })),
-              { type: 'Contracts', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'Contracts', id })),
+            { type: 'Contracts', id: 'LIST' },
+          ]
           : [{ type: 'Contracts', id: 'LIST' }],
     }),
     getContract: builder.query({
@@ -25,7 +25,11 @@ export const contractsApi = api.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: [{ type: 'Contracts', id: 'LIST' }],
+      invalidatesTags: (result, error, data) => [
+        { type: 'Contracts', id: 'LIST' },
+        { type: 'Opportunities', id: data.opportunityId },
+        { type: 'Opportunities', id: 'LIST' },
+      ],
     }),
     updateContract: builder.mutation({
       query: ({ id, ...data }) => ({
@@ -103,7 +107,7 @@ export const contractsApi = api.injectEndpoints({
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [
-        // We don't know the parent contract id here; invalidate list to be safe
+        { type: 'Contracts', id: result?.contractId },
         { type: 'Contracts', id: 'LIST' },
       ],
     }),
@@ -112,7 +116,10 @@ export const contractsApi = api.injectEndpoints({
         url: `/contracts/milestones/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: [{ type: 'Contracts', id: 'LIST' }],
+      invalidatesTags: (result, error, id) => [
+        { type: 'Contracts', id: result?.contractId },
+        { type: 'Contracts', id: 'LIST' },
+      ],
     }),
     updateContractStatus: builder.mutation({
       query: ({ id, status }) => ({

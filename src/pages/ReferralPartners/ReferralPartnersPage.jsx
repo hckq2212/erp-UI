@@ -112,7 +112,7 @@ export const ReferralPartnersPage = () => {
                                         {renderSortableHeader('Đối Tác', 'name')}
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Liên hệ</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Thông tin</th>
-                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Thống kê</th>
+                                        {/* <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Thống kê</th> */}
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Xem chi tiết</th>
                                     </tr>
                                 </thead>
@@ -148,12 +148,12 @@ export const ReferralPartnersPage = () => {
                                                     <span className="truncate max-w-[150px]" title={partner.address}>{partner.address || 'N/A'}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            {/* <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2 text-[11px] text-indigo-600 font-black uppercase tracking-widest bg-indigo-50 px-2 py-1 rounded-lg w-fit">
                                                     <TrendingUp className="h-3 w-3" />
                                                     <span>Chi tiết</span>
                                                 </div>
-                                            </td>
+                                            </td> */}
                                             <td className="px-6 py-4 text-right">
                                                 <button
                                                     onClick={() => navigate(`/referral-partners/${partner.id}`)}

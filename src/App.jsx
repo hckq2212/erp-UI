@@ -22,6 +22,7 @@ import { LoginPage } from './pages/Auth/LoginPage';
 import ContractDetailPage from './pages/Contracts/ContractDetailPage/ContractDetailPage';
 import { NotificationsPage } from './pages/Notifications/NotificationsPage';
 import { ReferralPartnersPage } from './pages/ReferralPartners/ReferralPartnersPage';
+import { PartnerDetailPage } from './pages/ReferralPartners/PartnerDetailPage';
 import { TeamsPage } from './pages/Teams/TeamsPage';
 import { TeamDetailPage } from './pages/Teams/TeamDetailPage';
 
@@ -219,6 +220,16 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <ReferralPartnersPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/referral-partners/:id'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PartnerDetailPage />
               </Layout>
             </ProtectedRoute>
           }

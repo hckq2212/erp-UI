@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { useBulkSavePaymentMilestonesMutation } from '../../../api/paymentMilestones';
 import { toast } from 'react-toastify';
+import { formatNumber, parseNumber } from '../../../utils/format';
 
 export const MilestoneModal = ({ isOpen, onClose, milestones, contractId, sellingPrice }) => {
     const [localMilestones, setLocalMilestones] = useState([]);
@@ -49,11 +50,13 @@ export const MilestoneModal = ({ isOpen, onClose, milestones, contractId, sellin
         const row = { ...updated[index] };
 
         if (field === 'percentage') {
-            row.percentage = Number(value);
-            row.amount = calculateAmount(Number(value));
+            const numValue = parseNumber(value);
+            row.percentage = numValue;
+            row.amount = calculateAmount(numValue);
         } else if (field === 'amount') {
-            row.amount = Number(value);
-            row.percentage = calculatePercentage(Number(value));
+            const numValue = parseNumber(value);
+            row.amount = numValue;
+            row.percentage = calculatePercentage(numValue);
         } else {
             row[field] = value;
         }
@@ -114,25 +117,40 @@ export const MilestoneModal = ({ isOpen, onClose, milestones, contractId, sellin
                                     required
                                 />
                             </div>
-                            <div className="flex-1">
+                            <div className="flex-1 ">
                                 <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Tỷ lệ (%)</label>
-                                <Input
-                                    type="number"
-                                    value={m.percentage}
-                                    onChange={(e) => handleChange(idx, 'percentage', e.target.value)}
-                                    className="h-9 text-sm"
-                                    required
-                                    min="0"
-                                    max="100"
-                                />
+                                <div className="relative">
+                                    <Input
+                                        type="text"
+                                        value={formatNumber(m.percentage)}
+                                        onChange={(e) => handleChange(idx, 'percentage', e.target.value)}
+                                        className="h-9 text-sm pr-6"
+                                        required
+                                    />
+                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span>
+                                </div>
                             </div>
                             <div className="flex-[2]">
                                 <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Số tiền (VNĐ)</label>
+                                <div className="relative">
+                                    <Input
+                                        type="text"
+                                        value={formatNumber(m.amount)}
+                                        onChange={(e) => handleChange(idx, 'amount', e.target.value)}
+                                        className="h-9 text-sm pr-6"
+                                        required
+                                    />
+
+                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">VNĐ</span>
+                                </div>
+                            </div>
+                            <div className="flex-[1.5]">
+                                <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Hạn thanh toán</label>
                                 <Input
-                                    type="number"
-                                    value={m.amount}
-                                    onChange={(e) => handleChange(idx, 'amount', e.target.value)}
-                                    className="h-9 text-sm"
+                                    type="date"
+                                    value={m.dueDate ? m.dueDate.split('T')[0] : ''}
+                                    onChange={(e) => handleChange(idx, 'dueDate', e.target.value)}
+                                    className="h-9 text-sm px-2"
                                     required
                                 />
                             </div>

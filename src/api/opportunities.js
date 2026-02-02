@@ -10,9 +10,9 @@ export const opportunitiesApi = api.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'Opportunities', id })),
-              { type: 'Opportunities', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'Opportunities', id })),
+            { type: 'Opportunities', id: 'LIST' },
+          ]
           : [{ type: 'Opportunities', id: 'LIST' }],
     }),
     getOpportunity: builder.query({
@@ -26,7 +26,10 @@ export const opportunitiesApi = api.injectEndpoints({
         body: formData,
         formData: true,
       }),
-      invalidatesTags: [{ type: 'Opportunities', id: 'LIST' }],
+      invalidatesTags: (result, error, data) => [
+        { type: 'Opportunities', id: 'LIST' },
+        { type: 'Opportunities', id: result?.id },
+      ],
     }),
     updateOpportunity: builder.mutation({
       query: ({ id, formData }) => ({
