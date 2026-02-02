@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useLoginMutation } from '../../api/auth';
-import { setCredentials } from '../../store/authSlice';
+import { setCredentials, selectIsAuthenticated } from '../../store/authSlice';
 import { User, Lock, Eye, EyeOff, Grid3X3, ShieldCheck, TrendingUp, Headphones, Box } from 'lucide-react';
 
 import bg from '../../assets/bg.jpg';
@@ -18,17 +18,42 @@ export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const [login, { isLoading }] = useLoginMutation();
 
   const from = location.state?.from?.pathname || '/';
+
+  // Load saved username and remember status on mount
+  useEffect(() => {
+    const savedUsername = localStorage.getItem('rememberedUsername');
+    if (savedUsername) {
+      setUsername(savedUsername);
+      setRememberMe(true);
+    }
+  }, []);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, from]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     try {
-      const result = await login({ username, password }).unwrap();
-      dispatch(setCredentials({ user: result.user, accessToken: result.accessToken, refreshToken: result.refreshToken }));
+      const result = await login({ username, password, rememberMe }).unwrap();
+
+      // Handle local state persistence for username
+      if (rememberMe) {
+        localStorage.setItem('rememberedUsername', username);
+      } else {
+        localStorage.removeItem('rememberedUsername');
+      }
+
+      dispatch(setCredentials({ user: result.user }));
       navigate(from, { replace: true });
     } catch (err) {
       setError(err?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.');

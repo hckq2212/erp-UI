@@ -3,6 +3,7 @@ import { cn } from '../../utils/cn';
 import { useNavigate } from 'react-router-dom';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../ui/Pagination';
+import { CONTRACT_STATUS_COLORS, CONTRACT_STATUS_LABELS } from '../../utils/enums';
 
 export const ContractTable = ({ contracts = [], onEdit, onDelete, onView }) => {
     const navigate = useNavigate();
@@ -16,15 +17,6 @@ export const ContractTable = ({ contracts = [], onEdit, onDelete, onView }) => {
         totalItems
     } = useTableFeatures(contracts, { initialSort: { key: 'contractCode', direction: 'ascending' } });
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'Pending': return 'bg-yellow-100 text-yellow-800';
-            case 'Active': return 'bg-green-100 text-green-800';
-            case 'Expired': return 'bg-gray-100 text-gray-800';
-            case 'Terminated': return 'bg-red-100 text-red-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    };
 
     const getSortIcon = (key) => {
         if (sortConfig?.key !== key) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-30" />;
@@ -69,8 +61,8 @@ export const ContractTable = ({ contracts = [], onEdit, onDelete, onView }) => {
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{contract.customer?.name ?? contract.customerName}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{Number(contract.sellingPrice || contract.selling_price || contract.sellingPrice).toLocaleString('vi-VN')} VNĐ</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={cn("px-2 inline-flex text-xs leading-5 font-semibold rounded-full", getStatusColor(contract.status))}>
-                                        {contract.status}
+                                    <span className={cn("px-2 inline-flex text-xs leading-5 font-semibold rounded-full", CONTRACT_STATUS_COLORS[contract.status])}>
+                                        {CONTRACT_STATUS_LABELS[contract.status]}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

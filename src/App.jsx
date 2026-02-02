@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useGetMeQuery } from './api/auth';
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
@@ -27,6 +29,22 @@ import { TeamsPage } from './pages/Teams/TeamsPage';
 import { TeamDetailPage } from './pages/Teams/TeamDetailPage';
 
 function App() {
+  // Use the query to check if the user is logged in via cookies on startup
+  const { isLoading } = useGetMeQuery();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <p className="text-gray-400 text-xs font-black uppercase tracking-[0.2em] animate-pulse">
+            Khởi tạo hệ thống...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <Routes>

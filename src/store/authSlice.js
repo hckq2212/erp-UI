@@ -3,10 +3,8 @@ import { authApi } from '../api/auth';
 
 const initialState = {
   user: null,
-  accessToken: localStorage.getItem('accessToken') || null,
-  refreshToken: localStorage.getItem('refreshToken') || null,
-  isAuthenticated: !!localStorage.getItem('accessToken'),
-  isLoading: false,
+  isAuthenticated: false,
+  isLoading: true,
 };
 
 const authSlice = createSlice({
@@ -14,45 +12,41 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (state, action) => {
-      const { user, accessToken, refreshToken } = action.payload;
+      // payload could be { user: ... } or just the user object
+      const user = action.payload?.user || action.payload;
       state.user = user;
-      state.accessToken = accessToken;
-      state.refreshToken = refreshToken;
-      state.isAuthenticated = true;
-      if (accessToken) localStorage.setItem('accessToken', accessToken);
-      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+      state.isAuthenticated = !!user;
+      state.isLoading = false;
     },
     logout: (state) => {
       state.user = null;
-      state.accessToken = null;
-      state.refreshToken = null;
       state.isAuthenticated = false;
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-    },
+      state.isLoading = false;
+    }
   },
   extraReducers: (builder) => {
     builder
       .addMatcher(authApi.endpoints.login.matchFulfilled, (state, action) => {
-        const { user, accessToken, refreshToken } = action.payload;
+        const user = action.payload?.user || action.payload;
         state.user = user;
-        state.accessToken = accessToken;
-        state.refreshToken = refreshToken;
-        state.isAuthenticated = true;
-        if (accessToken) localStorage.setItem('accessToken', accessToken);
-        if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+        state.isAuthenticated = !!user;
+        state.isLoading = false;
       })
       .addMatcher(authApi.endpoints.logout.matchFulfilled, (state) => {
         state.user = null;
-        state.accessToken = null;
-        state.refreshToken = null;
         state.isAuthenticated = false;
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        state.isLoading = false;
       })
       .addMatcher(authApi.endpoints.getMe.matchFulfilled, (state, action) => {
-        state.user = action.payload;
-        state.isAuthenticated = true;
+        const user = action.payload?.user || action.payload;
+        state.user = user;
+        state.isAuthenticated = !!user;
+        state.isLoading = false;
+      })
+      .addMatcher(authApi.endpoints.getMe.matchRejected, (state) => {
+        state.user = null;
+        state.isAuthenticated = false;
+        state.isLoading = false;
       });
   },
 });
@@ -62,4 +56,4 @@ export default authSlice.reducer;
 
 export const selectCurrentUser = (state) => state.auth.user;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
-export const selectToken = (state) => state.auth.accessToken;
+export const selectAuthLoading = (state) => state.auth.isLoading;
