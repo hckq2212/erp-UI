@@ -1,8 +1,11 @@
-import { useState } from 'react';
-import { Calendar, Users, FileText, Search, UserPlus } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Calendar, Users, FileText, Search, UserPlus, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { TaskAssignModal } from './TaskAssignModal';
 import { useNavigate } from 'react-router-dom';
 import { useGetTeamMembersQuery } from '../../../api/teams';
+import { useTableFeatures } from '../../../hooks/useTableFeatures';
+import { Pagination } from '../../../components/ui/Pagination';
+import { cn } from '../../../utils/cn';
 
 export const TaskTable = ({ tasks = [], project }) => {
     const navigate = useNavigate();
@@ -38,13 +41,47 @@ export const TaskTable = ({ tasks = [], project }) => {
         }
     };
 
-    const filteredTasks = tasks.filter(task => {
-        const matchesSearch = task.name.toLowerCase().includes(filter.search.toLowerCase()) ||
-            task.code.toLowerCase().includes(filter.search.toLowerCase());
-        const matchesStatus = filter.status === 'ALL' || task.status === filter.status;
-        const matchesAssignee = filter.assigneeId === 'ALL' || task.assigneeId?.toString() === filter.assigneeId;
-        return matchesSearch && matchesStatus && matchesAssignee;
-    });
+    const filteredTasks = useMemo(() => {
+        return tasks.filter(task => {
+            const matchesSearch = task.name.toLowerCase().includes(filter.search.toLowerCase()) ||
+                task.code.toLowerCase().includes(filter.search.toLowerCase());
+            const matchesStatus = filter.status === 'ALL' || task.status === filter.status;
+            const matchesAssignee = filter.assigneeId === 'ALL' || task.assigneeId?.toString() === filter.assigneeId;
+            return matchesSearch && matchesStatus && matchesAssignee;
+        });
+    }, [tasks, filter]);
+
+    const {
+        data: paginatedTasks,
+        sortConfig,
+        requestSort,
+        currentPage,
+        setCurrentPage,
+        totalPages,
+        totalItems
+    } = useTableFeatures(filteredTasks, { initialSort: { key: 'code', direction: 'ascending' } });
+
+    const getSortIcon = (key) => {
+        if (sortConfig?.key !== key) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-30" />;
+        return sortConfig.direction === 'ascending'
+            ? <ArrowUp className="w-3 h-3 ml-1 text-blue-600" />
+            : <ArrowDown className="w-3 h-3 ml-1 text-blue-600" />;
+    };
+
+    const renderSortableHeader = (label, sortKey, align = 'left') => (
+        <th
+            className={cn(
+                "px-6 py-4 font-medium cursor-pointer hover:bg-gray-100/50 transition-colors group",
+                align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left'
+            )}
+            onClick={() => requestSort(sortKey)}
+        >
+            <div className={cn("flex items-center", align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : 'justify-start')}>
+                {label}
+                {getSortIcon(sortKey)}
+            </div>
+        </th>
+    );
 
     const isProjectInProgress = project?.status === 'IN_PROGRESS';
 
@@ -93,22 +130,22 @@ export const TaskTable = ({ tasks = [], project }) => {
                     <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100">
                         <tr>
                             <th className="px-6 py-4 font-medium">STT</th>
-                            <th className="px-6 py-4 font-medium ">Mã Công việc</th>
-                            <th className="px-6 py-4 font-medium ">Tên công việc</th>
-                            <th className="px-6 py-4 font-medium">Thời gian</th>
-                            <th className="px-6 py-4 font-medium">Bên thực hiện</th>
-                            <th className="px-6 py-4 font-medium text-center">Người thực hiện</th>
-                            <th className="px-6 py-4 font-medium text-center ">Trạng thái</th>
+                            {renderSortableHeader('Mã Công việc', 'code')}
+                            {renderSortableHeader('Tên công việc', 'name')}
+                            {renderSortableHeader('Thời gian', 'plannedEndDate')}
+                            {renderSortableHeader('Bên thực hiện', 'performerType')}
+                            {renderSortableHeader('Người thực hiện', 'assignee.fullName', 'center')}
+                            {renderSortableHeader('Trạng thái', 'status', 'center')}
                             {isProjectInProgress && (
                                 <th className="px-6 py-4 font-medium text-center">Hành động</th>
                             )}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {filteredTasks.length > 0 ? (
-                            filteredTasks.map((task, index) => (
+                        {paginatedTasks.length > 0 ? (
+                            paginatedTasks.map((task, index) => (
                                 <tr key={task.id} className="hover:bg-gray-50/50 transition-colors">
-                                    <td className="px-6 py-4 text-gray-500">{index + 1}</td>
+                                    <td className="px-6 py-4 text-gray-500">{(currentPage - 1) * 10 + index + 1}</td>
                                     <td className="px-6 py-4">
                                         <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                                             {task.code}
@@ -170,6 +207,13 @@ export const TaskTable = ({ tasks = [], project }) => {
                     </tbody>
                 </table>
             </div>
+
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={totalItems}
+            />
 
             {assigningTask && (
                 <TaskAssignModal

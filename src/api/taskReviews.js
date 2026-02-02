@@ -23,10 +23,35 @@ export const taskReviewsApi = api.injectEndpoints({
                 { type: 'TaskReviews', id: 'LIST' },
             ],
         }),
+        finalizeTask: builder.mutation({
+            query: (taskId) => ({
+                url: `/task-reviews/task/${taskId}/finalize`,
+                method: 'POST',
+            }),
+            invalidatesTags: (result, error, taskId) => [
+                { type: 'Tasks', id: taskId },
+                { type: 'Tasks', id: 'LIST' },
+                { type: 'TaskReviews', id: 'LIST' },
+            ],
+        }),
+        rejectTask: builder.mutation({
+            query: ({ taskId, note }) => ({
+                url: `/task-reviews/task/${taskId}/reject`,
+                method: 'POST',
+                body: { note },
+            }),
+            invalidatesTags: (result, error, { taskId }) => [
+                { type: 'Tasks', id: taskId },
+                { type: 'Tasks', id: 'LIST' },
+                { type: 'TaskReviews', id: 'LIST' },
+            ],
+        }),
     }),
 });
 
 export const {
     useGetTaskReviewsQuery,
     useToggleTaskReviewPassedMutation,
+    useFinalizeTaskMutation,
+    useRejectTaskMutation,
 } = taskReviewsApi;

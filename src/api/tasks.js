@@ -90,6 +90,18 @@ export const tasksApi = api.injectEndpoints({
         task?.projectId ? { type: 'Projects', id: task.projectId } : null
       ].filter(Boolean),
     }),
+    submitTaskResult: builder.mutation({
+      query: ({ id, formData }) => ({
+        url: `/tasks/${id}/submit-result`,
+        method: 'PATCH',
+        body: formData,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        { type: 'Projects', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -103,4 +115,5 @@ export const {
   useDeleteTaskMutation,
   useUpdateTaskStatusMutation,
   useAssignTaskMutation,
+  useSubmitTaskResultMutation,
 } = tasksApi;

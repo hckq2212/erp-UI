@@ -14,6 +14,7 @@ import { ProjectsPage } from './pages/Projects/ProjectsPage';
 import { ProjectDetailPage } from './pages/Projects/ProjectDetailPage/ProjectDetailPage';
 import { TasksPage } from './pages/Tasks/TasksPage';
 import { TaskDetailPage } from './pages/Tasks/TaskDetailPage';
+import { TaskReviewPage } from './pages/Tasks/TaskReviewPage';
 import { FinancePage } from './pages/Finance/FinancePage';
 import { VendorsPage } from './pages/Vendors/VendorsPage';
 import { VendorDetailPage } from './pages/Vendors/VendorDetailPage';
@@ -168,6 +169,16 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <TaskDetailPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/tasks/:id/review'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TaskReviewPage />
               </Layout>
             </ProtectedRoute>
           }

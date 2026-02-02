@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { DndContext, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { KanbanColumn } from '../../components/opportunities/KanbanColumn';
@@ -9,6 +9,7 @@ import { Plus, LayoutGrid, List } from 'lucide-react';
 import { useGetOpportunitiesQuery, useUpdateOpportunityMutation } from '../../api/opportunities';
 import { OpportunityModal } from './OpportunityModal';
 import { cn } from '../../utils/cn';
+import { TableFilters } from '../../components/ui/TableFilters';
 
 const COLUMNS = [
     { id: 'OPEN', title: 'Mới' },
@@ -29,8 +30,30 @@ export const OpportunitiesPage = () => {
     const [activeId, setActiveId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [viewType, setViewType] = useState('kanban'); // 'kanban' | 'list'
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('ALL');
 
-    const opportunities = Array.isArray(opportunitiesData) ? opportunitiesData : (opportunitiesData?.data || []);
+    const rawOpportunities = Array.isArray(opportunitiesData) ? opportunitiesData : (opportunitiesData?.data || []);
+
+    const opportunities = useMemo(() => {
+        return rawOpportunities.filter(opp => {
+            const matchesSearch =
+                (opp.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                (opp.customer?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                (opp.leadName?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+
+            const matchesStatus = statusFilter === 'ALL' || opp.status === statusFilter;
+
+            return matchesSearch && matchesStatus;
+        });
+    }, [rawOpportunities, searchTerm, statusFilter]);
+
+    const handleReset = () => {
+        setSearchTerm('');
+        setStatusFilter('ALL');
+    };
+
+    const statusOptions = COLUMNS.map(col => ({ value: col.id, label: col.title }));
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -52,7 +75,7 @@ export const OpportunitiesPage = () => {
         const activeId = active.id;
         const overId = over.id;
 
-        const activeItem = opportunities.find(item => item.id === activeId);
+        const activeItem = rawOpportunities.find(item => item.id === activeId);
 
         if (!activeItem) return;
 
@@ -63,11 +86,7 @@ export const OpportunitiesPage = () => {
         setActiveId(null);
     };
 
-    const handleDragOver = (event) => {
-        // Implementation for finer sorting within columns could go here
-    };
-
-    const activeItem = activeId ? opportunities.find(i => i.id === activeId) : null;
+    const activeItem = activeId ? rawOpportunities.find(i => i.id === activeId) : null;
 
     if (isLoading) return (
         <div className="flex flex-col items-center justify-center py-32 gap-4">
@@ -108,6 +127,16 @@ export const OpportunitiesPage = () => {
                 </Button>
             </div>
 
+            <TableFilters
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                filterValue={statusFilter}
+                onFilterChange={setStatusFilter}
+                filterOptions={statusOptions}
+                searchPlaceholder="Tìm tên cơ hội, khách hàng..."
+                onReset={handleReset}
+            />
+
             {/* Modal */}
             <OpportunityModal
                 isOpen={isModalOpen}
@@ -124,7 +153,6 @@ export const OpportunitiesPage = () => {
                                 collisionDetection={closestCorners}
                                 onDragStart={handleDragStart}
                                 onDragEnd={handleDragEnd}
-                                onDragOver={handleDragOver}
                             >
                                 <div className="flex h-full space-x-4 pb-4 min-w-max">
                                     {COLUMNS.map(col => (

@@ -1,16 +1,28 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Trash2, Calendar, User, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, Upload } from 'lucide-react';
-import { useGetTaskQuery, useUpdateTaskStatusMutation } from '../../api/tasks';
+import { ArrowLeft, Edit, Trash2, Calendar, User, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X } from 'lucide-react';
+import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation } from '../../api/tasks';
+import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { formatDate } from '../../utils/format';
 import { toast } from 'react-toastify';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { JOB_PERFORMER_TYPE } from '../../utils/enums';
+import { Modal } from '../../components/ui/Modal';
+import { Button } from '../../components/ui/Button';
+import { cn } from '../../utils/cn';
 
 export const TaskDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { data: task, isLoading, error } = useGetTaskQuery(id);
+    const { data: reviews } = useGetTaskReviewsQuery(id);
     const [updateStatus, { isLoading: isUpdatingStatus }] = useUpdateTaskStatusMutation();
+    const [submitResult, { isLoading: isSubmittingResult }] = useSubmitTaskResultMutation();
+
+    const [isResultModalOpen, setIsResultModalOpen] = useState(false);
+    const [submissionType, setSubmissionType] = useState('file'); // 'file' or 'link'
+    const [resultLink, setResultLink] = useState('');
+    const [resultFile, setResultFile] = useState(null);
+    const fileInputRef = useRef(null);
 
     const getStatusBadge = (status) => {
         switch (status) {
@@ -19,13 +31,54 @@ export const TaskDetailPage = () => {
             case 'DOING':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase"><Clock className="w-3 h-3" /> Đang thực hiện</span>;
             case 'AWAITING_REVIEW':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase"><AlertCircle className="w-3 h-3" /> Chưa phân công</span>;
+                return <span className="flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase"><AlertCircle className="w-3 h-3" /> Chờ duyệt</span>;
             case 'OVERDUE':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase"><AlertCircle className="w-3 h-3" /> Quá hạn</span>;
             case 'CANCELLED':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold uppercase">Đã hủy</span>;
+            case 'TODO':
+                return <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold uppercase">Chưa bắt đầu</span>;
             default:
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold uppercase">{status}</span>;
+        }
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setResultFile(file);
+            setResultLink(''); // Clear link if file is selected
+        }
+    };
+
+    const handleLinkChange = (e) => {
+        setResultLink(e.target.value);
+        setResultFile(null); // Clear file if link is entered
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const handleResultSubmit = async () => {
+        if (!resultFile && !resultLink) {
+            toast.error('Vui lòng cung cấp link hoặc file kết quả');
+            return;
+        }
+
+        const formData = new FormData();
+        if (submissionType === 'file' && resultFile) {
+            formData.append('file', resultFile);
+        } else if (submissionType === 'link' && resultLink) {
+            formData.append('link', resultLink);
+        }
+
+        try {
+            await submitResult({ id, formData }).unwrap();
+            toast.success('Gửi kết quả thành công!');
+            setIsResultModalOpen(false);
+            setResultFile(null);
+            setResultLink('');
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        } catch (err) {
+            toast.error(err.data?.message || 'Có lỗi xảy ra khi gửi kết quả');
         }
     };
 
@@ -62,7 +115,7 @@ export const TaskDetailPage = () => {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 ">
             {/* Header / Breadcrumbs */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-2">
@@ -80,6 +133,17 @@ export const TaskDetailPage = () => {
                     <p className="text-gray-500 font-mono text-sm bg-gray-100 px-3 py-1 rounded-lg inline-block">{task.code}</p>
                 </div>
 
+                <div className="flex flex-wrap gap-3">
+                    {task.status === 'AWAITING_REVIEW' && (
+                        <Button
+                            onClick={() => navigate(`/tasks/${id}/review`)}
+                            className="rounded-2xl py-3 px-6 shadow-lg shadow-blue-100 flex items-center gap-2"
+                        >
+                            <CheckCircle2 className="w-5 h-5" />
+                            Đánh giá & Duyệt
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -99,6 +163,53 @@ export const TaskDetailPage = () => {
                             </p>
                         </div>
                     </div>
+
+                    {/* Evaluation Results Section */}
+                    {reviews && reviews.length > 0 && (
+                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
+                                    <CheckCircle2 className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kết quả đánh giá</h2>
+                            </div>
+                            <div className="space-y-4">
+                                {reviews.map((review) => (
+                                    <div
+                                        key={review.id}
+                                        className={cn(
+                                            "flex items-center gap-4 p-4 rounded-2xl border transition-all",
+                                            review.isPassed
+                                                ? "bg-green-50/30 border-green-100"
+                                                : "bg-gray-50/50 border-gray-100"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "w-5 h-5 rounded-md border flex items-center justify-center shrink-0",
+                                            review.isPassed
+                                                ? "bg-green-500 border-green-500 text-white"
+                                                : "bg-white border-gray-300 text-transparent"
+                                        )}>
+                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className={cn(
+                                                "text-sm font-bold truncate",
+                                                review.isPassed ? "text-green-800" : "text-gray-700"
+                                            )}>
+                                                {review.criteria?.name}
+                                            </p>
+                                            {review.note && (
+                                                <p className="text-xs text-gray-500 mt-1 italic">
+                                                    Ghi chú: {review.note}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Timeline & Progress */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -150,13 +261,31 @@ export const TaskDetailPage = () => {
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kết quả</h2>
                             </div>
-                            <button className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors">
-                                Thêm kết quả
+                            <button
+                                onClick={() => setIsResultModalOpen(true)}
+                                className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors"
+                            >
+                                {task.resultFiles ? 'Cập nhật kết quả' : 'Thêm kết quả'}
                             </button>
                         </div>
-                        {task.resultFiles ? (
-                            <div className="p-4 bg-gray-50 rounded-2xl text-center text-gray-500 italic">
-                                Chức năng hiển thị kết quả đang hoàn thiện
+                        {task.result ? (
+                            <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100 flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-4 min-w-0">
+                                    <div className="w-12 h-12 bg-white rounded-2xl border border-blue-200 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+                                        <FileText className="w-6 h-6" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold text-gray-900">{task.result.name}</p>
+                                    </div>
+                                </div>
+                                <a
+                                    href={task.result.url}
+                                    target="blank"
+                                    rel="noopener noreferrer"
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all shrink-0"
+                                >
+                                    Xem ngay
+                                </a>
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-12 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
@@ -167,8 +296,109 @@ export const TaskDetailPage = () => {
                     </div>
                 </div>
 
+                {/* Modal Gửi kết quả */}
+                <Modal
+                    isOpen={isResultModalOpen}
+                    onClose={() => setIsResultModalOpen(false)}
+                    title="Gửi kết quả công việc"
+                    className="max-w-md"
+                >
+                    <div className="space-y-6">
+                        <div className="flex p-1 bg-gray-100 rounded-2xl">
+                            <button
+                                onClick={() => setSubmissionType('file')}
+                                className={cn(
+                                    "flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+                                    submissionType === 'file' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                                )}
+                            >
+                                <Upload className="w-4 h-4" />
+                                Tải file lên
+                            </button>
+                            <button
+                                onClick={() => setSubmissionType('link')}
+                                className={cn(
+                                    "flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+                                    submissionType === 'link' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                                )}
+                            >
+                                <LinkIcon className="w-4 h-4" />
+                                Gửi link
+                            </button>
+                        </div>
+
+                        {submissionType === 'file' ? (
+                            <div className="space-y-4">
+                                <div
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="border-2 border-dashed border-gray-200 rounded-3xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all group"
+                                >
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        ref={fileInputRef}
+                                        onChange={handleFileChange}
+                                    />
+                                    <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 mb-3 group-hover:scale-110 group-hover:bg-blue-100 group-hover:text-blue-600 transition-all">
+                                        <Upload className="w-6 h-6" />
+                                    </div>
+                                    <p className="text-sm font-bold text-gray-900 mb-1">
+                                        {resultFile ? resultFile.name : 'Nhấn để chọn file'}
+                                    </p>
+                                    <p className="text-xs text-gray-400 font-medium text-center">
+                                        Chấp nhận file hình ảnh, PDF, Excel, Word...
+                                    </p>
+                                </div>
+                                {resultFile && (
+                                    <button
+                                        onClick={() => {
+                                            setResultFile(null);
+                                            if (fileInputRef.current) fileInputRef.current.value = '';
+                                        }}
+                                        className="text-red-500 text-xs font-bold uppercase flex items-center gap-1 mx-auto hover:text-red-600"
+                                    >
+                                        <X className="w-3 h-3" /> Gỡ bỏ file
+                                    </button>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Đường dẫn kết quả</label>
+                                <div className="relative">
+                                    <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="url"
+                                        placeholder="https://google.drive.com/..."
+                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium"
+                                        value={resultLink}
+                                        onChange={handleLinkChange}
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-400 italic ml-2">* Vui lòng đảm bảo quyền truy cập link cho quản lý</p>
+                            </div>
+                        )}
+
+                        <div className="pt-4 flex gap-3">
+                            <Button
+                                variant="outline"
+                                className="flex-1 rounded-2xl py-4"
+                                onClick={() => setIsResultModalOpen(false)}
+                            >
+                                Hủy
+                            </Button>
+                            <Button
+                                className="flex-1 rounded-2xl py-4 shadow-lg shadow-blue-200"
+                                onClick={handleResultSubmit}
+                                isLoading={isSubmittingResult}
+                                disabled={isSubmittingResult || (!resultFile && !resultLink)}
+                            >
+                                Hoàn tất
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
                 {/* Sidebar */}
-                <div className="space-y-8">
+                <div className="space-y-8 ">
                     {/* Performer / Assignee */}
                     <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
                         <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">

@@ -1,55 +1,61 @@
-import { useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus } from 'lucide-react';
 import { useGetTeamsQuery } from '../../api/teams';
 import { TeamsTable } from '../../components/teams/TeamsTable';
 import { Button } from '../../components/ui/Button';
 import { TeamModal } from './TeamModal';
+import { TableFilters } from '../../components/ui/TableFilters';
 
 export const TeamsPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const { data: teams, isLoading, error } = useGetTeamsQuery();
+    const { data: teamsData, isLoading } = useGetTeamsQuery();
 
-    const filteredTeams = teams?.filter(team =>
-        team.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const teams = useMemo(() => {
+        const rawData = Array.isArray(teamsData) ? teamsData : (teamsData?.data || []);
+        return rawData.filter(team =>
+            team.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [teamsData, searchTerm]);
+
+    const handleReset = () => {
+        setSearchTerm('');
+    };
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-96">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                <p className="text-gray-500 font-medium animate-pulse">Đang tải danh sách đội...</p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6">
+        <div className="animate-in fade-in duration-500 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Đội dự án</h1>
-                    <p className="text-gray-500 mt-1">Quản lý các đội ngũ triển khai dự án</p>
+                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Đội Dự Án</h1>
+                    <p className="text-gray-500 text-sm mt-1">Quản lý các đội ngũ triển khai dự án</p>
                 </div>
-                <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
-                    <Plus className="w-5 h-5" />
+                <Button onClick={() => setIsModalOpen(true)} className="w-full md:w-auto shadow-lg shadow-blue-500/20">
+                    <Plus className="w-5 h-5 mr-2" />
                     Tạo Đội Mới
                 </Button>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="p-4 border-b border-gray-200 bg-gray-50/50">
-                    <div className="relative max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Tìm kiếm đội..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                        />
-                    </div>
-                </div>
+            <TableFilters
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                filterValue="ALL"
+                onFilterChange={() => { }}
+                filterOptions={[]}
+                onReset={handleReset}
+                searchPlaceholder="Tìm tên đội..."
+            />
 
-                <TeamsTable teams={filteredTeams} />
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <TeamsTable teams={teams} />
             </div>
 
             <TeamModal
