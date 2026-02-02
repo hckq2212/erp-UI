@@ -39,6 +39,16 @@ export const tasksApi = api.injectEndpoints({
           ]
           : [{ type: 'Tasks', id: 'LIST' }],
     }),
+    getTasksByOpportunity: builder.query({
+      query: (opportunityId) => `/tasks/opportunity/${opportunityId}`,
+      providesTags: (result) =>
+        result
+          ? [
+            ...result.map(({ id }) => ({ type: 'Tasks', id })),
+            { type: 'Tasks', id: 'LIST' },
+          ]
+          : [{ type: 'Tasks', id: 'LIST' }],
+    }),
     createTask: builder.mutation({
       query: (data) => ({
         url: '/tasks',
@@ -102,6 +112,17 @@ export const tasksApi = api.injectEndpoints({
         { type: 'Projects', id: 'LIST' },
       ],
     }),
+    updatePricing: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/tasks/${id}/pricing`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -110,10 +131,12 @@ export const {
   useGetTaskQuery,
   useGetTasksByProjectQuery,
   useGetTasksByAssigneeQuery,
+  useGetTasksByOpportunityQuery,
   useCreateTaskMutation,
   useUpdateTaskMutation,
   useDeleteTaskMutation,
   useUpdateTaskStatusMutation,
   useAssignTaskMutation,
   useSubmitTaskResultMutation,
+  useUpdatePricingMutation,
 } = tasksApi;

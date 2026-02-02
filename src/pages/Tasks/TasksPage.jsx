@@ -3,11 +3,13 @@ import { useGetTasksQuery } from '../../api/tasks';
 import { GlobalTaskTable } from './GlobalTaskTable';
 import { TaskFilters } from './TaskFilters';
 import { TaskSchedule } from './TaskSchedule';
-import { ClipboardList, Filter, LayoutGrid, Calendar as CalendarIcon, List } from 'lucide-react';
+import { ClipboardList, Filter, LayoutGrid, Calendar as CalendarIcon, List, Plus } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { TaskCreateModal } from './TaskCreateModal';
 
 export const TasksPage = () => {
     const [viewType, setViewType] = useState('table'); // 'table' | 'schedule'
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [filters, setFilters] = useState({
         search: '',
         status: 'ALL'
@@ -37,6 +39,14 @@ export const TasksPage = () => {
                         <span className="font-bold">{tasks.length}</span>
                         <span className="text-sm font-medium">Tổng việc</span>
                     </div>
+
+                    <button
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="flex items-center gap-2 bg-blue-600 px-6 py-2.5 rounded-xl border border-blue-700 text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95"
+                    >
+                        <Plus className="w-5 h-5" />
+                        <span className="font-bold">Tạo công việc</span>
+                    </button>
 
                     <div className="flex bg-gray-100 p-1.5 rounded-2xl border border-gray-200 shadow-sm ml-auto md:ml-0">
                         <button
@@ -83,6 +93,11 @@ export const TasksPage = () => {
                     )}
                 </div>
             )}
+
+            <TaskCreateModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+            />
         </div>
     );
 };

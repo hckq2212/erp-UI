@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
+// const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const BASE_URL = 'http://localhost:3000/api';
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   credentials: 'include',
@@ -45,6 +45,7 @@ export const api = createApi({
     'Quotations', 'PaymentMilestones', 'Projects', 'Tasks',
     'Users', 'Customers', 'Teams', 'Notifications',
     'ReferralPartners', 'Vendors', 'Debts', 'JobCriterias', 'TaskReviews',
+    'ContractAddendums',
   ],
   endpoints: () => ({}),
 });

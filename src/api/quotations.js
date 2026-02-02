@@ -91,6 +91,19 @@ export const quotationsApi = api.injectEndpoints({
       }),
       invalidatesTags: [{ type: 'Quotations', id: 'LIST' }],
     }),
+    createAddendumQuotation: builder.mutation({
+      query: (data) => ({
+        url: '/quotations/addendum-quotation',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: (result, error, data) => [
+        { type: 'Quotations', id: 'LIST' },
+        { type: 'Quotations', id: `OPPORTUNITY_${data.opportunityId}` },
+        { type: 'Opportunities', id: data.opportunityId },
+        { type: 'Opportunities', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -103,4 +116,5 @@ export const {
   useApproveQuotationMutation,
   useRejectQuotationMutation,
   useDeleteQuotationMutation,
+  useCreateAddendumQuotationMutation,
 } = quotationsApi;
