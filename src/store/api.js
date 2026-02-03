@@ -18,21 +18,21 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
   let result = await baseQuery(args, api, extraOptions);
 
   // If 401 and NOT an auth request, try to refresh
-  if (result.error && result.error.status === 401 && !isAuthRequest) {
-    const refreshResult = await baseQuery(
-      { url: '/auth/refresh', method: 'POST' },
-      api,
-      extraOptions
-    );
+  // if (result.error && result.error.status === 401 && !isAuthRequest) {
+  //   const refreshResult = await baseQuery(
+  //     { url: '/auth/refresh', method: 'POST' },
+  //     api,
+  //     extraOptions
+  //   );
 
-    if (refreshResult.data) {
-      // Retry original request
-      result = await baseQuery(args, api, extraOptions);
-    } else {
-      // Both failed - logout
-      api.dispatch({ type: 'auth/logout' });
-    }
-  }
+  //   if (refreshResult.data) {
+  //     // Retry original request
+  //     result = await baseQuery(args, api, extraOptions);
+  //   } else {
+  //     // Both failed - logout
+  //     api.dispatch({ type: 'auth/logout' });
+  //   }
+  // }
 
   return result;
 };
