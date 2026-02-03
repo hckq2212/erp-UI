@@ -1,14 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Search, ChevronRight, Mail, Phone, Shield } from 'lucide-react';
+import { Users, Search, ChevronRight, Mail, Phone, Shield, Plus } from 'lucide-react';
 import { useGetUsersQuery } from '../../api/users';
+import { useGetMeQuery } from '../../api/auth';
+import { AddUserModal } from './AddUserModal';
 
 export const UserListPage = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('ALL');
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     const { data: users = [], isLoading, error } = useGetUsersQuery();
+    const { data: currentUser } = useGetMeQuery();
+
+    const canAddUser = currentUser?.role === 'BOD' || currentUser?.role === 'ADMIN';
 
     const filteredUsers = users.filter(user => {
         const matchesSearch =
@@ -24,7 +30,10 @@ export const UserListPage = () => {
     const getRoleBadgeColor = (role) => {
         switch (role) {
             case 'ADMIN': return 'bg-red-50 text-red-700 border-red-100';
+            case 'BOD': return 'bg-amber-50 text-amber-700 border-amber-100';
             case 'TL': return 'bg-purple-50 text-purple-700 border-purple-100';
+            case 'SALE': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+            case 'MEMBER':
             case 'EMP': return 'bg-blue-50 text-blue-700 border-blue-100';
             default: return 'bg-gray-50 text-gray-700 border-gray-100';
         }
@@ -53,6 +62,15 @@ export const UserListPage = () => {
                     <h1 className="text-2xl font-bold text-gray-900">Danh sách nhân sự</h1>
                     <p className="text-gray-500 text-sm mt-1">Quản lý thông tin nhân viên trong hệ thống</p>
                 </div>
+                {canAddUser && (
+                    <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="bg-blue-600 text-white px-5 py-2.5 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center gap-2 active:scale-95"
+                    >
+                        <Plus className="w-5 h-5" />
+                        Thêm nhân sự
+                    </button>
+                )}
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
@@ -73,8 +91,11 @@ export const UserListPage = () => {
                         onChange={(e) => setRoleFilter(e.target.value)}
                     >
                         <option value="ALL">Tất cả vai trò</option>
+                        <option value="BOD">BOD</option>
                         <option value="ADMIN">Admin</option>
                         <option value="TL">Team Lead</option>
+                        <option value="SALE">Sale</option>
+                        <option value="MEMBER">Member</option>
                         <option value="EMP">Employee</option>
                     </select>
                 </div>
@@ -96,7 +117,7 @@ export const UserListPage = () => {
                                     <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
                                         {user.fullName}
                                     </h3>
-                                    <p className="text-xs text-gray-500 font-mono">@{user.account?.username}</p>
+                                    <p className="text-xs text-gray-500 font-mono">{user.account?.username}</p>
                                 </div>
                             </div>
                             <div className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border ${getRoleBadgeColor(user.account?.role)}`}>
@@ -119,10 +140,6 @@ export const UserListPage = () => {
                             <span className="text-xs text-blue-600 font-bold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                                 Xem chi tiết <ChevronRight className="w-3 h-3" />
                             </span>
-                            <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                <Shield className="w-3 h-3" />
-                                Verified
-                            </div>
                         </div>
                     </div>
                 ))}
@@ -140,6 +157,11 @@ export const UserListPage = () => {
                     </button>
                 </div>
             )}
+
+            <AddUserModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+            />
         </div>
     );
 };
