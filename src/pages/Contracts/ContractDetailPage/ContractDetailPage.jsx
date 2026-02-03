@@ -19,6 +19,7 @@ import { ProposalManagement } from './ProposalManagement';
 import { ProjectInfo } from './ProjectInfo';
 import { MilestonesSection } from './MilestonesSection';
 import { AssessExtraTasks } from './AssessExtraTasks';
+import { ContractAddendums } from './ContractAddendums';
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS } from '../../../utils/enums';
 import { cn } from '../../../utils/cn';
 
@@ -234,6 +235,7 @@ export const ContractDetailPage = () => {
               isUploadingSigned={isUploadingSigned}
             />
             <FinancialInfo contract={contract} />
+            <ContractAddendums addendums={contract.addendums} />
           </div>
 
           {/* Sidebar - Right Side (1/3) */}

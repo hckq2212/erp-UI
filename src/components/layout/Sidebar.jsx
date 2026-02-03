@@ -18,6 +18,7 @@ const menuItems = [
   { path: '/teams', icon: Users, label: 'Đội dự án' },
   { path: '/referral-partners', icon: Users, label: 'Đối tác' },
   { path: '/finance', icon: DollarSign, label: 'Lộ trình thanh toán' },
+  { path: '/users', icon: Users, label: 'Nhân sự' },
 ];
 
 export const Sidebar = () => {

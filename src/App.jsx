@@ -27,6 +27,8 @@ import { ReferralPartnersPage } from './pages/ReferralPartners/ReferralPartnersP
 import { PartnerDetailPage } from './pages/ReferralPartners/PartnerDetailPage';
 import { TeamsPage } from './pages/Teams/TeamsPage';
 import { TeamDetailPage } from './pages/Teams/TeamDetailPage';
+import { UserListPage } from './pages/Users/UserListPage';
+import { UserDetailPage } from './pages/Users/UserDetailPage';
 
 function App() {
   // Use the query to check if the user is logged in via cookies on startup
@@ -278,6 +280,26 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <NotificationsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/users'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <UserListPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/users/:id'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <UserDetailPage />
               </Layout>
             </ProtectedRoute>
           }
