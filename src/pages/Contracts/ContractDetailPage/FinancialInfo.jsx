@@ -108,18 +108,18 @@ export const FinancialInfo = ({ contract }) => {
     <div className="space-y-8 max-w-5xl mx-auto">
       {/* Premium Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-2xl shadow-lg shadow-blue-100 text-white relative overflow-hidden group">
+        <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-2xl shadow-lg shadow-blue-100 text-white relative overflow-hidden group flex justify-around flex-col">
           {/* <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
             <DollarSign size={120} />
           </div> */}
           <p className="text-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Tổng giá trị hợp đồng</p>
           <div className="text-xl font-black">{formatCurrency(sellingPrice)}</div>
-          <div className="mt-4 flex items-center gap-2">
+          {/* <div className="mt-4 flex items-center gap-2">
             <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
               <div className="h-full bg-white transition-all duration-1000" style={{ width: `${progressPercent}%` }} />
             </div>
             <span className="text-[10px] font-bold">{progressPercent}%</span>
-          </div>
+          </div> */}
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between group hover:border-green-200 transition-all">

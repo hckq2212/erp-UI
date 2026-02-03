@@ -77,7 +77,7 @@ export const OPPORTUNITY_STATUS_COLORS = {
 
 // Task Status
 export const TASK_STATUS_LABELS = {
-  PENDING: 'Chờ xử lý',
+  PENDING: 'Chờ phân công',
   IN_PROGRESS: 'Đang thực hiện',
   COMPLETED: 'Hoàn thành',
   CANCELLED: 'Đã hủy',

@@ -106,21 +106,21 @@ export const ProjectDetailPage = () => {
                 <span>{isConfirming ? 'Đang xử lý...' : 'Chấp nhận'}</span>
               </button>
             )}
-            <button
+            {/* <button
               onClick={() => setShowEditModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm transition-all active:scale-95"
             >
               <Edit className="w-4 h-4" />
               <span>Chỉnh sửa</span>
-            </button>
-            <button
+            </button> */}
+            {/* <button
               onClick={handleDelete}
               disabled={isDeleting}
               className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all disabled:opacity-50 active:scale-95 border border-red-100"
             >
               <Trash2 className="w-4 h-4" />
               <span>{isDeleting ? 'Đang xóa...' : 'Xóa'}</span>
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

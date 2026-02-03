@@ -123,6 +123,18 @@ export const tasksApi = api.injectEndpoints({
         { type: 'Tasks', id: 'LIST' },
       ],
     }),
+    assessExtraTask: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/tasks/${id}/pricing`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        { type: 'Projects', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -139,4 +151,5 @@ export const {
   useAssignTaskMutation,
   useSubmitTaskResultMutation,
   useUpdatePricingMutation,
+  useAssessExtraTaskMutation,
 } = tasksApi;

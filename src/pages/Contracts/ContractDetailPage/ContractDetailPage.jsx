@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import {
@@ -17,7 +18,9 @@ import { FinancialInfo } from './FinancialInfo';
 import { ProposalManagement } from './ProposalManagement';
 import { ProjectInfo } from './ProjectInfo';
 import { MilestonesSection } from './MilestonesSection';
+import { AssessExtraTasks } from './AssessExtraTasks';
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS } from '../../../utils/enums';
+import { cn } from '../../../utils/cn';
 
 export const ContractDetailPage = () => {
   const { id } = useParams();
@@ -26,6 +29,7 @@ export const ContractDetailPage = () => {
   const { data: project, isLoading: projectLoading } = useGetProjectsByContractQuery(id, {
     skip: !id,
   });
+  const [activeTab, setActiveTab] = useState('MAIN'); // 'MAIN' | 'EXTRA'
 
   const [uploadProposal, { isLoading: isUploadingProposal }] = useUploadProposalMutation();
   const [approveProposal] = useApproveProposalMutation();
@@ -155,6 +159,9 @@ export const ContractDetailPage = () => {
     );
   }
 
+  const extraTasks = project?.tasks?.filter(t => t.status === 'AWAITING_PRICING') || [];
+  const hasExtraTasks = extraTasks.length > 0;
+
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
@@ -182,37 +189,67 @@ export const ContractDetailPage = () => {
         </div>
       </div>
 
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content - Left Side (2/3) */}
-        <div className="lg:col-span-2 space-y-6">
-          <ContractInfo contract={contract} formatDate={formatDate} />
-          {project &&
-            <ProjectInfo project={project} formatDate={formatDate} navigate={navigate} contractId={contract.id}
-            />}
-          <ProposalManagement
-            contract={contract}
-            onUploadProposal={handleUploadProposal}
-            onApproveProposal={handleApproveProposal}
-            onUploadSigned={handleUploadSigned}
-            isUploadingProposal={isUploadingProposal}
-            isUploadingSigned={isUploadingSigned}
-          />
-          {/* <MilestonesSection
-            contract={contract}
-            onAddMilestone={handleAddMilestone}
-            onEditMilestone={handleEditMilestone}
-            onDeleteMilestone={handleDeleteMilestone}
-            formatDate={formatDate}
-          /> */}
-          <FinancialInfo contract={contract} />
+      {/* Tabs Switcher */}
+      {hasExtraTasks && (
+        <div className="flex bg-gray-100/50 p-1.5 rounded-2xl border border-gray-200 shadow-sm mb-6 w-fit">
+          <button
+            onClick={() => setActiveTab('MAIN')}
+            className={cn(
+              "flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all",
+              activeTab === 'MAIN' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+            )}
+          >
+            Thông tin chung
+          </button>
+          <button
+            onClick={() => setActiveTab('EXTRA')}
+            className={cn(
+              "flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all",
+              activeTab === 'EXTRA' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+            )}
+          >
+            Công việc phát sinh
+            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] animate-pulse">
+              {extraTasks.length}
+            </span>
+          </button>
         </div>
+      )}
 
-        {/* Sidebar - Right Side (1/3) */}
-        <div className="space-y-6">
-          <CustomerInfo contract={contract} />
+      {/* Content Grid */}
+      {activeTab === 'MAIN' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content - Left Side (2/3) */}
+          <div className="lg:col-span-2 space-y-6">
+            <ContractInfo contract={contract} formatDate={formatDate} />
+            {project &&
+              <ProjectInfo project={project} formatDate={formatDate} navigate={navigate} contractId={contract.id}
+              />}
+            <ProposalManagement
+              contract={contract}
+              onUploadProposal={handleUploadProposal}
+              onApproveProposal={handleApproveProposal}
+              onUploadSigned={handleUploadSigned}
+              isUploadingProposal={isUploadingProposal}
+              isUploadingSigned={isUploadingSigned}
+            />
+            <FinancialInfo contract={contract} />
+          </div>
+
+          {/* Sidebar - Right Side (1/3) */}
+          <div className="space-y-6">
+            <CustomerInfo contract={contract} />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Định giá công việc phát sinh</h2>
+            <p className="text-gray-500 text-sm">Xác nhận đơn giá hoặc chuyển thành công việc ghi nhận chi phí cho các hạng mục phát sinh ngoài hợp đồng</p>
+          </div>
+          <AssessExtraTasks tasks={extraTasks} opportunityId={contract?.opportunity?.id} />
+        </div>
+      )}
     </div>
   );
 };

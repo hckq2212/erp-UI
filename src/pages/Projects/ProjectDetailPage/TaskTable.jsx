@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react';
-import { Calendar, Users, FileText, Search, UserPlus, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Calendar, Users, FileText, Search, UserPlus, ArrowUp, ArrowDown, ArrowUpDown, Plus } from 'lucide-react';
 import { TaskAssignModal } from './TaskAssignModal';
+import { AddExtraTaskModal } from './AddExtraTaskModal';
 import { useNavigate } from 'react-router-dom';
 import { useGetTeamMembersQuery } from '../../../api/teams';
 import { useTableFeatures } from '../../../hooks/useTableFeatures';
 import { Pagination } from '../../../components/ui/Pagination';
 import { cn } from '../../../utils/cn';
+import { TASK_STATUS_LABELS } from '../../../utils/enums';
 
 export const TaskTable = ({ tasks = [], project }) => {
     const navigate = useNavigate();
@@ -18,6 +20,7 @@ export const TaskTable = ({ tasks = [], project }) => {
         assigneeId: 'ALL'
     });
     const [assigningTask, setAssigningTask] = useState(null);
+    const [showAddExtraModal, setShowAddExtraModal] = useState(false);
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
@@ -122,11 +125,19 @@ export const TaskTable = ({ tasks = [], project }) => {
                         </option>
                     ))}
                 </select>
+
+                <button
+                    onClick={() => setShowAddExtraModal(true)}
+                    className="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm font-medium text-sm"
+                >
+                    <Plus className="w-4 h-4" />
+                    <span>Thêm công việc</span>
+                </button>
             </div>
 
             {/* Table */}
             <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left min-w-[1300px]">
+                <table className="w-full text-sm text-left min-w-[1500px]">
                     <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100">
                         <tr>
                             <th className="px-6 py-4 font-medium">STT</th>
@@ -173,7 +184,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                         <span className="font-medium text-gray-700">{task.assignee?.fullName || task.vendorId || '---'}</span>
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <span className="font-medium text-gray-700">{getStatusBadge(task.status)}</span>
+                                        <span className="font-medium text-gray-700">{TASK_STATUS_LABELS[task.status]}</span>
                                     </td>
 
                                     <td className="px-6 py-4 text-center">
@@ -220,6 +231,14 @@ export const TaskTable = ({ tasks = [], project }) => {
                     isOpen={!!assigningTask}
                     onClose={() => setAssigningTask(null)}
                     task={assigningTask}
+                    project={project}
+                />
+            )}
+
+            {showAddExtraModal && (
+                <AddExtraTaskModal
+                    isOpen={showAddExtraModal}
+                    onClose={() => setShowAddExtraModal(false)}
                     project={project}
                 />
             )}
