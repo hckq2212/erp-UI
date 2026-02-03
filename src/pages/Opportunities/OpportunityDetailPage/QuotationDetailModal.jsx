@@ -103,7 +103,7 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                     </p>
                   </div>
                 </div>
-                
+
                 {quotation.note && (
                   <div className="mt-3 pt-3 border-t border-purple-200">
                     <p className="text-sm font-medium text-gray-700 mb-1">Ghi chú:</p>
@@ -132,7 +132,7 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                         const cost = parseFloat(detail.costAtSale) * detail.quantity;
                         const profit = total - cost;
                         const profitMargin = total > 0 ? ((profit / total) * 100).toFixed(1) : 0;
-                        
+
                         return (
                           <tr key={detail.id} className="border-b border-gray-100 hover:bg-gray-50">
                             <td className="px-4 py-3 text-sm text-gray-900">
@@ -174,11 +174,11 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                         </td>
                         <td className="px-4 py-3 text-right text-sm">
                           {(() => {
-                            const totalCost = quotation.details?.reduce((sum, d) => 
+                            const totalCost = quotation.details?.reduce((sum, d) =>
                               sum + (parseFloat(d.costAtSale) * d.quantity), 0) || 0;
                             const totalProfit = parseFloat(quotation.totalAmount) - totalCost;
-                            const totalMargin = quotation.totalAmount > 0 
-                              ? ((totalProfit / parseFloat(quotation.totalAmount)) * 100).toFixed(1) 
+                            const totalMargin = quotation.totalAmount > 0
+                              ? ((totalProfit / parseFloat(quotation.totalAmount)) * 100).toFixed(1)
                               : 0;
                             return (
                               <div className="flex flex-col items-end">
@@ -214,7 +214,7 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
         </div>
 
         <div className="flex gap-3 px-4 py-2 border-t border-gray-100">
-          {quotation && quotation.status === 'DRAFT' && opportunity?.status === 'QUOTATION_DRAFTING' && (
+          {quotation && quotation.status === 'DRAFT' && (opportunity?.status === 'QUOTATION_DRAFTING' || quotation.type === 'ADDENDUM') && (
             <>
               <button
                 onClick={handleApprove}
@@ -237,10 +237,10 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
 
         </div>
         <div className="flex gap-3 px-4 py-2 ">
-            <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
-            >
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+          >
             Đóng
           </button>
         </div>

@@ -93,7 +93,7 @@ export const quotationsApi = api.injectEndpoints({
     }),
     createAddendumQuotation: builder.mutation({
       query: (data) => ({
-        url: '/quotations/addendum-quotation',
+        url: '/quotations/addendum',
         method: 'POST',
         body: data,
       }),
