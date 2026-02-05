@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, FileText, AlertCircle, Link as LinkIcon, MessageSquare, XCircle } from 'lucide-react';
 import { useGetTaskQuery } from '../../api/tasks';
 import { useGetTaskReviewsQuery, useToggleTaskReviewPassedMutation, useFinalizeTaskMutation, useRejectTaskMutation } from '../../api/taskReviews';
+import { useGetMeQuery } from '../../api/auth';
 import { toast } from 'react-toastify';
 import { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/Button';
@@ -11,6 +12,7 @@ export const TaskReviewPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
 
+    const { data: user } = useGetMeQuery();
     // Fetch task details
     const { data: task, isLoading: isTaskLoading, error: taskError } = useGetTaskQuery(id);
 
@@ -22,16 +24,49 @@ export const TaskReviewPage = () => {
     const [rejectTask, { isLoading: isRejecting }] = useRejectTaskMutation();
 
     const [note, setNote] = useState('');
-    const [isAllPassed, setIsAllPassed] = useState(false);
+    const [activeTab, setActiveTab] = useState(null); // 'TEAM_LEAD' or 'ASSIGNER'
+
+    const isLead = Number(user?.id) === Number(task?.project?.team?.teamLead?.id);
+    const isAssigner = Number(user?.id) === Number(task?.assignerId);
+
+    // Dual review happens if there's a lead AND an assigner, and they are DIFFERENT
+    const hasLead = !!task?.project?.team?.teamLead?.id;
+    const hasAssigner = !!task?.assignerId;
+    const isDualReview = hasLead && hasAssigner && Number(task?.project?.team?.teamLead?.id) !== Number(task?.assignerId);
 
     useEffect(() => {
-        if (reviews) {
-            const allPassed = reviews.length > 0 && reviews.every(r => r.isPassed);
-            setIsAllPassed(allPassed);
+        if (!activeTab && user && task) {
+            if (isLead) setActiveTab('TEAM_LEAD');
+            else if (isAssigner) setActiveTab('ASSIGNER');
+            else if (isDualReview) setActiveTab('TEAM_LEAD');
+            else setActiveTab('ASSIGNER');
         }
-    }, [reviews]);
+    }, [user, task, isLead, isAssigner, isDualReview, activeTab]);
+
+    const leadReviews = reviews?.filter(r => r.reviewerType === 'TEAM_LEAD') || [];
+    const assignerReviews = reviews?.filter(r => r.reviewerType === 'ASSIGNER') || [];
+
+    const isLeadPassed = leadReviews.length === 0 || leadReviews.every(r => r.isPassed);
+    const isAssignerPassed = assignerReviews.length === 0 || assignerReviews.every(r => r.isPassed);
+
+    const isAllPassed = isLeadPassed && isAssignerPassed;
 
     const handleToggle = async (review) => {
+        // Permission check: 
+        // 1. If dual review: must match active tab role
+        // 2. If single review: must be either lead or assigner
+        let canToggle = false;
+        if (isDualReview) {
+            canToggle = (activeTab === 'TEAM_LEAD' && isLead) || (activeTab === 'ASSIGNER' && isAssigner);
+        } else {
+            canToggle = isLead || isAssigner;
+        }
+
+        if (!canToggle) {
+            toast.warning('Bạn không có quyền đánh giá trong phần này');
+            return;
+        }
+
         try {
             await toggleReview({
                 id: review.id,
@@ -107,6 +142,25 @@ export const TaskReviewPage = () => {
                         <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Đánh giá công việc</h1>
                         <p className="text-gray-500 font-medium">{task.name}</p>
                     </div>
+
+                    {isDualReview && (
+                        <div className="flex gap-4">
+                            <div className="flex flex-col items-end gap-1">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Team Lead</span>
+                                {isLeadPassed ?
+                                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-black rounded-lg border border-green-200 uppercase">Đã duyệt xong</span> :
+                                    <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded-lg border border-amber-200 uppercase">Đang đợi</span>
+                                }
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Assigner</span>
+                                {isAssignerPassed ?
+                                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-black rounded-lg border border-green-200 uppercase">Đã duyệt xong</span> :
+                                    <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded-lg border border-amber-200 uppercase">Đang đợi</span>
+                                }
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -146,51 +200,113 @@ export const TaskReviewPage = () => {
 
                 {/* Criteria Section */}
                 <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
-                            <CheckCircle2 className="w-5 h-5" />
+                    <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
+                                <CheckCircle2 className="w-5 h-5" />
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-900 tracking-tight">Tiêu chí đánh giá</h2>
                         </div>
-                        <h2 className="text-xl font-bold text-gray-900 tracking-tight">Tiêu chí đánh giá</h2>
                     </div>
 
-                    <div className="space-y-4">
-                        {reviews && reviews.length > 0 ? (
-                            reviews.map((review) => (
-                                <div
-                                    key={review.id}
+                    {isDualReview ? (
+                        <div className="space-y-8">
+                            <div className="flex p-1 bg-gray-50 rounded-2xl border border-gray-100">
+                                <button
+                                    onClick={() => setActiveTab('TEAM_LEAD')}
                                     className={cn(
-                                        "flex items-center gap-4 p-5 rounded-3xl border transition-all cursor-pointer group",
-                                        review.isPassed
-                                            ? "bg-green-50/50 border-green-100"
-                                            : "bg-gray-50/50 border-gray-100 hover:border-blue-200 hover:bg-white"
+                                        "flex-1 py-3 px-4 rounded-xl text-sm font-black transition-all",
+                                        activeTab === 'TEAM_LEAD' ? "bg-white text-blue-600 shadow-sm" : "text-gray-400 hover:text-gray-600"
                                     )}
-                                    onClick={() => handleToggle(review)}
                                 >
-                                    <div className={cn(
-                                        "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0",
-                                        review.isPassed
-                                            ? "bg-green-500 border-green-500 text-white"
-                                            : "border-gray-300 group-hover:border-blue-400"
-                                    )}>
-                                        {review.isPassed && <CheckCircle2 className="w-4 h-4" />}
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className={cn(
-                                            "font-bold text-sm",
-                                            review.isPassed ? "text-green-700" : "text-gray-700"
-                                        )}>
-                                            {review.criteria?.name || 'Tiêu chí'}
-                                        </p>
-                                        {review.criteria?.description && (
-                                            <p className="text-xs text-gray-500 mt-1">{review.criteria.description}</p>
+                                    Team Lead Review
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('ASSIGNER')}
+                                    className={cn(
+                                        "flex-1 py-3 px-4 rounded-xl text-sm font-black transition-all",
+                                        activeTab === 'ASSIGNER' ? "bg-white text-blue-600 shadow-sm" : "text-gray-400 hover:text-gray-600"
+                                    )}
+                                >
+                                    Assigner Review
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                {(activeTab === 'TEAM_LEAD' ? leadReviews : assignerReviews).map((review) => (
+                                    <div
+                                        key={review.id}
+                                        className={cn(
+                                            "flex items-center gap-4 p-5 rounded-3xl border transition-all group",
+                                            review.isPassed ? "bg-green-50/50 border-green-100" : "bg-gray-50/20 border-gray-50",
+                                            ((activeTab === 'TEAM_LEAD' && isLead) || (activeTab === 'ASSIGNER' && isAssigner)) ? "cursor-pointer hover:border-blue-200 hover:bg-white" : "opacity-70"
                                         )}
+                                        onClick={() => handleToggle(review)}
+                                    >
+                                        <div className={cn(
+                                            "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0",
+                                            review.isPassed ? "bg-green-500 border-green-500 text-white" : "border-gray-200"
+                                        )}>
+                                            {review.isPassed && <CheckCircle2 className="w-4 h-4" />}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className={cn("font-bold text-sm", review.isPassed ? "text-green-700" : "text-gray-700")}>
+                                                {review.criteria?.name}
+                                            </p>
+                                            <p className="text-xs text-gray-400 mt-0.5">{review.criteria?.description}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))
-                        ) : (
-                            <p className="text-gray-400 italic text-center py-4">Không có tiêu chí đánh giá cho loại công việc này.</p>
-                        )}
-                    </div>
+                                ))}
+                                {(activeTab === 'LEAD' ? leadReviews : assignerReviews).length === 0 && (
+                                    <p className="text-gray-400 italic text-center py-8">Không có tiêu chí cho phần này</p>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {reviews && reviews.length > 0 ? (
+                                reviews.map((review) => (
+                                    <div
+                                        key={review.id}
+                                        className={cn(
+                                            "flex items-center gap-4 p-5 rounded-3xl border transition-all cursor-pointer group",
+                                            review.isPassed
+                                                ? "bg-green-50/50 border-green-100"
+                                                : "bg-gray-50/50 border-gray-100 hover:border-blue-200 hover:bg-white"
+                                        )}
+                                        onClick={() => handleToggle(review)}
+                                    >
+                                        <div className={cn(
+                                            "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0",
+                                            review.isPassed
+                                                ? "bg-green-500 border-green-500 text-white"
+                                                : "border-gray-300 group-hover:border-blue-400"
+                                        )}>
+                                            {review.isPassed && <CheckCircle2 className="w-4 h-4" />}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <p className={cn(
+                                                    "font-bold text-sm",
+                                                    review.isPassed ? "text-green-700" : "text-gray-700"
+                                                )}>
+                                                    {review.criteria?.name || 'Tiêu chí'}
+                                                </p>
+                                                {/* <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">
+                                                    {review.reviewerType === 'TEAM_LEAD' ? 'Lead' : 'Assigner'}
+                                                </span> */}
+                                            </div>
+                                            {review.criteria?.description && (
+                                                <p className="text-xs text-gray-400 mt-1">{review.criteria.description}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-gray-400 italic text-center py-4">Không có tiêu chí đánh giá cho loại công việc này.</p>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Approval Note */}

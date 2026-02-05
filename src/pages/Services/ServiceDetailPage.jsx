@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useGetServiceQuery, useAddJobMutation, useRemoveJobMutation } from '../../api/services';
 import { formatCurrency } from '../../utils/format';
-import { ArrowLeft, Briefcase, Clock, DollarSign, List, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, Briefcase, Clock, DollarSign, List, Trash2, Plus, Star } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { AddJobModal } from './AddJobModal';
 import { toast } from 'react-toastify';
@@ -127,8 +127,19 @@ export const ServiceDetailPage = () => {
                                 <tbody className="divide-y divide-gray-100">
                                     {service.jobs?.map((job) => (
                                         <tr key={job.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-6 py-4 text-sm font-medium text-gray-900">{job.code}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">{job.name}</td>
+                                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                                {job.code}
+                                                {service.outputJobId === job.id && (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 uppercase tracking-tight border border-purple-200 ml-2">
+                                                        Công việc đầu ra
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-gray-600">{job.name}</span>
+                                                </div>
+                                            </td>
                                             <td className="px-6 py-4 text-sm text-blue-600 font-medium">{formatCurrency(job.costPrice)}</td>
                                             <td className="px-6 py-4 text-sm text-right flex items-center justify-end gap-3">
                                                 <span className={`px-2 py-1 rounded-md text-xs font-medium ${job.defaultPerformerType === 'INTERNAL'

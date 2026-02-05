@@ -81,7 +81,9 @@ export const TASK_STATUS_LABELS = {
   IN_PROGRESS: 'Đang thực hiện',
   COMPLETED: 'Hoàn thành',
   CANCELLED: 'Đã hủy',
-  AWAITING_PRICING: 'Chờ định giá'
+  AWAITING_PRICING: 'Chờ định giá',
+  REJECTED: 'Yêu cầu làm lại',
+  DOING: 'Đang thực hiện'
 };
 
 export const TASK_STATUS_COLORS = {
@@ -89,7 +91,9 @@ export const TASK_STATUS_COLORS = {
   IN_PROGRESS: 'bg-blue-100 text-blue-800',
   COMPLETED: 'bg-green-100 text-green-800',
   CANCELLED: 'bg-red-100 text-red-800',
-  AWAITING_PRICING: 'bg-orange-100 text-orange-800'
+  AWAITING_PRICING: 'bg-orange-100 text-orange-800',
+  REJECTED: 'bg-red-100 text-red-800',
+  DOING: 'bg-blue-100 text-blue-800'
 };
 
 // Priority

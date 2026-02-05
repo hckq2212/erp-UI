@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Trash2, Calendar, User, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X } from 'lucide-react';
 import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
+import { useGetMeQuery } from '../../api/auth';
 import { formatDate } from '../../utils/format';
 import { toast } from 'react-toastify';
 import { useState, useRef } from 'react';
@@ -13,10 +14,13 @@ import { cn } from '../../utils/cn';
 export const TaskDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { data: task, isLoading, error } = useGetTaskQuery(id);
+    const { data: user } = useGetMeQuery();
+    const { data: task, isLoading: isTaskLoading, error } = useGetTaskQuery(id);
     const { data: reviews } = useGetTaskReviewsQuery(id);
     const [updateStatus, { isLoading: isUpdatingStatus }] = useUpdateTaskStatusMutation();
     const [submitResult, { isLoading: isSubmittingResult }] = useSubmitTaskResultMutation();
+
+    const isLoading = isTaskLoading || !user;
 
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);
     const [submissionType, setSubmissionType] = useState('file'); // 'file' or 'link'
@@ -134,15 +138,16 @@ export const TaskDetailPage = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                    {task.status === 'AWAITING_REVIEW' && (
-                        <Button
-                            onClick={() => navigate(`/tasks/${id}/review`)}
-                            className="rounded-2xl py-3 px-6 shadow-lg shadow-blue-100 flex items-center gap-2"
-                        >
-                            <CheckCircle2 className="w-5 h-5" />
-                            Đánh giá & Duyệt
-                        </Button>
-                    )}
+                    {task.status === 'AWAITING_REVIEW' &&
+                        (Number(user?.id) === Number(task.assignerId) || Number(user?.id) === Number(task.project?.team?.teamLead?.id)) && (
+                            <Button
+                                onClick={() => navigate(`/tasks/${id}/review`)}
+                                className="rounded-2xl py-3 px-6 shadow-lg shadow-blue-100 flex items-center gap-2"
+                            >
+                                <CheckCircle2 className="w-5 h-5" />
+                                Đánh giá & Duyệt
+                            </Button>
+                        )}
                 </div>
             </div>
 
