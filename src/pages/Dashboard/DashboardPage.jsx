@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGetMeQuery } from '../../api/auth';
 import { useGetDashboardDataQuery } from '../../api/dashboard';
 import { useGetTasksQuery } from '../../api/tasks';
+import { OPPORTUNITY_STATUS_LABELS } from '../../utils/enums';
 
 export const DashboardPage = () => {
     const navigate = useNavigate();
@@ -130,7 +131,7 @@ export const DashboardPage = () => {
                                     <div className={`w-2.5 h-2.5 rounded-full ${status === 'CONTRACT_CREATED' ? 'bg-blue-500' :
                                         status === 'PROJECT_ASSIGNED' ? 'bg-purple-500' : 'bg-amber-500'
                                         }`} />
-                                    <span className="text-sm font-bold text-gray-600 capitalize">{status.toLowerCase().replace('_', ' ')}</span>
+                                    <span className="text-sm font-bold text-gray-600 capitalize">{OPPORTUNITY_STATUS_LABELS[status]}</span>
                                 </div>
                                 <span className="text-sm font-black text-gray-900 bg-gray-50 px-3 py-1 rounded-xl">{count}</span>
                             </div>

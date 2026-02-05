@@ -12,7 +12,6 @@ export const TasksPage = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [filters, setFilters] = useState({
         search: '',
-        status: 'ALL'
     });
 
     const { data: tasks = [], isLoading } = useGetTasksQuery(filters);
