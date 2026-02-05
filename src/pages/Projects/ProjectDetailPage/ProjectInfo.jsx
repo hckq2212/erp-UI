@@ -29,7 +29,7 @@ export const ProjectInfo = ({ project, formatDate }) => {
                     </div>
                 </div>
                 {project?.contract?.attachments && project?.contract?.attachments.length > 0 ? (
-                    <div className="flex flex-col items-start gap-2 mb-5">
+                    <div className="flex flex-col items-start gap-2 mb-5 overflow-hidden">
                         <div>
                             <h2 className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Mô tả khách hàng</h2>
                         </div>
@@ -47,7 +47,7 @@ export const ProjectInfo = ({ project, formatDate }) => {
                                         <FileText className="w-4 h-4" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-bold text-gray-700 truncate">{file.name}</p>
+                                        <p className="text-xs font-bold text-gray-700 truncate text-ellipsis">{file.name}</p>
                                         <p className="text-[10px] text-gray-400 uppercase font-bold">{file.type}</p>
                                     </div>
                                 </a>

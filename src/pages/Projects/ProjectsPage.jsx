@@ -70,10 +70,6 @@ export const ProjectsPage = () => {
                         </button>
                     </div>
                 </div>
-                <Button onClick={() => alert('Add Project Modal')}>
-                    <Plus className="h-5 w-5 mr-2" />
-                    Tạo Dự Án
-                </Button>
             </div>
 
             <div className="flex-1 overflow-hidden">

@@ -132,13 +132,15 @@ export const ProjectDetailPage = () => {
         {/* Main Content: Tasks Table */}
         <div className="lg:col-span-2 space-y-6">
           <TaskTable tasks={project.tasks} project={project} />
+          <ContractInfo contract={project.contract} />
         </div>
+
 
         {/* Sidebar: Info Panels */}
         <div className="space-y-6">
           <ProjectInfo project={project} formatDate={formatDate} />
-          {/* <ContractInfo contract={project.contract} />
-          <TeamInfo team={project.team} /> */}
+
+          <TeamInfo team={project.team} />
         </div>
       </div>
 

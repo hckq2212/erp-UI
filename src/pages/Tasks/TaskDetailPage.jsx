@@ -30,7 +30,7 @@ export const TaskDetailPage = () => {
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'DONE':
+            case 'COMPLETED':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase"><CheckCircle2 className="w-3 h-3" /> Hoàn thành</span>;
             case 'DOING':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase"><Clock className="w-3 h-3" /> Đang thực hiện</span>;
@@ -216,47 +216,6 @@ export const TaskDetailPage = () => {
                         </div>
                     )}
 
-                    {/* Timeline & Progress */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
-                                    <Calendar className="w-5 h-5" />
-                                </div>
-                                <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kế hoạch</h2>
-                            </div>
-                            <div className="space-y-4">
-                                <div>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Ngày bắt đầu</p>
-                                    <p className="text-lg font-bold text-gray-700">{formatDate(task.plannedStartDate)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Hạn hoàn thành</p>
-                                    <p className="text-lg font-bold text-gray-700">{formatDate(task.plannedEndDate)}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
-                                    <CheckCircle2 className="w-5 h-5" />
-                                </div>
-                                <h2 className="text-xl font-bold text-gray-900 tracking-tight">Thực tế</h2>
-                            </div>
-                            <div className="space-y-4">
-                                <div>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Thực tế bắt đầu</p>
-                                    <p className="text-lg font-bold text-gray-700">{formatDate(task.actualStartDate) || 'Chưa có'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Thực tế kết thúc</p>
-                                    <p className="text-lg font-bold text-gray-700">{formatDate(task.actualEndDate) || 'Chưa có'}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     {/* Result Files Section */}
                     <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
                         <div className="flex items-center justify-between mb-6">
@@ -266,12 +225,14 @@ export const TaskDetailPage = () => {
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kết quả</h2>
                             </div>
-                            <button
-                                onClick={() => setIsResultModalOpen(true)}
-                                className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors"
-                            >
-                                {task.resultFiles ? 'Cập nhật kết quả' : 'Thêm kết quả'}
-                            </button>
+                            {task.status == 'DOING' && task.status == 'REJECTED' && (
+                                <button
+                                    onClick={() => setIsResultModalOpen(true)}
+                                    className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors"
+                                >
+                                    {task.resultFiles ? 'Cập nhật kết quả' : 'Thêm kết quả'}
+                                </button>
+                            )}
                         </div>
                         {task.result ? (
                             <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100 flex items-center justify-between gap-4">
@@ -422,7 +383,7 @@ export const TaskDetailPage = () => {
                     </div>
 
                     {/* Job Details */}
-                    <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                    {/* <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
                         <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
                             <Briefcase className="w-5 h-5 text-indigo-500" />
                             Chi tiết công việc
@@ -433,14 +394,30 @@ export const TaskDetailPage = () => {
                                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 text-[10px]">Tên công việc</p>
                                     <p className="text-sm font-bold text-gray-700">{task.job.name}</p>
                                 </div>
-                                <div>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 text-[10px]">Đơn giá </p>
-                                    <p className="text-sm font-bold text-blue-600">
-                                        {Number(task.job.costPrice).toLocaleString('vi-VN')} VNĐ
-                                    </p>
-                                </div>
+
                             </div>
                         )}
+                    </div> */}
+                    {/* Timeline & Progress */}
+                    <div className="grid grid-cols-1 gap-6">
+                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
+                                    <Calendar className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kế hoạch</h2>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Ngày bắt đầu</p>
+                                    <p className="text-lg font-bold text-gray-700">{formatDate(task.plannedStartDate)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Hạn hoàn thành</p>
+                                    <p className="text-lg font-bold text-gray-700">{formatDate(task.plannedEndDate)}</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Attachments Section */}
@@ -480,7 +457,7 @@ export const TaskDetailPage = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
