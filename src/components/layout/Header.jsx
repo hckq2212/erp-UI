@@ -38,7 +38,7 @@ export const Header = () => {
         />
       </div>
 
-      <div className="flex-1 max-w-lg mx-8">
+      {/* <div className="flex-1 max-w-lg mx-8">
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-gray-400" />
@@ -49,7 +49,7 @@ export const Header = () => {
             placeholder="Search..."
           />
         </div>
-      </div>
+      </div> */}
 
       <div className="flex items-center space-x-4">
         <button

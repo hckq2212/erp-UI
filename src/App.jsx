@@ -29,6 +29,7 @@ import { TeamsPage } from './pages/Teams/TeamsPage';
 import { TeamDetailPage } from './pages/Teams/TeamDetailPage';
 import { UserListPage } from './pages/Users/UserListPage';
 import { UserDetailPage } from './pages/Users/UserDetailPage';
+import { AcceptanceInboxPage } from './pages/Acceptance/AcceptanceInboxPage';
 
 function App() {
   // Use the query to check if the user is logged in via cookies on startup
@@ -306,6 +307,16 @@ function App() {
         />
 
         <Route path='*' element={<Navigate to='/' replace />} />
+        <Route
+          path='/acceptance'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AcceptanceInboxPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

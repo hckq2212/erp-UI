@@ -69,7 +69,7 @@ export const GlobalTaskTable = ({ tasks = [] }) => {
                                 >
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-mono text-blue-600 font-medium mb-0.5">{task.code}</span>
+                                            <span className="text-md font-bold text-blue-600 font-medium ">{task.code}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">

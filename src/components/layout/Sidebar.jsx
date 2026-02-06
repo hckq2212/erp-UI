@@ -1,9 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Briefcase, FileText,
-  FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store
+  FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store,
+  CheckCircle2
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useGetMeQuery } from '../../api/auth';
 
 const menuItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -13,6 +15,7 @@ const menuItems = [
   { path: '/contracts', icon: FileSignature, label: 'Hợp Đồng' },
   { path: '/projects', icon: Rocket, label: 'Dự Án' },
   { path: '/tasks', icon: CheckSquare, label: 'Công Việc' },
+  { path: '/acceptance', icon: CheckCircle2, label: 'Nghiệm thu', roles: ['ADMIN', 'BOD'] },
   { path: '/services', icon: Briefcase, label: 'Dịch vụ' },
   { path: '/jobs', icon: CheckSquare, label: 'Hạng mục dịch vụ' },
   { path: '/teams', icon: Users, label: 'Đội dự án' },
@@ -23,11 +26,17 @@ const menuItems = [
 
 export const Sidebar = () => {
   const location = useLocation();
+  const { data: me } = useGetMeQuery();
+
+  const filteredMenuItems = menuItems.filter(item => {
+    if (!item.roles) return true;
+    return item.roles.includes(me?.role);
+  });
 
   return (
     <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 overflow-y-auto z-20">
       <nav className="p-4 space-y-1">
-        {menuItems.map((item) => {
+        {filteredMenuItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <Link

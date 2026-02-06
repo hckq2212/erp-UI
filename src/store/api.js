@@ -45,7 +45,7 @@ export const api = createApi({
     'Quotations', 'PaymentMilestones', 'Projects', 'Tasks',
     'Users', 'Customers', 'Teams', 'Notifications',
     'ReferralPartners', 'Vendors', 'Debts', 'JobCriterias', 'TaskReviews',
-    'ContractAddendums', 'Dashboard',
+    'ContractAddendums', 'Dashboard', 'Acceptance',
   ],
   endpoints: () => ({}),
 });

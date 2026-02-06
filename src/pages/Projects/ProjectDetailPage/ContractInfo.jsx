@@ -1,17 +1,37 @@
-import { FileText, ExternalLink, LayoutList } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, ExternalLink, LayoutList, Send } from 'lucide-react';
 import { formatNumber } from '../../../utils/format';
+import { useGetMeQuery } from '../../../api/auth';
+import { CreateAcceptanceModal } from './CreateAcceptanceModal';
+import { CONTRACT_SERVICE_STATUS_LABELS, CONTRACT_SERVICE_STATUS_COLORS } from '../../../utils/enums';
 
-export const ContractInfo = ({ contract }) => {
+export const ContractInfo = ({ contract, projectId }) => {
+    const [isAcceptanceModalOpen, setIsAcceptanceModalOpen] = useState(false);
+    const { data: me } = useGetMeQuery();
+
     if (!contract) return null;
+
+    const isTeamLeadOrAdmin = me?.role === 'ADMIN' || me?.role === 'TEAM_LEAD';
 
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <div className="space-y-6">
                 {/* Services Table */}
-                <div className="pt-4 border-t border-gray-50">
-                    <div className="flex items-center gap-2 mb-3">
-                        <LayoutList className="w-4 h-4 text-emerald-600" />
-                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Hạng mục dịch vụ</p>
+                <div className="">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                            <LayoutList className="w-4 h-4 text-emerald-600" />
+                            <p className="text-xs text-gray-400 font-black uppercase tracking-widest">Hạng mục dịch vụ</p>
+                        </div>
+                        {isTeamLeadOrAdmin && (
+                            <button
+                                onClick={() => setIsAcceptanceModalOpen(true)}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-100"
+                            >
+                                <Send className="w-3.5 h-3.5" />
+                                Gửi nghiệm thu
+                            </button>
+                        )}
                     </div>
                     <div className="overflow-hidden border border-gray-100 rounded-xl">
                         <table className="w-full text-left text-xs">
@@ -30,12 +50,14 @@ export const ContractInfo = ({ contract }) => {
                                                 {item.service?.name || item.name || `Hạng mục #${item.id}`}
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${item.status === 'ACTIVE'
-                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                                                    : 'bg-gray-50 text-gray-600 border border-gray-100'
-                                                    }`}>
-                                                    {item.status}
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${CONTRACT_SERVICE_STATUS_COLORS[item.status] || 'bg-gray-50 text-gray-600 border-gray-100'}`}>
+                                                    {CONTRACT_SERVICE_STATUS_LABELS[item.status] || item.status}
                                                 </span>
+                                                {item.status === 'ACCEPTANCE_REJECTED' && item.feedback && (
+                                                    <div className="mt-1 text-[9px] text-red-500 italic max-w-[150px] mx-auto text-center leading-tight">
+                                                        Lý do: {item.feedback}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-4 py-3 text-right text-gray-500 italic">
                                                 {item.result && (
@@ -66,6 +88,13 @@ export const ContractInfo = ({ contract }) => {
                     </div>
                 </div>
             </div>
+
+            <CreateAcceptanceModal
+                isOpen={isAcceptanceModalOpen}
+                onClose={() => setIsAcceptanceModalOpen(false)}
+                contract={contract}
+                projectId={projectId}
+            />
         </div>
     );
 };

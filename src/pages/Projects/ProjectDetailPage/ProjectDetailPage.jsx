@@ -132,7 +132,7 @@ export const ProjectDetailPage = () => {
         {/* Main Content: Tasks Table */}
         <div className="lg:col-span-2 space-y-6">
           <TaskTable tasks={project.tasks} project={project} />
-          <ContractInfo contract={project.contract} />
+          <ContractInfo contract={project.contract} projectId={project.id} />
         </div>
 
 

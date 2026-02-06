@@ -23,6 +23,23 @@ export const CONTRACT_STATUS_COLORS = {
   PROPOSAL_UPLOADED: 'bg-green-100 text-green-800',
 };
 
+// Contract Service Status
+export const CONTRACT_SERVICE_STATUS_LABELS = {
+  ACTIVE: 'Đang thực hiện',
+  AWAITING_ACCEPTANCE: 'Chờ nghiệm thu',
+  ACCEPTANCE_REJECTED: 'Từ chối nghiệm thu',
+  COMPLETED: 'Hoàn thành',
+  CANCELLED: 'Đã hủy',
+};
+
+export const CONTRACT_SERVICE_STATUS_COLORS = {
+  ACTIVE: 'bg-blue-50 text-blue-700 border-blue-100',
+  AWAITING_ACCEPTANCE: 'bg-yellow-50 text-yellow-700 border-yellow-100',
+  ACCEPTANCE_REJECTED: 'bg-red-50 text-red-700 border-red-100',
+  COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  CANCELLED: 'bg-gray-100 text-gray-600 border-gray-200',
+};
+
 // Project Status
 export const PROJECT_STATUS_LABELS = {
   PENDING_CONFIRMATION: 'Chờ xác nhận',

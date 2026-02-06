@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGetMeQuery } from '../../api/auth';
 import { useGetDashboardDataQuery } from '../../api/dashboard';
 import { useGetTasksQuery } from '../../api/tasks';
-import { OPPORTUNITY_STATUS_LABELS } from '../../utils/enums';
+import { OPPORTUNITY_STATUS_LABELS, PROJECT_STATUS_LABELS } from '../../utils/enums';
 
 export const DashboardPage = () => {
     const navigate = useNavigate();
@@ -35,7 +35,7 @@ export const DashboardPage = () => {
     // --- Admin Dashboard Section ---
     const AdminView = () => (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-gray-400">
                 <StatCard
                     title="Doanh thu"
                     value={formatCurrency(dashboard.admin?.totalRevenue)}
@@ -67,7 +67,7 @@ export const DashboardPage = () => {
     // --- Team Lead Dashboard Section ---
     const TeamLeadView = () => (
         <div className="space-y-6">
-            <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
+            <h2 className="text-xl text-blue-500 font-bold flex items-center gap-2">
                 <Rocket className="w-6 h-6 text-blue-500" />
                 Dự án đang quản lý
             </h2>
@@ -79,12 +79,12 @@ export const DashboardPage = () => {
                                 <h3 className="font-black text-gray-900 text-lg group-hover:text-blue-600 transition-colors">{project.name}</h3>
                                 <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border mt-1 inline-block ${project.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-gray-50 text-gray-700 border-gray-100'
                                     }`}>
-                                    {project.status}
+                                    {PROJECT_STATUS_LABELS[project.status]}
                                 </span>
                             </div>
                             <div className="text-right">
                                 <p className="text-sm font-black text-gray-900">{project.progress}%</p>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase">Tiến độ</p>
+                                <p className="text-[10px] text-gray-400  uppercase">Tiến độ</p>
                             </div>
                         </div>
                         <div className="w-full bg-gray-100 h-2.5 rounded-full mb-6 overflow-hidden">
@@ -96,7 +96,7 @@ export const DashboardPage = () => {
                         <div className="flex justify-between items-center text-sm">
                             <div className="flex items-center gap-2">
                                 <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                <span className="font-bold text-gray-600">{project.completedTaskCount}/{project.taskCount} Tasks</span>
+                                <span className=" text-gray-600">{project.completedTaskCount}/{project.taskCount} Tasks</span>
                             </div>
                             <button className="text-blue-600 font-black text-xs uppercase tracking-wider flex items-center gap-1 hover:gap-2 transition-all">
                                 Chi tiết <ArrowUpRight className="w-3.5 h-3.5" />
@@ -118,7 +118,7 @@ export const DashboardPage = () => {
                     <h3 className="text-4xl font-black mb-6">{formatCurrency(dashboard.sale?.totalExpectedRevenue)}</h3>
                     <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md w-fit px-4 py-2 rounded-2xl border border-white/10">
                         <TrendingUp className="w-4 h-4" />
-                        <span className="font-bold">{dashboard.sale?.totalOpportunities} Cơ hội</span>
+                        <span className="">{dashboard.sale?.totalOpportunities} Cơ hội</span>
                     </div>
                 </div>
 
@@ -169,7 +169,7 @@ export const DashboardPage = () => {
                             <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center">
                                 <Calendar className="w-6 h-6" />
                             </div>
-                            <h3 className="text-xl font-black text-gray-900">Deadline sắp tới</h3>
+                            <h3 className="text-xl font-bold text-blue-600">Deadline sắp tới</h3>
                         </div>
                     </div>
                     <div className="space-y-3">
@@ -180,11 +180,11 @@ export const DashboardPage = () => {
                                         <Clock className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-gray-900">{task.name}</h4>
-                                        <p className="text-xs text-rose-500 font-bold uppercase tracking-tighter">Hạn: {task.deadline}</p>
+                                        <h4 className="text-gray-900">{task.name}</h4>
+                                        <p className="text-xs text-rose-500  uppercase tracking-tighter">Deadline: {task.deadline}</p>
                                     </div>
                                 </div>
-                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border ${task.status === 'DOING' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-red-50 text-red-700 border-red-100'
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${task.status === 'DOING' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-red-50 text-red-700 border-red-100'
                                     }`}>
                                     {task.status}
                                 </span>
@@ -212,7 +212,7 @@ export const DashboardPage = () => {
                     </div>
                     <div>
                         <h2 className="text-xl font-black text-gray-900">Việc cần duyệt</h2>
-                        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Bạn có {myReviewTasks.length} công việc đang chờ đánh giá</p>
+                        <p className="text-xs text-gray-400 uppercase tracking-wider">Bạn có {myReviewTasks.length} công việc đang chờ đánh giá</p>
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -224,19 +224,19 @@ export const DashboardPage = () => {
                                     <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 uppercase">
                                         {task.code}
                                     </span>
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase">
+                                    <span className="text-[10px] text-gray-400 uppercase">
                                         {task.project?.name}
                                     </span>
                                 </div>
-                                <h3 className="font-bold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors line-clamp-1">{task.name}</h3>
+                                <h3 className="text-blue-600 mb-4 line-clamp-1">{task.name}</h3>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 border border-white shadow-sm shrink-0">
+                                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[10px] text-gray-500 border border-white shadow-sm shrink-0">
                                             {task.assignee?.fullName?.charAt(0) || 'U'}
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase leading-none mb-0.5">Người thực hiện</p>
-                                            <p className="text-xs font-bold text-gray-700 truncate">{task.assignee?.fullName || 'N/A'}</p>
+                                            <p className="text-[10px] text-gray-400 uppercase leading-none mb-0.5">Người thực hiện</p>
+                                            <p className="text-xs text-gray-700 truncate">{task.assignee?.fullName || 'N/A'}</p>
                                         </div>
                                     </div>
                                     <button
@@ -288,8 +288,8 @@ const StatCard = ({ title, value, icon: Icon, color }) => {
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 transition-all group-hover:scale-110 ${colors[color]}`}>
                 <Icon className="w-6 h-6" />
             </div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">{title}</p>
-            <h4 className="text-2xl font-black text-gray-900 group-hover:text-blue-600 transition-colors">{value}</h4>
+            <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] mb-1">{title}</p>
+            <h4 className="text-2xl font-bold text-blue-600 transition-colors">{value}</h4>
         </div>
     );
 };
@@ -302,8 +302,8 @@ const StatusMiniCard = ({ label, count, color }) => {
     };
     return (
         <div className={`p-4 rounded-3xl border text-center ${colors[color]}`}>
-            <p className="text-lg font-black">{count}</p>
-            <p className="text-[8px] font-black uppercase tracking-tighter opacity-70">{label}</p>
+            <p className="text-lg text-gray-400 font-black">{count}</p>
+            <p className="text-[8px] uppercase tracking-tighter opacity-70 font-black">{label}</p>
         </div>
     );
 };

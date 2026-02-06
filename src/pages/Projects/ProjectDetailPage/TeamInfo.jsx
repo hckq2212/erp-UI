@@ -18,7 +18,7 @@ export const TeamInfo = ({ team }) => {
 
                 {team.teamLead && (
                     <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-2">Trưởng nhóm (Team Lead)</p>
+                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-2">Trưởng nhóm</p>
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
                                 <User className="w-6 h-6" />
