@@ -5,7 +5,16 @@ import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../ui/Pagination';
 import { CONTRACT_STATUS_COLORS, CONTRACT_STATUS_LABELS } from '../../utils/enums';
 
-export const ContractTable = ({ contracts = [], onEdit, onDelete, onView }) => {
+export const ContractTable = ({
+    contracts = [],
+    meta = { total: 0, page: 1, limit: 10, totalPages: 0 },
+    onPageChange,
+    onSortChange,
+    currentSort,
+    onEdit,
+    onDelete,
+    onView
+}) => {
     const navigate = useNavigate();
     const {
         data: paginatedContracts,
@@ -15,7 +24,33 @@ export const ContractTable = ({ contracts = [], onEdit, onDelete, onView }) => {
         setCurrentPage,
         totalPages,
         totalItems
-    } = useTableFeatures(contracts, { initialSort: { key: 'contractCode', direction: 'ascending' } });
+    } = useTableFeatures(contracts, {
+        initialSort: {
+            key: currentSort?.sortBy || 'contractCode',
+            direction: currentSort?.sortDir === 'ASC' ? 'ascending' : 'descending'
+        },
+        remote: true,
+        totalItems: meta.total,
+        itemsPerPage: meta.limit
+    });
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+        onPageChange?.(page);
+    };
+
+    const handleSort = (key) => {
+        let direction = 'ascending';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        } else if (sortConfig && sortConfig.key === key && sortConfig.direction === 'descending') {
+            onSortChange?.('createdAt', 'DESC');
+            requestSort(null);
+            return;
+        }
+        onSortChange?.(key, direction === 'ascending' ? 'ASC' : 'DESC');
+        requestSort(key);
+    };
 
 
     const getSortIcon = (key) => {
@@ -32,7 +67,7 @@ export const ContractTable = ({ contracts = [], onEdit, onDelete, onView }) => {
                 "px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100/50 transition-colors group",
                 align === 'right' ? 'text-right' : 'text-left'
             )}
-            onClick={() => requestSort(sortKey)}
+            onClick={() => handleSort(sortKey)}
         >
             <div className={cn("flex items-center", align === 'right' ? 'justify-end' : 'justify-start')}>
                 {label}
@@ -76,10 +111,10 @@ export const ContractTable = ({ contracts = [], onEdit, onDelete, onView }) => {
                 </table>
             </div>
             <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                totalItems={totalItems}
+                currentPage={meta.page}
+                totalPages={meta.totalPages}
+                onPageChange={handlePageChange}
+                totalItems={meta.total}
             />
         </div>
     );

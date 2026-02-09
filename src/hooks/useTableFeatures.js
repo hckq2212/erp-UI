@@ -9,12 +9,13 @@ import { useState, useMemo } from 'react';
  * @param {Object} options.initialSort - Initial sorting configuration { key, direction }.
  * @returns {Object} Sorting and pagination state and helper functions.
  */
-export const useTableFeatures = (data = [], { itemsPerPage = 10, initialSort = null } = {}) => {
+export const useTableFeatures = (data = [], { itemsPerPage = 10, initialSort = null, remote = false, totalItems: remoteTotal = 0 } = {}) => {
     const [sortConfig, setSortConfig] = useState(initialSort);
     const [currentPage, setCurrentPage] = useState(1);
 
     // Sorting Logic
     const sortedData = useMemo(() => {
+        if (remote) return data; // Bypass client-side sorting if remote
         let sortableItems = [...data];
         if (sortConfig !== null) {
             sortableItems.sort((a, b) => {
@@ -56,14 +57,15 @@ export const useTableFeatures = (data = [], { itemsPerPage = 10, initialSort = n
             });
         }
         return sortableItems;
-    }, [data, sortConfig]);
+    }, [data, sortConfig, remote]);
 
     // Pagination Logic
-    const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+    const totalPages = remote ? Math.ceil(remoteTotal / itemsPerPage) : Math.ceil(sortedData.length / itemsPerPage);
     const paginatedData = useMemo(() => {
+        if (remote) return data; // Bypass client-side slicing if remote
         const start = (currentPage - 1) * itemsPerPage;
         return sortedData.slice(start, start + itemsPerPage);
-    }, [sortedData, currentPage, itemsPerPage]);
+    }, [sortedData, currentPage, itemsPerPage, remote, data]);
 
     const requestSort = (key) => {
         let direction = 'ascending';
@@ -85,6 +87,6 @@ export const useTableFeatures = (data = [], { itemsPerPage = 10, initialSort = n
         currentPage,
         setCurrentPage,
         totalPages,
-        totalItems: data.length
+        totalItems: remote ? remoteTotal : data.length
     };
 };

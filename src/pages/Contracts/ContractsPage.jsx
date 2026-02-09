@@ -6,27 +6,40 @@ import { useGetContractsQuery } from '../../api/contracts';
 import { TableFilters } from '../../components/ui/TableFilters';
 
 export const ContractsPage = () => {
-    const { data: contractsData, isLoading: isLoadingContracts } = useGetContractsQuery();
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [filters, setFilters] = useState({
+        search: '',
+        status: 'ALL',
+        page: 1,
+        limit: 10,
+        sortBy: 'createdAt',
+        sortDir: 'DESC'
+    });
 
-    // Handle API returning wrapped data
-    const contracts = useMemo(() => {
-        const rawData = Array.isArray(contractsData) ? contractsData : (contractsData?.data || []);
-        return rawData.filter(contract => {
-            const matchesSearch =
-                (contract.contractCode?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                (contract.customer?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    const { data, isLoading: isLoadingContracts } = useGetContractsQuery(filters);
+    const contracts = data?.data || [];
+    const meta = data?.meta || { total: 0, page: 1, limit: 10, totalPages: 0 };
 
-            const matchesStatus = statusFilter === 'ALL' || contract.status === statusFilter;
+    const handleFilterChange = (key, value) => {
+        setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
+    };
 
-            return matchesSearch && matchesStatus;
-        });
-    }, [contractsData, searchTerm, statusFilter]);
+    const handlePageChange = (newPage) => {
+        setFilters(prev => ({ ...prev, page: newPage }));
+    };
+
+    const handleSortChange = (sortBy, sortDir) => {
+        setFilters(prev => ({ ...prev, sortBy, sortDir, page: 1 }));
+    };
 
     const handleReset = () => {
-        setSearchTerm('');
-        setStatusFilter('ALL');
+        setFilters({
+            search: '',
+            status: 'ALL',
+            page: 1,
+            limit: 10,
+            sortBy: 'createdAt',
+            sortDir: 'DESC'
+        });
     };
 
     const statusOptions = [
@@ -57,10 +70,10 @@ export const ContractsPage = () => {
             </div>
 
             <TableFilters
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                filterValue={statusFilter}
-                onFilterChange={setStatusFilter}
+                searchTerm={filters.search}
+                onSearchChange={(val) => handleFilterChange('search', val)}
+                filterValue={filters.status}
+                onFilterChange={(val) => handleFilterChange('status', val)}
                 filterOptions={statusOptions}
                 searchPlaceholder="Tìm mã hợp đồng, tên khách hàng..."
                 onReset={handleReset}
@@ -69,6 +82,10 @@ export const ContractsPage = () => {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <ContractTable
                     contracts={contracts}
+                    meta={meta}
+                    onPageChange={handlePageChange}
+                    onSortChange={handleSortChange}
+                    currentSort={{ sortBy: filters.sortBy, sortDir: filters.sortDir }}
                 />
             </div>
         </div>

@@ -1,112 +1,90 @@
-import { useState, useMemo } from 'react';
-import { DndContext, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { useState } from 'react';
 import { ProjectTable } from '../../components/projects/ProjectTable';
-import { ProjectColumn } from '../../components/projects/ProjectColumn';
-import { ProjectCard } from '../../components/projects/ProjectCard';
-import { Button } from '../../components/ui/Button';
-import { Plus, LayoutGrid, List } from 'lucide-react';
-import { useGetProjectsQuery, useUpdateProjectStatusMutation } from '../../api/projects';
-import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../utils/enums';
-
-const PROJECT_STATUSES = [
-    { id: 'PENDING_CONFIRMATION', title: PROJECT_STATUS_LABELS.PENDING_CONFIRMATION },
-    { id: 'IN_PROGRESS', title: PROJECT_STATUS_LABELS.IN_PROGRESS },
-    { id: 'COMPLETED', title: PROJECT_STATUS_LABELS.COMPLETED },
-    { id: 'CANCELLED', title: PROJECT_STATUS_LABELS.CANCELLED },
-];
+import { TableFilters } from '../../components/ui/TableFilters';
+import { PROJECT_STATUS_LABELS } from '../../utils/enums';
+import { useGetProjectsQuery } from '../../api/projects';
 
 export const ProjectsPage = () => {
-    const [viewMode, setViewMode] = useState('list'); // 'list' | 'kanban'
-    const { data: projects = [], isLoading } = useGetProjectsQuery();
-    const [updateProjectStatus] = useUpdateProjectStatusMutation();
-    const [activeId, setActiveId] = useState(null);
+    const [filters, setFilters] = useState({
+        search: '',
+        status: 'ALL',
+        page: 1,
+        limit: 10,
+        sortBy: 'createdAt',
+        sortDir: 'DESC'
+    });
 
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-    );
+    const { data, isLoading } = useGetProjectsQuery(filters);
+    const projects = data?.data || [];
+    const meta = data?.meta || { total: 0, page: 1, limit: 10, totalPages: 0 };
 
-    const handleDragStart = (event) => setActiveId(event.active.id);
-
-    const handleDragEnd = (event) => {
-        const { active, over } = event;
-        if (!over) return;
-
-        const activeId = active.id;
-        const overId = over.id;
-
-        // Find dragged item
-        const activeProject = projects.find(p => p.id === activeId);
-        if (!activeProject) return;
-
-        // Check if dropped on a column
-        if (PROJECT_STATUSES.find(s => s.id === overId) && activeProject.status !== overId) {
-            updateProjectStatus({ id: activeId, status: overId });
-        }
-
-        setActiveId(null);
+    const handleFilterChange = (key, value) => {
+        setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
     };
 
-    const activeProject = activeId ? projects.find(p => p.id === activeId) : null;
+    const handlePageChange = (newPage) => {
+        setFilters(prev => ({ ...prev, page: newPage }));
+    };
 
-    if (isLoading) return <div className="p-6">Loading projects...</div>;
+    const handleSortChange = (sortBy, sortDir) => {
+        setFilters(prev => ({ ...prev, sortBy, sortDir, page: 1 }));
+    };
+
+    const handleReset = () => {
+        setFilters({
+            search: '',
+            status: 'ALL',
+            page: 1,
+            limit: 10,
+            sortBy: 'createdAt',
+            sortDir: 'DESC'
+        });
+    };
+
+    const statusOptions = Object.entries(PROJECT_STATUS_LABELS).map(([value, label]) => ({
+        value,
+        label
+    }));
+
+    if (isLoading) return (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+            <p className="text-gray-500 font-medium animate-pulse">Đang tải danh sách dự án...</p>
+        </div>
+    );
 
     return (
-        <div className="h-[calc(100vh-8rem)] h-fit flex flex-col">
+        <div className="h-[calc(100vh-8rem)] flex flex-col">
             <div className="flex justify-between items-center mb-6 px-1">
-                <div className="flex items-center space-x-4">
-                    <h1 className="text-3xl font-bold text-gray-900">Quản Lý Dự Án</h1>
-                    <div className="flex bg-gray-100 rounded-lg p-1">
-                        <button
-                            onClick={() => setViewMode('kanban')}
-                            className={`p-1.5 rounded shadow-sm ${viewMode === 'kanban' ? 'bg-white text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            <LayoutGrid className="h-4 w-4" />
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-1.5 rounded shadow-sm ${viewMode === 'list' ? 'bg-white text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            <List className="h-4 w-4" />
-                        </button>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Quản Lý Dự Án</h1>
+                    <p className="text-gray-500 text-sm mt-1">Theo dõi và quản lý tiến độ các dự án đang triển khai</p>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-hidden">
-                {viewMode === 'list' ? (
-                    <div className="bg-white rounded-lg shadow overflow-hidden h-full overflow-y-auto">
-                        <ProjectTable
-                            projects={projects}
-                            onView={(p) => alert(`View ${p.name}`)}
-                            onEdit={(p) => alert(`Edit ${p.name}`)}
-                            onDelete={(id) => alert(`Delete ${id}`)}
-                        />
-                    </div>
-                ) : (
-                    <div className="flex-1 overflow-x-auto overflow-y-hidden h-full">
-                        <DndContext
-                            sensors={sensors}
-                            collisionDetection={closestCorners}
-                            onDragStart={handleDragStart}
-                            onDragEnd={handleDragEnd}
-                        >
-                            <div className="flex h-full space-x-4 pb-4 min-w-max">
-                                {PROJECT_STATUSES.map(col => (
-                                    <ProjectColumn
-                                        key={col.id}
-                                        id={col.id}
-                                        title={col.title}
-                                        count={projects.filter(p => p.status === col.id).length}
-                                        projects={projects.filter(p => p.status === col.id)}
-                                    />
-                                ))}
-                            </div>
-                            <DragOverlay>
-                                {activeProject ? <ProjectCard project={activeProject} /> : null}
-                            </DragOverlay>
-                        </DndContext>
-                    </div>
-                )}
+            <TableFilters
+                searchTerm={filters.search}
+                onSearchChange={(val) => handleFilterChange('search', val)}
+                filterValue={filters.status}
+                onFilterChange={(val) => handleFilterChange('status', val)}
+                filterOptions={statusOptions}
+                searchPlaceholder="Tìm tên dự án, mã hợp đồng..."
+                onReset={handleReset}
+            />
+
+            <div className="flex-1 overflow-hidden bg-white rounded-3xl shadow-sm border border-gray-100">
+                <div className="h-full overflow-y-auto">
+                    <ProjectTable
+                        projects={projects}
+                        meta={meta}
+                        onPageChange={handlePageChange}
+                        onSortChange={handleSortChange}
+                        currentSort={{ sortBy: filters.sortBy, sortDir: filters.sortDir }}
+                        onView={(p) => alert(`View ${p.name}`)}
+                        onEdit={(p) => alert(`Edit ${p.name}`)}
+                        onDelete={(id) => alert(`Delete ${id}`)}
+                    />
+                </div>
             </div>
         </div>
     );

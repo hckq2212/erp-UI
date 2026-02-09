@@ -12,16 +12,38 @@ export const TasksPage = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [filters, setFilters] = useState({
         search: '',
+        status: 'ALL',
+        page: 1,
+        limit: 10,
+        sortBy: 'createdAt',
+        sortDir: 'DESC'
     });
 
-    const { data: tasks = [], isLoading } = useGetTasksQuery(filters);
+    const { data, isLoading } = useGetTasksQuery(filters);
+    const tasks = data?.data || [];
+    const meta = data?.meta || { total: 0, page: 1, limit: 10, totalPages: 0 };
 
     const handleFilterChange = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
+        setFilters(prev => ({ ...prev, [key]: value, page: 1 })); // Reset to page 1 on filter
+    };
+
+    const handlePageChange = (newPage) => {
+        setFilters(prev => ({ ...prev, page: newPage }));
+    };
+
+    const handleSortChange = (sortBy, sortDir) => {
+        setFilters(prev => ({ ...prev, sortBy, sortDir, page: 1 }));
     };
 
     const handleReset = () => {
-        setFilters({ search: '', status: 'ALL' });
+        setFilters({
+            search: '',
+            status: 'ALL',
+            page: 1,
+            limit: 10,
+            sortBy: 'createdAt',
+            sortDir: 'DESC'
+        });
     };
 
     return (
@@ -35,7 +57,7 @@ export const TasksPage = () => {
                 <div className="flex items-center gap-4 w-full md:w-auto">
                     <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100 text-blue-700">
                         <ClipboardList className="w-5 h-5" />
-                        <span className="font-bold">{tasks.length}</span>
+                        <span className="font-bold">{meta.total}</span>
                         <span className="text-sm font-medium">Tổng việc</span>
                     </div>
 
@@ -86,7 +108,13 @@ export const TasksPage = () => {
             ) : (
                 <div className="animate-in fade-in duration-300">
                     {viewType === 'table' ? (
-                        <GlobalTaskTable tasks={tasks} />
+                        <GlobalTaskTable
+                            tasks={tasks}
+                            meta={meta}
+                            onPageChange={handlePageChange}
+                            onSortChange={handleSortChange}
+                            currentSort={{ sortBy: filters.sortBy, sortDir: filters.sortDir }}
+                        />
                     ) : (
                         <TaskSchedule tasks={tasks} />
                     )}

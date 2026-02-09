@@ -5,7 +5,14 @@ import { OPPORTUNITY_STATUS_LABELS, OPPORTUNITY_STATUS_COLORS } from '../../util
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../../components/ui/Pagination';
 
-export const OpportunityTable = ({ opportunities = [], onEdit }) => {
+export const OpportunityTable = ({
+    opportunities = [],
+    meta = { total: 0, page: 1, limit: 10, totalPages: 0 },
+    onPageChange,
+    onSortChange,
+    currentSort,
+    onEdit
+}) => {
     const navigate = useNavigate();
     const {
         data: paginatedOpportunities,
@@ -15,7 +22,33 @@ export const OpportunityTable = ({ opportunities = [], onEdit }) => {
         setCurrentPage,
         totalPages,
         totalItems
-    } = useTableFeatures(opportunities, { initialSort: { key: 'name', direction: 'ascending' } });
+    } = useTableFeatures(opportunities, {
+        initialSort: {
+            key: currentSort?.sortBy || 'name',
+            direction: currentSort?.sortDir === 'ASC' ? 'ascending' : 'descending'
+        },
+        remote: true,
+        totalItems: meta.total,
+        itemsPerPage: meta.limit
+    });
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+        onPageChange?.(page);
+    };
+
+    const handleSort = (key) => {
+        let direction = 'ascending';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        } else if (sortConfig && sortConfig.key === key && sortConfig.direction === 'descending') {
+            onSortChange?.('createdAt', 'DESC');
+            requestSort(null);
+            return;
+        }
+        onSortChange?.(key, direction === 'ascending' ? 'ASC' : 'DESC');
+        requestSort(key);
+    };
 
     const formatCurrency = (value) => {
         if (!value) return '0 VNĐ';
@@ -35,7 +68,7 @@ export const OpportunityTable = ({ opportunities = [], onEdit }) => {
                 "px-6 py-4 font-semibold text-gray-500 uppercase tracking-wider text-xs cursor-pointer hover:bg-gray-100/50 transition-colors group",
                 align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left'
             )}
-            onClick={() => requestSort(sortKey)}
+            onClick={() => handleSort(sortKey)}
         >
             <div className={cn("flex items-center", align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : 'justify-start')}>
                 {label}
@@ -128,10 +161,10 @@ export const OpportunityTable = ({ opportunities = [], onEdit }) => {
                 </table>
             </div>
             <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                totalItems={totalItems}
+                currentPage={meta.page}
+                totalPages={meta.totalPages}
+                onPageChange={handlePageChange}
+                totalItems={meta.total}
             />
         </div>
     );

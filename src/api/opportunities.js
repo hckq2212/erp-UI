@@ -8,9 +8,9 @@ export const opportunitiesApi = api.injectEndpoints({
         params,
       }),
       providesTags: (result) =>
-        result
+        result?.data
           ? [
-            ...result.map(({ id }) => ({ type: 'Opportunities', id })),
+            ...result.data.map(({ id }) => ({ type: 'Opportunities', id })),
             { type: 'Opportunities', id: 'LIST' },
           ]
           : [{ type: 'Opportunities', id: 'LIST' }],

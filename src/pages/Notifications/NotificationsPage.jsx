@@ -8,12 +8,18 @@ export const NotificationsPage = () => {
   const { data: notifications = [], isLoading, error } = useGetMyNotificationsQuery();
   const [markAsRead] = useMarkAsReadMutation();
 
-  const handleMarkAsRead = async (notificationId) => {
+  const handleMarkAsRead = async (notification) => {
+    if (notification.isRead) return;
     try {
-      await markAsRead(notificationId).unwrap();
+      await markAsRead(notification.id).unwrap();
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
     }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    await handleMarkAsRead(notification);
+    navigate(notification.link);
   };
 
   if (isLoading) {
@@ -60,7 +66,7 @@ export const NotificationsPage = () => {
                     }`}
                 >
                   <div
-                    onClick={() => navigate(notification.link)}
+                    onClick={() => handleNotificationClick(notification)}
                     className="flex items-start justify-between cursor-pointer">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
@@ -85,18 +91,18 @@ export const NotificationsPage = () => {
                               : 'N/A'}
                           </span>
                         </div>
-                        {notification.type && (
+                        {/* {notification.type && (
                           <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700">
                             {notification.type}
                           </span>
-                        )}
+                        )} */}
                       </div>
                     </div>
                     {!notification.isRead && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleMarkAsRead(notification.id);
+                          handleMarkAsRead(notification);
                         }}
                         className="ml-4 p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                         title="Đánh dấu đã đọc"

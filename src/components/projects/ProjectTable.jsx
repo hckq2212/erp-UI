@@ -8,7 +8,16 @@ import { Pagination } from '../ui/Pagination';
 const getStatusColor = (status) => PROJECT_STATUS_COLORS[status] || 'bg-gray-100 text-gray-800';
 const getStatusLabel = (status) => PROJECT_STATUS_LABELS[status] || status;
 
-export const ProjectTable = ({ projects = [], onView, onEdit, onDelete }) => {
+export const ProjectTable = ({
+    projects = [],
+    meta = { total: 0, page: 1, limit: 10, totalPages: 0 },
+    onPageChange,
+    onSortChange,
+    currentSort,
+    onView,
+    onEdit,
+    onDelete
+}) => {
     const navigate = useNavigate();
     const {
         data: paginatedProjects,
@@ -18,7 +27,33 @@ export const ProjectTable = ({ projects = [], onView, onEdit, onDelete }) => {
         setCurrentPage,
         totalPages,
         totalItems
-    } = useTableFeatures(projects, { initialSort: { key: 'name', direction: 'ascending' } });
+    } = useTableFeatures(projects, {
+        initialSort: {
+            key: currentSort?.sortBy || 'name',
+            direction: currentSort?.sortDir === 'ASC' ? 'ascending' : 'descending'
+        },
+        remote: true,
+        totalItems: meta.total,
+        itemsPerPage: meta.limit
+    });
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+        onPageChange?.(page);
+    };
+
+    const handleSort = (key) => {
+        let direction = 'ascending';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        } else if (sortConfig && sortConfig.key === key && sortConfig.direction === 'descending') {
+            onSortChange?.('createdAt', 'DESC');
+            requestSort(null);
+            return;
+        }
+        onSortChange?.(key, direction === 'ascending' ? 'ASC' : 'DESC');
+        requestSort(key);
+    };
 
     const getSortIcon = (key) => {
         if (sortConfig?.key !== key) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-30" />;
@@ -34,7 +69,7 @@ export const ProjectTable = ({ projects = [], onView, onEdit, onDelete }) => {
                 "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100/50 transition-colors group",
                 align === 'right' ? 'text-right' : 'text-left'
             )}
-            onClick={() => requestSort(sortKey)}
+            onClick={() => handleSort(sortKey)}
         >
             <div className={cn("flex items-center", align === 'right' ? 'justify-end' : 'justify-start')}>
                 {label}
@@ -82,10 +117,10 @@ export const ProjectTable = ({ projects = [], onView, onEdit, onDelete }) => {
                 </table>
             </div>
             <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                totalItems={totalItems}
+                currentPage={meta.page}
+                totalPages={meta.totalPages}
+                onPageChange={handlePageChange}
+                totalItems={meta.total}
             />
         </div>
     );

@@ -5,7 +5,13 @@ import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../../components/ui/Pagination';
 
-export const GlobalTaskTable = ({ tasks = [] }) => {
+export const GlobalTaskTable = ({
+    tasks = [],
+    meta = { total: 0, page: 1, limit: 10, totalPages: 0 },
+    onPageChange,
+    onSortChange,
+    currentSort
+}) => {
     const navigate = useNavigate();
     const {
         data: paginatedTasks,
@@ -15,7 +21,34 @@ export const GlobalTaskTable = ({ tasks = [] }) => {
         setCurrentPage,
         totalPages,
         totalItems
-    } = useTableFeatures(tasks, { initialSort: { key: 'code', direction: 'ascending' } });
+    } = useTableFeatures(tasks, {
+        initialSort: {
+            key: currentSort?.sortBy || 'code',
+            direction: currentSort?.sortDir === 'ASC' ? 'ascending' : 'descending'
+        },
+        remote: true,
+        totalItems: meta.total,
+        itemsPerPage: meta.limit
+    });
+
+    // Override internal state changes with external ones
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+        onPageChange?.(page);
+    };
+
+    const handleSort = (key) => {
+        let direction = 'ascending';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        } else if (sortConfig && sortConfig.key === key && sortConfig.direction === 'descending') {
+            onSortChange?.('createdAt', 'DESC');
+            requestSort(null);
+            return;
+        }
+        onSortChange?.(key, direction === 'ascending' ? 'ASC' : 'DESC');
+        requestSort(key);
+    };
 
     const formatDate = (dateString) => {
         if (!dateString) return '---';
@@ -35,7 +68,7 @@ export const GlobalTaskTable = ({ tasks = [] }) => {
                 "px-6 py-4 font-semibold text-gray-500 uppercase tracking-wider text-xs cursor-pointer hover:bg-gray-100/50 transition-colors group",
                 align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left'
             )}
-            onClick={() => requestSort(sortKey)}
+            onClick={() => handleSort(sortKey)}
         >
             <div className={cn("flex items-center", align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : 'justify-start')}>
                 {label}
@@ -133,10 +166,10 @@ export const GlobalTaskTable = ({ tasks = [] }) => {
                 </table>
             </div>
             <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                totalItems={totalItems}
+                currentPage={meta.page}
+                totalPages={meta.totalPages}
+                onPageChange={handlePageChange}
+                totalItems={meta.total}
             />
         </div>
     );

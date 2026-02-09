@@ -8,9 +8,9 @@ export const tasksApi = api.injectEndpoints({
         params,
       }),
       providesTags: (result) =>
-        result
+        result?.data
           ? [
-            ...result.map(({ id }) => ({ type: 'Tasks', id })),
+            ...result.data.map(({ id }) => ({ type: 'Tasks', id })),
             { type: 'Tasks', id: 'LIST' },
           ]
           : [{ type: 'Tasks', id: 'LIST' }],

@@ -155,9 +155,9 @@ export const DashboardPage = () => {
                         </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
-                        <StatusMiniCard label="Pending" count={dashboard.member?.pendingCount} color="amber" />
-                        <StatusMiniCard label="Doing" count={dashboard.member?.doingCount} color="blue" />
-                        <StatusMiniCard label="Done" count={dashboard.member?.completedCount} color="green" />
+                        <StatusMiniCard label="Chưa Bắt Đầu" count={dashboard.member?.pendingCount} color="amber" />
+                        <StatusMiniCard label="Đang Làm" count={dashboard.member?.doingCount} color="blue" />
+                        <StatusMiniCard label="Đã Hoàn Thành" count={dashboard.member?.completedCount} color="green" />
                     </div>
                 </div>
             </div>
