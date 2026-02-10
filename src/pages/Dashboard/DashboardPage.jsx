@@ -198,7 +198,7 @@ export const DashboardPage = () => {
 
     // --- Tasks Awaiting Review Section ---
     const ReviewQueueView = () => {
-        const myReviewTasks = awaitingReviewTasks?.filter(task =>
+        const myReviewTasks = awaitingReviewTasks?.data?.filter(task =>
             Number(user?.id) === Number(task.assignerId) || Number(user?.id) === Number(task.project?.team?.teamLead?.id)
         ) || [];
 
