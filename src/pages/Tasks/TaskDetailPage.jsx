@@ -75,7 +75,11 @@ export const TaskDetailPage = () => {
         }
 
         try {
-            await submitResult({ id, formData }).unwrap();
+            await submitResult({
+                id,
+                formData,
+                projectId: task.project?.id
+            }).unwrap();
             toast.success('Gửi kết quả thành công!');
             setIsResultModalOpen(false);
             setResultFile(null);

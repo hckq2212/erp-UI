@@ -23,7 +23,7 @@ export const AddExtraTaskModal = ({ isOpen, onClose, project }) => {
         try {
             await createTask({
                 projectId: project.id,
-                jobId: parseInt(selectedJobId),
+                jobId: selectedJobId,
                 name: selectedJob.name,
                 isExtra: true
             }).unwrap();

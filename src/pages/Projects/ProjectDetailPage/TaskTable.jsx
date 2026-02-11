@@ -137,7 +137,7 @@ export const TaskTable = ({ tasks = [], project }) => {
 
             {/* Table */}
             <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left min-w-[1500px]">
+                <table className="w-full text-sm text-left min-w-[1600px]">
                     <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100">
                         <tr>
                             <th className="px-6 py-4 font-medium">STT</th>

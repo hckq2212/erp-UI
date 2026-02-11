@@ -259,7 +259,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       const validServices = selectedServices
         .filter(s => s.serviceId)
         .map(s => ({
-          id: parseInt(s.serviceId),
+          id: s.serviceId,
           quantity: s.quantity
         }));
       if (validServices.length > 0) {

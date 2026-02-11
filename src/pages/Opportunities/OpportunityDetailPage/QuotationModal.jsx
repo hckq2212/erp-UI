@@ -17,7 +17,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     opportunity?.id,
     { skip: !isOpen || !opportunity?.id || isEditMode }
   );
-  
+
   // Fetch all available services
   const { data: allServices = [] } = useGetServicesQuery(
     {},
@@ -33,7 +33,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
         const sellingPrice = parseFloat(detail.sellingPrice) || 0;
         const minPrice = costPrice * 1.2;
         const recommendedPrice = costPrice * 1.4;
-        
+
         return {
           serviceId: detail.service?.id || detail.serviceId,
           serviceName: detail.service?.name || 'Unknown Service',
@@ -58,7 +58,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
         const costPrice = parseFloat(service.service?.costPrice || service.costPrice) || 0;
         const minPrice = costPrice * 1.2; // 20% profit
         const recommendedPrice = costPrice * 1.4; // 40% profit
-        
+
         return {
           serviceId: service.service?.id || service.id,
           serviceName: service.service?.name || service.name,
@@ -129,20 +129,20 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
 
   const handleAddService = () => {
     if (!selectedServiceId) return;
-    
-    const service = allServices.find(s => s.id === parseInt(selectedServiceId));
+
+    const service = allServices.find(s => String(s.id) === String(selectedServiceId));
     if (!service) return;
-    
+
     // Check if service already exists
     if (items.find(item => item.serviceId === service.id)) {
       alert('Dịch vụ này đã được thêm vào báo giá');
       return;
     }
-    
+
     const costPrice = parseFloat(service.costPrice) || 0;
     const minPrice = costPrice * 1.2;
     const recommendedPrice = costPrice * 1.4;
-    
+
     const newItem = {
       serviceId: service.id,
       serviceName: service.name,
@@ -157,7 +157,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
         costPrice
       )
     };
-    
+
     setItems([...items, newItem]);
     setSelectedServiceId('');
     setShowAddService(false);
@@ -165,7 +165,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
 
   // Get available services that are not already in the list
   const availableServices = allServices.filter(
-    service => !items.find(item => item.serviceId === service.id)
+    service => !items.find(item => String(item.serviceId) === String(service.id))
   );
 
   const totals = items.reduce((acc, item) => {
@@ -177,8 +177,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     };
   }, { revenue: 0, cost: 0 });
 
-  const overallProfitMargin = totals.revenue > 0 
-    ? ((totals.revenue - totals.cost) / totals.revenue) * 100 
+  const overallProfitMargin = totals.revenue > 0
+    ? ((totals.revenue - totals.cost) / totals.revenue) * 100
     : 0;
 
   const handleSubmit = () => {
@@ -191,7 +191,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
         costAtSale: item.costPrice
       }))
     };
-    
+
     if (isEditMode) {
       onSubmit(submitData, editQuotation.id);
     } else {
@@ -218,7 +218,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-        
+
         {isLoading ? (
           <div className="p-12 flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
@@ -230,213 +230,213 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             </div>
           </div>
         ) : (
-        <div className="p-6">
-         
-          {/* Items Table */}
-          <div className="overflow-x-auto mb-6">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Hạng mục</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Số lượng</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá vốn</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá bán tối thiểu</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá bán đề xuất</th>
-                  {priceType === 'custom' && (
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá bán tùy chỉnh</th>
-                  )}
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Tỉ suất lợi nhuận</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-900">{item.serviceName}</td>
-                    <td className="px-4 py-3">
-                      <input
-                        type="number"
-                        min="0"
-                        value={item.quantity}
-                        onChange={(e) => handleQuantityChange(index, e.target.value)}
-                        className="w-20 px-2 py-1 text-center border border-gray-300 rounded text-sm"
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm text-gray-900">
-                      {formatNumber(item.costPrice)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm text-gray-900">
-                      {formatNumber(item.minPrice)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm text-gray-900">
-                      {formatNumber(item.recommendedPrice)}
-                    </td>
+          <div className="p-6">
+
+            {/* Items Table */}
+            <div className="overflow-x-auto mb-6">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Hạng mục</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Số lượng</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá vốn</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá bán tối thiểu</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá bán đề xuất</th>
                     {priceType === 'custom' && (
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá bán tùy chỉnh</th>
+                    )}
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Tỉ suất lợi nhuận</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item, index) => (
+                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm text-gray-900">{item.serviceName}</td>
                       <td className="px-4 py-3">
                         <input
-                          type="text"
-                          value={formatNumber(item.customPrice)}
-                          onChange={(e) => handleCustomPriceChange(index, e.target.value)}
-                          className="w-full px-2 py-1 text-right border border-gray-300 rounded text-sm"
+                          type="number"
+                          min="0"
+                          value={item.quantity}
+                          onChange={(e) => handleQuantityChange(index, e.target.value)}
+                          className="w-20 px-2 py-1 text-center border border-gray-300 rounded text-sm"
                         />
                       </td>
-                    )}
-                    <td className="px-4 py-3 text-right text-sm font-medium text-blue-600">
-                      {item.profitMargin.toFixed(1)}%
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => handleRemoveService(index)}
-                        disabled={items.length <= 1}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        title={items.length <= 1 ? 'Phải có ít nhất 1 dịch vụ' : 'Xóa dịch vụ'}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <td className="px-4 py-3 text-right text-sm text-gray-900">
+                        {formatNumber(item.costPrice)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm text-gray-900">
+                        {formatNumber(item.minPrice)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm text-gray-900">
+                        {formatNumber(item.recommendedPrice)}
+                      </td>
+                      {priceType === 'custom' && (
+                        <td className="px-4 py-3">
+                          <input
+                            type="text"
+                            value={formatNumber(item.customPrice)}
+                            onChange={(e) => handleCustomPriceChange(index, e.target.value)}
+                            className="w-full px-2 py-1 text-right border border-gray-300 rounded text-sm"
+                          />
+                        </td>
+                      )}
+                      <td className="px-4 py-3 text-right text-sm font-medium text-blue-600">
+                        {item.profitMargin.toFixed(1)}%
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => handleRemoveService(index)}
+                          disabled={items.length <= 1}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          title={items.length <= 1 ? 'Phải có ít nhất 1 dịch vụ' : 'Xóa dịch vụ'}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-          {/* Add Service Section */}
-          <div className="mb-6">
-            {!showAddService ? (
-              <button
-                onClick={() => setShowAddService(true)}
-                disabled={availableServices.length === 0}
-                className="flex items-center gap-2 px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="text-sm font-medium">Thêm dịch vụ</span>
-              </button>
-            ) : (
-              <div className="flex gap-3 items-end">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Chọn dịch vụ
-                  </label>
-                  <select
-                    value={selectedServiceId}
-                    onChange={(e) => setSelectedServiceId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            {/* Add Service Section */}
+            <div className="mb-6">
+              {!showAddService ? (
+                <button
+                  onClick={() => setShowAddService(true)}
+                  disabled={availableServices.length === 0}
+                  className="flex items-center gap-2 px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="text-sm font-medium">Thêm dịch vụ</span>
+                </button>
+              ) : (
+                <div className="flex gap-3 items-end">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Chọn dịch vụ
+                    </label>
+                    <select
+                      value={selectedServiceId}
+                      onChange={(e) => setSelectedServiceId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">-- Chọn dịch vụ --</option>
+                      {availableServices.map(service => (
+                        <option key={service.id} value={service.id}>
+                          {service.name} - {formatNumber(service.costPrice)} VNĐ
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={handleAddService}
+                    disabled={!selectedServiceId}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <option value="">-- Chọn dịch vụ --</option>
-                    {availableServices.map(service => (
-                      <option key={service.id} value={service.id}>
-                        {service.name} - {formatNumber(service.costPrice)} VNĐ
-                      </option>
-                    ))}
-                  </select>
+                    Thêm
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAddService(false);
+                      setSelectedServiceId('');
+                    }}
+                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Hủy
+                  </button>
                 </div>
-                <button
-                  onClick={handleAddService}
-                  disabled={!selectedServiceId}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Thêm
-                </button>
-                <button
-                  onClick={() => {
-                    setShowAddService(false);
-                    setSelectedServiceId('');
-                  }}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Hủy
-                </button>
-              </div>
-            )}
-            {availableServices.length === 0 && !showAddService && (
-              <p className="text-sm text-gray-500 mt-2">Tất cả dịch vụ đã được thêm vào báo giá</p>
-            )}
-          </div>
+              )}
+              {availableServices.length === 0 && !showAddService && (
+                <p className="text-sm text-gray-500 mt-2">Tất cả dịch vụ đã được thêm vào báo giá</p>
+              )}
+            </div>
 
-           {/* Price Type Selection */}
-          <div className="mb-6 flex gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="priceType"
-                value="minimum"
-                checked={priceType === 'minimum'}
-                onChange={(e) => handlePriceTypeChange(e.target.value)}
-                className="w-4 h-4 text-blue-600"
-              />
-              <span className="text-sm font-medium text-gray-700">Chọn giá bán tối thiểu</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="priceType"
-                value="recommended"
-                checked={priceType === 'recommended'}
-                onChange={(e) => handlePriceTypeChange(e.target.value)}
-                className="w-4 h-4 text-blue-600"
-              />
-              <span className="text-sm font-medium text-gray-700">Chọn giá bán đề xuất</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="priceType"
-                value="custom"
-                checked={priceType === 'custom'}
-                onChange={(e) => handlePriceTypeChange(e.target.value)}
-                className="w-4 h-4 text-blue-600"
-              />
-              <span className="text-sm font-medium text-gray-700">Chọn giá bán tùy chỉnh</span>
-            </label>
-          </div>
+            {/* Price Type Selection */}
+            <div className="mb-6 flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="priceType"
+                  value="minimum"
+                  checked={priceType === 'minimum'}
+                  onChange={(e) => handlePriceTypeChange(e.target.value)}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm font-medium text-gray-700">Chọn giá bán tối thiểu</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="priceType"
+                  value="recommended"
+                  checked={priceType === 'recommended'}
+                  onChange={(e) => handlePriceTypeChange(e.target.value)}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm font-medium text-gray-700">Chọn giá bán đề xuất</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="priceType"
+                  value="custom"
+                  checked={priceType === 'custom'}
+                  onChange={(e) => handlePriceTypeChange(e.target.value)}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm font-medium text-gray-700">Chọn giá bán tùy chỉnh</span>
+              </label>
+            </div>
 
-          {/* Summary */}
-          <div className="bg-blue-50 rounded-lg p-4 mb-6">
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-blue-700 mb-1">Tổng doanh thu:</p>
-                <p className="text-xl font-bold text-blue-900">{formatNumber(totals.revenue)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-blue-700 mb-1">Tổng vốn:</p>
-                <p className="text-xl font-bold text-blue-900">{formatNumber(totals.cost)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-blue-700 mb-1">Tỉ suất lợi nhuận:</p>
-                <p className="text-xl font-bold text-blue-900">{overallProfitMargin.toFixed(1)}%</p>
+            {/* Summary */}
+            <div className="bg-blue-50 rounded-lg p-4 mb-6">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-blue-700 mb-1">Tổng doanh thu:</p>
+                  <p className="text-xl font-bold text-blue-900">{formatNumber(totals.revenue)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-blue-700 mb-1">Tổng vốn:</p>
+                  <p className="text-xl font-bold text-blue-900">{formatNumber(totals.cost)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-blue-700 mb-1">Tỉ suất lợi nhuận:</p>
+                  <p className="text-xl font-bold text-blue-900">{overallProfitMargin.toFixed(1)}%</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Notes */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Nhập ghi chú cho báo giá..."
-            />
-          </div>
+            {/* Notes */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Nhập ghi chú cho báo giá..."
+              />
+            </div>
 
-          {/* Footer */}
-          <div className="flex gap-3 pt-6 border-t border-gray-100">
-            <button
-              onClick={handleSubmit}
-              disabled={items.length === 0}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isEditMode ? 'Cập nhật' : 'Tạo báo giá'}
-            </button>
-            <button
-              onClick={onClose}
-              className="px-6 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium"
-            >
-              Đóng
-            </button>
+            {/* Footer */}
+            <div className="flex gap-3 pt-6 border-t border-gray-100">
+              <button
+                onClick={handleSubmit}
+                disabled={items.length === 0}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isEditMode ? 'Cập nhật' : 'Tạo báo giá'}
+              </button>
+              <button
+                onClick={onClose}
+                className="px-6 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium"
+              >
+                Đóng
+              </button>
+            </div>
           </div>
-        </div>
         )}
       </div>
     </div>

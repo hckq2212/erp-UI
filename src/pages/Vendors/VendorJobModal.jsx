@@ -97,7 +97,7 @@ export const VendorJobModal = ({ isOpen, onClose, onSubmit, vendorId, existingJo
     };
 
     const filteredJobs = allJobs
-        .filter(job => !existingJobIds.includes(job.id))
+        .filter(job => !existingJobIds.map(String).includes(String(job.id)))
         .filter(job =>
             job.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             job.code.toLowerCase().includes(searchTerm.toLowerCase())

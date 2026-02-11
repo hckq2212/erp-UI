@@ -80,7 +80,10 @@ export const TaskReviewPage = () => {
 
     const handleApprove = async () => {
         try {
-            await finalizeTask(id).unwrap();
+            await finalizeTask({
+                taskId: id,
+                projectId: task.project?.id
+            }).unwrap();
             toast.success('Duyệt công việc thành công!');
             navigate(`/tasks/${id}`);
         } catch (err) {
@@ -94,7 +97,11 @@ export const TaskReviewPage = () => {
             return;
         }
         try {
-            await rejectTask({ taskId: id, note }).unwrap();
+            await rejectTask({
+                taskId: id,
+                note,
+                projectId: task.project?.id
+            }).unwrap();
             toast.success('Đã từ chối kết quả công việc');
             navigate(`/tasks/${id}`);
         } catch (err) {

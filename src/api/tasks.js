@@ -55,7 +55,10 @@ export const tasksApi = api.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: [{ type: 'Tasks', id: 'LIST' }],
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: 'Tasks', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
     }),
     updateTask: builder.mutation({
       query: ({ id, ...data }) => ({
@@ -63,17 +66,18 @@ export const tasksApi = api.injectEndpoints({
         method: 'PUT',
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [
+      invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
-      ],
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
     }),
     deleteTask: builder.mutation({
       query: (id) => ({
         url: `/tasks/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: [{ type: 'Tasks', id: 'LIST' }],
+      invalidatesTags: [{ type: 'Tasks', id: 'LIST' }, { type: 'Projects', id: 'LIST' }],
     }),
     updateTaskStatus: builder.mutation({
       query: ({ id, status }) => ({
@@ -81,11 +85,11 @@ export const tasksApi = api.injectEndpoints({
         method: 'PATCH',
         body: { status },
       }),
-      invalidatesTags: (result, error, { id }) => [
+      invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
-        { type: 'Projects', id: 'LIST' },
-      ],
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
     }),
     assignTask: builder.mutation({
       query: ({ id, formData }) => ({
@@ -93,11 +97,10 @@ export const tasksApi = api.injectEndpoints({
         method: 'PUT',
         body: formData,
       }),
-      invalidatesTags: (result, error, { id, task }) => [
+      invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
-        { type: 'Projects', id: 'LIST' },
-        task?.projectId ? { type: 'Projects', id: task.projectId } : null
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
     submitTaskResult: builder.mutation({
@@ -106,11 +109,11 @@ export const tasksApi = api.injectEndpoints({
         method: 'PATCH',
         body: formData,
       }),
-      invalidatesTags: (result, error, { id }) => [
+      invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
-        { type: 'Projects', id: 'LIST' },
-      ],
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
     }),
     updatePricing: builder.mutation({
       query: ({ id, ...data }) => ({
@@ -118,10 +121,11 @@ export const tasksApi = api.injectEndpoints({
         method: 'PUT',
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [
+      invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
-      ],
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
     }),
     assessExtraTask: builder.mutation({
       query: ({ id, ...data }) => ({
@@ -129,11 +133,11 @@ export const tasksApi = api.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [
+      invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
-        { type: 'Projects', id: 'LIST' },
-      ],
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
     }),
   }),
 });

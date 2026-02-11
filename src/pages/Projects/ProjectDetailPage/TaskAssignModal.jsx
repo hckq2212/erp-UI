@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { X, Upload, Link as LinkIcon, Calendar, User, FileText, Trash2, Plus, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGetTeamMembersQuery } from '../../../api/teams';
@@ -28,22 +28,26 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     const vendors = Array.isArray(vendorsResult) ? vendorsResult : (vendorsResult?.data || []);
     const [files, setFiles] = useState([]);
 
-    const handleAddLink = () => {
-        setFormData({ ...formData, links: [...formData.links, ''] });
-    };
+    const handleAddLink = useCallback(() => {
+        setFormData(prev => ({ ...prev, links: [...prev.links, ''] }));
+    }, []);
 
-    const handleRemoveLink = (index) => {
-        const newLinks = formData.links.filter((_, i) => i !== index);
-        setFormData({ ...formData, links: newLinks });
-    };
+    const handleRemoveLink = useCallback((index) => {
+        setFormData(prev => ({
+            ...prev,
+            links: prev.links.filter((_, i) => i !== index)
+        }));
+    }, []);
 
-    const handleLinkChange = (index, value) => {
-        const newLinks = [...formData.links];
-        newLinks[index] = value;
-        setFormData({ ...formData, links: newLinks });
-    };
+    const handleLinkChange = useCallback((index, value) => {
+        setFormData(prev => {
+            const newLinks = [...prev.links];
+            newLinks[index] = value;
+            return { ...prev, links: newLinks };
+        });
+    }, []);
 
-    const handleFileChange = (e) => {
+    const handleFileChange = useCallback((e) => {
         const selectedFiles = Array.from(e.target.files);
         if (files.length + selectedFiles.length > 5) {
             toast.warning('Chỉ được tối đa 5 file');
@@ -56,14 +60,14 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
             return;
         }
 
-        setFiles([...files, ...selectedFiles]);
-    };
+        setFiles(prev => [...prev, ...selectedFiles]);
+    }, [files]);
 
-    const handleRemoveFile = (index) => {
-        setFiles(files.filter((_, i) => i !== index));
-    };
+    const handleRemoveFile = useCallback((index) => {
+        setFiles(prev => prev.filter((_, i) => i !== index));
+    }, []);
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = useCallback(async (e) => {
         if (e) e.preventDefault();
         if (!formData.assigneeId) {
             toast.error('Vui lòng chọn người thực hiện');
@@ -92,13 +96,17 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                 data.append('files', file);
             });
 
-            await assignTask({ id: task.id, formData: data }).unwrap();
+            await assignTask({
+                id: task.id,
+                formData: data,
+                projectId: project.id
+            }).unwrap();
             toast.success('Phân công công việc thành công');
             onClose();
         } catch (err) {
             toast.error(err?.data?.message || 'Có lỗi xảy ra khi phân công');
         }
-    };
+    }, [formData, files, task.id, project.id, assignTask, onClose]);
 
     return (
         <AnimatePresence>
@@ -109,7 +117,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+                        className="absolute inset-0 bg-slate-950/60"
                     />
 
                     <motion.div
@@ -123,8 +131,8 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                             opacity: { duration: 0.2 },
                             scale: { duration: 0.3 }
                         }}
-                        style={{ willChange: "transform, opacity" }}
-                        className="bg-white rounded-[32px] w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh] overflow-hidden relative transform-gpu"
+                        style={{ backfaceVisibility: 'hidden', willChange: "transform, opacity" }}
+                        className="bg-white rounded-[32px] w-full max-w-lg shadow-xl flex flex-col max-h-[90vh] overflow-hidden relative transform-gpu"
                     >
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
                             <div className="flex items-center gap-4">
@@ -147,7 +155,14 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-8 overscroll-contain" style={{ webkitOverflowScrolling: 'touch', willChange: 'scroll-position' }}>
+                        <div
+                            className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-8 overscroll-contain"
+                            style={{
+                                WebkitOverflowScrolling: 'touch',
+                                willChange: 'scroll-position',
+                                transform: 'translateZ(0)'
+                            }}
+                        >
                             {/* Performer Type Selector */}
                             <div className="space-y-4">
                                 <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">Hình thức thực hiện</label>
@@ -234,7 +249,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                     </div>
                                 </div>
                                 <div className="space-y-3">
-                                    <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">Hạn nộp</label>
+                                    <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">Deadline</label>
                                     <div className="relative group">
                                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                         <input
