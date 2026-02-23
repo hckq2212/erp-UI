@@ -72,6 +72,7 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
     }, [milestones, debts]);
 
     const filteredContracts = useMemo(() => {
+        if (!Array.isArray(contracts)) return [];
         return contracts.filter(contract => {
             const matchesSearch =
                 (contract.contractCode?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||

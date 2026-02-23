@@ -52,8 +52,8 @@ export const ContractDetailPage = () => {
       const file = e.target.files?.[0];
       if (!file) return;
 
-      console.log('Uploading proposal file:', file);
-      console.log('File details:', { name: file.name, size: file.size, type: file.type });
+      // console.log('Uploading proposal file:', file);
+      // console.log('File details:', { name: file.name, size: file.size, type: file.type });
 
       try {
         const result = await uploadProposal({ id: contract.id, file }).unwrap();

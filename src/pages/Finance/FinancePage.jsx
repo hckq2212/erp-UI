@@ -22,7 +22,8 @@ export const FinancePage = () => {
     const [viewType, setViewType] = useState('list'); // 'list' | 'schedule'
 
     // Fetch all necessary data
-    const { data: contracts = [], isLoading: loadingContracts, refetch: refetchContracts } = useGetContractsQuery();
+    const { data: contractsResponse = { data: [] }, isLoading: loadingContracts, refetch: refetchContracts } = useGetContractsQuery();
+    const contracts = contractsResponse?.data || [];
     const { data: debts = [], isLoading: loadingDebts, refetch: refetchDebts } = useGetDebtsQuery();
     const { data: milestones = [], isLoading: loadingMilestones, refetch: refetchMilestones } = useGetPaymentMilestonesQuery();
 
