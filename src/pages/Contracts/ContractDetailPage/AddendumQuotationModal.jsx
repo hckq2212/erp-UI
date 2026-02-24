@@ -58,6 +58,11 @@ export const AddendumQuotationModal = ({ isOpen, onClose, task, opportunityId, o
             toast.success('Tạo báo giá phụ lục thành công');
             onSubmitted && onSubmitted();
             onClose();
+            
+            // Refresh page after successful submission
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
         } catch (err) {
             toast.error(err?.data?.message || 'Có lỗi xảy ra khi tạo báo giá');
         }

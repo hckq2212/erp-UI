@@ -128,22 +128,48 @@ export const ProjectDetailPage = () => {
       {/* Task Statistics */}
       <TaskStatistics tasks={project.tasks} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content: Tasks Table */}
+      {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        Main Content: Tasks Table
         <div className="lg:col-span-2 space-y-6">
           <TaskTable tasks={project.tasks} project={project} />
           <ContractInfo contract={project.contract} projectId={project.id} />
         </div>
 
 
-        {/* Sidebar: Info Panels */}
+        Sidebar: Info Panels
         <div className="space-y-6">
           <ProjectInfo project={project} formatDate={formatDate} />
 
           <TeamInfo team={project.team} />
         </div>
-      </div>
+      </div> */}
 
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
+        {/* Main Content: Tasks Table
+        <div className="lg:col-span-2 space-y-6">
+          <TaskTable tasks={project.tasks} project={project} />
+          <ContractInfo contract={project.contract} projectId={project.id} />
+        </div> */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 ">
+          <div className="space-y-6">
+            <ProjectInfo project={project} formatDate={formatDate} />
+          </div>
+          <div className="space-y-6">
+            <TeamInfo team={project.team} />
+          </div>
+        </div>
+        <TaskTable tasks={project.tasks} project={project} />
+
+        
+        <ContractInfo contract={project.contract} projectId={project.id} />
+
+        {/* Sidebar: Info Panels
+        <div className="space-y-6">
+          <ProjectInfo project={project} formatDate={formatDate} />
+
+          <TeamInfo team={project.team} />
+        </div> */}
+      </div>
       {/* Edit modal placeholder */}
       {/* {showEditModal && <EditProjectModal ... />} */}
     </div>
