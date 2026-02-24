@@ -281,7 +281,9 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                           />
                         </td>
                       )}
-                      <td className="px-4 py-3 text-right text-sm font-medium text-blue-600">
+                      <td className={`px-4 py-3 text-right text-sm font-medium ${
+                        item.profitMargin < 0 ? 'text-red-600' : 'text-blue-600'
+                      }`}>
                         {item.profitMargin.toFixed(1)}%
                       </td>
                       <td className="px-4 py-3 text-center">
@@ -403,8 +405,12 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                   <p className="text-xl font-bold text-blue-900">{formatNumber(totals.cost)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-blue-700 mb-1">Tỉ suất lợi nhuận:</p>
-                  <p className="text-xl font-bold text-blue-900">{overallProfitMargin.toFixed(1)}%</p>
+                  <p className={`text-sm mb-1 ${
+                    overallProfitMargin < 0 ? 'text-red-700' : 'text-blue-700'
+                  }`}>Tỉ suất lợi nhuận:</p>
+                  <p className={`text-xl font-bold ${
+                    overallProfitMargin < 0 ? 'text-red-900' : 'text-blue-900'
+                  }`}>{overallProfitMargin.toFixed(1)}%</p>
                 </div>
               </div>
             </div>
