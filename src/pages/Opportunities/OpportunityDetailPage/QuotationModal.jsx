@@ -4,7 +4,7 @@ import { formatNumber, parseNumber } from '../../../utils/format';
 import { useGetOpportunityServicesByOpportunityQuery } from '../../../api/opportunityService';
 import { useGetServicesQuery } from '../../../api/services';
 
-export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuotation = null }) => {
+export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuotation = null, isSubmitting = false }) => {
   const [items, setItems] = useState([]);
   const [priceType, setPriceType] = useState('recommended'); // minimum, recommended, custom
   const [notes, setNotes] = useState('');
@@ -425,10 +425,10 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             <div className="flex gap-3 pt-6 border-t border-gray-100">
               <button
                 onClick={handleSubmit}
-                disabled={items.length === 0}
+                disabled={items.length === 0 || isSubmitting}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isEditMode ? 'Cập nhật' : 'Tạo báo giá'}
+                {isSubmitting ? 'Đang xử lý...' : (isEditMode ? 'Cập nhật' : 'Tạo báo giá')}
               </button>
               <button
                 onClick={onClose}

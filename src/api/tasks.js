@@ -112,6 +112,7 @@ export const tasksApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
+        { type: 'TaskReviews', id: 'LIST' },
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),

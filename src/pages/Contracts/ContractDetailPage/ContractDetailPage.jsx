@@ -47,20 +47,20 @@ export const ContractDetailPage = () => {
   const handleUploadProposal = async () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.pdf,.doc,.docx';
+    input.accept = '.docx';
     input.onchange = async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
 
-      // console.log('Uploading proposal file:', file);
-      // console.log('File details:', { name: file.name, size: file.size, type: file.type });
+      if (!file.name.toLowerCase().endsWith('.docx')) {
+        toast.error('Chỉ chấp nhận file .docx cho proposal');
+        return;
+      }
 
       try {
-        const result = await uploadProposal({ id: contract.id, file }).unwrap();
-        console.log('Upload result:', result);
+        await uploadProposal({ id: contract.id, file }).unwrap();
         toast.success('Upload proposal thành công');
       } catch (err) {
-        console.error('Upload error:', err);
         toast.error(err?.data?.message || 'Upload thất bại');
       }
     };
@@ -80,20 +80,20 @@ export const ContractDetailPage = () => {
   const handleUploadSigned = async () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.pdf,.doc,.docx';
+    input.accept = '.pdf';
     input.onchange = async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
 
-      console.log('Uploading signed contract file:', file);
-      console.log('File details:', { name: file.name, size: file.size, type: file.type });
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        toast.error('Chỉ chấp nhận file .pdf cho hợp đồng đã ký');
+        return;
+      }
 
       try {
-        const result = await uploadSigned({ id: contract.id, file }).unwrap();
-        console.log('Upload result:', result);
+        await uploadSigned({ id: contract.id, file }).unwrap();
         toast.success('Upload hợp đồng đã ký thành công');
       } catch (err) {
-        console.error('Upload error:', err);
         toast.error(err?.data?.message || 'Upload thất bại');
       }
     };

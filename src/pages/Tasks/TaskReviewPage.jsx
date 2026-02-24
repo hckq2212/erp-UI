@@ -82,6 +82,7 @@ export const TaskReviewPage = () => {
         try {
             await finalizeTask({
                 taskId: id,
+                reviewNote: note,
                 projectId: task.project?.id
             }).unwrap();
             toast.success('Duyệt công việc thành công!');
@@ -99,7 +100,7 @@ export const TaskReviewPage = () => {
         try {
             await rejectTask({
                 taskId: id,
-                note,
+                reviewNote: note,
                 projectId: task.project?.id
             }).unwrap();
             toast.success('Đã từ chối kết quả công việc');
@@ -322,7 +323,7 @@ export const TaskReviewPage = () => {
                         <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600">
                             <MessageSquare className="w-5 h-5" />
                         </div>
-                        <h2 className="text-xl font-bold text-gray-900 tracking-tight">Ghi chú duyệt</h2>
+                        <h2 className="text-xl font-bold text-gray-900 tracking-tight">Ghi chú</h2>
                     </div>
                     <textarea
                         value={note}

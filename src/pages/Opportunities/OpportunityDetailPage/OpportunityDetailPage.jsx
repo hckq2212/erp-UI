@@ -1,3 +1,4 @@
+import { useSelector } from 'react-redux';
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -6,6 +7,7 @@ import {
   Trash2,
   CheckCircle,
 } from 'lucide-react';
+import { selectCurrentUser } from '../../../store/authSlice';
 import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation, useApproveOpportunityMutation } from '../../../api/opportunities';
 import { useGetCustomersQuery } from '../../../api/customers';
 import { useGetQuotationsByOpportunityQuery, useCreateQuotationMutation, useUpdateQuotationMutation } from '../../../api/quotations';
@@ -29,13 +31,15 @@ import {
 } from '../../../utils/enums';
 
 export const OpportunityDetailPage = () => {
+  const user = useSelector(selectCurrentUser);
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: opportunity, isLoading, error } = useGetOpportunityQuery(id);
   const [deleteOpportunity, { isLoading: isDeleting }] = useDeleteOpportunityMutation();
   const [updateOpportunity, { isLoading: isUpdating }] = useUpdateOpportunityMutation();
-  const [createQuotation] = useCreateQuotationMutation();
-  const [updateQuotation] = useUpdateQuotationMutation();
+  const { data: quotations = [], isLoading: isLoadingQuotations } = useGetQuotationsByOpportunityQuery(id);
+  const [createQuotation, { isLoading: isCreatingQuotation }] = useCreateQuotationMutation();
+  const [updateQuotation, { isLoading: isUpdatingQuotation }] = useUpdateQuotationMutation();
   const [createContract, { isLoading: isCreatingContract }] = useCreateContractMutation();
   const [approveOpportunity, { isLoading: isApproving }] = useApproveOpportunityMutation();
 
@@ -61,7 +65,7 @@ export const OpportunityDetailPage = () => {
   const { data: customers = [] } = useGetCustomersQuery();
 
   // Fetch quotations for this opportunity
-  const { data: quotations = [], isLoading: isLoadingQuotations } = useGetQuotationsByOpportunityQuery(id);
+  // const { data: quotations = [], isLoading: isLoadingQuotations } = useGetQuotationsByOpportunityQuery(id);
 
   // Fetch referral partners
   const { data: referralPartnersResult = [] } = useGetReferralPartnersQuery();
@@ -156,6 +160,7 @@ export const OpportunityDetailPage = () => {
         // Update existing quotation
         await updateQuotation({
           id: quotationId,
+          opportunityId: id,
           ...quotationData
         }).unwrap();
         toast.success('Cập nhật báo giá thành công');
@@ -169,6 +174,7 @@ export const OpportunityDetailPage = () => {
         // Update with details immediately after creation
         await updateQuotation({
           id: createResponse.id,
+          opportunityId: id,
           ...quotationData
         }).unwrap();
 
@@ -249,12 +255,22 @@ export const OpportunityDetailPage = () => {
           <div className="flex gap-2">
             {(opportunity.customer || opportunity.leadName) && (
               <>
-                <button
-                  onClick={() => setShowQuotationsListModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  Xem báo giá {quotations.length > 0 && `(${quotations.length})`}
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowQuotationsListModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Xem báo giá
+                  </button>
+                  {(() => {
+                    const draftCount = quotations.filter(q => q.status === 'DRAFT').length;
+                    return draftCount > 0 && (
+                      <span className="absolute -top-2 -right-2 flex items-center justify-center h-5 w-5 text-[10px] font-black text-white bg-red-500 rounded-full ring-2 ring-white shadow-sm">
+                        {draftCount > 9 ? '9+' : draftCount}
+                      </span>
+                    );
+                  })()}
+                </div>
                 {(opportunity.status === 'QUOTATION_DRAFTING' || opportunity.status === 'PENDING_QUOTE_APPROVAL' || opportunity.status === 'OPP_APPROVED') && (
                   <button
                     onClick={() => setShowQuotationModal(true)}
@@ -321,6 +337,7 @@ export const OpportunityDetailPage = () => {
         }}
         onSubmit={handleQuotationSubmit}
         editQuotation={editingQuotation}
+        isSubmitting={isUpdatingQuotation || isCreatingQuotation}
       />
 
       <CustomerModal

@@ -72,6 +72,7 @@ export const contractsApi = api.injectEndpoints({
       invalidatesTags: (result, error, id) => [
         { type: 'Contracts', id },
         { type: 'Contracts', id: 'LIST' },
+        { type: 'Projects', id: 'LIST' },
       ],
     }),
     uploadSigned: builder.mutation({
@@ -87,6 +88,8 @@ export const contractsApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [
         { type: 'Contracts', id },
         { type: 'Contracts', id: 'LIST' },
+        { type: 'PaymentMilestones', id: 'LIST' },
+        { type: 'Debts', id: 'LIST' },
       ],
     }),
     addMilestone: builder.mutation({

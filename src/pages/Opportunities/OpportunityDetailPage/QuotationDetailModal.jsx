@@ -126,6 +126,13 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                     <p className="text-sm text-gray-600">{quotation.note}</p>
                   </div>
                 )}
+
+                {quotation.status === 'REJECTED' && (
+                  <div className="mt-3 pt-3 border-t border-red-200 bg-red-50/50 -mx-4 px-4 pb-3 rounded-b-xl border-b border-red-100">
+                    <p className="text-sm font-bold text-red-700 mb-1 uppercase tracking-wider">Lý do từ chối:</p>
+                    <p className="text-sm text-red-600 italic">"{quotation.description || 'Không có lý do chi tiết'}"</p>
+                  </div>
+                )}
               </div>
               {/* Details Table */}
               <div>

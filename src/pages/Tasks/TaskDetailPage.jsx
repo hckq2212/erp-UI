@@ -174,7 +174,7 @@ export const TaskDetailPage = () => {
                     </div>
 
                     {/* Evaluation Results Section */}
-                    {reviews && reviews.length > 0 && (
+                    {reviews && reviews.length > 0 && task.status !== 'AWAITING_REVIEW' && (
                         <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
@@ -208,14 +208,14 @@ export const TaskDetailPage = () => {
                                             )}>
                                                 {review.criteria?.name}
                                             </p>
-                                            {review.note && (
-                                                <p className="text-xs text-gray-500 mt-1 italic">
-                                                    Ghi chú: {review.note}
-                                                </p>
-                                            )}
                                         </div>
                                     </div>
                                 ))}
+                                {task.reviewNote && (
+                                    <p className="text-md pl-2 text-gray-500 mt-1 italic">
+                                        Ghi chú: {task.reviewNote}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     )}

@@ -23,7 +23,8 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
     // Update payment amount suggestion when debt changes or modal opens
     useEffect(() => {
         if (isOpen && debt) {
-            const remaining = debt.amount - (debt.paidAmount || 0);
+            const totalPaid = debt.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0;
+            const remaining = Number(debt.amount || 0) - totalPaid;
             setPaymentAmount(Math.max(0, remaining).toString());
             setPaymentNote('');
         }
@@ -32,22 +33,33 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
     const handleCreatePayment = async (e) => {
         e.preventDefault();
         if (!debt) return;
+
+        const currentTotalPaid = debt.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0;
+        const remaining = Number(debt.amount || 0) - currentTotalPaid;
+        const amount = Number(paymentAmount);
+        if (amount <= 0) {
+            toast.error('Số tiền thanh toán phải lớn hơn 0');
+            return;
+        }
+
+        if (amount > remaining) {
+            toast.error(`Số tiền không được vượt quá số tiền còn lại (${remaining.toLocaleString('vi-VN')} VNĐ)`);
+            return;
+        }
+
         try {
             await createPayment({
                 debtId: debt.id,
-                amount: Number(paymentAmount),
+                amount: amount,
                 paymentDate,
                 note: paymentNote
             }).unwrap();
             toast.success('Ghi nhận thanh toán thành công');
             setPaymentNote('');
 
-            // Look for updated debt info in allDebts if provided to suggest next remaining
-            const currentDebt = allDebts.find(d => d.id === debt.id) || debt;
-            const amount = Number(currentDebt.amount || 0);
-            const paidAmount = (currentDebt.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0) + Number(paymentAmount);
-            const remaining = amount - paidAmount;
-            setPaymentAmount(Math.max(0, remaining).toString());
+            // Suggest next remaining based on current list + new payment
+            const nextRemaining = remaining - amount;
+            setPaymentAmount(Math.max(0, nextRemaining).toString());
 
         } catch (err) {
             toast.error(err?.data?.message || 'Không thể ghi nhận thanh toán');
@@ -89,6 +101,8 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
                                         value={paymentAmount}
                                         onChange={(e) => setPaymentAmount(e.target.value)}
                                         required
+                                        min="1"
+                                        max={Number(debt.amount || 0) - (debt.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0)}
                                         className="pr-12 text-sm font-bold"
                                     />
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">
@@ -125,7 +139,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
                             <Button
                                 type="submit"
                                 variant="primary"
-                                fullWidth
+                                onClick={handleCreatePayment}
                                 disabled={debt.paidAmount >= debt.amount}
                             >
                                 Xác nhận thanh toán
@@ -175,25 +189,11 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
                     </div>
 
                     {/* Modal Summary */}
-                    <div className="pt-4 mt-auto border-t border-gray-100 flex justify-between items-end">
-                        <div>
-                            <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Tình trạng thanh toán</div>
-                            <div className="flex items-center gap-2 mt-1">
-                                <div className="h-2 w-32 bg-gray-100 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-green-500 transition-all duration-500"
-                                        style={{ width: `${Math.min(100, (debt?.paidAmount / debt?.amount) * 100)}%` }}
-                                    />
-                                </div>
-                                <span className="text-[10px] font-bold text-gray-700">
-                                    {Math.round((debt?.paidAmount / debt?.amount) * 100) || 0}%
-                                </span>
-                            </div>
-                        </div>
+                    <div className="pt-4 mt-auto border-t border-gray-100 flex justify-end">
                         <div className="text-right">
                             <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Tổng đã nộp</div>
                             <div className="text-lg font-bold text-green-600">
-                                {(debt?.paidAmount || 0).toLocaleString('vi-VN')} <span className="text-xs font-normal text-gray-500">VNĐ</span>
+                                {(debt?.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0).toLocaleString('vi-VN')} <span className="text-xs font-normal text-gray-500">VNĐ</span>
                             </div>
                         </div>
                     </div>

@@ -123,6 +123,13 @@ export const FinancialInfo = ({ contract }) => {
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between group hover:border-green-200 transition-all">
+          <div className='flex flex-col justify-between items-start mb-2'>
+            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Tổng vốn</p>
+            <div className="text-xl font-black text-green-600">{formatCurrency(contract.cost)}</div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between group hover:border-green-200 transition-all">
           <div>
             <div className="flex justify-between items-start mb-2">
               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Đã thanh toán thực tế</p>
