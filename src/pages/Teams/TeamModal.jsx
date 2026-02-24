@@ -55,12 +55,12 @@ export const TeamModal = ({ isOpen, onClose }) => {
                 // Add as Project Manager by default if they are Lead
                 await addMember({
                     id: team.id,
-                    userId: Number(leadId),
+                    userId: leadId,
                     role: TEAM_MEMBER_ROLE.PROJECT_MANAGER
                 }).unwrap();
 
                 // Then promote to Lead
-                await changeLead({ id: team.id, newLeadId: Number(leadId) }).unwrap();
+                await changeLead({ id: team.id, newLeadId: leadId }).unwrap();
             }
 
             // Add other Members
@@ -68,7 +68,7 @@ export const TeamModal = ({ isOpen, onClose }) => {
             for (const member of validMembers) {
                 await addMember({
                     id: team.id,
-                    userId: Number(member.userId),
+                    userId: member.userId,
                     role: member.role
                 }).unwrap();
             }

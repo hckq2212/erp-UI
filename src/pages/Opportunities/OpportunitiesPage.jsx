@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { OpportunityTable } from './OpportunityTable';
 import { Button } from '../../components/ui/Button';
 import { Plus } from 'lucide-react';
@@ -30,6 +31,7 @@ export const OpportunitiesPage = () => {
     });
 
     const { data, isLoading } = useGetOpportunitiesQuery(filters);
+    const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const opportunities = data?.data || [];
@@ -92,7 +94,12 @@ export const OpportunitiesPage = () => {
             <OpportunityModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                onSuccess={() => setIsModalOpen(false)}
+                onSuccess={(data) => {
+                    setIsModalOpen(false);
+                    if (data?.id) {
+                        navigate(`/opportunities/${data.id}`);
+                    }
+                }}
             />
 
             <div className="flex-1 overflow-auto">

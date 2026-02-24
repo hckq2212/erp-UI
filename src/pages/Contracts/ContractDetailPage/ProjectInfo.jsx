@@ -17,7 +17,7 @@ export const ProjectInfo = ({ project, formatDate, navigate, contractId }) => {
   };
 
   const handleAssign = async () => {
-    const teamId = selectedTeamId ? Number(selectedTeamId) : null;
+    const teamId = selectedTeamId || null;
     try {
       await assignProject({ contractId, teamId }).unwrap();
       toast.success('Phân công thành công');

@@ -246,7 +246,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                       <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá bán tùy chỉnh</th>
                     )}
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Tỉ suất lợi nhuận</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Thao tác</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Hành động</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -359,17 +359,6 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                 <input
                   type="radio"
                   name="priceType"
-                  value="minimum"
-                  checked={priceType === 'minimum'}
-                  onChange={(e) => handlePriceTypeChange(e.target.value)}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-sm font-medium text-gray-700">Chọn giá bán tối thiểu</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="priceType"
                   value="recommended"
                   checked={priceType === 'recommended'}
                   onChange={(e) => handlePriceTypeChange(e.target.value)}
@@ -377,6 +366,18 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                 />
                 <span className="text-sm font-medium text-gray-700">Chọn giá bán đề xuất</span>
               </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="priceType"
+                  value="minimum"
+                  checked={priceType === 'minimum'}
+                  onChange={(e) => handlePriceTypeChange(e.target.value)}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm font-medium text-gray-700">Chọn giá bán tối thiểu</span>
+              </label>
+
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"

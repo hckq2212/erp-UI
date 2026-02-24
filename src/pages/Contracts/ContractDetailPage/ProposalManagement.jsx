@@ -18,7 +18,7 @@ export const ProposalManagement = ({
       <div className="border border-gray-200 rounded-lg p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-medium text-gray-900">Hợp đồng proposal</h3>
+            <h3 className="font-medium text-gray-900">Hợp đồng <span className="text-sm italic text-gray-400">(.docx)</span></h3>
             <p className="text-sm text-gray-500 mt-1">
               {contract.proposal_contract ? 'Đã upload' : 'Chưa có file'}
             </p>
@@ -68,7 +68,7 @@ export const ProposalManagement = ({
       <div className="border border-gray-200 rounded-lg p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-medium text-gray-900">Hợp đồng đã ký</h3>
+            <h3 className="font-medium text-gray-900">Hợp đồng đã ký <span className="text-sm italic text-gray-400">(.pdf)</span></h3>
             <p className="text-sm text-gray-500 mt-1">
               {contract.signed_contract ? 'Đã upload' : 'Chưa có file'}
             </p>

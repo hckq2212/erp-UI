@@ -193,7 +193,7 @@ export const FinanceSchedule = ({ contracts = [], debts = [], milestones = [] })
                                     </div>
 
                                     {/* Timeline Row with Milestone Markers */}
-                                    <div className="flex relative items-center h-full bg-transparent">
+                                    <div className="flex relative items-center h-full bg-transparent pt-10">
                                         {/* Visual Grid */}
                                         {days.map((day) => (
                                             <div

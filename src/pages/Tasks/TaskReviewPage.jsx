@@ -26,13 +26,13 @@ export const TaskReviewPage = () => {
     const [note, setNote] = useState('');
     const [activeTab, setActiveTab] = useState(null); // 'TEAM_LEAD' or 'ASSIGNER'
 
-    const isLead = Number(user?.id) === Number(task?.project?.team?.teamLead?.id);
-    const isAssigner = Number(user?.id) === Number(task?.assignerId);
+    const isLead = user?.id === task?.project?.team?.teamLead?.id;
+    const isAssigner = user?.id === task?.assignerId;
 
     // Dual review happens if there's a lead AND an assigner, and they are DIFFERENT
     const hasLead = !!task?.project?.team?.teamLead?.id;
     const hasAssigner = !!task?.assignerId;
-    const isDualReview = hasLead && hasAssigner && Number(task?.project?.team?.teamLead?.id) !== Number(task?.assignerId);
+    const isDualReview = hasLead && hasAssigner && task?.project?.team?.teamLead?.id !== task?.assignerId;
 
     useEffect(() => {
         if (!activeTab && user && task) {

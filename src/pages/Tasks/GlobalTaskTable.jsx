@@ -89,7 +89,7 @@ export const GlobalTaskTable = ({
                             {renderSortableHeader('Phân công', 'assignee.fullName')}
                             {renderSortableHeader('Thời hạn', 'plannedEndDate')}
                             {renderSortableHeader('Trạng thái', 'status', 'center')}
-                            <th className="px-6 py-4 font-semibold text-gray-500 uppercase tracking-wider text-xs text-right">Thao tác</th>
+                            <th className="px-6 py-4 font-semibold text-gray-500 uppercase tracking-wider text-xs text-right">Hành động</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">

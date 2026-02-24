@@ -50,7 +50,7 @@ export const AddendumQuotationModal = ({ isOpen, onClose, task, opportunityId, o
 
             // 2. Submit the addendum quotation
             await createAddendumQuotation({
-                opportunityId: Number(opportunityId),
+                opportunityId: opportunityId,
                 taskIds: [task.id],
                 note: notes
             }).unwrap();

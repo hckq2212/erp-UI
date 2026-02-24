@@ -38,8 +38,8 @@ export const TaskDetailPage = () => {
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase"><AlertCircle className="w-3 h-3" /> Chờ duyệt</span>;
             case 'OVERDUE':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase"><AlertCircle className="w-3 h-3" /> Quá hạn</span>;
-            case 'CANCELLED':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold uppercase">Đã hủy</span>;
+            case 'REJECTED':
+                return <span className="flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase">Đã từ chối</span>;
             case 'TODO':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold uppercase">Chưa bắt đầu</span>;
             default:
@@ -143,7 +143,7 @@ export const TaskDetailPage = () => {
 
                 <div className="flex flex-wrap gap-3">
                     {task.status === 'AWAITING_REVIEW' &&
-                        (Number(user?.id) === Number(task.assignerId) || Number(user?.id) === Number(task.project?.team?.teamLead?.id)) && (
+                        (user?.id === task.assignerId || user?.id === task.project?.team?.teamLead?.id) && (
                             <Button
                                 onClick={() => navigate(`/tasks/${id}/review`)}
                                 className="rounded-2xl py-3 px-6 shadow-lg shadow-blue-100 flex items-center gap-2"
@@ -229,14 +229,14 @@ export const TaskDetailPage = () => {
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kết quả</h2>
                             </div>
-                            {task.status == "DOING" || task.status == "REJECTED" && (
-                                <button
-                                    onClick={() => setIsResultModalOpen(true)}
-                                    className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors"
-                                >
-                                    {task.resultFiles ? 'Cập nhật kết quả' : 'Thêm kết quả'}
-                                </button>
-                            )}
+                            {/* {task.status == "DOING" || task.status == "REJECTED" && ( */}
+                            <button
+                                onClick={() => setIsResultModalOpen(true)}
+                                className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors"
+                            >
+                                {task.resultFiles ? 'Cập nhật kết quả' : 'Thêm kết quả'}
+                            </button>
+                            {/* )} */}
                         </div>
                         {task.result ? (
                             <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100 flex items-center justify-between gap-4">

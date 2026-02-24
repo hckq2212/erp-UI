@@ -279,8 +279,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
         submitFormData.append('files', file);
       });
 
-      await createOpportunity(submitFormData).unwrap();
-      onSuccess?.();
+      const data = await createOpportunity(submitFormData).unwrap();
+      onSuccess?.(data);
       onClose();
 
       // Reset form
@@ -448,7 +448,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến khởi công</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến bắt đầu</label>
                     <input
                       type="date"
                       name="startDate"
@@ -617,7 +617,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
                 {/* Mô tả yêu cầu khách hàng */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Mô tả yêu cầu khách hàng</label>
+                  <label className="block text-sm  text-gray-400 mb-2 italic">Tài liệu mô tả yêu cầu khách hàng</label>
                   {/* <textarea
                     name="customerRequirements"
                     value={formData.customerRequirements}

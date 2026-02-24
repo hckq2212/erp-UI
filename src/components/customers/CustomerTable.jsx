@@ -26,7 +26,7 @@ export const CustomerTable = ({ customers = [], onEdit, onDelete, onView }) => {
   const renderSortableHeader = (label, sortKey, align = 'left') => (
     <th
       className={cn(
-        "px-6 py-4 font-semibold cursor-pointer hover:bg-gray-100/50 transition-colors group",
+        "px-6 py-4 font-semibold cursor-pointer hover:bg-gray-100/50 transition-colors group text-xs",
         align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left'
       )}
       onClick={() => requestSort(sortKey)}

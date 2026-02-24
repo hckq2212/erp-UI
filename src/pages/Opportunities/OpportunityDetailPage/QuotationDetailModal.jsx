@@ -236,14 +236,14 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
           )}
 
         </div>
-        <div className="flex gap-3 px-4 py-2 ">
+        {/* <div className="flex gap-3 px-4 py-2 ">
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
           >
             Đóng
           </button>
-        </div>
+        </div> */}
 
       </div>
     </div>

@@ -65,7 +65,7 @@ export const CustomerModal = ({
                 onChange={(e) => setSelectedReferralPartner(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="">-- Chọn đối tác giới thiệu --</option>
+                <option value="" className='italic text-gray-300'>Chọn đối tác giới thiệu</option>
                 {referralPartners.map((partner) => (
                   <option key={partner.id} value={partner.id}>
                     {partner.name} {partner.taxId ? `- ${partner.taxId}` : ''}
@@ -92,7 +92,7 @@ export const CustomerModal = ({
               disabled={customerType === 'REFERRAL' && !selectedReferralPartner}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
-              <option value="">-- Chọn trạng thái --</option>
+              <option value="" className='italic text-gray-300'>Chọn trạng thái</option>
               <option value="POTENTIAL">Khách hàng tiềm năng</option>
               <option value="EXISTING">Khách hàng hiện hữu</option>
             </select>
@@ -145,7 +145,7 @@ export const CustomerModal = ({
                   Điện thoại:
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   value={leadInfo.leadPhone}
                   onChange={(e) => setLeadInfo({ ...leadInfo, leadPhone: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

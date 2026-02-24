@@ -170,7 +170,7 @@ export const VendorDetailPage = () => {
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Tên hạng mục</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Giá Vendor cung cấp</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ghi chú</th>
-                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Thao tác</th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Hành động</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">

@@ -63,10 +63,6 @@ export const ContractsPage = () => {
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Quản Lý Hợp Đồng</h1>
                     <p className="text-gray-500 text-sm mt-1">Quản lý và theo dõi các hợp đồng đã ký kết</p>
                 </div>
-                <Button className="w-full md:w-auto shadow-lg shadow-blue-500/20">
-                    <Plus className="h-5 w-5 mr-2" />
-                    Tạo Hợp Đồng
-                </Button>
             </div>
 
             <TableFilters
