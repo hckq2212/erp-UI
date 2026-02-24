@@ -139,6 +139,14 @@ export const tasksApi = api.injectEndpoints({
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
+    createInternalTask: builder.mutation({
+      query: (data) => ({
+        url: '/tasks/internal',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: [{ type: 'Tasks', id: 'LIST' }],
+    }),
   }),
 });
 
@@ -156,4 +164,5 @@ export const {
   useSubmitTaskResultMutation,
   useUpdatePricingMutation,
   useAssessExtraTaskMutation,
+  useCreateInternalTaskMutation,
 } = tasksApi;
