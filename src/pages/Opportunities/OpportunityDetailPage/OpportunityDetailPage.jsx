@@ -4,8 +4,9 @@ import {
   ArrowLeft,
   Edit,
   Trash2,
+  CheckCircle,
 } from 'lucide-react';
-import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation } from '../../../api/opportunities';
+import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation, useApproveOpportunityMutation } from '../../../api/opportunities';
 import { useGetCustomersQuery } from '../../../api/customers';
 import { useGetQuotationsByOpportunityQuery, useCreateQuotationMutation, useUpdateQuotationMutation } from '../../../api/quotations';
 import { useCreateContractMutation } from '../../../api/contracts';
@@ -36,6 +37,7 @@ export const OpportunityDetailPage = () => {
   const [createQuotation] = useCreateQuotationMutation();
   const [updateQuotation] = useUpdateQuotationMutation();
   const [createContract, { isLoading: isCreatingContract }] = useCreateContractMutation();
+  const [approveOpportunity, { isLoading: isApproving }] = useApproveOpportunityMutation();
 
   // Modal state
   const [showContactModal, setShowContactModal] = useState(false);
@@ -76,16 +78,6 @@ export const OpportunityDetailPage = () => {
     ? (partnerDetails?.customers || [])
     : (Array.isArray(customers) ? customers : (customers?.data || []));
 
-  const handleDelete = async () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa cơ hội này?')) {
-      try {
-        await deleteOpportunity(id).unwrap();
-        navigate('/opportunities');
-      } catch (err) {
-        alert(err?.data?.message || 'Có lỗi xảy ra khi xóa');
-      }
-    }
-  };
 
   const handleOpenContactModal = () => {
     setCustomerType('DIRECT');
@@ -146,6 +138,15 @@ export const OpportunityDetailPage = () => {
       setShowContactModal(false);
     } catch (err) {
       alert(err?.data?.message || 'Có lỗi xảy ra khi cập nhật');
+    }
+  };
+
+  const handleApproveOpportunity = async () => {
+    try {
+      await approveOpportunity(id).unwrap();
+      toast.success('Duyệt cơ hội thành công');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Có lỗi xảy ra khi duyệt cơ hội');
     }
   };
 
@@ -254,12 +255,24 @@ export const OpportunityDetailPage = () => {
                 >
                   Xem báo giá {quotations.length > 0 && `(${quotations.length})`}
                 </button>
-                <button
-                  onClick={() => setShowQuotationModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  Tạo báo giá
-                </button>
+                {(opportunity.status === 'QUOTATION_DRAFTING' || opportunity.status === 'PENDING_QUOTE_APPROVAL' || opportunity.status === 'OPP_APPROVED') && (
+                  <button
+                    onClick={() => setShowQuotationModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Tạo báo giá
+                  </button>
+                )}
+                {opportunity.status === 'PENDING_OPP_APPROVAL' && (opportunity.customer || opportunity.leadName) && (
+                  <button
+                    onClick={handleApproveOpportunity}
+                    disabled={isApproving}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    {isApproving ? 'Đang duyệt...' : 'Duyệt cơ hội'}
+                  </button>
+                )}
               </>
             )}
             {opportunity.status === 'QUOTE_APPROVED' && (
@@ -278,21 +291,6 @@ export const OpportunityDetailPage = () => {
                 {isCreatingContract ? 'Đang tạo...' : 'Tạo hợp đồng'}
               </button>
             )}
-            <button
-              onClick={() => navigate(`/opportunities/${id}/edit`)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Edit className="w-4 h-4" />
-              Chỉnh sửa
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
-            >
-              <Trash2 className="w-4 h-4" />
-              {isDeleting ? 'Đang xóa...' : 'Xóa'}
-            </button>
           </div>
         </div>
       </div>

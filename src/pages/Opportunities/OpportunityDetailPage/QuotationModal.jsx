@@ -31,8 +31,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
       const loadedItems = editQuotation.details?.map(detail => {
         const costPrice = parseFloat(detail.costAtSale) || 0;
         const sellingPrice = parseFloat(detail.sellingPrice) || 0;
-        const minPrice = costPrice * 1.2;
-        const recommendedPrice = costPrice * 1.4;
+        const minPrice = costPrice / 0.8;
+        const recommendedPrice = costPrice / 0.6;
 
         return {
           serviceId: detail.service?.id || detail.serviceId,
@@ -56,8 +56,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     if (isOpen && !isEditMode && servicesData) {
       const initialItems = servicesData.map(service => {
         const costPrice = parseFloat(service.service?.costPrice || service.costPrice) || 0;
-        const minPrice = costPrice * 1.2; // 20% profit
-        const recommendedPrice = costPrice * 1.4; // 40% profit
+        const minPrice = costPrice / 0.8; // 20% profit margin
+        const recommendedPrice = costPrice / 0.6; // 40% profit margin
 
         return {
           serviceId: service.service?.id || service.id,
@@ -68,7 +68,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
           recommendedPrice: recommendedPrice,
           customPrice: recommendedPrice,
           selectedPrice: recommendedPrice,
-          profitMargin: 28.6 // Default for 40% markup
+          profitMargin: 40.0 // Default for 40% margin
         };
       });
       setItems(initialItems);
@@ -140,8 +140,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     }
 
     const costPrice = parseFloat(service.costPrice) || 0;
-    const minPrice = costPrice * 1.2;
-    const recommendedPrice = costPrice * 1.4;
+    const minPrice = costPrice / 0.8;
+    const recommendedPrice = costPrice / 0.6;
 
     const newItem = {
       serviceId: service.id,

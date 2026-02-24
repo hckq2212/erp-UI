@@ -1,19 +1,31 @@
-import { Bell, Search, User, LogOut } from 'lucide-react';
+import { Bell, Search, User, LogOut, Check, Clock, ChevronRight } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { selectCurrentUser, logout as logoutAction } from '../../store/authSlice';
-import { useGetMyNotificationsQuery } from '../../api/notifications';
+import { useGetMyNotificationsQuery, useMarkAsReadMutation } from '../../api/notifications';
 import { useLogoutMutation } from '../../api/auth';
+import { formatDate } from '../../utils/format';
 import logo from '../../assets/logo.png';
 
 export const Header = () => {
   const user = useSelector(selectCurrentUser);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [showNotifications, setShowNotifications] = useState(false);
+
   const { data: notifications = [] } = useGetMyNotificationsQuery();
+  const [markAsRead] = useMarkAsReadMutation();
   const [logoutApi] = useLogoutMutation();
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
+
+  const recentNotifications = useMemo(() => {
+    return [...notifications]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 5);
+  }, [notifications]);
 
   const handleLogout = async () => {
     try {
@@ -22,47 +34,136 @@ export const Header = () => {
       navigate('/login');
     } catch (err) {
       console.error('Logout failed:', err);
-      // Even if API fails, clear local state
       dispatch(logoutAction());
       navigate('/login');
     }
   };
 
+  const handleMarkAsRead = async (e, id) => {
+    e.stopPropagation();
+    try {
+      await markAsRead(id).unwrap();
+    } catch (err) {
+      console.error('Failed to mark as read:', err);
+    }
+  };
+
+  const handleNotificationClick = async (n) => {
+    if (!n.isRead) {
+      await markAsRead(n.id).unwrap();
+    }
+    setShowNotifications(false);
+    navigate(n.link || '/notifications');
+  };
+
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-30 flex items-center justify-between px-6">
+    <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 flex items-center justify-between px-6">
       <div className="flex items-center">
-        <img
-          alt="Office Logo"
-          className="h-15 w-15  object-contain"
-          src={logo}
-        />
+        <Link to="/">
+          <img
+            alt="Office Logo"
+            className="h-12 w-auto object-contain cursor-pointer"
+            src={logo}
+          />
+        </Link>
       </div>
 
-      {/* <div className="flex-1 max-w-lg mx-8">
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
-          </div>
-          <input
-            type="text"
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:text-sm"
-            placeholder="Search..."
-          />
-        </div>
-      </div> */}
-
       <div className="flex items-center space-x-4">
-        <button
-          onClick={() => navigate('/notifications')}
-          className="p-2 text-gray-400 hover:text-gray-500 relative"
+        <div
+          className="relative"
+          onMouseEnter={() => setShowNotifications(true)}
+          onMouseLeave={() => setShowNotifications(false)}
         >
-          <Bell className="h-6 w-6" />
-          {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 flex items-center justify-center h-4 w-4 text-xs font-medium text-white bg-red-500 rounded-full ring-2 ring-white">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </button>
+          <button
+            onClick={() => {
+              setShowNotifications(false);
+              navigate('/notifications');
+            }}
+            className={`p-2 rounded-xl transition-all relative ${showNotifications ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-500 hover:bg-gray-50'}`}
+          >
+            <Bell className="h-6 w-6" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 flex items-center justify-center h-4 w-4 text-[10px] font-black text-white bg-red-500 rounded-full ring-2 ring-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          <AnimatePresence>
+            {showNotifications && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="absolute right-0 mt-1 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+              >
+                <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
+                  <h3 className="text-sm font-black text-gray-900 uppercase">Thông báo mới</h3>
+                  {unreadCount > 0 && (
+                    <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">
+                      {unreadCount} Mới
+                    </span>
+                  )}
+                </div>
+
+                <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                  {recentNotifications.length > 0 ? (
+                    recentNotifications.map((n) => (
+                      <div
+                        key={n.id}
+                        onClick={() => handleNotificationClick(n)}
+                        className={`p-4 border-b border-gray-50 hover:bg-gray-50 transition-all cursor-pointer relative group ${!n.isRead ? 'bg-blue-50/40' : ''}`}
+                      >
+                        <div className="flex justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-xs ${!n.isRead ? 'font-bold text-gray-900' : 'font-medium text-gray-600'} truncate`}>
+                              {n.title}
+                            </p>
+                            <p className="text-[11px] text-gray-500 line-clamp-2 mt-1 leading-relaxed">
+                              {n.content}
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Clock className="w-3 h-3 text-gray-400" />
+                              <span className="text-[10px] text-gray-400 font-bold uppercase">
+                                {formatDate(n.createdAt)}
+                              </span>
+                            </div>
+                          </div>
+                          {!n.isRead && (
+                            <button
+                              onClick={(e) => handleMarkAsRead(e, n.id)}
+                              className="self-start p-1.5 text-gray-300 hover:text-blue-600 hover:bg-white rounded-lg transition-all shadow-sm opacity-0 group-hover:opacity-100"
+                              title="Đánh dấu đã đọc"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center">
+                      <Bell className="w-10 h-10 text-gray-200 mx-auto mb-2" />
+                      <p className="text-xs text-gray-400 font-medium">Chưa có thông báo nào</p>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setShowNotifications(false);
+                    navigate('/notifications');
+                  }}
+                  className="w-full p-3 text-xs font-black text-blue-600 hover:bg-blue-50 transition-all border-t border-gray-50 flex items-center justify-center gap-1 uppercase"
+                >
+                  Xem tất cả <ChevronRight className="w-4 h-4" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
         <div className="flex items-center space-x-3 pl-1 pr-3 py-1 rounded-xl">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">

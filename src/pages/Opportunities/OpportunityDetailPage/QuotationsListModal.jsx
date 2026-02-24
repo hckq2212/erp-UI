@@ -4,18 +4,18 @@ import { formatNumber } from '../../../utils/format';
 import { QuotationDetailModal } from './QuotationDetailModal';
 import { useCreateQuotationMutation } from '../../../api/quotations';
 
-export const QuotationsListModal = ({ 
-  isOpen, 
-  onClose, 
-  quotations, 
-  isLoading, 
+export const QuotationsListModal = ({
+  isOpen,
+  onClose,
+  quotations,
+  isLoading,
   onCreateNew,
   onEditQuotation,
   opportunity,
-  formatDate 
+  formatDate
 }) => {
   const [selectedQuotationId, setSelectedQuotationId] = useState(null);
-  
+
   if (!isOpen) return null;
 
   return (
@@ -44,16 +44,6 @@ export const QuotationsListModal = ({
             <div className="text-center py-12">
               <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500 mb-4">Chưa có báo giá nào</p>
-              <button
-                onClick={() => {
-                  onClose();
-                  onCreateNew();
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Tạo báo giá đầu tiên
-              </button>
             </div>
           ) : (
             <div className="space-y-3">
@@ -66,21 +56,20 @@ export const QuotationsListModal = ({
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          quotation.status === 'DRAFT' ? 'bg-gray-100 text-gray-700' :
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${quotation.status === 'DRAFT' ? 'bg-gray-100 text-gray-700' :
                           quotation.status === 'SENT' ? 'bg-blue-100 text-blue-700' :
-                          quotation.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
-                          quotation.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
+                            quotation.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
+                              quotation.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                'bg-gray-100 text-gray-700'
+                          }`}>
                           {quotation.status === 'DRAFT' ? 'Nháp' :
-                           quotation.status === 'SENT' ? 'Đã gửi' :
-                           quotation.status === 'APPROVED' ? 'Đã duyệt' :
-                           quotation.status === 'REJECTED' ? 'Từ chối' :
-                           quotation.status}
+                            quotation.status === 'SENT' ? 'Đã gửi' :
+                              quotation.status === 'APPROVED' ? 'Đã duyệt' :
+                                quotation.status === 'REJECTED' ? 'Từ chối' :
+                                  quotation.status}
                         </span>
                       </div>
-                      <h4 className="font-medium text-gray-900"> Báo giá lần { quotation.version } </h4>
+                      <h4 className="font-medium text-gray-900"> Báo giá lần {quotation.version} </h4>
                     </div>
                     <ExternalLink className="w-4 h-4 text-gray-400" />
                   </div>
@@ -114,17 +103,7 @@ export const QuotationsListModal = ({
           )}
         </div>
 
-        <div className="flex gap-3 p-6 border-t border-gray-100">
-          <button
-            onClick={() => {
-              onClose();
-              onCreateNew();
-            }}
-            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Tạo báo giá mới
-          </button>
+        <div className="flex gap-3 p-6 border-t border-gray-100 justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors font-medium"
@@ -133,7 +112,7 @@ export const QuotationsListModal = ({
           </button>
         </div>
       </div>
-      
+
       {/* Detail Modal */}
       <QuotationDetailModal
         quotationId={selectedQuotationId}
