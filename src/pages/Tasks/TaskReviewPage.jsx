@@ -86,7 +86,7 @@ export const TaskReviewPage = () => {
                 projectId: task.project?.id
             }).unwrap();
             toast.success('Duyệt công việc thành công!');
-            navigate(`/tasks/${id}`);
+            navigate(`/project/${task.project?.id}`);
         } catch (err) {
             toast.error(err.data?.message || 'Có lỗi xảy ra khi duyệt công việc');
         }
@@ -227,7 +227,7 @@ export const TaskReviewPage = () => {
                                         activeTab === 'TEAM_LEAD' ? "bg-white text-blue-600 shadow-sm" : "text-gray-400 hover:text-gray-600"
                                     )}
                                 >
-                                    Team Lead Review
+                                    Team Lead đánh giá
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('ASSIGNER')}
@@ -236,7 +236,7 @@ export const TaskReviewPage = () => {
                                         activeTab === 'ASSIGNER' ? "bg-white text-blue-600 shadow-sm" : "text-gray-400 hover:text-gray-600"
                                     )}
                                 >
-                                    Assigner Review
+                                    Người giao việc đánh giá
                                 </button>
                             </div>
 
