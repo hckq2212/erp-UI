@@ -18,6 +18,7 @@ import {
     useRemoveTeamMemberMutation,
     useChangeLeadMutation
 } from '../../api/teams';
+import { useGetTasksByAssigneeQuery } from '../../api/tasks';
 import { useGetUsersQuery } from '../../api/users';
 import { TEAM_MEMBER_ROLE, TEAM_MEMBER_ROLE_LABELS } from '../../utils/enums';
 import { Button } from '../../components/ui/Button';
@@ -77,6 +78,46 @@ export const TeamDetailPage = () => {
         } catch (err) {
             toast.error(err?.data?.message || 'Không thể thay đổi Lead');
         }
+    };
+
+    const MemberTaskStatsInline = ({ userId }) => {
+        const { data: tasks = [], isLoading: tasksLoading } = useGetTasksByAssigneeQuery(userId, { skip: !userId });
+
+        const stats = {
+            total: tasks?.length || 0,
+            overdue: tasks?.filter(t => t.status === 'OVERDUE').length || 0,
+            inProgress: tasks?.filter(t => t.status === 'DOING' || t.status === 'AWAITING_REVIEW' || t.status === 'AWAITING_ACCEPTANCE').length || 0,
+            completed: tasks?.filter(t => t.status === 'DONE').length || 0
+        };
+
+        if (!userId) return null;
+
+        return (
+            <div className="flex items-center gap-3 text-xs text-gray-700">
+                {tasksLoading ? (
+                    <div className="animate-spin h-4 w-4 border-b-2 border-gray-500 rounded-full" />
+                ) : (
+                    <>
+                        <div className="flex flex-col items-center">
+                            <span className="text-gray-500">Tổng</span>
+                            <span className="font-semibold">{stats.total}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-red-500">Quá hạn</span>
+                            <span className="font-semibold text-red-700">{stats.overdue}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-amber-500">Đang</span>
+                            <span className="font-semibold text-amber-700">{stats.inProgress}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-green-500">Hoàn</span>
+                            <span className="font-semibold text-green-700">{stats.completed}</span>
+                        </div>
+                    </>
+                )}
+            </div>
+        );
     };
 
     if (isLoading) {
@@ -161,6 +202,7 @@ export const TeamDetailPage = () => {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thành viên</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số điện thoại</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Công việc</th>
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
                                     </tr>
                                 </thead>
@@ -189,6 +231,9 @@ export const TeamDetailPage = () => {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {TEAM_MEMBER_ROLE_LABELS[member.role] || member.role}
                                             </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                <MemberTaskStatsInline userId={member.user?.id} />
+                                            </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     {team.teamLead?.id !== member.user?.id && (
@@ -213,7 +258,7 @@ export const TeamDetailPage = () => {
                                     ))}
                                     {(!team.members || team.members.length === 0) && (
                                         <tr>
-                                            <td colSpan="4" className="px-6 py-12 text-center text-gray-500 italic">
+                                            <td colSpan="5" className="px-6 py-12 text-center text-gray-500 italic">
                                                 Chưa có thành viên nào trong đội này.
                                             </td>
                                         </tr>

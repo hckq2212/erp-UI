@@ -204,12 +204,14 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
                                     </div>
                                     <div>
                                         <h3 className="text-lg font-black text-gray-900 tracking-tight leading-none mb-2 uppercase">
-                                            {contract.contractCode || `HĐ #${contract.id}`}
+                                            {/* {contract.contractCode || `HĐ #${contract.id}`} */}
+                                            {contract.customer?.name || 'Khách lẻ'}
                                         </h3>
                                         <div className="flex items-center gap-3 text-xs text-gray-500 font-bold uppercase tracking-wider">
                                             <span className="flex items-center gap-1.5 text-blue-500">
                                                 <FileText size={14} className="opacity-70" />
-                                                {contract.customer?.name || 'Khách lẻ'}
+                                                {contract.contractCode || `HĐ #${contract.id}`}
+                                                {/* {contract.customer?.name || 'Khách lẻ'} */}
                                             </span>
                                             <span className="w-1 h-1 rounded-full bg-gray-300" />
                                             <span className="text-gray-900 font-black">{formatCurrency(sellingPrice)}</span>
