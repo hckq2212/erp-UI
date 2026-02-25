@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useCallback, memo, useRef } from 'react';
 import { X, Plus, Trash2, Upload, Link as LinkIcon, Building2, FileText, MapPin, Calendar, Target, TrendingUp, Clock, Briefcase } from 'lucide-react';
 import { useCreateOpportunityMutation } from '../../api/opportunities';
 import { useGetServicesQuery } from '../../api/services';
@@ -29,12 +29,14 @@ const REGIONS = [
   { value: 'SOUTH', label: 'Miền Nam' },
 ];
 
-const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onRemove }) => (
-  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onRemove, hasError }) => {
+  const isUnselected = !item.serviceId && hasError;
+  return (
+  <div className={`flex items-center gap-3 p-3 rounded-xl border ${isUnselected ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
     <select
       value={item.serviceId}
       onChange={(e) => onServiceChange(index, 'serviceId', e.target.value)}
-      className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all"
+      className={`flex-1 px-4 py-2.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all ${isUnselected ? 'border-red-400' : 'border-gray-200'}`}
     >
       <option value="">-- Chọn dịch vụ --</option>
       {availableServices.map(s => (
@@ -56,7 +58,8 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onR
       <Trash2 className="w-5 h-5" />
     </button>
   </div>
-));
+  );
+});
 
 const LinkItem = memo(({ link, index, onLinkChange, onRemove, showRemove }) => (
   <div className="flex items-center gap-3">
@@ -107,6 +110,32 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
   const [createOpportunity, { isLoading }] = useCreateOpportunityMutation();
   const { data: servicesData } = useGetServicesQuery();
   const services = useMemo(() => Array.isArray(servicesData) ? servicesData : (servicesData?.data || []), [servicesData]);
+
+  const fieldRefs = useRef({});
+
+  const setFieldRef = (name) => (el) => {
+    if (el) fieldRefs.current[name] = el;
+  };
+
+  const focusField = (name) => {
+    const el = fieldRefs.current[name];
+    if (!el) return;
+
+    el.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    el.focus?.();
+  };
+
+  const FIELD_ORDER = [
+    'name',
+    'description',
+    'field',
+    'expectedRevenue',
+    'budget',
+    'startDate',
+    'endDate',
+    'durationMonths',
+    'successChance',
+  ];
 
   const [formData, setFormData] = useState({
     name: '',
@@ -239,8 +268,31 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       newErrors.endDate = 'Ngày kết thúc phải sau ngày khởi công';
     }
 
+    // Validate start date after today
+    const today = new Date().toISOString().split('T')[0];
+    if (formData.startDate && formData.startDate <= today) {
+      newErrors.startDate = 'Dự kiến bắt đầu phải sau ngày hiện tại';
+    }
+
+    // Validate selected services - all services must be selected
+    const hasUnselectedService = selectedServices.some(s => !s.serviceId);
+    if (hasUnselectedService) {
+      newErrors.services = 'Vui lòng chọn dịch vụ đề xuất';
+    }
+
+    // if (Object.keys(newErrors).length > 0) {
+    //   setErrors(newErrors);
+    //   return;
+    // }
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+
+      const firstErrorField =
+        FIELD_ORDER.find((k) => newErrors[k]) || Object.keys(newErrors)[0];
+
+      // đợi UI render class lỗi rồi focus
+      requestAnimationFrame(() => focusField(firstErrorField));
+
       return;
     }
 
@@ -350,6 +402,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Tên cơ hội / Doanh nghiệp</label>
                   <input
+                    ref={setFieldRef('name')}
                     type="text"
                     name="name"
                     value={formData.name}
@@ -364,6 +417,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Mô tả</label>
                   <textarea
+                    ref={setFieldRef('description')}
                     name="description"
                     value={formData.description}
                     onChange={handleChange}
@@ -384,6 +438,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Lĩnh vực</label>
                   <select
+                    ref={setFieldRef('field')}
                     name="field"
                     value={formData.field}
                     onChange={handleChange}
@@ -406,9 +461,10 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className={`bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border ${errors.expectedRevenue ? 'border-red-400' : 'border-green-100'}`}>
-                    <label className="block text-sm font-medium text-green-700 mb-2">Doanh thu kỳ vọng</label>
+                    <label className="block text-sm font-medium text-green-700 mb-2">Doanh thu kỳ vọng<span className="text-gray-400 italic"> (giá muốn bán cho khách)</span></label>
                     <div className="relative">
                       <input
+                        ref={setFieldRef('expectedRevenue')}
                         type="text"
                         name="expectedRevenue"
                         value={formatNumber(formData.expectedRevenue)}
@@ -422,9 +478,10 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                   </div>
 
                   <div className={`bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border ${errors.budget ? 'border-red-400' : 'border-blue-100'}`}>
-                    <label className="block text-sm font-medium text-blue-700 mb-2">Ngân sách dự kiến</label>
+                    <label className="block text-sm font-medium text-blue-700 mb-2">Ngân sách dự kiến<span className="text-gray-400 italic"> (ngân sách của khách đề xuất)</span></label>
                     <div className="relative">
                       <input
+                        ref={setFieldRef('budget')}
                         type="text"
                         name="budget"
                         value={formatNumber(formData.budget)}
@@ -450,6 +507,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến bắt đầu</label>
                     <input
+                      ref={setFieldRef('startDate')}
                       type="date"
                       name="startDate"
                       value={formData.startDate}
@@ -461,6 +519,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến kết thúc</label>
                     <input
+                      ref={setFieldRef('endDate')}
                       type="date"
                       name="endDate"
                       value={formData.endDate}
@@ -490,6 +549,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                     </label>
                     <div className="relative">
                       <input
+                        ref={setFieldRef('durationMonths')}
                         type="number"
                         name="durationMonths"
                         value={formData.durationMonths}
@@ -536,6 +596,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Khả năng thành công</label>
                     <div className="relative">
                       <input
+                        ref={setFieldRef('successChance')}
                         type="range"
                         name="successChance"
                         value={formData.successChance}
@@ -561,7 +622,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
 
               {/* Section: Dịch vụ */}
-              <div className="space-y-5">
+              <div ref={setFieldRef('services')} className="space-y-5">
                 <div className="flex items-center justify-between pb-2 border-b border-gray-200">
                   <div className="flex items-center gap-2">
                     <Briefcase className="w-5 h-5 text-indigo-600" />
@@ -594,10 +655,13 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                         availableServices={availableServices}
                         onServiceChange={handleServiceChange}
                         onRemove={removeService}
+                        hasError={!!errors.services}
                       />
                     );
                   })}
                 </div>
+
+                {errors.services && <p className="text-sm text-red-500 flex items-center gap-1 mb-3"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.services}</p>}
 
                 {/* Total */}
                 <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4 rounded-xl text-white">

@@ -4,7 +4,7 @@ export const TeamInfo = ({ team }) => {
     if (!team) return null;
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full">
             <div className="flex items-center gap-2 mb-5">
                 <Users className="w-5 h-5 text-purple-600" />
                 <h2 className="font-semibold text-gray-900">Đội ngũ thực hiện</h2>

@@ -26,7 +26,7 @@ export const CustomerTable = ({ customers = [], onEdit, onDelete, onView }) => {
   const renderSortableHeader = (label, sortKey, align = 'left') => (
     <th
       className={cn(
-        "px-6 py-4 font-semibold cursor-pointer hover:bg-gray-100/50 transition-colors group text-xs",
+        "px-3 py-2 font-semibold cursor-pointer hover:bg-gray-100/50 transition-colors group text-xs",
         align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left'
       )}
       onClick={() => requestSort(sortKey)}
@@ -41,55 +41,55 @@ export const CustomerTable = ({ customers = [], onEdit, onDelete, onView }) => {
   return (
     <div className='bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden'>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm text-left min-w-[1300px]">
+        <table className="w-full text-xs text-left">
           <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100">
             <tr>
               {renderSortableHeader('Khách Hàng', 'name')}
               {renderSortableHeader('Mã số thuế', 'taxId')}
-              <th className="px-6 py-4 font-semibold">Thông tin liên hệ</th>
-              <th className="px-6 py-4 font-semibold">Địa Chỉ</th>
+              <th className="px-3 py-2 font-semibold">Thông tin liên hệ</th>
+              <th className="px-3 py-2 font-semibold">Địa Chỉ</th>
               {renderSortableHeader('Nguồn', 'source', 'center')}
-              <th className="px-6 py-4 font-semibold text-right">Xem chi tiết</th>
+              <th className="px-3 py-2 font-semibold text-right">Xem chi tiết</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
             {paginatedCustomers && paginatedCustomers.length > 0 ? (
               paginatedCustomers.map((customer) => (
                 <tr key={customer.id} className="hover:bg-blue-50/30 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-4">
-                      <div className="flex-shrink-0 h-11 w-11 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm group-hover:scale-105 transition-transform">
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-shrink-0 h-9 w-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:scale-105 transition-transform">
                         {customer.name.charAt(0)}
                       </div>
                       <div>
-                        <div className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors uppercase">{customer.name}</div>
+                        <div className="text-xs font-bold text-gray-900 group-hover:text-blue-600 transition-colors uppercase line-clamp-1">{customer.name}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    {customer.taxId || '---'}
+                  <td className="px-3 py-2">
+                    <span className="text-xs">{customer.taxId || '---'}</span>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center text-gray-600 gap-2">
-                        <Phone className="w-3.5 h-3.5 text-blue-400" />
-                        <span className="font-medium">{customer.phone}</span>
+                  <td className="px-3 py-2">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center text-gray-600 gap-1">
+                        <Phone className="w-3 h-3 text-blue-400 flex-shrink-0" />
+                        <span className="font-medium text-xs">{customer.phone}</span>
                       </div>
-                      <div className="flex items-center text-gray-400 gap-2">
-                        <Mail className="w-3.5 h-3.5 text-gray-300" />
-                        <span className="truncate max-w-[150px]">{customer.email}</span>
+                      <div className="flex items-center text-gray-400 gap-1">
+                        <Mail className="w-3 h-3 text-gray-300 flex-shrink-0" />
+                        <span className="truncate max-w-[120px] text-xs">{customer.email}</span>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-start gap-2 text-gray-500 max-w-[200px]">
-                      <MapPin className="w-3.5 h-3.5 mt-0.5 text-red-300 flex-shrink-0" />
-                      <span className="text-xs line-clamp-2" title={customer.address}>
+                  <td className="px-3 py-2">
+                    <div className="flex items-start gap-1 text-gray-500 max-w-[150px]">
+                      <MapPin className="w-3 h-3 mt-0.5 text-red-300 flex-shrink-0" />
+                      <span className="text-xs line-clamp-1" title={customer.address}>
                         {customer.address}
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-center">
+                  <td className="px-3 py-2 text-center">
                     <span className={cn(
                       "px-3 py-1 inline-flex text-[10px] font-bold uppercase rounded-lg tracking-wider",
                       customer.source === 'INTERNAL'
@@ -99,7 +99,7 @@ export const CustomerTable = ({ customers = [], onEdit, onDelete, onView }) => {
                       {customer.source === 'INTERNAL' ? 'Nội bộ' : 'Đối tác'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <td className="px-3 py-2 whitespace-nowrap text-right">
                     <div className="flex justify-end gap-1">
                       <button
                         onClick={() => navigate(`/customers/${customer.id}`)}

@@ -4,14 +4,14 @@ import { FileText } from 'lucide-react';
 
 export const ProjectInfo = ({ project, formatDate }) => {
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full">
             <div className="flex items-center gap-2 mb-5">
                 <Calendar className="w-5 h-5 text-indigo-600" />
                 <h2 className="font-semibold text-gray-900">Thông tin dự án</h2>
             </div>
 
             <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                     <div>
                         <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Mã hợp đồng</p>
                         <p className="text-sm font-medium text-gray-700">{project.contract.contractCode}</p>
@@ -20,21 +20,26 @@ export const ProjectInfo = ({ project, formatDate }) => {
                         <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Tên hợp đồng</p>
                         <p className="text-sm font-medium text-gray-700">{project.contract.name}</p>
                     </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
                     <div>
                         <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Đội thực hiện</p>
                         <p className="text-sm font-medium text-gray-700">{project?.team?.name || 'Chưa phân công'}</p>
                     </div>
                 </div>
+
+                {/* <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Đội thực hiện</p>
+                        <p className="text-sm font-medium text-gray-700">{project?.team?.name || 'Chưa phân công'}</p>
+                    </div>
+                </div> */}
                 {project?.contract?.attachments && project?.contract?.attachments.length > 0 ? (
-                    <div className="flex flex-col items-start gap-2 mb-5 overflow-hidden">
+                    <div className="flex flex-col items-start gap-2 overflow-hidden">
                         <div>
                             <h2 className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Mô tả khách hàng</h2>
                         </div>
 
-                        <div className="space-y-3">
+                        {/* <div className="space-x-3 flex flex-row"> */}
+                        <div className="flex flex-row flex-nowrap gap-3 overflow-x-auto w-full pb-2">
                             {project?.contract?.attachments.map((file, idx) => (
                                 <a
                                     key={idx}
@@ -47,7 +52,7 @@ export const ProjectInfo = ({ project, formatDate }) => {
                                         <FileText className="w-4 h-4" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-bold text-gray-700 truncate text-ellipsis">{file.name}</p>
+                                        <p className="text-xs font-bold text-gray-700 truncate text-ellipsis" title={file.name}>{file.name.length > 40 ? file.name.slice(0, 40) + '...' : file.name}</p>
                                         <p className="text-[10px] text-gray-400 uppercase font-bold">{file.type}</p>
                                     </div>
                                 </a>

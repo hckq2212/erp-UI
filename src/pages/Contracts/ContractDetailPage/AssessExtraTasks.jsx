@@ -49,6 +49,11 @@ export const AssessExtraTasks = ({ tasks = [], opportunityId }) => {
             }).unwrap();
 
             toast.success('Đã xác nhận công việc hỗ trợ');
+            
+            // Refresh page after successful submission
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
         } catch (err) {
             toast.error(err?.data?.message || 'Có lỗi xảy ra');
         }
@@ -111,6 +116,7 @@ export const AssessExtraTasks = ({ tasks = [], opportunityId }) => {
                                     >
                                         Có phí
                                     </button>
+                                    {!task.quotation && (
                                     <button
                                         type="button"
                                         onClick={() => handleInputChange(task.id, 'isBillable', false)}
@@ -119,10 +125,11 @@ export const AssessExtraTasks = ({ tasks = [], opportunityId }) => {
                                     >
                                         Hỗ trợ
                                     </button>
+                                    )}
                                 </div>
                             </div>
 
-                            {!input.isBillable && (
+                            {!task.quotation && !input.isBillable && (
                                 <div className="flex-1 flex items-center gap-2 p-3 bg-amber-50 text-amber-700 rounded-xl border border-amber-100 text-sm italic">
                                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                                     <span>Công việc hỗ trợ không tính phí cho khách hàng, nhưng vẫn tính chi phí vào hợp đồng.</span>
