@@ -251,7 +251,7 @@ export const CustomerDetailPage = () => {
                                                         <h4 className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{contract.name}</h4>
                                                         <div className="flex items-center gap-3 mt-1.5">
                                                             <div className="flex items-center gap-1.5 text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">
-                                                                {formatCurrency(contract.totalValue)}
+                                                                {formatCurrency(contract.sellingPrice)}
                                                             </div>
                                                             <div className="flex items-center gap-1.5 text-xs text-gray-500">
                                                                 <Calendar className="w-3.5 h-3.5" />
