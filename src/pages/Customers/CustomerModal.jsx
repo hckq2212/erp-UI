@@ -82,28 +82,14 @@ export const CustomerModal = ({ isOpen, onClose, customer, onSubmit, isSubmittin
             error={errors.taxId?.message}
           />
           <div className="md:col-span-2">
-             <Input
-                label="Địa chỉ *"
-                id="address"
-                {...register('address')}
-                error={errors.address?.message}
+            <Input
+              label="Địa chỉ *"
+              id="address"
+              {...register('address')}
+              error={errors.address?.message}
             />
           </div>
-          
-           <div className="w-full">
-            <label htmlFor="source" className="block text-sm font-medium text-gray-700 mb-1">
-                Nguồn *
-            </label>
-            <select
-                id="source"
-                {...register('source')}
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
-            >
-                <option value="INTERNAL">Internal</option>
-                <option value="REFERRAL_PARTNER">Referral Partner</option>
-            </select>
-            {errors.source && <p className="mt-1 text-sm text-red-600">{errors.source.message}</p>}
-          </div>
+
         </div>
 
         <div className="flex justify-end space-x-3 pt-4 border-t">

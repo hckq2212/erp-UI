@@ -80,9 +80,6 @@ export const ProjectsPage = () => {
                         onPageChange={handlePageChange}
                         onSortChange={handleSortChange}
                         currentSort={{ sortBy: filters.sortBy, sortDir: filters.sortDir }}
-                        onView={(p) => alert(`View ${p.name}`)}
-                        onEdit={(p) => alert(`Edit ${p.name}`)}
-                        onDelete={(id) => alert(`Delete ${id}`)}
                     />
                 </div>
             </div>

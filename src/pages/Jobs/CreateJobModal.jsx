@@ -13,9 +13,11 @@ const jobSchema = z.object({
     name: z.string().min(1, 'Tên hạng mục là bắt buộc'),
     code: z.string().min(1, 'Mã hạng mục là bắt buộc'),
     costPrice: z.string().transform((val) => val.replace(/\D/g, '')).optional().default('0'),
+    vinicoin: z.string().transform((val) => val.replace(/\D/g, '')).optional().default('0'),
     defaultPerformerType: z.enum(['INTERNAL', 'EXTERNAL']).default('INTERNAL'),
     criteria: z.array(z.object({
-        name: z.string().min(1, 'Tên tiêu chí không được để trống')
+        name: z.string().min(1, 'Tên tiêu chí không được để trống'),
+        description: z.string().optional()
     })).optional().default([]),
 });
 
@@ -36,6 +38,7 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
             name: '',
             code: '',
             costPrice: '',
+            vinicoin: '',
             defaultPerformerType: 'INTERNAL',
             criteria: [],
         },
@@ -47,13 +50,18 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
     });
 
     const costPriceValue = watch('costPrice');
+    const vinicoinValue = watch('vinicoin');
 
     const onSubmit = async (data) => {
         try {
             await createJob({
                 ...data,
                 costPrice: parseInt(data.costPrice || '0'),
-                criteria: data.criteria.map(c => ({ name: c.name }))
+                vinicoin: parseInt(data.vinicoin || '0'),
+                criteria: data.criteria.map(c => ({
+                    name: c.name,
+                    description: c.description
+                }))
             }).unwrap();
             toast.success('Tạo hạng mục thành công');
             reset();
@@ -92,6 +100,17 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                         error={errors.costPrice?.message}
                         placeholder="0"
                     />
+                    <Input
+                        label="Vinicoin"
+                        {...register('vinicoin')}
+                        value={formatNumber(vinicoinValue)}
+                        onChange={(e) => {
+                            const rawValue = e.target.value.replace(/\D/g, '');
+                            setValue('vinicoin', rawValue);
+                        }}
+                        error={errors.vinicoin?.message}
+                        placeholder="0"
+                    />
                     <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Bên thực hiện mặc định</label>
                         <select
@@ -112,7 +131,7 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                             type="button"
                             size="sm"
                             variant="outline"
-                            onClick={() => append({ name: '' })}
+                            onClick={() => append({ name: '', description: '' })}
                             className="flex items-center gap-1.5 h-8 text-xs font-bold"
                         >
                             <Plus className="w-3.5 h-3.5" /> Thêm tiêu chí
@@ -125,9 +144,14 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                                 <div className="flex-1">
                                     <Input
                                         {...register(`criteria.${index}.name`)}
-                                        placeholder={`Tiêu chí ${index + 1}`}
+                                        placeholder={`Tiêu chí ${index + 1} *`}
                                         error={errors.criteria?.[index]?.name?.message}
                                         className="h-9 text-sm"
+                                    />
+                                    <textarea
+                                        {...register(`criteria.${index}.description`)}
+                                        placeholder="Mô tả chi tiết tiêu chí..."
+                                        className="mt-2 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs h-16 resize-none"
                                     />
                                 </div>
                                 <button

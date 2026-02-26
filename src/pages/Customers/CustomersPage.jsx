@@ -36,10 +36,6 @@ export const CustomersPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleView = (customer) => {
-    // Navigation to detail page could be added here
-    console.log('Viewing details for:', customer.name);
-  }
 
   const handleDelete = async (id) => {
     if (window.confirm('Bạn có chắc muốn xóa khách hàng này?')) {
@@ -107,9 +103,6 @@ export const CustomersPage = () => {
         ) : (
           <CustomerTable
             customers={customers}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onView={handleView}
           />
         )}
       </div>

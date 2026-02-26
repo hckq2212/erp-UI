@@ -9,10 +9,12 @@ import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../../components/ui/Pagination';
 import { TableFilters } from '../../components/ui/TableFilters';
 import { cn } from '../../utils/cn';
+import { useGetMeQuery } from '../../api/auth';
 
 export const VendorsPage = () => {
     const navigate = useNavigate();
     const { data: vendorsData = [], isLoading } = useGetVendorsQuery();
+    const { data: me } = useGetMeQuery();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -68,10 +70,12 @@ export const VendorsPage = () => {
                     <h1 className='text-3xl font-bold text-gray-900 tracking-tight'>Quản Lý Vendor</h1>
                     <p className="text-gray-500 text-sm mt-1">Danh sách các đối tác cung cấp dịch vụ</p>
                 </div>
-                <Button onClick={() => setIsCreateModalOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Thêm Vendor
-                </Button>
+                {['ADMIN', 'BOD'].includes(me?.role) && (
+                    <Button onClick={() => setIsCreateModalOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Thêm Vendor
+                    </Button>
+                )}
             </div>
 
             <TableFilters

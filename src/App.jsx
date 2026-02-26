@@ -5,6 +5,7 @@ import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
 import { CustomersPage } from './pages/Customers/CustomersPage';
+import { CustomerDetailPage } from './pages/Customers/CustomerDetailPage';
 import { OpportunitiesPage } from './pages/Opportunities/OpportunitiesPage';
 import { OpportunityDetailPage } from './pages/Opportunities/OpportunityDetailPage/OpportunityDetailPage';
 import { ServicesPage } from './pages/Services/ServicesPage';
@@ -71,6 +72,16 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <CustomersPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/customers/:id'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CustomerDetailPage />
               </Layout>
             </ProtectedRoute>
           }

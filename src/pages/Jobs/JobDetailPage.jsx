@@ -12,15 +12,20 @@ import {
     CheckCircle2,
     Building2,
     Calendar,
-    ExternalLink
+    ExternalLink,
+    Pencil,
+
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { formatCurrency } from '../../utils/format';
+import { useState } from 'react';
+import { EditJobCriteriaModal } from './EditJobCriteriaModal';
 
 export const JobDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { data: job, isLoading, error } = useGetJobQuery(id);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     if (isLoading) {
         return (
@@ -77,24 +82,12 @@ export const JobDetailPage = () => {
                 </div>
 
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-                        <Users className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Bên thực hiện mặc định</p>
-                        <p className="text-xl font-bold text-gray-900">
-                            {job.defaultPerformerType === 'INTERNAL' ? 'Nội bộ' : 'Bên ngoài'}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
-                        <ClipboardCheck className="w-6 h-6" />
+                        <DollarSign className="w-6 h-6" />
                     </div>
                     <div>
-                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Tiêu chí đánh giá</p>
-                        <p className="text-xl font-bold text-gray-900">{job.criteria?.length || 0} Tiêu chí</p>
+                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Vinicoin</p>
+                        <p className="text-xl font-bold text-gray-900">{job.vinicoin || 0}</p>
                     </div>
                 </div>
             </div>
@@ -104,18 +97,35 @@ export const JobDetailPage = () => {
                 <div className="lg:col-span-2 space-y-6">
                     {/* Evaluation Criteria */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-50 flex items-center gap-2 bg-gray-50/30">
-                            <ClipboardCheck className="w-5 h-5 text-orange-500" />
-                            <h2 className="font-bold text-gray-900">Tiêu chí đánh giá chất lượng</h2>
+                        <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
+                            <div className="flex items-center gap-2">
+                                <ClipboardCheck className="w-5 h-5 text-orange-500" />
+                                <h2 className="font-bold text-gray-900">Tiêu chí đánh giá chất lượng</h2>
+                            </div>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setIsEditModalOpen(true)}
+                                className="h-8 text-xs font-bold flex items-center gap-1.5"
+                            >
+                                <Pencil className="w-3 h-3" /> Chỉnh sửa
+                            </Button>
                         </div>
                         <div className="p-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {job.criteria?.map((item) => (
-                                    <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                                        <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-green-500 border border-green-50">
-                                            <CheckCircle2 className="w-4 h-4" />
+                                    <div key={item.id} className="p-4 rounded-xl bg-gray-50 border border-gray-100 group hover:border-blue-200 transition-colors">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-green-500 border border-green-50 group-hover:scale-110 transition-transform">
+                                                <CheckCircle2 className="w-4 h-4" />
+                                            </div>
+                                            <span className="text-sm font-bold text-gray-900 uppercase tracking-tight">{item.name}</span>
                                         </div>
-                                        <span className="text-sm font-medium text-gray-700">{item.name}</span>
+                                        {item.description && (
+                                            <p className="text-xs text-gray-500 leading-relaxed border-t border-gray-200/50 pt-2 mt-2 italic">
+                                                {item.description}
+                                            </p>
+                                        )}
                                     </div>
                                 ))}
                                 {(!job.criteria || job.criteria.length === 0) && (
@@ -242,6 +252,12 @@ export const JobDetailPage = () => {
                     </div>
                 </div>
             </div>
+
+            <EditJobCriteriaModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                job={job}
+            />
         </div>
     );
 };
