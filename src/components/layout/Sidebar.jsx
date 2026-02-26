@@ -9,19 +9,19 @@ import { useGetMeQuery } from '../../api/auth';
 
 const menuItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/customers', icon: Users, label: 'Khách Hàng' },
-  { path: '/opportunities', icon: Briefcase, label: 'Cơ Hội' },
+  { path: '/customers', icon: Users, label: 'Khách Hàng', roles: ['ADMIN', 'BOD', 'SALE'] },
+  { path: '/opportunities', icon: Briefcase, label: 'Cơ Hội', roles: ['ADMIN', 'BOD', 'SALE'] },
   { path: '/vendors', icon: Store, label: 'Vendor' },
-  { path: '/contracts', icon: FileSignature, label: 'Hợp Đồng' },
+  { path: '/contracts', icon: FileSignature, label: 'Hợp Đồng', roles: ['ADMIN', 'BOD', 'SALE'] },
   { path: '/projects', icon: Rocket, label: 'Dự Án' },
   { path: '/tasks', icon: CheckSquare, label: 'Công Việc' },
   { path: '/acceptance', icon: CheckCircle2, label: 'Nghiệm thu', roles: ['ADMIN', 'BOD'] },
   { path: '/finance', icon: DollarSign, label: 'Lộ trình thanh toán' },
-  { path: '/services', icon: Briefcase, label: 'Dịch vụ' },
-  { path: '/jobs', icon: CheckSquare, label: 'Hạng mục dịch vụ' },
-  { path: '/teams', icon: Users, label: 'Đội dự án' },
-  { path: '/users', icon: Users, label: 'Nhân sự' },
-  { path: '/referral-partners', icon: Users, label: 'Đối tác' },
+  { path: '/services', icon: Briefcase, label: 'Dịch vụ', roles: ['ADMIN', 'BOD', 'SALE'] },
+  { path: '/jobs', icon: CheckSquare, label: 'Hạng mục dịch vụ', roles: ['ADMIN', 'BOD', 'SALE'] },
+  { path: '/teams', icon: Users, label: 'Đội dự án', roles: ['ADMIN', 'BOD', 'SALE'] },
+  { path: '/users', icon: Users, label: 'Nhân sự', roles: ['ADMIN', 'BOD', 'SALE'] },
+  { path: '/referral-partners', icon: Users, label: 'Đối tác', roles: ['ADMIN', 'BOD', 'SALE'] },
 
 ];
 

@@ -1,11 +1,14 @@
+import { useSelector } from 'react-redux';
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Edit,
   Trash2,
+  CheckCircle,
 } from 'lucide-react';
-import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation } from '../../../api/opportunities';
+import { selectCurrentUser } from '../../../store/authSlice';
+import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation, useApproveOpportunityMutation } from '../../../api/opportunities';
 import { useGetCustomersQuery } from '../../../api/customers';
 import { useGetQuotationsByOpportunityQuery, useCreateQuotationMutation, useUpdateQuotationMutation } from '../../../api/quotations';
 import { useCreateContractMutation } from '../../../api/contracts';
@@ -28,14 +31,17 @@ import {
 } from '../../../utils/enums';
 
 export const OpportunityDetailPage = () => {
+  const user = useSelector(selectCurrentUser);
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: opportunity, isLoading, error } = useGetOpportunityQuery(id);
   const [deleteOpportunity, { isLoading: isDeleting }] = useDeleteOpportunityMutation();
   const [updateOpportunity, { isLoading: isUpdating }] = useUpdateOpportunityMutation();
-  const [createQuotation] = useCreateQuotationMutation();
-  const [updateQuotation] = useUpdateQuotationMutation();
+  const { data: quotations = [], isLoading: isLoadingQuotations } = useGetQuotationsByOpportunityQuery(id);
+  const [createQuotation, { isLoading: isCreatingQuotation }] = useCreateQuotationMutation();
+  const [updateQuotation, { isLoading: isUpdatingQuotation }] = useUpdateQuotationMutation();
   const [createContract, { isLoading: isCreatingContract }] = useCreateContractMutation();
+  const [approveOpportunity, { isLoading: isApproving }] = useApproveOpportunityMutation();
 
   // Modal state
   const [showContactModal, setShowContactModal] = useState(false);
@@ -59,7 +65,7 @@ export const OpportunityDetailPage = () => {
   const { data: customers = [] } = useGetCustomersQuery();
 
   // Fetch quotations for this opportunity
-  const { data: quotations = [], isLoading: isLoadingQuotations } = useGetQuotationsByOpportunityQuery(id);
+  // const { data: quotations = [], isLoading: isLoadingQuotations } = useGetQuotationsByOpportunityQuery(id);
 
   // Fetch referral partners
   const { data: referralPartnersResult = [] } = useGetReferralPartnersQuery();
@@ -76,16 +82,6 @@ export const OpportunityDetailPage = () => {
     ? (partnerDetails?.customers || [])
     : (Array.isArray(customers) ? customers : (customers?.data || []));
 
-  const handleDelete = async () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa cơ hội này?')) {
-      try {
-        await deleteOpportunity(id).unwrap();
-        navigate('/opportunities');
-      } catch (err) {
-        alert(err?.data?.message || 'Có lỗi xảy ra khi xóa');
-      }
-    }
-  };
 
   const handleOpenContactModal = () => {
     setCustomerType('DIRECT');
@@ -149,12 +145,22 @@ export const OpportunityDetailPage = () => {
     }
   };
 
+  const handleApproveOpportunity = async () => {
+    try {
+      await approveOpportunity(id).unwrap();
+      toast.success('Duyệt cơ hội thành công');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Có lỗi xảy ra khi duyệt cơ hội');
+    }
+  };
+
   const handleQuotationSubmit = async (quotationData, quotationId) => {
     try {
       if (quotationId) {
         // Update existing quotation
         await updateQuotation({
           id: quotationId,
+          opportunityId: id,
           ...quotationData
         }).unwrap();
         toast.success('Cập nhật báo giá thành công');
@@ -168,6 +174,7 @@ export const OpportunityDetailPage = () => {
         // Update with details immediately after creation
         await updateQuotation({
           id: createResponse.id,
+          opportunityId: id,
           ...quotationData
         }).unwrap();
 
@@ -248,18 +255,40 @@ export const OpportunityDetailPage = () => {
           <div className="flex gap-2">
             {(opportunity.customer || opportunity.leadName) && (
               <>
-                <button
-                  onClick={() => setShowQuotationsListModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  Xem báo giá {quotations.length > 0 && `(${quotations.length})`}
-                </button>
-                <button
-                  onClick={() => setShowQuotationModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  Tạo báo giá
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowQuotationsListModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Xem báo giá
+                  </button>
+                  {(() => {
+                    const draftCount = quotations.filter(q => q.status === 'DRAFT').length;
+                    return draftCount > 0 && (
+                      <span className="absolute -top-2 -right-2 flex items-center justify-center h-5 w-5 text-[10px] font-black text-white bg-red-500 rounded-full ring-2 ring-white shadow-sm">
+                        {draftCount > 9 ? '9+' : draftCount}
+                      </span>
+                    );
+                  })()}
+                </div>
+                {(opportunity.status === 'QUOTATION_DRAFTING' || opportunity.status === 'PENDING_QUOTE_APPROVAL' || opportunity.status === 'OPP_APPROVED') && (
+                  <button
+                    onClick={() => setShowQuotationModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Tạo báo giá
+                  </button>
+                )}
+                {opportunity.status === 'PENDING_OPP_APPROVAL' && (opportunity.customer || opportunity.leadName) && (
+                  <button
+                    onClick={handleApproveOpportunity}
+                    disabled={isApproving}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    {isApproving ? 'Đang duyệt...' : 'Duyệt cơ hội'}
+                  </button>
+                )}
               </>
             )}
             {opportunity.status === 'QUOTE_APPROVED' && (
@@ -278,21 +307,6 @@ export const OpportunityDetailPage = () => {
                 {isCreatingContract ? 'Đang tạo...' : 'Tạo hợp đồng'}
               </button>
             )}
-            <button
-              onClick={() => navigate(`/opportunities/${id}/edit`)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Edit className="w-4 h-4" />
-              Chỉnh sửa
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
-            >
-              <Trash2 className="w-4 h-4" />
-              {isDeleting ? 'Đang xóa...' : 'Xóa'}
-            </button>
           </div>
         </div>
       </div>
@@ -323,6 +337,7 @@ export const OpportunityDetailPage = () => {
         }}
         onSubmit={handleQuotationSubmit}
         editQuotation={editingQuotation}
+        isSubmitting={isUpdatingQuotation || isCreatingQuotation}
       />
 
       <CustomerModal

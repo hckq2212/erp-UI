@@ -4,7 +4,7 @@ import { formatNumber, parseNumber } from '../../../utils/format';
 import { useGetOpportunityServicesByOpportunityQuery } from '../../../api/opportunityService';
 import { useGetServicesQuery } from '../../../api/services';
 
-export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuotation = null }) => {
+export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuotation = null, isSubmitting = false }) => {
   const [items, setItems] = useState([]);
   const [priceType, setPriceType] = useState('recommended'); // minimum, recommended, custom
   const [notes, setNotes] = useState('');
@@ -31,8 +31,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
       const loadedItems = editQuotation.details?.map(detail => {
         const costPrice = parseFloat(detail.costAtSale) || 0;
         const sellingPrice = parseFloat(detail.sellingPrice) || 0;
-        const minPrice = costPrice * 1.2;
-        const recommendedPrice = costPrice * 1.4;
+        const minPrice = costPrice / 0.8;
+        const recommendedPrice = costPrice / 0.6;
 
         return {
           serviceId: detail.service?.id || detail.serviceId,
@@ -56,8 +56,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     if (isOpen && !isEditMode && servicesData) {
       const initialItems = servicesData.map(service => {
         const costPrice = parseFloat(service.service?.costPrice || service.costPrice) || 0;
-        const minPrice = costPrice * 1.2; // 20% profit
-        const recommendedPrice = costPrice * 1.4; // 40% profit
+        const minPrice = costPrice / 0.8; // 20% profit margin
+        const recommendedPrice = costPrice / 0.6; // 40% profit margin
 
         return {
           serviceId: service.service?.id || service.id,
@@ -68,7 +68,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
           recommendedPrice: recommendedPrice,
           customPrice: recommendedPrice,
           selectedPrice: recommendedPrice,
-          profitMargin: 28.6 // Default for 40% markup
+          profitMargin: 40.0 // Default for 40% margin
         };
       });
       setItems(initialItems);
@@ -140,8 +140,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     }
 
     const costPrice = parseFloat(service.costPrice) || 0;
-    const minPrice = costPrice * 1.2;
-    const recommendedPrice = costPrice * 1.4;
+    const minPrice = costPrice / 0.8;
+    const recommendedPrice = costPrice / 0.6;
 
     const newItem = {
       serviceId: service.id,
@@ -431,10 +431,10 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             <div className="flex gap-3 pt-6 border-t border-gray-100">
               <button
                 onClick={handleSubmit}
-                disabled={items.length === 0}
+                disabled={items.length === 0 || isSubmitting}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isEditMode ? 'Cập nhật' : 'Tạo báo giá'}
+                {isSubmitting ? 'Đang xử lý...' : (isEditMode ? 'Cập nhật' : 'Tạo báo giá')}
               </button>
               <button
                 onClick={onClose}

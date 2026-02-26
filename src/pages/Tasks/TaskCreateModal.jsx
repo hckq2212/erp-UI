@@ -1,80 +1,230 @@
-import { useState, useRef } from 'react';
-import { X, Upload, Link as LinkIcon, Calendar, User, FileText, Trash2, Plus, Briefcase } from 'lucide-react';
-import { useGetJobsQuery } from '../../api/jobs';
+import { useState, useRef, useMemo, memo, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { X, Upload, Link as LinkIcon, Calendar, User, FileText, Trash2, Plus, ChevronDown, Search, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useGetUsersQuery } from '../../api/users';
-import { useGetProjectsQuery } from '../../api/projects';
-import { useCreateTaskMutation, useAssignTaskMutation } from '../../api/tasks';
+import { useCreateInternalTaskMutation } from '../../api/tasks';
 import { toast } from 'react-toastify';
 
-export const TaskCreateModal = ({ isOpen, onClose }) => {
-    const { data: jobs = [] } = useGetJobsQuery();
-    const { data: users = [] } = useGetUsersQuery();
-    const { data: projectsResult = [] } = useGetProjectsQuery();
-    const projects = Array.isArray(projectsResult) ? projectsResult : (projectsResult?.data || []);
-    const [createTask, { isLoading: isCreating }] = useCreateTaskMutation();
-    const [assignTask, { isLoading: isAssigning }] = useAssignTaskMutation();
+const SearchableSelect = memo(({
+    label,
+    options,
+    value,
+    onChange,
+    placeholder = "Chọn...",
+    icon: Icon,
+    searchPlaceholder = "Tìm kiếm...",
+    noOptionsMessage = "Không tìm thấy kết quả"
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const containerRef = useRef(null);
+
+    const selectedOption = useMemo(() =>
+        options.find(opt => String(opt.value) === String(value)),
+        [options, value]
+    );
+
+    const filteredOptions = useMemo(() =>
+        options.filter(opt =>
+            opt.label?.toLowerCase().includes(search.toLowerCase())
+        ),
+        [options, search]
+    );
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (containerRef.current && !containerRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+        <div className="relative group" ref={containerRef}>
+            <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">{label}</label>
+            <div
+                onClick={() => setIsOpen(!isOpen)}
+                className={`relative cursor-pointer transition-all duration-200 border-2 rounded-2xl ${isOpen ? 'border-blue-500 bg-white ring-4 ring-blue-50' : 'border-gray-100 bg-gray-50/50 hover:border-gray-200'
+                    }`}
+            >
+                <div className="flex items-center px-4 py-3.5 gap-3">
+                    {Icon && <Icon className={`w-5 h-5 transition-colors ${isOpen ? 'text-blue-500' : 'text-gray-400'}`} />}
+                    <span className={`flex-1 text-sm font-medium truncate ${selectedOption ? 'text-gray-900' : 'text-gray-400'}`}>
+                        {selectedOption ? selectedOption.label : placeholder}
+                    </span>
+                    <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-blue-500' : ''}`} />
+                </div>
+            </div>
+
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.1 }}
+                        className="absolute z-[60] left-0 right-0 mt-2 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden"
+                    >
+                        <div className="p-3 border-b border-gray-50">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    type="text"
+                                    className="w-full pl-9 pr-4 py-2 bg-gray-50 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all font-medium"
+                                    placeholder={searchPlaceholder}
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    autoFocus
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            </div>
+                        </div>
+                        <div className="max-h-60 overflow-y-auto custom-scrollbar p-2">
+                            {filteredOptions.length > 0 ? (
+                                filteredOptions.map((option) => (
+                                    <div
+                                        key={option.value}
+                                        onClick={() => {
+                                            onChange(option.value);
+                                            setIsOpen(false);
+                                            setSearch('');
+                                        }}
+                                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all ${String(value) === String(option.value)
+                                            ? 'bg-blue-50 text-blue-600'
+                                            : 'text-gray-600 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        <span className="text-sm font-bold">{option.label}</span>
+                                        {String(value) === String(option.value) && <Check className="w-4 h-4" />}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="py-8 text-center text-gray-400">
+                                    <p className="text-sm font-medium">{noOptionsMessage}</p>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+});
+
+const TaskFields = memo(({ name, setName, supervisorId, setFormData, users }) => (
+    <div className="space-y-5">
+        <div>
+            <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">Tên công việc</label>
+            <div className="relative group">
+                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                <input
+                    type="text"
+                    placeholder="Nhập tên công việc..."
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-bold"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                />
+            </div>
+        </div>
+        <SearchableSelect
+            label="Người giám sát"
+            icon={User}
+            placeholder="Chọn người giám sát"
+            searchPlaceholder="Tìm kiếm người giám sát..."
+            value={supervisorId}
+            onChange={(val) => setFormData(prev => ({ ...prev, supervisorId: val }))}
+            options={users}
+        />
+    </div>
+));
+
+export const TaskCreateModal = memo(({ isOpen, onClose }) => {
+    const { data: usersResult = [] } = useGetUsersQuery();
+    const users = useMemo(() => Array.isArray(usersResult) ? usersResult : (usersResult?.data || []), [usersResult]);
+
+    // Pre-calculate options for SearchableSelect
+    const userOptions = useMemo(() => users.map(u => ({
+        label: u.fullName || u.username,
+        value: u.id
+    })), [users]);
+
+    const [createInternalTask, { isLoading: isCreating }] = useCreateInternalTaskMutation();
+    const navigate = useNavigate();
     const fileInputRef = useRef(null);
 
+    // Split state: Atomic states for high-frequency updates (text inputs)
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [links, setLinks] = useState(['']);
+
+    // Other form state
     const [formData, setFormData] = useState({
-        // projectId: '',
-        jobId: '',
         assigneeId: '',
+        supervisorId: '',
+        plannedStartDate: '',
         plannedEndDate: '',
-        description: '',
-        links: [''],
     });
 
     const [files, setFiles] = useState([]);
 
+    const handleAddLink = useCallback(() => {
+        setLinks(prev => [...prev, '']);
+    }, []);
+
+    const handleRemoveLink = useCallback((index) => {
+        setLinks(prev => prev.filter((_, i) => i !== index));
+    }, []);
+
+    const handleLinkChange = useCallback((index, value) => {
+        setLinks(prev => {
+            const next = [...prev];
+            next[index] = value;
+            return next;
+        });
+    }, []);
+
+    const handleFileChange = useCallback((e) => {
+        const selectedFiles = Array.from(e.target.files);
+        setFiles(prev => {
+            if (prev.length + selectedFiles.length > 5) {
+                toast.warning('Chỉ được tối đa 5 file');
+                return prev;
+            }
+            const totalSize = [...prev, ...selectedFiles].reduce((acc, f) => acc + f.size, 0);
+            if (totalSize > 25 * 1024 * 1024) {
+                toast.error('Tổng dung lượng file không được vượt quá 25MB');
+                return prev;
+            }
+            return [...prev, ...selectedFiles];
+        });
+    }, []);
+
+    const handleRemoveFile = useCallback((index) => {
+        setFiles(prev => prev.filter((_, i) => i !== index));
+    }, []);
+
+    const handleFieldChange = useCallback((field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    }, []);
+
     if (!isOpen) return null;
 
-    const handleAddLink = () => {
-        setFormData({ ...formData, links: [...formData.links, ''] });
-    };
-
-    const handleRemoveLink = (index) => {
-        const newLinks = formData.links.filter((_, i) => i !== index);
-        setFormData({ ...formData, links: newLinks });
-    };
-
-    const handleLinkChange = (index, value) => {
-        const newLinks = [...formData.links];
-        newLinks[index] = value;
-        setFormData({ ...formData, links: newLinks });
-    };
-
-    const handleFileChange = (e) => {
-        const selectedFiles = Array.from(e.target.files);
-        if (files.length + selectedFiles.length > 5) {
-            toast.warning('Chỉ được tối đa 5 file');
-            return;
-        }
-
-        const totalSize = [...files, ...selectedFiles].reduce((acc, f) => acc + f.size, 0);
-        if (totalSize > 25 * 1024 * 1024) {
-            toast.error('Tổng dung lượng file không được vượt quá 25MB');
-            return;
-        }
-
-        setFiles([...files, ...selectedFiles]);
-    };
-
-    const handleRemoveFile = (index) => {
-        setFiles(files.filter((_, i) => i !== index));
-    };
-
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        // if (!formData.projectId) {
-        //     toast.error('Vui lòng chọn dự án');
-        //     return;
-        // }
-        if (!formData.jobId) {
-            toast.error('Vui lòng chọn = công việc (Job)');
+        if (e) e.preventDefault();
+
+        if (!name) {
+            toast.error('Vui lòng nhập tên công việc');
             return;
         }
         if (!formData.assigneeId) {
             toast.error('Vui lòng chọn người thực hiện');
+            return;
+        }
+        if (!formData.supervisorId) {
+            toast.error('Vui lòng chọn người giám sát');
             return;
         }
         if (!formData.plannedEndDate) {
@@ -83,39 +233,20 @@ export const TaskCreateModal = ({ isOpen, onClose }) => {
         }
 
         try {
-            // Step 1: Create Task
-            const newTask = await createTask({
-                // projectId: formData.projectId,
-                jobId: formData.jobId,
+            const result = await createInternalTask({
+                name,
+                assigneeId: formData.assigneeId,
+                supervisorId: formData.supervisorId,
+                description,
+                plannedStartDate: formData.plannedStartDate || undefined,
+                plannedEndDate: formData.plannedEndDate
             }).unwrap();
 
-            // Step 2: Assign Task
-            const assignData = new FormData();
-            assignData.append('assigneeId', formData.assigneeId);
-            assignData.append('performerType', 'INTERNAL'); // Default to internal for this modal
-
-            if (formData.plannedEndDate) {
-                assignData.append('plannedEndDate', formData.plannedEndDate);
-            }
-            if (formData.description) {
-                assignData.append('description', formData.description);
-            }
-
-            const links = formData.links.filter(link => link.trim() !== '');
-            if (links.length > 0) {
-                assignData.append('links', JSON.stringify(links.map(url => ({ type: 'LINK', name: url, url }))));
-            }
-
-            files.forEach(file => {
-                assignData.append('files', file);
-            });
-
-            await assignTask({ id: newTask.id, formData: assignData }).unwrap();
-
-            toast.success('Tạo và phân công công việc thành công');
+            toast.success('Tạo công việc thành công');
             onClose();
+            navigate(`/tasks/${result.id}`);
         } catch (err) {
-            toast.error(err?.data?.message || 'Có lỗi xảy ra khi xử lý');
+            toast.error(err?.data?.message || 'Có lỗi xảy ra khi tạo công việc');
         }
     };
 
@@ -127,98 +258,73 @@ export const TaskCreateModal = ({ isOpen, onClose }) => {
                         <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
                             <Plus className="w-6 h-6" />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900">TẠO CÔNG VIỆC MỚI</h3>
+                        <h3 className="text-xl font-bold text-gray-900 uppercase">Tạo công việc</h3>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500">
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
                         <X className="w-6 h-6" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto">
-                    {/* Project Selection */}
-                    {/* <div>
-                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">Dự án</label>
-                        <div className="relative">
-                            <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                            <select
-                                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                value={formData.projectId}
-                                onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-                            >
-                                <option value="">Chọn dự án</option>
-                                {projects.map(project => (
-                                    <option key={project.id} value={project.id}>{project.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div> */}
+                <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto custom-scrollbar">
+                    <TaskFields
+                        name={name}
+                        setName={setName}
+                        supervisorId={formData.supervisorId}
+                        setFormData={setFormData}
+                        users={userOptions}
+                    />
 
-                    {/* Job Selection */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">Công việc</label>
-                        <div className="relative">
-                            <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                            <select
-                                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                value={formData.jobId}
-                                onChange={(e) => setFormData({ ...formData, jobId: e.target.value })}
-                            >
-                                <option value="">Chọn loại công việc</option>
-                                {jobs.map(job => (
-                                    <option key={job.id} value={job.id}>{job.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
+                    <SearchableSelect
+                        label="Người thực hiện"
+                        icon={User}
+                        placeholder="Chọn người thực hiện"
+                        searchPlaceholder="Tìm kiếm người thực hiện..."
+                        value={formData.assigneeId}
+                        onChange={(val) => handleFieldChange('assigneeId', val)}
+                        options={userOptions}
+                    />
 
-                    {/* Assignee Selection */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">Người thực hiện</label>
-                        <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                            <select
-                                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                value={formData.assigneeId}
-                                onChange={(e) => setFormData({ ...formData, assigneeId: e.target.value })}
-                            >
-                                <option value="">Chọn người thực hiện</option>
-                                {users.map(user => (
-                                    <option key={user.id} value={user.id}>{user.fullName || user.username}</option>
-                                ))}
-                            </select>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">Bắt đầu</label>
+                            <div className="relative">
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <input
+                                    type="date"
+                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-sm"
+                                    value={formData.plannedStartDate}
+                                    onChange={(e) => handleFieldChange('plannedStartDate', e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">Thời hạn</label>
+                            <div className="relative">
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <input
+                                    type="date"
+                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-sm"
+                                    value={formData.plannedEndDate}
+                                    onChange={(e) => handleFieldChange('plannedEndDate', e.target.value)}
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    {/* Planned End Date */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">Thời hạn (Deadline)</label>
-                        <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                            <input
-                                type="date"
-                                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                value={formData.plannedEndDate}
-                                onChange={(e) => setFormData({ ...formData, plannedEndDate: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Description */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">Mô tả</label>
                         <div className="relative">
                             <FileText className="absolute left-3 top-4 w-5 h-5 text-gray-400" />
                             <textarea
                                 rows="3"
-                                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
+                                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none font-bold text-sm"
                                 placeholder="Nhập mô tả công việc..."
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    {/* Links */}
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <label className="text-sm font-bold text-gray-700 uppercase ml-1">Liên kết đính kèm</label>
@@ -231,19 +337,19 @@ export const TaskCreateModal = ({ isOpen, onClose }) => {
                             </button>
                         </div>
                         <div className="space-y-3">
-                            {formData.links.map((link, index) => (
+                            {links.map((link, index) => (
                                 <div key={index} className="flex gap-2">
                                     <div className="relative flex-1">
                                         <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                         <input
                                             type="url"
                                             placeholder="https://..."
-                                            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
                                             value={link}
                                             onChange={(e) => handleLinkChange(index, e.target.value)}
                                         />
                                     </div>
-                                    {formData.links.length > 1 && (
+                                    {links.length > 1 && (
                                         <button
                                             type="button"
                                             onClick={() => handleRemoveLink(index)}
@@ -257,7 +363,6 @@ export const TaskCreateModal = ({ isOpen, onClose }) => {
                         </div>
                     </div>
 
-                    {/* File Upload */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">Tài liệu đính kèm (Tối đa 5 file, 25MB)</label>
                         <div
@@ -315,14 +420,14 @@ export const TaskCreateModal = ({ isOpen, onClose }) => {
                     </button>
                     <button
                         type="submit"
+                        disabled={isCreating}
                         onClick={handleSubmit}
-                        disabled={isCreating || isAssigning}
                         className="flex-[2] px-4 py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:bg-blue-300 disabled:shadow-none"
                     >
-                        {isCreating || isAssigning ? 'Đang xử lý...' : 'Tạo công việc'}
+                        {isCreating ? 'Đang xử lý...' : 'Xác nhận tạo'}
                     </button>
                 </div>
             </div>
         </div>
     );
-};
+});

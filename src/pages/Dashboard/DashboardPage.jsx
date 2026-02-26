@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGetMeQuery } from '../../api/auth';
 import { useGetDashboardDataQuery } from '../../api/dashboard';
 import { useGetTasksQuery } from '../../api/tasks';
-import { OPPORTUNITY_STATUS_LABELS, PROJECT_STATUS_LABELS } from '../../utils/enums';
+import { OPPORTUNITY_STATUS_LABELS, PROJECT_STATUS_LABELS, TASK_STATUS_LABELS } from '../../utils/enums';
 
 export const DashboardPage = () => {
     const navigate = useNavigate();
@@ -98,7 +98,10 @@ export const DashboardPage = () => {
                                 <CheckCircle2 className="w-4 h-4 text-green-500" />
                                 <span className=" text-gray-600">{project.completedTaskCount}/{project.taskCount} Tasks</span>
                             </div>
-                            <button className="text-blue-600 font-black text-xs uppercase tracking-wider flex items-center gap-1 hover:gap-2 transition-all">
+                            <button
+                                className="text-blue-600 font-black text-xs uppercase tracking-wider flex items-center gap-1 hover:gap-2 transition-all"
+                                onClick={() => navigate(`/projects/${project.id}`)}
+                            >
                                 Chi tiết <ArrowUpRight className="w-3.5 h-3.5" />
                             </button>
                         </div>
@@ -113,7 +116,7 @@ export const DashboardPage = () => {
         <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-emerald-100 relative overflow-hidden group">
-                    <Target className="absolute -right-4 -bottom-4 w-40 h-40 opacity-10 group-hover:scale-110 transition-transform duration-700" />
+                    {/* <Target className="absolute -right-4 -bottom-4 w-40 h-40 opacity-10 group-hover:scale-110 transition-transform duration-700" /> */}
                     <p className="text-emerald-100 font-black uppercase tracking-widest text-xs mb-2">Doanh thu dự kiến</p>
                     <h3 className="text-4xl font-black mb-6">{formatCurrency(dashboard.sale?.totalExpectedRevenue)}</h3>
                     <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md w-fit px-4 py-2 rounded-2xl border border-white/10">
@@ -174,21 +177,22 @@ export const DashboardPage = () => {
                     </div>
                     <div className="space-y-3">
                         {dashboard.member?.upcomingDeadlines?.map(task => (
-                            <div key={task.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 hover:bg-white transition-all group">
+                            <button
+                                key={task.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 hover:bg-white transition-all group w-[100%]">
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-gray-400 group-hover:text-rose-500 transition-colors">
                                         <Clock className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <h4 className="text-gray-900">{task.name}</h4>
-                                        <p className="text-xs text-rose-500  uppercase tracking-tighter">Deadline: {task.deadline}</p>
+                                        <h4 className="text-gray-900 text-left">{task.name}</h4>
+                                        <p className="text-xs text-rose-500  uppercase text-left">Deadline: {task.deadline}</p>
                                     </div>
                                 </div>
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${task.status === 'DOING' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-red-50 text-red-700 border-red-100'
                                     }`}>
-                                    {task.status}
+                                    {TASK_STATUS_LABELS[task.status]}
                                 </span>
-                            </div>
+                            </button>
                         ))}
                     </div>
                 </div>
@@ -258,12 +262,12 @@ export const DashboardPage = () => {
         <div className="space-y-8 max-w-[1600px] mx-auto pb-12">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Xin chào, {user?.fullName?.split(' ').pop()} 👋</h1>
+                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Xin chào, {user?.fullName?.split(' ').pop()}</h1>
                     <p className="text-gray-500 font-medium mt-1">Hôm nay là {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 </div>
             </div>
 
-            <ReviewQueueView />
+            {/* <ReviewQueueView /> */}
 
             {dashboard.admin && <AdminView />}
             {dashboard.teamLead && <TeamLeadView />}

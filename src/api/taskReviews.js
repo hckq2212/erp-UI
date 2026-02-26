@@ -24,9 +24,10 @@ export const taskReviewsApi = api.injectEndpoints({
             ],
         }),
         finalizeTask: builder.mutation({
-            query: ({ taskId }) => ({
+            query: ({ taskId, reviewNote }) => ({
                 url: `/task-reviews/task/${taskId}/finalize`,
                 method: 'POST',
+                body: { reviewNote },
             }),
             invalidatesTags: (result, error, { taskId, projectId }) => [
                 { type: 'Tasks', id: taskId },
@@ -36,10 +37,10 @@ export const taskReviewsApi = api.injectEndpoints({
             ].filter(Boolean),
         }),
         rejectTask: builder.mutation({
-            query: ({ taskId, note }) => ({
+            query: ({ taskId, reviewNote }) => ({
                 url: `/task-reviews/task/${taskId}/reject`,
                 method: 'POST',
-                body: { note },
+                body: { reviewNote },
             }),
             invalidatesTags: (result, error, { taskId, projectId }) => [
                 { type: 'Tasks', id: taskId },

@@ -98,6 +98,7 @@ export const JobsPage = () => {
                                         {renderSortableHeader('Mã Hạng Mục', 'code')}
                                         {renderSortableHeader('Tên Hạng Mục', 'name')}
                                         {renderSortableHeader('Giá vốn', 'costPrice')}
+                                        {renderSortableHeader('Vinicoin', 'vinicoin')}
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Xem chi tiết</th>
                                     </tr>
                                 </thead>
@@ -107,6 +108,7 @@ export const JobsPage = () => {
                                             <td className="px-6 py-4 text-sm font-mono text-blue-600 font-bold">{job.code}</td>
                                             <td className="px-6 py-4 text-sm text-gray-900 font-medium">{job.name}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-bold">{formatCurrency(job.costPrice)}</td>
+                                            <td className="px-6 py-4 text-sm text-orange-600 font-bold">{job.vinicoin || 0}</td>
                                             <td className="px-6 py-4 text-sm text-right">
                                                 <button
                                                     onClick={() => navigate(`/jobs/${job.id}`)}

@@ -48,13 +48,13 @@ export const quotationsApi = api.injectEndpoints({
         method: 'PUT',
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [
+      invalidatesTags: (result, error, { id, opportunityId }) => [
         { type: 'Quotations', id },
         { type: 'Quotations', id: 'LIST' },
         // Also invalidate the opportunity-specific list and the opportunity itself
-        ...(result?.opportunityId ? [
-          { type: 'Quotations', id: `OPPORTUNITY_${result.opportunityId}` },
-          { type: 'Opportunities', id: result.opportunityId },
+        ...(result?.opportunityId || opportunityId ? [
+          { type: 'Quotations', id: `OPPORTUNITY_${result?.opportunityId || opportunityId}` },
+          { type: 'Opportunities', id: result?.opportunityId || opportunityId },
         ] : []),
         { type: 'Opportunities', id: 'LIST' },
       ],
@@ -73,11 +73,12 @@ export const quotationsApi = api.injectEndpoints({
       ],
     }),
     rejectQuotation: builder.mutation({
-      query: (id) => ({
+      query: ({ id, ...data }) => ({
         url: `/quotations/${id}/reject`,
         method: 'POST',
+        body: data,
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (result, error, { id }) => [
         { type: 'Quotations', id },
         { type: 'Quotations', id: 'LIST' },
         { type: 'Opportunities', id: result?.opportunityId },

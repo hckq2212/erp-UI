@@ -42,6 +42,7 @@ export const jobsApi = api.injectEndpoints({
       }),
       invalidatesTags: [{ type: 'Jobs', id: 'LIST' }],
     }),
+
   }),
 });
 
@@ -51,4 +52,5 @@ export const {
   useCreateJobMutation,
   useUpdateJobMutation,
   useDeleteJobMutation,
+
 } = jobsApi;

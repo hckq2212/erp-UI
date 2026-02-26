@@ -128,11 +128,11 @@ export const TaskDetailPage = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-2">
                     <button
-                        onClick={() => navigate(`/projects/${task.project?.id}`)}
+                        onClick={() => task.project?.id ? navigate(`/projects/${task.project.id}`) : navigate('/tasks')}
                         className="group flex items-center gap-2 text-gray-500 hover:text-blue-600 transition-colors font-medium text-sm"
                     >
                         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                        <span>Quay lại dự án: {task.project?.name}</span>
+                        <span>{task.project?.id ? `Quay lại dự án: ${task.project.name}` : 'Quay lại danh sách công việc'}</span>
                     </button>
                     <div className="flex flex-wrap items-center gap-4">
                         <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{task.name}</h1>
@@ -174,7 +174,7 @@ export const TaskDetailPage = () => {
                     </div>
 
                     {/* Evaluation Results Section */}
-                    {reviews && reviews.length > 0 && (
+                    {reviews && reviews.length > 0 && task.status !== 'AWAITING_REVIEW' && (
                         <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
@@ -208,14 +208,14 @@ export const TaskDetailPage = () => {
                                             )}>
                                                 {review.criteria?.name}
                                             </p>
-                                            {review.note && (
-                                                <p className="text-xs text-gray-500 mt-1 italic">
-                                                    Ghi chú: {review.note}
-                                                </p>
-                                            )}
                                         </div>
                                     </div>
                                 ))}
+                                {task.reviewNote && (
+                                    <p className="text-md pl-2 text-gray-500 mt-1 italic">
+                                        Ghi chú: {task.reviewNote}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     )}
