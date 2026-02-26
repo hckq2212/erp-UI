@@ -127,7 +127,7 @@ export const OpportunityTable = ({
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         <span className={cn(
-                                            "px-3 py-1 inline-flex text-[10px] font-bold uppercase rounded-lg tracking-wider border",
+                                            "px-3 py-1 inline-flex text-[10px] font-bold uppercase rounded-lg tracking-wider border whitespace-nowrap",
                                             OPPORTUNITY_STATUS_COLORS[opp.status] || "bg-gray-100 text-gray-600"
                                         )}>
                                             {OPPORTUNITY_STATUS_LABELS[opp.status] || opp.status}
@@ -137,7 +137,7 @@ export const OpportunityTable = ({
                                         <div className="flex justify-end gap-1">
                                             <button
                                                 onClick={() => navigate(`/opportunities/${opp.id}`)}
-                                                className="px-4 py-2 text-white bg-blue-600 rounded-xl transition-all font-bold"
+                                                className="px-4 py-2 text-white bg-blue-600 rounded-xl transition-all font-bold whitespace-nowrap"
                                             >
                                                 Xem chi tiết
                                             </button>

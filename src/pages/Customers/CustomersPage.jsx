@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { CustomerModal } from './CustomerModal';
 import { CustomerFilters } from '../../components/customers/CustomerFilters';
@@ -14,6 +15,7 @@ import {
 import { toast } from 'react-toastify';
 
 export const CustomersPage = () => {
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [filters, setFilters] = useState({
@@ -53,11 +55,13 @@ export const CustomersPage = () => {
       if (selectedCustomer) {
         await updateCustomer({ id: selectedCustomer.id, ...data }).unwrap();
         toast.success('Cập nhật khách hàng thành công');
+        setIsModalOpen(false);
       } else {
-        await createCustomer(data).unwrap();
+        const newCustomer = await createCustomer(data).unwrap();
         toast.success('Tạo khách hàng thành công');
+        setIsModalOpen(false);
+        navigate(`/customers/${newCustomer.id}`);
       }
-      setIsModalOpen(false);
     } catch (err) {
       toast.error(err?.data?.message || 'Có lỗi xảy ra');
     }
