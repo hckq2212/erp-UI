@@ -5,6 +5,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useCreateVendorMutation } from '../../api/vendors';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 const vendorSchema = z.object({
@@ -17,6 +18,7 @@ const vendorSchema = z.object({
 });
 
 export const CreateVendorModal = ({ isOpen, onClose }) => {
+    const navigate = useNavigate();
     const [createVendor, { isLoading }] = useCreateVendorMutation();
 
     const {
@@ -38,10 +40,11 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
 
     const onSubmit = async (data) => {
         try {
-            await createVendor(data).unwrap();
+            const result = await createVendor(data).unwrap();
             toast.success('Tạo vendor thành công');
             reset();
             onClose();
+            if (result?.id) navigate(`/vendors/${result.id}`);
         } catch (err) {
             toast.error(err?.data?.message || 'Có lỗi xảy ra khi tạo vendor');
         }

@@ -5,6 +5,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useCreateServiceMutation } from '../../api/services';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 const serviceSchema = z.object({
@@ -13,6 +14,7 @@ const serviceSchema = z.object({
 });
 
 export const CreateServiceModal = ({ isOpen, onClose }) => {
+    const navigate = useNavigate();
     const [createService, { isLoading }] = useCreateServiceMutation();
 
     const {
@@ -30,10 +32,11 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
 
     const onSubmit = async (data) => {
         try {
-            await createService(data).unwrap();
+            const result = await createService(data).unwrap();
             toast.success('Tạo dịch vụ thành công');
             reset();
             onClose();
+            if (result?.id) navigate(`/services/${result.id}`);
         } catch (err) {
             toast.error(err?.data?.message || 'Có lỗi xảy ra khi tạo dịch vụ');
         }
