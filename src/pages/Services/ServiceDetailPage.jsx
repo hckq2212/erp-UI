@@ -142,12 +142,12 @@ export const ServiceDetailPage = () => {
                                             </td>
                                             <td className="px-6 py-4 text-sm text-blue-600 font-medium">{formatCurrency(job.costPrice)}</td>
                                             <td className="px-6 py-4 text-sm text-right flex items-center justify-end gap-3">
-                                                <span className={`px-2 py-1 rounded-md text-xs font-medium ${job.defaultPerformerType === 'INTERNAL'
+                                                {/* <span className={`px-2 py-1 rounded-md text-xs font-medium ${job.defaultPerformerType === 'INTERNAL'
                                                     ? 'bg-blue-50 text-blue-700'
                                                     : 'bg-orange-50 text-orange-700'
                                                     }`}>
                                                     {job.performerType === 'INTERNAL' ? 'Nội bộ' : 'Bên ngoài'}
-                                                </span>
+                                                </span> */}
                                                 <button
                                                     onClick={() => handleRemoveJob(job.id)}
                                                     className="p-1 hover:bg-red-50 rounded text-red-500 transition-colors"

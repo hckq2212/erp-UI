@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,6 +15,9 @@ const vendorSchema = z.object({
     address: z.string().optional(),
     taxId: z.string().optional(),
     type: z.enum(['BUSINESS', 'INDIVIDUAL']).default('BUSINESS'),
+    bankAccount: z.string().optional(),
+    idCardFront: z.any().optional(),
+    idCardBack: z.any().optional(),
 });
 
 export const CreateVendorModal = ({ isOpen, onClose }) => {
@@ -23,6 +27,7 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
         register,
         handleSubmit,
         reset,
+        watch,
         formState: { errors },
     } = useForm({
         resolver: zodResolver(vendorSchema),
@@ -33,12 +38,50 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
             address: '',
             taxId: '',
             type: 'BUSINESS',
+            bankAccount: '',
         },
     });
 
+    const vendorType = watch('type');
+    const idCardFrontFile = watch('idCardFront');
+    const idCardBackFile = watch('idCardBack');
+
+    const [previews, setPreviews] = useState({ front: null, back: null });
+
+    useEffect(() => {
+        if (idCardFrontFile && idCardFrontFile[0]) {
+            const url = URL.createObjectURL(idCardFrontFile[0]);
+            setPreviews((prev) => ({ ...prev, front: url }));
+            return () => URL.revokeObjectURL(url);
+        } else {
+            setPreviews((prev) => ({ ...prev, front: null }));
+        }
+    }, [idCardFrontFile]);
+
+    useEffect(() => {
+        if (idCardBackFile && idCardBackFile[0]) {
+            const url = URL.createObjectURL(idCardBackFile[0]);
+            setPreviews((prev) => ({ ...prev, back: url }));
+            return () => URL.revokeObjectURL(url);
+        } else {
+            setPreviews((prev) => ({ ...prev, back: null }));
+        }
+    }, [idCardBackFile]);
+
     const onSubmit = async (data) => {
         try {
-            await createVendor(data).unwrap();
+            const formData = new FormData();
+            Object.keys(data).forEach((key) => {
+                if (key === 'idCardFront' || key === 'idCardBack') {
+                    if (data[key] && data[key][0]) {
+                        formData.append(key, data[key][0]);
+                    }
+                } else {
+                    formData.append(key, data[key]);
+                }
+            });
+
+            await createVendor(formData).unwrap();
             toast.success('Tạo vendor thành công');
             reset();
             onClose();
@@ -72,10 +115,16 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
                         placeholder="Nhập số điện thoại..."
                     />
                     <Input
-                        label="Mã số thuế"
+                        label={vendorType === 'INDIVIDUAL' ? 'Căn cước công dân' : 'Mã số thuế'}
                         {...register('taxId')}
                         error={errors.taxId?.message}
-                        placeholder="Nhập MST..."
+                        placeholder={vendorType === 'INDIVIDUAL' ? 'Nhập số CCCD...' : 'Nhập MST...'}
+                    />
+                    <Input
+                        label="Tài khoản ngân hàng"
+                        {...register('bankAccount')}
+                        error={errors.bankAccount?.message}
+                        placeholder="Số tài khoản, ngân hàng..."
                     />
                     <div className="w-full">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Loại hình</label>
@@ -87,6 +136,46 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
                             <option value="INDIVIDUAL">Cá nhân</option>
                         </select>
                     </div>
+                    {vendorType === 'INDIVIDUAL' && (
+                        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Input
+                                    label="Mặt trước CCCD"
+                                    type="file"
+                                    {...register('idCardFront')}
+                                    error={errors.idCardFront?.message}
+                                    accept="image/*"
+                                />
+                                {previews.front && (
+                                    <div className="relative mt-2 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 aspect-video flex items-center justify-center">
+                                        <img
+                                            src={previews.front}
+                                            alt="Mặt trước CCCD"
+                                            className="max-h-full object-contain"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="space-y-2">
+                                <Input
+                                    label="Mặt sau CCCD"
+                                    type="file"
+                                    {...register('idCardBack')}
+                                    error={errors.idCardBack?.message}
+                                    accept="image/*"
+                                />
+                                {previews.back && (
+                                    <div className="relative mt-2 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 aspect-video flex items-center justify-center">
+                                        <img
+                                            src={previews.back}
+                                            alt="Mặt sau CCCD"
+                                            className="max-h-full object-contain"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                     <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
                         <textarea

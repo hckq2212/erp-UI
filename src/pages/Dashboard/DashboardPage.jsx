@@ -271,7 +271,7 @@ export const DashboardPage = () => {
 
             {dashboard.admin && <AdminView />}
             {dashboard.teamLead && <TeamLeadView />}
-            {dashboard.sale && <SaleView />}
+            {/* {dashboard.sale && <SaleView />} */}
             {dashboard.member && <MemberView />}
         </div>
     );

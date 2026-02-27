@@ -111,16 +111,6 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                         error={errors.vinicoin?.message}
                         placeholder="0"
                     />
-                    <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Bên thực hiện mặc định</label>
-                        <select
-                            {...register('defaultPerformerType')}
-                            className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
-                        >
-                            <option value="INTERNAL">Nội bộ</option>
-                            <option value="EXTERNAL">Bên ngoài</option>
-                        </select>
-                    </div>
                 </div>
 
                 {/* Criteria Section */}

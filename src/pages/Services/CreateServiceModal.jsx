@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useCreateServiceMutation } from '../../api/services';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 const serviceSchema = z.object({
     name: z.string().min(1, 'Tên dịch vụ là bắt buộc'),
@@ -14,6 +15,7 @@ const serviceSchema = z.object({
 
 export const CreateServiceModal = ({ isOpen, onClose }) => {
     const [createService, { isLoading }] = useCreateServiceMutation();
+    const navigate = useNavigate();
 
     const {
         register,
@@ -30,9 +32,10 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
 
     const onSubmit = async (data) => {
         try {
-            await createService(data).unwrap();
+            const res = await createService(data).unwrap();
             toast.success('Tạo dịch vụ thành công');
             reset();
+            navigate(`/services/${res.id}`);
             onClose();
         } catch (err) {
             toast.error(err?.data?.message || 'Có lỗi xảy ra khi tạo dịch vụ');
