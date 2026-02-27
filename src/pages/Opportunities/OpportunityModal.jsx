@@ -25,7 +25,7 @@ const PRIORITIES = [
 const REGIONS = [
   { value: 'NATIONAL', label: 'Toàn quốc' },
   { value: 'NORTH', label: 'Miền Bắc' },
-  { vavd1lue: 'CE (webbb)NTRAL', label: 'Miền Trung' },
+  { value: 'CENTRAL', label: 'Miền Trung' },
   { value: 'SOUTH', label: 'Miền Nam' },
 ];
 
@@ -41,32 +41,32 @@ const LINK_PLACEHOLDERS = [
 const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onRemove, hasError }) => {
   const isUnselected = !item.serviceId && hasError;
   return (
-  <div className={`flex items-center gap-3 p-3 rounded-xl border ${isUnselected ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
-    <select
-      value={item.serviceId}
-      onChange={(e) => onServiceChange(index, 'serviceId', e.target.value)}
-      className={`flex-1 px-4 py-2.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all ${isUnselected ? 'border-red-400' : 'border-gray-200'}`}
-    >
-      <option value="">-- Chọn dịch vụ --</option>
-      {availableServices.map(s => (
-        <option key={s.id} value={s.id}>{s.name}</option>
-      ))}
-    </select>
-    <input
-      type="number"
-      value={item.quantity}
-      onChange={(e) => onServiceChange(index, 'quantity', e.target.value)}
-      min={1}
-      className="w-20 px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-center transition-all"
-    />
-    <button
-      type="button"
-      onClick={() => onRemove(index)}
-      className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all"
-    >
-      <Trash2 className="w-5 h-5" />
-    </button>
-  </div>
+    <div className={`flex items-center gap-3 p-3 rounded-xl border ${isUnselected ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
+      <select
+        value={item.serviceId}
+        onChange={(e) => onServiceChange(index, 'serviceId', e.target.value)}
+        className={`flex-1 px-4 py-2.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all ${isUnselected ? 'border-red-400' : 'border-gray-200'}`}
+      >
+        <option value="">-- Chọn dịch vụ --</option>
+        {availableServices.map(s => (
+          <option key={s.id} value={s.id}>{s.name}</option>
+        ))}
+      </select>
+      <input
+        type="number"
+        value={item.quantity}
+        onChange={(e) => onServiceChange(index, 'quantity', e.target.value)}
+        min={1}
+        className="w-20 px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-center transition-all"
+      />
+      <button
+        type="button"
+        onClick={() => onRemove(index)}
+        className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all"
+      >
+        <Trash2 className="w-5 h-5" />
+      </button>
+    </div>
   );
 });
 
