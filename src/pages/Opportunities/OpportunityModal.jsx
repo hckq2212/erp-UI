@@ -25,8 +25,17 @@ const PRIORITIES = [
 const REGIONS = [
   { value: 'NATIONAL', label: 'Toàn quốc' },
   { value: 'NORTH', label: 'Miền Bắc' },
-  { value: 'CENTRAL', label: 'Miền Trung' },
+  { vavd1lue: 'CE (webbb)NTRAL', label: 'Miền Trung' },
   { value: 'SOUTH', label: 'Miền Nam' },
+];
+
+const LINK_PLACEHOLDERS = [
+  'https://drive.google.com/...',
+  'https://www.facebook.com/...',
+  'https://www.tiktok.com/...',
+  'https://www.vd1.com/... (web)',
+  'https://www.instagram.com/...',
+  'https://www.youtube.com/...',
 ];
 
 const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onRemove, hasError }) => {
@@ -61,7 +70,7 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onR
   );
 });
 
-const LinkItem = memo(({ link, index, onLinkChange, onRemove, showRemove }) => (
+const LinkItem = memo(({ link, index, onLinkChange, onRemove, showRemove, placeholder }) => (
   <div className="flex items-center gap-3">
     <div className="flex-1 relative">
       <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -69,7 +78,7 @@ const LinkItem = memo(({ link, index, onLinkChange, onRemove, showRemove }) => (
         type="url"
         value={link}
         onChange={(e) => onLinkChange(index, e.target.value)}
-        placeholder="https://drive.google.com/..."
+        placeholder={placeholder}
         className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all"
       />
     </div>
@@ -156,7 +165,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     { serviceId: '', quantity: 1 }
   ]);
 
-  const [documentLinks, setDocumentLinks] = useState(['']);
+  const [documentLinks, setDocumentLinks] = useState(Array(LINK_PLACEHOLDERS.length).fill(''));
   const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
 
@@ -211,10 +220,11 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
   const removeLink = useCallback((index) => {
     setDocumentLinks(prev => {
-      if (prev.length > 1) {
-        return prev.filter((_, i) => i !== index);
-      }
-      return prev;
+      // Prevent removing initial placeholder links
+      if (index < LINK_PLACEHOLDERS.length) return prev;
+
+      const updated = prev.filter((_, i) => i !== index);
+      return updated.length ? updated : prev;
     });
   }, []);
 
@@ -351,7 +361,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
         customerRequirements: '',
       });
       setSelectedServices([{ serviceId: '', quantity: 1 }]);
-      setDocumentLinks(['']);
+      setDocumentLinks(Array(LINK_PLACEHOLDERS.length).fill(''));
       setFiles([]);
     } catch (err) {
       setErrors({ submit: err?.data?.message || 'Có lỗi xảy ra' });
@@ -703,7 +713,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                         link={link}
                         onLinkChange={handleLinkChange}
                         onRemove={removeLink}
-                        showRemove={documentLinks.length > 1}
+                        showRemove={index >= LINK_PLACEHOLDERS.length}
+                        placeholder={LINK_PLACEHOLDERS[index]}
                       />
                     ))}
                   </div>

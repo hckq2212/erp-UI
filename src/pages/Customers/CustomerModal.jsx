@@ -16,6 +16,7 @@ const customerSchema = z.object({
 });
 
 export const CustomerModal = ({ isOpen, onClose, customer, onSubmit, isSubmitting }) => {
+
   const {
     register,
     handleSubmit,
