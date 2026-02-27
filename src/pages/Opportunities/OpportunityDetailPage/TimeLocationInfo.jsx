@@ -27,7 +27,11 @@ export const TimeLocationInfo = ({ opportunity, formatDate }) => {
           <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
             <MapPin className="w-3 h-3" /> Vùng miền
           </p>
-          <p className="font-medium text-gray-900">{REGION_LABELS[opportunity.region] || opportunity.region}</p>
+          <p className="font-medium text-gray-900">
+            {Array.isArray(opportunity.region)
+              ? opportunity.region.join(', ')
+              : (REGION_LABELS[opportunity.region] || opportunity.region || 'Chưa xác định')}
+          </p>
         </div>
         <div>
           <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">

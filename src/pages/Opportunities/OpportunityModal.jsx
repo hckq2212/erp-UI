@@ -1,7 +1,9 @@
-import { useState, useMemo, useCallback, memo, useRef } from 'react';
+import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
 import { X, Plus, Trash2, Upload, Link as LinkIcon, Building2, FileText, MapPin, Calendar, Target, TrendingUp, Clock, Briefcase } from 'lucide-react';
 import { useCreateOpportunityMutation } from '../../api/opportunities';
 import { useGetServicesQuery } from '../../api/services';
+import Select from 'react-select';
+import { VIETNAM_PROVINCES } from '../../utils/provinces';
 import { formatNumber, parseNumber, formatDate } from '../../utils/format';
 
 const FIELDS = [
@@ -22,20 +24,15 @@ const PRIORITIES = [
   { value: 'High', label: 'Cao' },
 ];
 
-const REGIONS = [
-  { value: 'NATIONAL', label: 'Toàn quốc' },
-  { value: 'NORTH', label: 'Miền Bắc' },
-  { value: 'CENTRAL', label: 'Miền Trung' },
-  { value: 'SOUTH', label: 'Miền Nam' },
-];
+const REGIONS = VIETNAM_PROVINCES;
 
 const LINK_PLACEHOLDERS = [
   'https://drive.google.com/...',
   'https://www.facebook.com/...',
   'https://www.tiktok.com/...',
-  'https://www.vd1.com/... (web)',
   'https://www.instagram.com/...',
   'https://www.youtube.com/...',
+  'Trang web của khách hàng',
 ];
 
 const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onRemove, hasError }) => {
@@ -156,7 +153,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     endDate: '',
     priority: 'Medium',
     successChance: 0,
-    region: 'NATIONAL',
+    region: [],
     durationMonths: 0,
     customerRequirements: '',
   });
@@ -168,6 +165,28 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
   const [documentLinks, setDocumentLinks] = useState(Array(LINK_PLACEHOLDERS.length).fill(''));
   const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (formData.startDate && formData.endDate) {
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.endDate);
+
+      if (end >= start) {
+        const diffYears = end.getFullYear() - start.getFullYear();
+        const diffMonths = end.getMonth() - start.getMonth();
+        const totalMonths = diffYears * 12 + diffMonths;
+
+        // Cập nhật durationMonths nếu khác giá trị hiện tại
+        // Thêm 1 nếu muốn tính cả tháng kết thúc (tùy nghiệp vụ, ở đây tính chênh lệch thuần)
+        if (formData.durationMonths !== totalMonths) {
+          setFormData(prev => ({
+            ...prev,
+            durationMonths: totalMonths < 0 ? 0 : totalMonths
+          }));
+        }
+      }
+    }
+  }, [formData.startDate, formData.endDate]);
 
   const handleChange = useCallback((e) => {
     const { name, value, type } = e.target;
@@ -313,7 +332,11 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       // Add basic fields
       Object.keys(formData).forEach(key => {
         if (formData[key] !== '' && formData[key] !== null && formData[key] !== undefined) {
-          submitFormData.append(key, formData[key]);
+          if (key === 'region' && Array.isArray(formData[key])) {
+            submitFormData.append(key, JSON.stringify(formData[key]));
+          } else {
+            submitFormData.append(key, formData[key]);
+          }
         }
       });
 
@@ -356,7 +379,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
         endDate: '',
         priority: 'Medium',
         successChance: 0,
-        region: 'NATIONAL',
+        region: [],
         durationMonths: 0,
         customerRequirements: '',
       });
@@ -542,16 +565,55 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Vùng miền triển khai
                     </label>
-                    <select
+                    <Select
+                      isMulti
                       name="region"
-                      value={formData.region}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all appearance-none bg-white cursor-pointer"
-                    >
-                      {REGIONS.map(r => (
-                        <option key={r.value} value={r.value}>{r.label}</option>
-                      ))}
-                    </select>
+                      options={REGIONS}
+                      value={REGIONS.filter(r => formData.region.includes(r.value))}
+                      onChange={(selectedOptions) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          region: selectedOptions ? selectedOptions.map(o => o.value) : []
+                        }));
+                      }}
+                      placeholder="Chọn tỉnh thành (có thể chọn nhiều)..."
+                      classNamePrefix="react-select"
+                      className="text-sm"
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          borderRadius: '0.75rem',
+                          padding: '0.2rem 0.5rem',
+                          borderWidth: '2px',
+                          borderColor: state.isFocused ? '#3b82f6' : '#e5e7eb',
+                          boxShadow: state.isFocused ? '0 0 0 4px rgba(59, 130, 246, 0.2)' : 'none',
+                          '&:hover': {
+                            borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                          },
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: '#eff6ff',
+                          borderRadius: '0.5rem',
+                          border: '1px solid #bfdbfe',
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: '#1d4ed8',
+                          fontWeight: '500',
+                          padding: '2px 8px',
+                        }),
+                        multiValueRemove: (base) => ({
+                          ...base,
+                          color: '#3b82f6',
+                          '&:hover': {
+                            backgroundColor: '#dbeafe',
+                            color: '#1d4ed8',
+                            borderRadius: '0 0.5rem 0.5rem 0',
+                          },
+                        }),
+                      }}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -676,7 +738,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                 {/* Total */}
                 <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4 rounded-xl text-white">
                   <div className="flex justify-between items-center">
-                    <span className="font-medium">Tổng giá trị dịch vụ:</span>
+                    <span className="font-medium">Tổng giá vốn của các dịch vụ đã chọn:</span>
                     <span className="text-2xl font-bold">{totalValue.toLocaleString('vi-VN')} VNĐ</span>
                   </div>
                 </div>
