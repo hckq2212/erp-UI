@@ -100,7 +100,6 @@ export const TASK_STATUS_LABELS = {
   CANCELLED: 'Đã hủy',
   AWAITING_PRICING: 'Chờ định giá',
   REJECTED: 'Yêu cầu làm lại',
-  DOING: 'Đang thực hiện',
   AWAITING_ACCEPTANCE: 'Đang chờ nghiệm thu',
   AWAITING_REVIEW: 'Đang chờ duyệt',
   OVERDUE: 'Quá hạn'

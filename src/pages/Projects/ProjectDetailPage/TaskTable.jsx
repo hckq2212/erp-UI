@@ -28,19 +28,28 @@ export const TaskTable = ({ tasks = [], project }) => {
     };
 
     const getStatusBadge = (status) => {
+        const label = TASK_STATUS_LABELS[status] || status;
         switch (status) {
             case 'DONE':
-                return <span className="flex items-center gap-1.5 text-md font-medium text-green-600"> Hoàn thành</span>;
+                return <span className="flex items-center gap-1.5 text-md font-medium text-green-600"> {label}</span>;
             case 'DOING':
-                return <span className="flex items-center gap-1.5 text-md font-medium text-amber-600"> Đang thực hiện</span>;
+                return <span className="flex items-center gap-1.5 text-md font-medium text-amber-600"> {label}</span>;
             case 'PENDING':
-                return <span className="flex items-center gap-1.5 text-md font-medium text-blue-600"> Chưa phân công</span>;
+                return <span className="flex items-center gap-1.5 text-md font-medium text-blue-600"> {label}</span>;
             case 'OVERDUE':
-                return <span className="flex items-center gap-1.5 text-md font-medium text-red-600"> Quá hạn</span>;
+                return <span className="flex items-center gap-1.5 text-md font-medium text-red-600"> {label}</span>;
             case 'CANCELLED':
-                return <span className="flex items-center gap-1.5 text-md font-medium text-gray-400"> Đã hủy</span>;
+                return <span className="flex items-center gap-1.5 text-md font-medium text-gray-400"> {label}</span>;
+            case 'AWAITING_PRICING':
+                return <span className="flex items-center gap-1.5 text-md font-medium text-gray-400"> {label}</span>;
+            case 'REJECTED':
+                return <span className="flex items-center gap-1.5 text-md font-medium text-gray-400"> {label}</span>;
+            case 'AWAITING_ACCEPTANCE':
+                return <span className="flex items-center gap-1.5 text-md font-medium text-gray-400"> {label}</span>;
+            case 'AWAITING_REVIEW':
+                return <span className="flex items-center gap-1.5 text-md font-medium text-gray-400"> {label}</span>;
             default:
-                return <span className="flex items-center gap-1.5 text-md font-medium text-gray-500"> {status}</span>;
+                return <span className="flex items-center gap-1.5 text-md font-medium text-gray-500"> {label}</span>;
         }
     };
 
@@ -111,6 +120,11 @@ export const TaskTable = ({ tasks = [], project }) => {
                     <option value="PENDING">Chờ xử lý</option>
                     <option value="DOING">Đang thực hiện</option>
                     <option value="DONE">Hoàn thành</option>
+                    <option value="CANCELLED">Đã hủy</option>
+                    <option value="AWAITING_PRICING">Chờ định giá</option>
+                    <option value="REJECTED">Yêu cầu làm lại</option>
+                    <option value="AWAITING_ACCEPTANCE">Đang chờ nghiệm thu</option>
+                    <option value="AWAITING_REVIEW">Đang chờ duyệt</option>
                     <option value="OVERDUE">Quá hạn</option>
                 </select>
                 <select

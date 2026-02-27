@@ -125,16 +125,16 @@ export const OpportunityTable = ({
                                             {formatCurrency(opp.expectedRevenue)}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-center">
+                                    <td className="px-6 py-4 text-center align-middle">
                                         <span className={cn(
-                                            "px-3 py-1 inline-flex text-[10px] font-bold uppercase rounded-lg tracking-wider border whitespace-nowrap",
+                                            "w-[110px] h-10 px-3 inline-flex text-[10px] font-bold uppercase rounded-lg tracking-wider border items-center justify-center",
                                             OPPORTUNITY_STATUS_COLORS[opp.status] || "bg-gray-100 text-gray-600"
                                         )}>
                                             {OPPORTUNITY_STATUS_LABELS[opp.status] || opp.status}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex justify-end gap-1">
+                                    <td className="px-6 py-4 text-right align-middle">
+                                        <div className="flex justify-end items-center gap-1">
                                             <button
                                                 onClick={() => navigate(`/opportunities/${opp.id}`)}
                                                 className="px-4 py-2 text-white bg-blue-600 rounded-xl transition-all font-bold whitespace-nowrap"

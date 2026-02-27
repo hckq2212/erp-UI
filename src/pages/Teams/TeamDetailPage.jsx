@@ -172,7 +172,9 @@ export const TeamDetailPage = () => {
                                                     <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 border border-gray-200">
                                                         <User className="w-4 h-4" />
                                                     </div>
-                                                    <div className="font-medium text-gray-900 flex items-center gap-2">
+                                                    <div 
+                                                    onClick={() => navigate(`/users/${member.user?.id}`)}
+                                                    className="font-medium text-gray-900 flex items-center gap-2">
                                                         {member.user?.fullName || member.user?.username}
                                                         {team.teamLead?.id === member.user?.id && (
                                                             <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">LEAD</span>

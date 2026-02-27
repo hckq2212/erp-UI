@@ -7,7 +7,6 @@ import { Input } from '../../components/ui/Input';
 import { useCreateServiceMutation } from '../../api/services';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
 
 const serviceSchema = z.object({
     name: z.string().min(1, 'Tên dịch vụ là bắt buộc'),
