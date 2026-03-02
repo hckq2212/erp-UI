@@ -174,51 +174,87 @@ export const TaskDetailPage = () => {
                     </div>
 
                     {/* Evaluation Results Section */}
-                    {reviews && reviews.length > 0 && task.status !== 'AWAITING_REVIEW' && (
-                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
-                                    <CheckCircle2 className="w-5 h-5" />
-                                </div>
-                                <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kết quả đánh giá</h2>
-                            </div>
-                            <div className="space-y-4">
-                                {reviews.map((review) => (
-                                    <div
-                                        key={review.id}
-                                        className={cn(
-                                            "flex items-center gap-4 p-4 rounded-2xl border transition-all",
-                                            review.isPassed
-                                                ? "bg-green-50/30 border-green-100"
-                                                : "bg-gray-50/50 border-gray-100"
-                                        )}
-                                    >
-                                        <div className={cn(
-                                            "w-5 h-5 rounded-md border flex items-center justify-center shrink-0",
-                                            review.isPassed
-                                                ? "bg-green-500 border-green-500 text-white"
-                                                : "bg-white border-gray-300 text-transparent"
-                                        )}>
-                                            <CheckCircle2 className="w-3.5 h-3.5" />
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className={cn(
-                                                "text-sm font-bold truncate",
-                                                review.isPassed ? "text-green-800" : "text-gray-700"
-                                            )}>
-                                                {review.criteria?.name}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                                {task.reviewNote && (
-                                    <p className="text-md pl-2 text-gray-500 mt-1 italic">
-                                        Ghi chú: {task.reviewNote}
-                                    </p>
+                    {reviews && reviews.length > 0 && task.status !== 'AWAITING_REVIEW' && (() => {
+                        const leadId = task?.project?.team?.teamLead?.id;
+                        const assignerId = task?.assignerId;
+                        const isDualReview = leadId && assignerId && leadId !== assignerId;
+
+                        const renderReviewItem = (review) => (
+                            <div
+                                key={review.id}
+                                className={cn(
+                                    "flex items-center gap-4 p-4 rounded-2xl border transition-all",
+                                    review.isPassed
+                                        ? "bg-green-50/30 border-green-100"
+                                        : "bg-gray-50/50 border-gray-100"
                                 )}
+                            >
+                                <div className={cn(
+                                    "w-5 h-5 rounded-md border flex items-center justify-center shrink-0",
+                                    review.isPassed
+                                        ? "bg-green-500 border-green-500 text-white"
+                                        : "bg-white border-gray-300 text-transparent"
+                                )}>
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className={cn(
+                                        "text-sm font-bold truncate",
+                                        review.isPassed ? "text-green-800" : "text-gray-700"
+                                    )}>
+                                        {review.criteria?.name}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        );
+
+                        return (
+                            <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
+                                        <CheckCircle2 className="w-5 h-5" />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kết quả đánh giá</h2>
+                                </div>
+
+                                <div className="space-y-6">
+                                    {isDualReview ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            {/* Column 1: Team Lead */}
+                                            <div className="space-y-4">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Team Lead đánh giá</p>
+                                                {reviews.filter(r => r.reviewerType === 'TEAM_LEAD').length > 0 ? (
+                                                    reviews.filter(r => r.reviewerType === 'TEAM_LEAD').map(renderReviewItem)
+                                                ) : (
+                                                    <p className="text-xs text-gray-400 italic ml-1">Chưa có đánh giá từ Team Lead</p>
+                                                )}
+                                            </div>
+
+                                            {/* Column 2: Assigner */}
+                                            <div className="space-y-4">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Người giao việc đánh giá</p>
+                                                {reviews.filter(r => r.reviewerType === 'ASSIGNER').length > 0 ? (
+                                                    reviews.filter(r => r.reviewerType === 'ASSIGNER').map(renderReviewItem)
+                                                ) : (
+                                                    <p className="text-xs text-gray-400 italic ml-1">Chưa có đánh giá từ Người giao việc</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {reviews.map(renderReviewItem)}
+                                        </div>
+                                    )}
+
+                                    {task.reviewNote && (
+                                        <p className="text-md pl-2 text-gray-500 mt-1 italic border-t border-gray-50 pt-4">
+                                            Ghi chú: {task.reviewNote}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })()}
 
                     {/* Result Files Section */}
                     <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">

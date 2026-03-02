@@ -93,6 +93,7 @@ export const ServicesPage = () => {
                                     <tr className="bg-gray-50/50 border-b border-gray-100">
                                         {renderSortableHeader('Tên Dịch Vụ', 'name')}
                                         {renderSortableHeader('Giá vốn', 'costPrice')}
+                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Công việc đầu ra</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Xem chi tiết</th>
                                     </tr>
                                 </thead>
@@ -101,6 +102,7 @@ export const ServicesPage = () => {
                                         <tr key={service.id} className="hover:bg-gray-50/50 transition-colors">
                                             <td className="px-6 py-4 text-sm text-gray-900 font-medium uppercase">{service.name}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-bold">{formatCurrency(service.costPrice)}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 font-bold">{service.outputJob?.name}</td>
                                             <td className="px-6 py-4 text-sm text-right">
                                                 <button
                                                     onClick={() => navigate(`/services/${service.id}`)}

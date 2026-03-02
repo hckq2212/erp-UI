@@ -91,6 +91,12 @@ export const ServiceDetailPage = () => {
                                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Giá vốn</label>
                                 <p className="text-md font-bold text-blue-600">{formatCurrency(service.costPrice)}</p>
                             </div>
+                            {service.outputJob && (
+                                <div>
+                                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Công việc đầu ra</label>
+                                    <p className="text-md font-bold text-purple-600">{service.outputJob.name}</p>
+                                </div>
+                            )}
                             {service.description && (
                                 <div>
                                     <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Mô tả</label>
@@ -121,7 +127,7 @@ export const ServiceDetailPage = () => {
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Mã</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Tên hạng mục</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Giá vốn</th>
-                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Loại thực hiện</th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right"></th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -129,7 +135,7 @@ export const ServiceDetailPage = () => {
                                         <tr key={job.id} className="hover:bg-gray-50/50 transition-colors">
                                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
                                                 {job.code}
-                                                {service.outputJobId === job.id && (
+                                                {service.outputJob?.id === job.id && (
                                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 uppercase tracking-tight border border-purple-200 ml-2">
                                                         Công việc đầu ra
                                                     </span>
@@ -148,13 +154,15 @@ export const ServiceDetailPage = () => {
                                                     }`}>
                                                     {job.performerType === 'INTERNAL' ? 'Nội bộ' : 'Bên ngoài'}
                                                 </span> */}
-                                                <button
-                                                    onClick={() => handleRemoveJob(job.id)}
-                                                    className="p-1 hover:bg-red-50 rounded text-red-500 transition-colors"
-                                                    title="Xóa hạng mục"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
+                                                {service.outputJob?.id !== job.id && (
+                                                    <button
+                                                        onClick={() => handleRemoveJob(job.id)}
+                                                        className="p-1 hover:bg-red-50 rounded text-red-500 transition-colors"
+                                                        title="Xóa hạng mục"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FileText, ExternalLink, LayoutList, Send } from 'lucide-react';
 import { formatNumber } from '../../../utils/format';
 import { useGetMeQuery } from '../../../api/auth';
@@ -6,6 +7,7 @@ import { CreateAcceptanceModal } from './CreateAcceptanceModal';
 import { CONTRACT_SERVICE_STATUS_LABELS, CONTRACT_SERVICE_STATUS_COLORS } from '../../../utils/enums';
 
 export const ContractInfo = ({ contract, projectId }) => {
+    const navigate = useNavigate();
     const [isAcceptanceModalOpen, setIsAcceptanceModalOpen] = useState(false);
     const { data: me } = useGetMeQuery();
 
@@ -46,8 +48,19 @@ export const ContractInfo = ({ contract, projectId }) => {
                                 {contract.services?.length > 0 ? (
                                     contract.services.map((item) => (
                                         <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-4 py-3 font-semibold text-gray-700">
-                                                {item.service?.name || item.name || `Hạng mục #${item.id}`}
+                                            <td className="px-4 py-3">
+                                                <div className="font-semibold text-gray-700">
+                                                    {item.service?.name || item.name || `Hạng mục #${item.id}`}
+                                                </div>
+                                                {item.outputTask && (
+                                                    <button
+                                                        onClick={() => navigate(`/tasks/${item.outputTask.id}`)}
+                                                        className="text-[10px] text-purple-600 font-bold hover:text-purple-800 transition-colors flex items-center gap-1 mt-0.5"
+                                                    >
+                                                        Công việc đầu ra: {item.outputTask.code}
+                                                        <ExternalLink className="w-2.5 h-2.5" />
+                                                    </button>
+                                                )}
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${CONTRACT_SERVICE_STATUS_COLORS[item.status] || 'bg-gray-50 text-gray-600 border-gray-100'}`}>
