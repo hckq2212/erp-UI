@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../utils/cn';
+import { getFilePreviewUrl } from '../../utils/cloudinary';
 
 export const TaskReviewPage = () => {
     const { id } = useParams();
@@ -189,7 +190,7 @@ export const TaskReviewPage = () => {
                                 </div>
                                 <div className="min-w-0">
                                     <a
-                                        href={task.result.url}
+                                        href={getFilePreviewUrl(task.result.url, task.result.type)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-lg font-bold text-blue-600 hover:underline break-all"

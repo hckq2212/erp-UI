@@ -60,3 +60,20 @@ export const uploadToCloudinary = async (file, folder = 'GETVINI/ERP/others', on
         throw new Error(error.response?.data?.error?.message || 'Lỗi khi tải tệp lên Cloudinary');
     }
 };
+/**
+ * Get a preview URL for a file using Google Docs Viewer
+ * 
+ * @param {string} url - The original file URL
+ * @param {string} type - File type ('FILE' or 'LINK')
+ * @returns {string} - The preview URL or the original URL
+ */
+export const getFilePreviewUrl = (url, type = 'FILE') => {
+    if (!url) return '';
+    if (type === 'LINK') return url;
+
+    // Check if it's already a Google Docs Viewer link
+    if (url.includes('docs.google.com/viewer')) return url;
+
+    // Wrap with Google Docs Viewer
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+};

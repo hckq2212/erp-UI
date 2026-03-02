@@ -5,6 +5,7 @@ import { formatNumber } from '../../../utils/format';
 import { useGetMeQuery } from '../../../api/auth';
 import { CreateAcceptanceModal } from './CreateAcceptanceModal';
 import { CONTRACT_SERVICE_STATUS_LABELS, CONTRACT_SERVICE_STATUS_COLORS } from '../../../utils/enums';
+import { getFilePreviewUrl } from '../../../utils/cloudinary';
 
 export const ContractInfo = ({ contract, projectId }) => {
     const navigate = useNavigate();
@@ -75,7 +76,7 @@ export const ContractInfo = ({ contract, projectId }) => {
                                             <td className="px-4 py-3 text-right text-gray-500 italic">
                                                 {item.result && (
                                                     <a
-                                                        href={item.result?.url}
+                                                        href={getFilePreviewUrl(item.result?.url, item.result?.type)}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="text-[#f5530d] border-[#f5530d] font-bold border-2 bg-[#fff7ed] px-2 py-1 rounded-md">

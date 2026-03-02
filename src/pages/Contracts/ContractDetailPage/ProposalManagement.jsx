@@ -1,4 +1,5 @@
 import { FileText, Upload, CheckCircle, FileCheck, Loader2 } from 'lucide-react';
+import { getFilePreviewUrl } from '../../../utils/cloudinary';
 
 export const ProposalManagement = ({
   contract,
@@ -27,7 +28,7 @@ export const ProposalManagement = ({
             {contract.proposal_contract ? (
               <>
                 <a
-                  href={contract.proposal_contract}
+                  href={getFilePreviewUrl(contract.proposal_contract)}
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
@@ -76,7 +77,7 @@ export const ProposalManagement = ({
           <div>
             {contract.signed_contract ? (
               <a
-                href={contract.signed_contract}
+                href={getFilePreviewUrl(contract.signed_contract)}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"

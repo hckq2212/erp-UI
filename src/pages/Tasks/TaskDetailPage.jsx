@@ -10,7 +10,7 @@ import { JOB_PERFORMER_TYPE } from '../../utils/enums';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../utils/cn';
-import { uploadToCloudinary } from '../../utils/cloudinary';
+import { uploadToCloudinary, getFilePreviewUrl } from '../../utils/cloudinary';
 
 export const TaskDetailPage = () => {
     const { id } = useParams();
@@ -295,7 +295,7 @@ export const TaskDetailPage = () => {
                                     </div>
                                 </div>
                                 <a
-                                    href={task.result.url}
+                                    href={getFilePreviewUrl(task.result.url)}
                                     target="blank"
                                     rel="noopener noreferrer"
                                     className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all shrink-0"
@@ -503,7 +503,7 @@ export const TaskDetailPage = () => {
                                 {task.attachments.map((file, idx) => (
                                     <a
                                         key={idx}
-                                        href={file.url}
+                                        href={getFilePreviewUrl(file.url, file.type)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-blue-200 hover:bg-white transition-all"

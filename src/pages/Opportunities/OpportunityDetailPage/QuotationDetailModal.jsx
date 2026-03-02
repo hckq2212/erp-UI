@@ -3,6 +3,7 @@ import { X, FileText, ArrowLeft, Edit, CheckCircle, XCircle, Paperclip } from 'l
 import { useGetQuotationQuery, useApproveQuotationMutation, useRejectQuotationMutation } from '../../../api/quotations';
 import { formatNumber } from '../../../utils/format';
 import { toast } from 'react-toastify';
+import { getFilePreviewUrl } from '../../../utils/cloudinary';
 
 export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate, onEdit, opportunity }) => {
   const { data: quotation, isLoading, error } = useGetQuotationQuery(quotationId, {
@@ -232,7 +233,7 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                     {opportunity.attachments.map((file, idx) => (
                       <a
                         key={idx}
-                        href={file.url}
+                        href={getFilePreviewUrl(file.url, file.type)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl hover:bg-blue-50 hover:border-blue-200 transition-all group"

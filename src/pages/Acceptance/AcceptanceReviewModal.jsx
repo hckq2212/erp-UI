@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, CheckCircle2, XCircle, FileText, ExternalLink, MessageSquare, AlertCircle, Eye, LayoutList, Send } from 'lucide-react';
 import { useProcessAcceptanceRequestMutation } from '../../api/acceptances';
 import { toast } from 'react-toastify';
+import { getFilePreviewUrl } from '../../utils/cloudinary';
 
 export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
     const [processAcceptance, { isLoading: isSubmitting }] = useProcessAcceptanceRequestMutation();
@@ -106,7 +107,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                                             </p>
                                             {service.result && (
                                                 <a
-                                                    href={service.result.url}
+                                                    href={getFilePreviewUrl(service.result.url, service.result.type)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="inline-flex items-center gap-2 mt-2 px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-[10px] font-bold hover:bg-amber-100 transition-all"

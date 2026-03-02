@@ -1,6 +1,7 @@
 import { Calendar, Tag } from 'lucide-react';
 import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../../utils/enums';
 import { FileText } from 'lucide-react';
+import { getFilePreviewUrl } from '../../../utils/cloudinary';
 
 export const ProjectInfo = ({ project, formatDate }) => {
     return (
@@ -43,7 +44,7 @@ export const ProjectInfo = ({ project, formatDate }) => {
                             {project?.contract?.attachments.map((file, idx) => (
                                 <a
                                     key={idx}
-                                    href={file.url}
+                                    href={getFilePreviewUrl(file.url, file.type)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-blue-200 hover:bg-white transition-all"

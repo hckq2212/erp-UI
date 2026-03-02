@@ -1,4 +1,5 @@
-import { FileText, ExternalLink, Download } from 'lucide-react';
+import { FileText, ExternalLink, Download, Eye } from 'lucide-react';
+import { getFilePreviewUrl } from '../../../utils/cloudinary';
 
 export const AttachmentsList = ({ attachments }) => {
   if (!attachments || attachments.length === 0) return null;
@@ -38,7 +39,7 @@ export const AttachmentsList = ({ attachments }) => {
         {attachments.map((attachment, index) => (
           <a
             key={index}
-            href={attachment.url}
+            href={getFilePreviewUrl(attachment.url, attachment.type)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors group"
@@ -68,7 +69,7 @@ export const AttachmentsList = ({ attachments }) => {
               </div>
             </div>
             {attachment.type === 'FILE' ? (
-              <Download className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+              <Eye className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
             ) : (
               <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
             )}

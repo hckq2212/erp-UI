@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, CheckCircle2, AlertCircle, FileText, Send } from 'lucide-react';
 import { useCreateAcceptanceRequestMutation } from '../../../api/acceptances';
 import { toast } from 'react-toastify';
+import { getFilePreviewUrl } from '../../../utils/cloudinary';
 
 export const CreateAcceptanceModal = ({ isOpen, onClose, contract, projectId }) => {
     const [createAcceptance, { isLoading }] = useCreateAcceptanceRequestMutation();
@@ -89,7 +90,7 @@ export const CreateAcceptanceModal = ({ isOpen, onClose, contract, projectId }) 
                                             </p>
                                         </div>
                                         {service.result && (
-                                            <a href={service.result.url}
+                                            <a href={getFilePreviewUrl(service.result.url, service.result.type)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="flex items-center gap-1 text-[10px] bg-white px-2 py-0.5 rounded-lg border border-gray-100 text-gray-500">
