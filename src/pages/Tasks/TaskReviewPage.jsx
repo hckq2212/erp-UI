@@ -265,7 +265,7 @@ export const TaskReviewPage = () => {
                                         </div>
                                     </div>
                                 ))}
-                                {(activeTab === 'LEAD' ? leadReviews : assignerReviews).length === 0 && (
+                                {(activeTab === 'TEAM_LEAD' ? leadReviews : assignerReviews).length === 0 && (
                                     <p className="text-gray-400 italic text-center py-8">Không có tiêu chí cho phần này</p>
                                 )}
                             </div>

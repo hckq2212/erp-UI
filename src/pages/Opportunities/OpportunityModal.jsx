@@ -2,9 +2,11 @@ import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
 import { X, Plus, Trash2, Upload, Link as LinkIcon, Building2, FileText, MapPin, Calendar, Target, TrendingUp, Clock, Briefcase } from 'lucide-react';
 import { useCreateOpportunityMutation } from '../../api/opportunities';
 import { useGetServicesQuery } from '../../api/services';
+import { uploadToCloudinary } from '../../utils/cloudinary';
 import Select from 'react-select';
 import { VIETNAM_PROVINCES } from '../../utils/provinces';
 import { formatNumber, parseNumber, formatDate } from '../../utils/format';
+import { useNavigate } from 'react-router-dom';
 
 const FIELDS = [
   { value: '', label: '-- Chọn lĩnh vực --' },
@@ -91,24 +93,36 @@ const LinkItem = memo(({ link, index, onLinkChange, onRemove, showRemove, placeh
   </div>
 ));
 
-const FileItem = memo(({ file, index, onRemove }) => (
-  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 group hover:bg-white hover:border-blue-300 transition-all">
-    <div className="flex items-center gap-3 overflow-hidden">
-      <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-        <FileText className="w-4 h-4" />
+const FileItem = memo(({ file, index, onRemove, progress, isUploading }) => (
+  <div className="flex flex-col bg-gray-50 rounded-xl border border-gray-200 group hover:bg-white hover:border-blue-300 transition-all">
+    <div className="flex items-center justify-between p-3">
+      <div className="flex items-center gap-3 overflow-hidden">
+        <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+          <FileText className="w-4 h-4" />
+        </div>
+        <div className="overflow-hidden">
+          <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+          <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+        </div>
       </div>
-      <div className="overflow-hidden">
-        <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-        <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
-      </div>
+      <button
+        type="button"
+        onClick={() => onRemove(index)}
+        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+      >
+        <X className="w-4 h-4" />
+      </button>
     </div>
-    <button
-      type="button"
-      onClick={() => onRemove(index)}
-      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-    >
-      <X className="w-4 h-4" />
-    </button>
+    {isUploading && progress > 0 && (
+      <div className="px-3 pb-1">
+        <div className="w-full bg-gray-200 rounded-full h-1 overflow-hidden">
+          <div
+            className="bg-blue-600 h-full transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          ></div>
+        </div>
+      </div>
+    )}
   </div>
 ));
 
@@ -116,6 +130,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
   const [createOpportunity, { isLoading }] = useCreateOpportunityMutation();
   const { data: servicesData } = useGetServicesQuery();
   const services = useMemo(() => Array.isArray(servicesData) ? servicesData : (servicesData?.data || []), [servicesData]);
+  const navigate = useNavigate();
 
   const fieldRefs = useRef({});
 
@@ -164,6 +179,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
   const [documentLinks, setDocumentLinks] = useState(Array(LINK_PLACEHOLDERS.length).fill(''));
   const [files, setFiles] = useState([]);
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [isUploading, setIsUploading] = useState(false);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -326,46 +343,44 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     }
 
     try {
-      // Build FormData for multipart/form-data submission
-      const submitFormData = new FormData();
+      setIsUploading(true);
+      let attachments = [];
 
-      // Add basic fields
-      Object.keys(formData).forEach(key => {
-        if (formData[key] !== '' && formData[key] !== null && formData[key] !== undefined) {
-          if (key === 'region' && Array.isArray(formData[key])) {
-            submitFormData.append(key, JSON.stringify(formData[key]));
-          } else {
-            submitFormData.append(key, formData[key]);
-          }
-        }
-      });
+      // 1. Add document links
+      const validLinks = documentLinks
+        .filter(l => l.trim())
+        .map(url => ({ type: 'LINK', name: url, url }));
+      attachments.push(...validLinks);
 
-      // Add services as JSON string - transform serviceId to id
+      // 2. Upload files to Cloudinary
+      if (files.length > 0) {
+        const uploadPromises = files.map((file, index) =>
+          uploadToCloudinary(
+            file,
+            "GETVINI/ERP/opportunities",
+            (progress) => setUploadProgress(prev => ({ ...prev, [index]: progress }))
+          )
+        );
+        const uploadedFiles = await Promise.all(uploadPromises);
+        attachments.push(...uploadedFiles);
+      }
+
       const validServices = selectedServices
         .filter(s => s.serviceId)
         .map(s => ({
           id: s.serviceId,
           quantity: s.quantity
         }));
-      if (validServices.length > 0) {
-        submitFormData.append('services', JSON.stringify(validServices));
-      }
 
-      // Add document links as JSON string
-      const validLinks = documentLinks
-        .filter(l => l.trim())
-        .map(url => ({ type: 'LINK', name: url, url }));
-      if (validLinks.length > 0) {
-        submitFormData.append('links', JSON.stringify(validLinks));
-      }
+      const result = await createOpportunity({
+        ...formData,
+        services: validServices,
+        attachments
+      }).unwrap();
 
-      // Add files
-      files.forEach(file => {
-        submitFormData.append('files', file);
-      });
-
-      const data = await createOpportunity(submitFormData).unwrap();
-      onSuccess?.(data);
+      navigate(`/opportunities/${result.id}`);
+      onSuccess?.();
+      setIsUploading(false);
       onClose();
 
       // Reset form
@@ -387,7 +402,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       setDocumentLinks(Array(LINK_PLACEHOLDERS.length).fill(''));
       setFiles([]);
     } catch (err) {
-      setErrors({ submit: err?.data?.message || 'Có lỗi xảy ra' });
+      setIsUploading(false);
+      setErrors({ submit: err?.data?.message || err?.message || 'Có lỗi xảy ra' });
     }
   };
 
@@ -818,6 +834,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                             index={index}
                             file={file}
                             onRemove={removeFile}
+                            progress={uploadProgress[index]}
+                            isUploading={isUploading}
                           />
                         ))}
                       </div>
@@ -839,17 +857,17 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
               </button>
               <button
                 type="submit"
-                disabled={isLoading}
-                className="flex-[2] bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40"
+                disabled={isLoading || isUploading}
+                className="flex-[2] bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 flex items-center justify-center gap-2"
               >
-                {isLoading ? (
-                  <span className="flex items-center justify-center gap-2">
+                {isLoading || isUploading ? (
+                  <>
                     <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Đang tạo...
-                  </span>
+                    <span>{isUploading ? 'Đang tải tệp...' : 'Đang tạo...'}</span>
+                  </>
                 ) : 'Tạo cơ hội'}
               </button>
             </div>

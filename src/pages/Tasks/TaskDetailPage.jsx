@@ -10,6 +10,7 @@ import { JOB_PERFORMER_TYPE } from '../../utils/enums';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../utils/cn';
+import { uploadToCloudinary } from '../../utils/cloudinary';
 
 export const TaskDetailPage = () => {
     const { id } = useParams();
@@ -26,6 +27,8 @@ export const TaskDetailPage = () => {
     const [submissionType, setSubmissionType] = useState('file'); // 'file' or 'link'
     const [resultLink, setResultLink] = useState('');
     const [resultFile, setResultFile] = useState(null);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef(null);
 
     const getStatusBadge = (status) => {
@@ -62,33 +65,40 @@ export const TaskDetailPage = () => {
     };
 
     const handleResultSubmit = async () => {
-        if (!resultFile && !resultLink) {
-            toast.error('Vui lòng cung cấp link hoặc file kết quả');
-            return;
-        }
-
-        const formData = new FormData();
-        if (submissionType === 'file' && resultFile) {
-            formData.append('file', resultFile);
-        } else if (submissionType === 'link' && resultLink) {
-            formData.append('link', resultLink);
-        }
-
         try {
+            let resultData = null;
+
+            if (submissionType === 'file' && resultFile) {
+                setIsUploading(true);
+                setUploadProgress(0);
+                const uploadedFile = await uploadToCloudinary(
+                    resultFile,
+                    `GETVINI/ERP/TASK/${id}`,
+                    (progress) => setUploadProgress(progress)
+                );
+                resultData = uploadedFile;
+                setIsUploading(false);
+            } else if (submissionType === 'link' && resultLink) {
+                resultData = { type: 'LINK', url: resultLink, name: resultLink };
+            }
+
             await submitResult({
                 id,
-                formData,
+                result: resultData,
                 projectId: task.project?.id
             }).unwrap();
+
             toast.success('Gửi kết quả thành công!');
             setIsResultModalOpen(false);
             setResultFile(null);
             setResultLink('');
             if (fileInputRef.current) fileInputRef.current.value = '';
         } catch (err) {
-            toast.error(err.data?.message || 'Có lỗi xảy ra khi gửi kết quả');
+            setIsUploading(false);
+            toast.error(err.data?.message || err.message || 'Có lỗi xảy ra khi gửi kết quả');
         }
     };
+
 
     if (isLoading) {
         return (
@@ -354,7 +364,23 @@ export const TaskDetailPage = () => {
                                     <p className="text-xs text-gray-400 font-medium text-center">
                                         Chấp nhận file hình ảnh, PDF, Excel, Word...
                                     </p>
+
+                                    {isUploading && (
+                                        <div className="mt-4 w-full max-w-xs">
+                                            <div className="flex justify-between text-[10px] font-bold text-blue-600 mb-1">
+                                                <span>Đang tải lên...</span>
+                                                <span>{uploadProgress}%</span>
+                                            </div>
+                                            <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                                <div
+                                                    className="bg-blue-600 h-full transition-all duration-300"
+                                                    style={{ width: `${uploadProgress}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
+
                                 {resultFile && (
                                     <button
                                         onClick={() => {
@@ -395,11 +421,12 @@ export const TaskDetailPage = () => {
                             <Button
                                 className="flex-1 rounded-2xl py-4 shadow-lg shadow-blue-200"
                                 onClick={handleResultSubmit}
-                                isLoading={isSubmittingResult}
-                                disabled={isSubmittingResult || (!resultFile && !resultLink)}
+                                isLoading={isSubmittingResult || isUploading}
+                                disabled={isSubmittingResult || isUploading || (!resultFile && !resultLink)}
                             >
-                                Hoàn tất
+                                {isUploading ? 'Đang tải lên...' : 'Hoàn tất'}
                             </Button>
+
                         </div>
                     </div>
                 </Modal>

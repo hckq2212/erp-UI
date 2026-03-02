@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGetTeamMembersQuery } from '../../../api/teams';
 import { useAssignTaskMutation } from '../../../api/tasks';
 import { useGetVendorsByJobQuery } from '../../../api/vendors';
+import { uploadToCloudinary } from '../../../utils/cloudinary';
 import { toast } from 'react-toastify';
 
 export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
@@ -27,6 +28,8 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     });
     const vendors = Array.isArray(vendorsResult) ? vendorsResult : (vendorsResult?.data || []);
     const [files, setFiles] = useState([]);
+    const [uploadProgress, setUploadProgress] = useState({}); // { index: progress }
+    const [isUploading, setIsUploading] = useState(false);
 
     const handleAddLink = useCallback(() => {
         setFormData(prev => ({ ...prev, links: [...prev.links, ''] }));
@@ -75,36 +78,45 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
         }
 
         try {
-            const data = new FormData();
-            data.append('assigneeId', formData.assigneeId);
-            data.append('performerType', formData.performerType);
-            if (formData.plannedEndDate) {
-                data.append('plannedEndDate', formData.plannedEndDate);
-            }
-            if (formData.plannedStartDate) {
-                data.append('plannedStartDate', formData.plannedStartDate);
-            }
-            if (formData.description) {
-                data.append('description', formData.description);
-            }
-            const links = formData.links.filter(link => link.trim() !== '');
-            if (links.length > 0) {
-                data.append('links', JSON.stringify(links.map(url => ({ type: 'LINK', name: url, url }))));
-            }
+            let attachments = [];
 
-            files.forEach(file => {
-                data.append('files', file);
-            });
+            // 1. Handle Links
+            const validLinks = formData.links
+                .filter(link => link.trim() !== '')
+                .map(url => ({ type: 'LINK', name: url, url }));
+            attachments.push(...validLinks);
+
+            // 2. Handle Files (Direct Upload)
+            if (files.length > 0) {
+                setIsUploading(true);
+                const uploadPromises = files.map((file, index) =>
+                    uploadToCloudinary(
+                        file,
+                        'GETVINI/ERP/tasks',
+                        (progress) => setUploadProgress(prev => ({ ...prev, [index]: progress }))
+                    )
+                );
+
+                const uploadedFiles = await Promise.all(uploadPromises);
+                attachments.push(...uploadedFiles);
+                setIsUploading(false);
+            }
 
             await assignTask({
                 id: task.id,
-                formData: data,
+                assigneeId: formData.assigneeId,
+                performerType: formData.performerType,
+                plannedEndDate: formData.plannedEndDate || undefined,
+                plannedStartDate: formData.plannedStartDate || undefined,
+                description: formData.description || undefined,
+                attachments,
                 projectId: project.id
             }).unwrap();
             toast.success('Phân công công việc thành công');
             onClose();
         } catch (err) {
-            toast.error(err?.data?.message || 'Có lỗi xảy ra khi phân công');
+            setIsUploading(false);
+            toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi phân công');
         }
     }, [formData, files, task.id, project.id, assignTask, onClose]);
 
@@ -354,13 +366,23 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                                         key={`file-${file.name}-${index}`}
                                                         className="flex items-center justify-between p-4 bg-white border-2 border-slate-50 rounded-2xl hover:border-blue-100 transition-all shadow-sm"
                                                     >
-                                                        <div className="flex items-center gap-4 transition-all">
-                                                            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shadow-sm">
+                                                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                                                            <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 shrink-0">
                                                                 <FileText className="w-5 h-5" />
                                                             </div>
-                                                            <div className="min-w-0">
+                                                            <div className="min-w-0 flex-1">
                                                                 <p className="text-sm font-bold text-slate-700 truncate max-w-[240px]">{file.name}</p>
-                                                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                                <div className="flex items-center justify-between gap-4">
+                                                                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                                    {isUploading && uploadProgress[index] !== undefined && (
+                                                                        <div className="flex-1 max-w-[100px] h-1 bg-slate-100 rounded-full overflow-hidden">
+                                                                            <div
+                                                                                className="bg-blue-600 h-full transition-all duration-300"
+                                                                                style={{ width: `${uploadProgress[index]}%` }}
+                                                                            ></div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                         <button
@@ -370,6 +392,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                                                 handleRemoveFile(index);
                                                             }}
                                                             className="p-2 text-slate-300 hover:text-red-500 transition-all hover:rotate-12"
+                                                            disabled={isUploading}
                                                         >
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
@@ -395,12 +418,11 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                type="submit"
                                 onClick={handleSubmit}
-                                disabled={isAssigning}
+                                disabled={isAssigning || isUploading}
                                 className="flex-[1.5] px-6 py-4 bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:shadow-none"
                             >
-                                {isAssigning ? (
+                                {isAssigning || isUploading ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                         <span>Đang xử lý</span>
@@ -410,10 +432,10 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                 )}
                             </motion.button>
                         </div>
-                    </motion.div>
-                </div>
+                    </motion.div >
+                </div >
             )}
-        </AnimatePresence>
+        </AnimatePresence >
     );
 };
 

@@ -11,6 +11,7 @@ import {
   useDeleteMilestoneMutation,
 } from '../../../api/contracts';
 import { useGetProjectsByContractQuery } from '../../../api/projects';
+import { uploadToCloudinary } from '../../../utils/cloudinary';
 import { toast } from 'react-toastify';
 import { ContractInfo } from './ContractInfo';
 import { CustomerInfo } from './CustomerInfo';
@@ -58,10 +59,13 @@ export const ContractDetailPage = () => {
       }
 
       try {
-        await uploadProposal({ id: contract.id, file }).unwrap();
+        // Direct upload to Cloudinary
+        const uploadedFile = await uploadToCloudinary(file, "GETVINI/ERP/proposal");
+
+        await uploadProposal({ id: contract.id, file: uploadedFile }).unwrap();
         toast.success('Upload proposal thành công');
       } catch (err) {
-        toast.error(err?.data?.message || 'Upload thất bại');
+        toast.error(err?.data?.message || err?.message || 'Upload thất bại');
       }
     };
     input.click();
@@ -91,10 +95,13 @@ export const ContractDetailPage = () => {
       }
 
       try {
-        await uploadSigned({ id: contract.id, file }).unwrap();
+        // Direct upload to Cloudinary
+        const uploadedFile = await uploadToCloudinary(file, "GETVINI/ERP/signed");
+
+        await uploadSigned({ id: contract.id, file: uploadedFile }).unwrap();
         toast.success('Upload hợp đồng đã ký thành công');
       } catch (err) {
-        toast.error(err?.data?.message || 'Upload thất bại');
+        toast.error(err?.data?.message || err?.message || 'Upload thất bại');
       }
     };
     input.click();

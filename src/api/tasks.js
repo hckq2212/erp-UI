@@ -92,10 +92,10 @@ export const tasksApi = api.injectEndpoints({
       ].filter(Boolean),
     }),
     assignTask: builder.mutation({
-      query: ({ id, formData }) => ({
+      query: ({ id, ...data }) => ({
         url: `/tasks/${id}/assign`,
         method: 'PUT',
-        body: formData,
+        body: data,
       }),
       invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },
@@ -104,10 +104,10 @@ export const tasksApi = api.injectEndpoints({
       ].filter(Boolean),
     }),
     submitTaskResult: builder.mutation({
-      query: ({ id, formData }) => ({
+      query: ({ id, ...data }) => ({
         url: `/tasks/${id}/submit-result`,
         method: 'PATCH',
-        body: formData,
+        body: data,
       }),
       invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },

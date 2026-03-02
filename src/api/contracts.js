@@ -50,15 +50,11 @@ export const contractsApi = api.injectEndpoints({
       invalidatesTags: [{ type: 'Contracts', id: 'LIST' }],
     }),
     uploadProposal: builder.mutation({
-      query: ({ id, file }) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return {
-          url: `/contracts/${id}/proposal`,
-          method: 'POST',
-          body: formData,
-        };
-      },
+      query: ({ id, file }) => ({
+        url: `/contracts/${id}/proposal`,
+        method: 'POST',
+        body: { file },
+      }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Contracts', id },
         { type: 'Contracts', id: 'LIST' },
@@ -76,15 +72,11 @@ export const contractsApi = api.injectEndpoints({
       ],
     }),
     uploadSigned: builder.mutation({
-      query: ({ id, file }) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return {
-          url: `/contracts/${id}/signed`,
-          method: 'POST',
-          body: formData,
-        };
-      },
+      query: ({ id, file }) => ({
+        url: `/contracts/${id}/signed`,
+        method: 'POST',
+        body: { file },
+      }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Contracts', id },
         { type: 'Contracts', id: 'LIST' },

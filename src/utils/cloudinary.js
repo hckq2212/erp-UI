@@ -1,0 +1,62 @@
+import axios from 'axios';
+import { BASE_URL } from '../store/api';
+
+/**
+ * Upload a file directly to Cloudinary from the client side
+ * 
+ * @param {File} file - The file object to upload
+ * @param {string} folder - The Cloudinary folder to upload to
+ * @param {function} onProgress - Callback for upload progress (0-100)
+ * @returns {Promise<object>} - Cloudinary response with secure_url, public_id, etc.
+ */
+export const uploadToCloudinary = async (file, folder = 'GETVINI/ERP/others', onProgress) => {
+    try {
+        // 1. Get signature from our backend
+        const response = await axios.get(`${BASE_URL}/cloudinary/signature`, {
+            params: { folder },
+            withCredentials: true // Required to send auth cookies to the backend
+        });
+
+        const { signature, timestamp, api_key, cloud_name } = response.data;
+        console.log('Cloudinary Config received:', { cloud_name, api_key, timestamp, folder });
+
+        // 2. Prepare Form Data for Cloudinary
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('signature', signature);
+        formData.append('timestamp', timestamp);
+        formData.append('api_key', api_key);
+        formData.append('folder', folder);
+
+        // 3. Upload to Cloudinary
+        const uploadResponse = await axios.post(
+            `https://api.cloudinary.com/v1_1/${cloud_name}/auto/upload`,
+            formData,
+            {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                onUploadProgress: (progressEvent) => {
+                    if (onProgress && progressEvent.total) {
+                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        onProgress(percentCompleted);
+                    }
+                },
+            }
+        );
+
+        const result = uploadResponse.data;
+
+        // Return standardized metadata
+        return {
+            type: 'FILE',
+            name: file.name,
+            url: result.secure_url,
+            publicId: result.public_id,
+            size: result.bytes,
+            format: result.format,
+            resource_type: result.resource_type
+        };
+    } catch (error) {
+        console.error('Cloudinary Upload Error:', error);
+        throw new Error(error.response?.data?.error?.message || 'Lỗi khi tải tệp lên Cloudinary');
+    }
+};

@@ -6,6 +6,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useCreateVendorMutation } from '../../api/vendors';
+import { uploadToCloudinary } from '../../utils/cloudinary';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -49,6 +50,8 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
     const idCardBackFile = watch('idCardBack');
 
     const [previews, setPreviews] = useState({ front: null, back: null });
+    const [uploadProgress, setUploadProgress] = useState({ front: 0, back: 0 });
+    const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
         if (idCardFrontFile && idCardFrontFile[0]) {
@@ -72,24 +75,38 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
 
     const onSubmit = async (data) => {
         try {
-            const formData = new FormData();
-            Object.keys(data).forEach((key) => {
-                if (key === 'idCardFront' || key === 'idCardBack') {
-                    if (data[key] && data[key][0]) {
-                        formData.append(key, data[key][0]);
-                    }
-                } else {
-                    formData.append(key, data[key]);
-                }
-            });
+            setIsUploading(true);
+            const vendorData = { ...data };
 
-            const result = await createVendor(formData).unwrap();
+            // 1. Upload ID Card Front
+            if (data.idCardFront && data.idCardFront[0]) {
+                const uploadedFront = await uploadToCloudinary(
+                    data.idCardFront[0],
+                    'GETVINI/ERP/vendor',
+                    (progress) => setUploadProgress(prev => ({ ...prev, front: progress }))
+                );
+                vendorData.idCardFront = uploadedFront.url;
+            }
+
+            // 2. Upload ID Card Back
+            if (data.idCardBack && data.idCardBack[0]) {
+                const uploadedBack = await uploadToCloudinary(
+                    data.idCardBack[0],
+                    'GETVINI/ERP/vendor',
+                    (progress) => setUploadProgress(prev => ({ ...prev, back: progress }))
+                );
+                vendorData.idCardBack = uploadedBack.url;
+            }
+
+            const result = await createVendor(vendorData).unwrap();
             toast.success('Tạo vendor thành công');
             reset();
             onClose();
             if (result?.id) navigate(`/vendors/${result.id}`);
+            if (result?.id) navigate(`/vendors/${result.id}`);
         } catch (err) {
-            toast.error(err?.data?.message || 'Có lỗi xảy ra khi tạo vendor');
+            setIsUploading(false);
+            toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi tạo vendor');
         }
     };
 
@@ -158,6 +175,13 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
                                         />
                                     </div>
                                 )}
+                                {isUploading && uploadProgress.front > 0 && (
+                                    <div className="mt-2">
+                                        <div className="w-full bg-gray-100 rounded-full h-1 overflow-hidden">
+                                            <div className="bg-blue-600 h-full transition-all duration-300" style={{ width: `${uploadProgress.front}%` }}></div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Input
@@ -174,6 +198,13 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
                                             alt="Mặt sau CCCD"
                                             className="max-h-full object-contain"
                                         />
+                                    </div>
+                                )}
+                                {isUploading && uploadProgress.back > 0 && (
+                                    <div className="mt-2">
+                                        <div className="w-full bg-gray-100 rounded-full h-1 overflow-hidden">
+                                            <div className="bg-blue-600 h-full transition-all duration-300" style={{ width: `${uploadProgress.back}%` }}></div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -193,8 +224,8 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
                     <Button type="button" variant="outline" onClick={onClose}>
                         Hủy
                     </Button>
-                    <Button type="submit" isLoading={isLoading}>
-                        Tạo Vendor
+                    <Button type="submit" isLoading={isLoading || isUploading}>
+                        {isUploading ? 'Đang tải ảnh...' : 'Tạo Vendor'}
                     </Button>
                 </div>
             </form>

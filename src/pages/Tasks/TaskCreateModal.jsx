@@ -4,6 +4,7 @@ import { X, Upload, Link as LinkIcon, Calendar, User, FileText, Trash2, Plus, Ch
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGetUsersQuery } from '../../api/users';
 import { useCreateInternalTaskMutation } from '../../api/tasks';
+import { uploadToCloudinary } from '../../utils/cloudinary';
 import { toast } from 'react-toastify';
 
 const SearchableSelect = memo(({
@@ -169,6 +170,8 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
     });
 
     const [files, setFiles] = useState([]);
+    const [uploadProgress, setUploadProgress] = useState({}); // { index: progress }
+    const [isUploading, setIsUploading] = useState(false);
 
     const handleAddLink = useCallback(() => {
         setLinks(prev => [...prev, '']);
@@ -233,20 +236,48 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
         }
 
         try {
+            let attachments = [];
+
+            // 1. Handle Links
+            const validLinks = links.filter(l => l.trim() !== '').map(l => ({
+                type: 'LINK',
+                name: l,
+                url: l
+            }));
+            attachments.push(...validLinks);
+
+            // 2. Handle Files (Direct Upload)
+            if (files.length > 0) {
+                setIsUploading(true);
+                const uploadPromises = files.map((file, index) =>
+                    uploadToCloudinary(
+                        file,
+                        'GETVINI/ERP/tasks', // Default folder
+                        (progress) => setUploadProgress(prev => ({ ...prev, [index]: progress }))
+                    )
+                );
+
+                const uploadedFiles = await Promise.all(uploadPromises);
+                attachments.push(...uploadedFiles);
+                setIsUploading(false);
+            }
+
             const result = await createInternalTask({
                 name,
                 assigneeId: formData.assigneeId,
                 supervisorId: formData.supervisorId,
                 description,
                 plannedStartDate: formData.plannedStartDate || undefined,
-                plannedEndDate: formData.plannedEndDate
+                plannedEndDate: formData.plannedEndDate,
+                attachments
             }).unwrap();
 
             toast.success('Tạo công việc thành công');
             onClose();
             navigate(`/tasks/${result.id}`);
         } catch (err) {
-            toast.error(err?.data?.message || 'Có lỗi xảy ra khi tạo công việc');
+            setIsUploading(false);
+            toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi tạo công việc');
         }
     };
 
@@ -381,34 +412,44 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
                         </div>
 
                         {files.length > 0 && (
-                            <div className="mt-4 space-y-2">
+                            <div className="mt-4 space-y-3">
                                 {files.map((file, index) => (
-                                    <div key={index} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-2xl">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-                                                <FileText className="w-4 h-4" />
+                                    <div key={index} className="space-y-1">
+                                        <div className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-2xl">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                                                    <FileText className="w-4 h-4" />
+                                                </div>
+                                                <div className="overflow-hidden">
+                                                    <p className="text-sm font-medium text-gray-700 truncate max-w-[200px]">{file.name}</p>
+                                                    <p className="text-[10px] text-gray-400 uppercase font-bold">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                </div>
                                             </div>
-                                            <div className="overflow-hidden">
-                                                <p className="text-sm font-medium text-gray-700 truncate max-w-[200px]">{file.name}</p>
-                                                <p className="text-[10px] text-gray-400 uppercase font-bold">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveFile(index)}
+                                                className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
+                                                disabled={isUploading}
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleRemoveFile(index);
-                                            }}
-                                            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
+                                        {isUploading && uploadProgress[index] !== undefined && (
+                                            <div className="mt-1 px-3">
+                                                <div className="w-full bg-gray-100 rounded-full h-1 overflow-hidden">
+                                                    <div
+                                                        className="bg-blue-600 h-full transition-all duration-300"
+                                                        style={{ width: `${uploadProgress[index]}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
                         )}
                     </div>
-                </form>
+                </form >
 
                 <div className="p-6 border-t border-gray-100 flex gap-3">
                     <button
@@ -419,12 +460,12 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
                         Hủy bỏ
                     </button>
                     <button
-                        type="submit"
-                        disabled={isCreating}
+                        type="button"
+                        disabled={isCreating || isUploading}
                         onClick={handleSubmit}
                         className="flex-[2] px-4 py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:bg-blue-300 disabled:shadow-none"
                     >
-                        {isCreating ? 'Đang xử lý...' : 'Xác nhận tạo'}
+                        {isCreating || isUploading ? 'Đang xử lý...' : 'Xác nhận tạo'}
                     </button>
                 </div>
             </div>

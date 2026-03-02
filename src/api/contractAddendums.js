@@ -42,15 +42,11 @@ export const contractAddendumsApi = api.injectEndpoints({
             ],
         }),
         uploadSignedAddendum: builder.mutation({
-            query: ({ id, file }) => {
-                const formData = new FormData();
-                formData.append('file', file);
-                return {
-                    url: `/contract-addendums/${id}/upload-signed`,
-                    method: 'POST',
-                    body: formData,
-                };
-            },
+            query: ({ id, file }) => ({
+                url: `/contract-addendums/${id}/upload-signed`,
+                method: 'POST',
+                body: { file },
+            }),
             invalidatesTags: (result, error, { id }) => [
                 { type: 'ContractAddendums', id },
                 { type: 'ContractAddendums', id: 'LIST' },
