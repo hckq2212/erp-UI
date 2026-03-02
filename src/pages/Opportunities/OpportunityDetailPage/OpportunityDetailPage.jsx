@@ -101,44 +101,44 @@ export const OpportunityDetailPage = () => {
 
   const handleSaveContact = async () => {
     try {
-      const formData = new FormData();
+      const updateData = {};
 
       if (customerStatus === 'EXISTING') {
-        formData.append('customerId', selectedCustomerId);
-        formData.append('leadName', '');
-        formData.append('leadPhone', '');
-        formData.append('leadEmail', '');
-        formData.append('leadIdNumber', '');
-        formData.append('leadTaxId', '');
-        formData.append('leadAddress', '');
+        updateData.customerId = selectedCustomerId;
+        updateData.leadName = '';
+        updateData.leadPhone = '';
+        updateData.leadEmail = '';
+        updateData.leadIdNumber = '';
+        updateData.leadTaxId = '';
+        updateData.leadAddress = '';
 
         // Map frontend type to backend source enum
         const backendSource = customerType === 'REFERRAL' ? 'REFERRAL_PARTNER' : 'INTERNAL';
-        formData.append('source', backendSource);
+        updateData.source = backendSource;
 
         if (customerType === 'REFERRAL' && selectedReferralPartner) {
-          formData.append('referralPartnerId', selectedReferralPartner);
+          updateData.referralPartnerId = selectedReferralPartner;
         }
       } else if (customerStatus === 'POTENTIAL') {
-        formData.append('customerId', '');
+        updateData.customerId = '';
 
         // Map frontend type to backend source enum
         const backendSource = customerType === 'REFERRAL' ? 'REFERRAL_PARTNER' : 'INTERNAL';
-        formData.append('source', backendSource);
+        updateData.source = backendSource;
 
-        if (leadInfo.leadName) formData.append('leadName', leadInfo.leadName);
-        if (leadInfo.leadPhone) formData.append('leadPhone', leadInfo.leadPhone);
-        if (leadInfo.leadEmail) formData.append('leadEmail', leadInfo.leadEmail);
-        if (leadInfo.leadIdNumber) formData.append('leadIdNumber', leadInfo.leadIdNumber);
-        if (leadInfo.leadTaxId) formData.append('leadTaxId', leadInfo.leadTaxId);
-        if (leadInfo.leadAddress) formData.append('leadAddress', leadInfo.leadAddress);
+        if (leadInfo.leadName) updateData.leadName = leadInfo.leadName;
+        if (leadInfo.leadPhone) updateData.leadPhone = leadInfo.leadPhone;
+        if (leadInfo.leadEmail) updateData.leadEmail = leadInfo.leadEmail;
+        if (leadInfo.leadIdNumber) updateData.leadIdNumber = leadInfo.leadIdNumber;
+        if (leadInfo.leadTaxId) updateData.leadTaxId = leadInfo.leadTaxId;
+        if (leadInfo.leadAddress) updateData.leadAddress = leadInfo.leadAddress;
 
         if (customerType === 'REFERRAL' && selectedReferralPartner) {
-          formData.append('referralPartnerId', selectedReferralPartner);
+          updateData.referralPartnerId = selectedReferralPartner;
         }
       }
 
-      await updateOpportunity({ id, formData }).unwrap();
+      await updateOpportunity({ id, ...updateData }).unwrap();
       setShowContactModal(false);
     } catch (err) {
       alert(err?.data?.message || 'Có lỗi xảy ra khi cập nhật');

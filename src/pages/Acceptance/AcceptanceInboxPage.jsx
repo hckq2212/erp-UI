@@ -3,6 +3,7 @@ import { useGetAcceptanceRequestsQuery } from '../../api/acceptances';
 import { CheckCircle2, XCircle, Clock, Search, Filter, Eye, FileText, ChevronRight } from 'lucide-react';
 import { AcceptanceReviewModal } from './AcceptanceReviewModal';
 import { formatDate } from '../../utils/format';
+import { ACCEPTANCE_STATUS_LABELS, ACCEPTANCE_STATUS_COLORS } from '../../utils/enums';
 
 export const AcceptanceInboxPage = () => {
     const [filters, setFilters] = useState({});
@@ -11,28 +12,17 @@ export const AcceptanceInboxPage = () => {
     const [selectedRequest, setSelectedRequest] = useState(null);
 
     const getStatusBadge = (status) => {
-        switch (status) {
-            case 'PENDING':
-                return (
-                    <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-[10px] font-black uppercase tracking-wider border border-amber-100">
-                        <Clock className="w-3 h-3" /> Chờ duyệt
-                    </span>
-                );
-            case 'APPROVED':
-                return (
-                    <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-wider border border-emerald-100">
-                        <CheckCircle2 className="w-3 h-3" /> Đã duyệt
-                    </span>
-                );
-            case 'REJECTED':
-                return (
-                    <span className="flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-700 rounded-full text-[10px] font-black uppercase tracking-wider border border-red-100">
-                        <XCircle className="w-3 h-3" /> Từ chối
-                    </span>
-                );
-            default:
-                return status;
-        }
+        const icons = {
+            PENDING: <Clock className="w-3 h-3" />,
+            APPROVED: <CheckCircle2 className="w-3 h-3" />,
+            REJECTED: <XCircle className="w-3 h-3" />,
+        };
+
+        return (
+            <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${ACCEPTANCE_STATUS_COLORS[status] || 'bg-gray-50 text-gray-600 border-gray-100'}`}>
+                {icons[status] || null} {ACCEPTANCE_STATUS_LABELS[status] || status}
+            </span>
+        );
     };
 
     return (
@@ -62,9 +52,9 @@ export const AcceptanceInboxPage = () => {
                             onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                         >
                             <option value="ALL">Tất cả trạng thái</option>
-                            <option value="PENDING">Chờ duyệt</option>
-                            <option value="APPROVED">Đã duyệt</option>
-                            <option value="REJECTED">Từ chối</option>
+                            {Object.entries(ACCEPTANCE_STATUS_LABELS).map(([value, label]) => (
+                                <option key={value} value={value}>{label}</option>
+                            ))}
                         </select>
                     </div>
                 </div>
@@ -115,7 +105,7 @@ export const AcceptanceInboxPage = () => {
                                                 {req.services?.length || 0}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 flex justify-center">
+                                        <td className="px-6 py-4 flex justify-center mt-2">
                                             {getStatusBadge(req.status)}
                                         </td>
                                         <td className="px-6 py-4 text-right">

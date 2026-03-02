@@ -66,7 +66,7 @@ export const TasksPage = () => {
                         className="flex items-center gap-2 bg-blue-600 px-6 py-2.5 rounded-xl border border-blue-700 text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95"
                     >
                         <Plus className="w-5 h-5" />
-                        <span className="font-bold">Tạo công việc</span>
+                        <span className="font-bold">Tạo công việc khác</span>
                     </button>
 
                     <div className="flex bg-gray-100 p-1.5 rounded-2xl border border-gray-200 shadow-sm ml-auto md:ml-0">

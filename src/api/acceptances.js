@@ -29,6 +29,8 @@ export const acceptancesApi = api.injectEndpoints({
                 { type: 'Acceptance', id: 'LIST' },
                 { type: 'Services', id: 'LIST' },
                 { type: 'Projects', id: 'LIST' },
+                { type: 'Tasks', id: 'LIST' },
+                { type: 'Contracts', id: 'LIST' },
             ],
         }),
         approveAcceptanceRequest: builder.mutation({

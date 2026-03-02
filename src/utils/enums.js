@@ -40,6 +40,23 @@ export const CONTRACT_SERVICE_STATUS_COLORS = {
   CANCELLED: 'bg-gray-100 text-gray-600 border-gray-200',
 };
 
+// Acceptance Status
+export const ACCEPTANCE_STATUS_LABELS = {
+  PENDING: 'Chờ duyệt',
+  APPROVED: 'Đã duyệt',
+  REJECTED: 'Từ chối',
+  PROCESSED: 'Đã xử lý',
+  CANCELLED: 'Đã hủy',
+};
+
+export const ACCEPTANCE_STATUS_COLORS = {
+  PENDING: 'bg-yellow-50 text-yellow-700 border-yellow-100',
+  APPROVED: 'bg-green-50 text-green-700 border-green-100',
+  REJECTED: 'bg-red-50 text-red-700 border-red-100',
+  COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  CANCELLED: 'bg-gray-100 text-gray-600 border-gray-200',
+};
+
 // Project Status
 export const PROJECT_STATUS_LABELS = {
   PENDING_CONFIRMATION: 'Chờ xác nhận',
@@ -192,3 +209,37 @@ export const QUOTATION_TYPE = {
   STANDARD: 'STANDARD',
   ADDENDUM: 'ADDENDUM'
 };
+
+// Banks
+export const VIETNAM_BANKS = [
+  'Vietcombank',
+  'Techcombank',
+  'BIDV',
+  'VietinBank',
+  'MB Bank',
+  'Agribank',
+  'ACB',
+  'Sacombank',
+  'TPBank',
+  'VIB',
+  'VPBank',
+  'SeABank',
+  'MSB',
+  'SHB',
+  'HDBank',
+  'Eximbank',
+  'OCB',
+  'NCB',
+  'Kienlongbank',
+  'BaoVietBank',
+  'VietBank',
+  'VietCapitalBank',
+  'SaiGonBank',
+  'BacABank',
+  'DongABank',
+  'GPBank',
+  'OceanBank',
+  'PGBank',
+  'LienVietPostBank',
+  'VietABank',
+];

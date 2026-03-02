@@ -118,30 +118,33 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                                                 </a>
                                             )}
                                         </div>
-
-                                        <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-2xl border border-gray-100">
-                                            <button
-                                                onClick={() => handleDecisionChange(service.id, 'APPROVED')}
-                                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${decisions[service.id]?.status === 'APPROVED'
-                                                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100'
-                                                    : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'
-                                                    }`}
-                                            >
-                                                <CheckCircle2 className="w-4 h-4" />
-                                                Đồng ý
-                                            </button>
-                                            <button
-                                                onClick={() => handleDecisionChange(service.id, 'REJECTED')}
-                                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${decisions[service.id]?.status === 'REJECTED'
-                                                    ? 'bg-red-600 text-white shadow-md shadow-red-100'
-                                                    : 'text-gray-500 hover:bg-red-50 hover:text-red-600'
-                                                    }`}
-                                            >
-                                                <XCircle className="w-4 h-4" />
-                                                Từ chối
-                                            </button>
-                                        </div>
+                                        {
+                                            request.status == "PENDING" && (
+                                                <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-2xl border border-gray-100">
+                                                    <button
+                                                        onClick={() => handleDecisionChange(service.id, 'APPROVED')}
+                                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${decisions[service.id]?.status === 'APPROVED'
+                                                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100'
+                                                            : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'
+                                                            }`}
+                                                    >
+                                                        <CheckCircle2 className="w-4 h-4" />
+                                                        Đồng ý
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDecisionChange(service.id, 'REJECTED')}
+                                                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${decisions[service.id]?.status === 'REJECTED'
+                                                            ? 'bg-red-600 text-white shadow-md shadow-red-100'
+                                                            : 'text-gray-500 hover:bg-red-50 hover:text-red-600'
+                                                            }`}
+                                                    >
+                                                        <XCircle className="w-4 h-4" />
+                                                        Từ chối
+                                                    </button>
+                                                </div>
+                                            )}
                                     </div>
+
 
                                     {decisions[service.id]?.status === 'REJECTED' && (
                                         <div className="animate-in fade-in slide-in-from-top-2 duration-300">

@@ -9,6 +9,7 @@ import { useCreateVendorMutation } from '../../api/vendors';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { VIETNAM_BANKS } from '../../utils/enums';
 
 const vendorSchema = z.object({
     name: z.string().min(1, 'Tên vendor là bắt buộc'),
@@ -18,6 +19,7 @@ const vendorSchema = z.object({
     taxId: z.string().optional(),
     type: z.enum(['BUSINESS', 'INDIVIDUAL']).default('BUSINESS'),
     bankAccount: z.string().optional(),
+    bankName: z.string().optional(),
     idCardFront: z.any().optional(),
     idCardBack: z.any().optional(),
 });
@@ -42,6 +44,7 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
             taxId: '',
             type: 'BUSINESS',
             bankAccount: '',
+            bankName: '',
         },
     });
 
@@ -103,7 +106,6 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
             reset();
             onClose();
             if (result?.id) navigate(`/vendors/${result.id}`);
-            if (result?.id) navigate(`/vendors/${result.id}`);
         } catch (err) {
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi tạo vendor');
@@ -140,12 +142,6 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
                         error={errors.taxId?.message}
                         placeholder={vendorType === 'INDIVIDUAL' ? 'Nhập số CCCD...' : 'Nhập MST...'}
                     />
-                    <Input
-                        label="Tài khoản ngân hàng"
-                        {...register('bankAccount')}
-                        error={errors.bankAccount?.message}
-                        placeholder="Số tài khoản, ngân hàng..."
-                    />
                     <div className="w-full">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Loại hình</label>
                         <select
@@ -156,6 +152,32 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
                             <option value="INDIVIDUAL">Cá nhân</option>
                         </select>
                     </div>
+                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="w-full">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Tên ngân hàng</label>
+                            <select
+                                {...register('bankName')}
+                                className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                            >
+                                <option value="">-- Chọn ngân hàng --</option>
+                                {VIETNAM_BANKS.map((bank) => (
+                                    <option key={bank} value={bank}>
+                                        {bank}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.bankName && (
+                                <p className="mt-1 text-xs text-red-500">{errors.bankName.message}</p>
+                            )}
+                        </div>
+                        <Input
+                            label="Số tài khoản"
+                            {...register('bankAccount')}
+                            error={errors.bankAccount?.message}
+                            placeholder="Nhập số tài khoản..."
+                        />
+                    </div>
+
                     {vendorType === 'INDIVIDUAL' && (
                         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">

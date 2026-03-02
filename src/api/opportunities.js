@@ -20,11 +20,10 @@ export const opportunitiesApi = api.injectEndpoints({
       providesTags: (result, error, id) => [{ type: 'Opportunities', id }],
     }),
     createOpportunity: builder.mutation({
-      query: (formData) => ({
+      query: (data) => ({
         url: '/opportunities',
         method: 'POST',
-        body: formData,
-        formData: true,
+        body: data,
       }),
       invalidatesTags: (result, error, data) => [
         { type: 'Opportunities', id: 'LIST' },
@@ -32,11 +31,10 @@ export const opportunitiesApi = api.injectEndpoints({
       ],
     }),
     updateOpportunity: builder.mutation({
-      query: ({ id, formData }) => ({
+      query: ({ id, ...data }) => ({
         url: `/opportunities/${id}`,
         method: 'PATCH',
-        body: formData,
-        formData: true,
+        body: data,
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Opportunities', id },

@@ -145,6 +145,30 @@ export const VendorDetailPage = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Bank Info */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <CreditCard className="h-5 w-5 text-orange-500" />
+                            Tài khoản ngân hàng
+                        </h2>
+                        <div className="space-y-4">
+                            <div className="flex items-start gap-3">
+                                <Store className="h-4 w-4 text-gray-400 mt-1" />
+                                <div>
+                                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Ngân hàng</label>
+                                    <p className="text-sm text-gray-900">{vendor.bankName || 'N/A'}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                                <CreditCard className="h-4 w-4 text-gray-400 mt-1" />
+                                <div>
+                                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Số tài khoản</label>
+                                    <p className="text-sm font-bold text-gray-900 font-mono tracking-wider">{vendor.bankAccount || 'N/A'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Vendor Content Tabs */}
