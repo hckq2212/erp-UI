@@ -6,7 +6,7 @@ import {
     Briefcase, Activity
 } from 'lucide-react';
 import { useGetUserQuery } from '../../api/users';
-
+import { TASK_STATUS_LABELS } from '../../utils/enums';
 export const UserDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -41,18 +41,29 @@ export const UserDetailPage = () => {
     const paginatedTasks = tasks.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const getStatusBadge = (status) => {
+        const label = TASK_STATUS_LABELS[status] || status;
         switch (status) {
             case 'DONE':
             case 'COMPLETED':
-                return <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-green-100 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> DONE</span>;
+                return <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-green-100 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {label}</span>;
             case 'DOING':
-                return <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-blue-100 flex items-center gap-1"><Activity className="w-3 h-3" /> DOING</span>;
+                return <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-blue-100 flex items-center gap-1"><Activity className="w-3 h-3" /> {label}</span>;
             case 'PENDING':
-                return <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-amber-100 flex items-center gap-1"><Clock className="w-3 h-3" /> PENDING</span>;
+                return <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-amber-100 flex items-center gap-1"><Clock className="w-3 h-3" /> {label}</span>;
             case 'REJECTED':
-                return <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-red-100 flex items-center gap-1"><XCircle className="w-3 h-3" /> REJECTED</span>;
+                return <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-red-100 flex items-center gap-1"><XCircle className="w-3 h-3" /> {label}</span>;
+            case 'CANCELLED':
+                return <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-red-100 flex items-center gap-1"><XCircle className="w-3 h-3" /> {label}</span>;
+            case 'OVERDUE':
+                return <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-red-100 flex items-center gap-1"><XCircle className="w-3 h-3" /> {label}</span>;
+            case 'AWAITING_PRICING':
+                return <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-red-100 flex items-center gap-1"><XCircle className="w-3 h-3" /> {label}</span>;
+            case 'AWAITING_REVIEW':
+                return <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-red-100 flex items-center gap-1"><XCircle className="w-3 h-3" /> {label}</span>;
+            case 'AWAITING_ACCEPTANCE':
+                return <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-red-100 flex items-center gap-1"><XCircle className="w-3 h-3" /> {label}</span>;
             default:
-                return <span className="bg-gray-50 text-gray-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-gray-100">{status}</span>;
+                return <span className="bg-gray-50 text-gray-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-gray-100">{label}</span>;
         }
     };
 
