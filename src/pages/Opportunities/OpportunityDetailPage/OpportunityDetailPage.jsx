@@ -23,6 +23,7 @@ import { CustomerInfo } from './CustomerInfo';
 import { AdditionalInfo } from './AdditionalInfo';
 import { QuotationsListModal } from './QuotationsListModal';
 import { CustomerModal } from './CustomerModal';
+import { OpportunityServicesInfo } from './OpportunityServicesInfo';
 import {
   PRIORITY_LABELS,
   PRIORITY_COLORS,
@@ -317,6 +318,7 @@ export const OpportunityDetailPage = () => {
           <FinancialInfo opportunity={opportunity} formatDate={formatDate} />
           <TimeLocationInfo opportunity={opportunity} formatDate={formatDate} />
           <OpportunityEvaluation opportunity={opportunity} />
+          <OpportunityServicesInfo opportunity={opportunity} />
           <AttachmentsList attachments={opportunity.attachments} />
         </div>
 

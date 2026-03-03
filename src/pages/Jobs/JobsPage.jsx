@@ -64,7 +64,7 @@ export const JobsPage = () => {
         <div className="animate-in fade-in duration-500 space-y-6">
             <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-4'>
                 <div>
-                    <h1 className='text-3xl font-bold text-gray-900 tracking-tight'>Quản Lý Hạng Mục Dịch Vụ</h1>
+                    <h1 className='text-3xl font-bold text-gray-900 tracking-tight'>Quản Lý Hạng mục công việc</h1>
                     <p className="text-gray-500 text-sm mt-1">Danh sách chi tiết các hạng mục công việc</p>
                 </div>
                 <Button onClick={() => setIsCreateModalOpen(true)}>

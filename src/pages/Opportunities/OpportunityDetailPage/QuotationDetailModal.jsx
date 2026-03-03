@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { X, FileText, ArrowLeft, Edit, CheckCircle, XCircle, Paperclip } from 'lucide-react';
 import { useGetQuotationQuery, useApproveQuotationMutation, useRejectQuotationMutation } from '../../../api/quotations';
 import { formatNumber } from '../../../utils/format';
@@ -14,6 +14,58 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
 
   const [isRejectingMode, setIsRejectingMode] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+
+  const aggregatedItems = useMemo(() => {
+    if (!quotation?.details) return { packages: [], standalone: [] };
+
+    const packages = {};
+    const standalone = [];
+
+    quotation.details.forEach((detail) => {
+      const groupKey = detail.packageName || 'STANDALONE';
+      if (groupKey === 'STANDALONE') {
+        standalone.push(detail);
+      } else {
+        if (!packages[groupKey]) {
+          const pkgQty = detail.packageQuantity || 1;
+          packages[groupKey] = {
+            name: groupKey,
+            quantity: pkgQty,
+            sellingPrice: 0,
+            costAtSale: 0,
+            items: []
+          };
+        }
+        // These prices are per 1 unit of the service within the package
+        // We accumulate them to get the unit price of the WHOLE PACKAGE
+        packages[groupKey].sellingPrice += parseFloat(detail.sellingPrice || 0);
+        packages[groupKey].costAtSale += parseFloat(detail.costAtSale || 0);
+
+        // Calculate norm: total quantity / package quantity
+        const norm = detail.packageQuantity ? (detail.quantity / detail.packageQuantity) : detail.quantity;
+        packages[groupKey].items.push({
+          ...detail,
+          norm: norm
+        });
+      }
+    });
+
+    const packageServiceIds = new Set();
+    Object.values(packages).forEach(pkg => {
+      pkg.items.forEach(item => {
+        if (item.service?.id) packageServiceIds.add(String(item.service.id));
+        if (item.serviceId) packageServiceIds.add(String(item.serviceId));
+      });
+    });
+
+    return {
+      packages: Object.values(packages),
+      standalone: standalone.filter(s => {
+        const sId = s.service?.id || s.serviceId;
+        return !packageServiceIds.has(String(sId));
+      })
+    };
+  }, [quotation?.details]);
 
   const handleApprove = async () => {
     if (!quotationId) return;
@@ -51,26 +103,6 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
   };
 
   if (!isOpen) return null;
-
-  const getStatusLabel = (status) => {
-    const labels = {
-      'DRAFT': 'Nháp',
-      'SENT': 'Đã gửi',
-      'APPROVED': 'Đã duyệt',
-      'REJECTED': 'Từ chối'
-    };
-    return labels[status] || status;
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      'DRAFT': 'bg-gray-100 text-gray-700',
-      'SENT': 'bg-blue-100 text-blue-700',
-      'APPROVED': 'bg-green-100 text-green-700',
-      'REJECTED': 'bg-red-100 text-red-700'
-    };
-    return colors[status] || 'bg-gray-100 text-gray-700';
-  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
@@ -151,42 +183,114 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                       </tr>
                     </thead>
                     <tbody>
-                      {quotation.details?.map((detail) => {
-                        const total = parseFloat(detail.sellingPrice) * detail.quantity;
-                        const cost = parseFloat(detail.costAtSale) * detail.quantity;
+                      {/* Render Packages */}
+                      {aggregatedItems.packages.map((pkg, pIdx) => {
+                        const total = parseFloat(pkg.sellingPrice) * pkg.quantity;
+                        const cost = parseFloat(pkg.costAtSale) * pkg.quantity;
                         const profit = total - cost;
                         const profitMargin = total > 0 ? ((profit / total) * 100).toFixed(1) : 0;
 
                         return (
-                          <tr key={detail.id} className="border-b border-gray-100 hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm text-gray-900">
-                              {detail.service?.name || 'N/A'}
-                            </td>
-                            <td className="px-4 py-3 text-center text-sm text-gray-900">
-                              {detail.quantity}
-                            </td>
-                            <td className="px-4 py-3 text-right text-sm text-gray-900">
-                              {formatNumber(detail.sellingPrice)}
-                            </td>
-                            <td className="px-4 py-3 text-right text-sm text-gray-600">
-                              {formatNumber(detail.costAtSale)}
-                            </td>
-                            <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-                              {formatNumber(total)}
-                            </td>
-                            <td className="px-4 py-3 text-right text-sm">
-                              <div className="flex flex-col items-end">
-                                <span className="font-medium text-green-600">
-                                  {formatNumber(profit)}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  ({profitMargin}%)
-                                </span>
-                              </div>
-                            </td>
-                          </tr>
+                          <Fragment key={`pkg-${pIdx}`}>
+                            <tr className="bg-blue-50/30 border-b border-blue-100/50 group">
+                              <td className="px-4 py-3 text-sm font-bold text-blue-900">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded uppercase shadow-sm">Gói</span>
+                                  {pkg.name}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-blue-200 rounded-lg shadow-sm">
+                                  <span className="text-sm font-bold text-blue-900">{pkg.quantity}</span>
+                                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-tighter">Gói</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-bold text-blue-900">
+                                {formatNumber(pkg.sellingPrice)}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm text-blue-700 italic">
+                                {formatNumber(pkg.costAtSale)}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-black text-blue-900 italic">
+                                {formatNumber(total)}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm">
+                                <div className="flex flex-col items-end">
+                                  <span className="font-black text-blue-600 text-base">
+                                    {profitMargin}%
+                                  </span>
+                                  <span className="text-[10px] font-black text-blue-300 uppercase tracking-tighter">Lợi nhuận</span>
+                                </div>
+                              </td>
+                            </tr>
+                            {/* Package Items */}
+                            {pkg.items.map((item, iIdx) => (
+                              <tr key={`pkg-${pIdx}-item-${iIdx}`} className="border-b border-gray-50/50 bg-blue-50/5">
+                                <td className="px-4 py-2 text-sm text-gray-500 pl-10 italic">
+                                  • {item.name || item.service?.name || 'N/A'}
+                                </td>
+                                <td className="px-4 py-2 text-center">
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">SL</span>
+                                    <span className="text-xs font-bold text-gray-500">{Number(item.norm) % 1 === 0 ? item.norm : Number(item.norm).toFixed(2).replace(/\.?0+$/, '')} / Gói</span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-2 text-right text-xs text-gray-400 font-medium italic">
+                                  {formatNumber(item.sellingPrice)}
+                                </td>
+                                <td colSpan={3} className="px-4 py-2 text-right text-[10px] text-gray-300 font-bold uppercase tracking-tight italic">
+                                  Đơn giá: {formatNumber(item.sellingPrice)} | Vốn: {formatNumber(item.costAtSale)}
+                                </td>
+                              </tr>
+                            ))}
+                          </Fragment>
                         );
                       })}
+
+                      {/* Render Standalone Services */}
+                      {aggregatedItems.standalone.length > 0 && (
+                        <>
+                          <tr className="bg-gray-50 border-b border-gray-100">
+                            <td colSpan={6} className="px-4 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50">
+                              Dịch vụ lẻ
+                            </td>
+                          </tr>
+                          {aggregatedItems.standalone.map((item, idx) => {
+                            const total = parseFloat(item.sellingPrice) * item.quantity;
+                            const cost = parseFloat(item.costAtSale) * item.quantity;
+                            const profit = total - cost;
+                            const profitMargin = total > 0 ? ((profit / total) * 100).toFixed(1) : 0;
+
+                            return (
+                              <tr key={`standalone-${idx}`} className="border-b border-gray-100 hover:bg-gray-50 group">
+                                <td className="px-4 py-3 text-sm text-gray-900 font-medium italic group-hover:text-purple-700 transition-colors">
+                                  {item.name || item.service?.name || 'N/A'}
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <span className="text-sm font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded-md">{item.quantity}</span>
+                                </td>
+                                <td className="px-4 py-3 text-right text-sm text-gray-700">
+                                  {formatNumber(item.sellingPrice)}
+                                </td>
+                                <td className="px-4 py-3 text-right text-sm text-gray-500 italic">
+                                  {formatNumber(item.costAtSale)}
+                                </td>
+                                <td className="px-4 py-3 text-right text-sm font-black text-gray-900 italic">
+                                  {formatNumber(total)}
+                                </td>
+                                <td className="px-4 py-3 text-right text-sm">
+                                  <div className="flex flex-col items-end">
+                                    <span className="font-bold text-purple-600">
+                                      {profitMargin}%
+                                    </span>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Lợi nhuận</span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </>
+                      )}
                     </tbody>
                     <tfoot>
                       <tr className="bg-gray-50 font-semibold">
@@ -299,7 +403,7 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
         </div>
 
         <div className="flex gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
-          {quotation && quotation.status === 'DRAFT' && (opportunity?.status === 'PENDING_QUOTE_APPROVAL' || quotation.type === 'ADDENDUM') && (
+          {quotation && quotation.status === 'DRAFT' && (opportunity?.status === 'PENDING_QUOTE_APPROVAL' || opportunity?.status === 'QUOTATION_DRAFTING' || quotation.type === 'ADDENDUM') && (
             <>
               {!isRejectingMode && (
                 <button

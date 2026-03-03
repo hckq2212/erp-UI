@@ -31,6 +31,8 @@ import { TeamDetailPage } from './pages/Teams/TeamDetailPage';
 import { UserListPage } from './pages/Users/UserListPage';
 import { UserDetailPage } from './pages/Users/UserDetailPage';
 import { AcceptanceInboxPage } from './pages/Acceptance/AcceptanceInboxPage';
+import { ServicePackageListPage } from './pages/ServicePackages/ServicePackageListPage';
+import { ServicePackageDetailPage } from './pages/ServicePackages/ServicePackageDetailPage';
 
 function App() {
   // Use the query to check if the user is logged in via cookies on startup
@@ -317,7 +319,26 @@ function App() {
           }
         />
 
-        <Route path='*' element={<Navigate to='/' replace />} />
+        <Route
+          path='/service-packages'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ServicePackageListPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/service-packages/:id'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ServicePackageDetailPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path='/acceptance'
           element={
@@ -328,6 +349,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path='*' element={<Navigate to='/' replace />} />
       </Routes>
     </BrowserRouter>
   );

@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
-import { CustomerModal } from './CustomerModal';
 import { CustomerFilters } from '../../components/customers/CustomerFilters';
 import { CustomerTable } from '../../components/customers/CustomerTable';
 import { Plus } from 'lucide-react';
@@ -28,10 +27,6 @@ export const CustomersPage = () => {
   const [createCustomer, { isLoading: isCreating }] = useCreateCustomerMutation();
   const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
 
-  const handleCreate = () => {
-    setSelectedCustomer(null);
-    setIsModalOpen(true);
-  }
 
   const handleEdit = (customer) => {
     setSelectedCustomer(customer);
@@ -81,16 +76,6 @@ export const CustomersPage = () => {
 
   return (
     <div className="animate-in fade-in duration-500 space-y-6">
-      <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-4'>
-        <div>
-          <h1 className='text-3xl font-bold text-gray-900 tracking-tight'>Quản Lý Khách Hàng</h1>
-          <p className="text-gray-500 text-sm mt-1">Danh sách thông tin khách hàng </p>
-        </div>
-        <Button onClick={handleCreate} className="w-full md:w-auto shadow-lg shadow-blue-500/20">
-          <Plus className='h-5 w-5 mr-2' />
-          Thêm Khách Hàng
-        </Button>
-      </div>
 
       <CustomerFilters
         onSearch={handleSearch}
@@ -111,13 +96,6 @@ export const CustomersPage = () => {
         )}
       </div>
 
-      <CustomerModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        customer={selectedCustomer}
-        onSubmit={handleSubmit}
-        isSubmitting={isCreating || isUpdating}
-      />
     </div>
   );
 };

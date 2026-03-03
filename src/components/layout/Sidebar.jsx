@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Briefcase, FileText,
   FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store,
-  CheckCircle2
+  CheckCircle2, Package
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useGetMeQuery } from '../../api/auth';
@@ -18,7 +18,8 @@ const menuItems = [
   { path: '/acceptance', icon: CheckCircle2, label: 'Nghiệm thu', roles: ['ADMIN', 'BOD'] },
   { path: '/finance', icon: DollarSign, label: 'Lộ trình thanh toán' },
   { path: '/services', icon: Briefcase, label: 'Dịch vụ', roles: ['ADMIN', 'BOD', 'SALE'] },
-  { path: '/jobs', icon: CheckSquare, label: 'Hạng mục dịch vụ', roles: ['ADMIN', 'BOD', 'SALE'] },
+  { path: '/service-packages', icon: Package, label: 'Gói dịch vụ', roles: ['ADMIN', 'BOD', 'SALE'] },
+  { path: '/jobs', icon: CheckSquare, label: 'Hạng mục công việc', roles: ['ADMIN', 'BOD', 'SALE'] },
   { path: '/teams', icon: Users, label: 'Đội dự án', roles: ['ADMIN', 'BOD', 'SALE'] },
   { path: '/users', icon: Users, label: 'Nhân sự', roles: ['ADMIN', 'BOD', 'SALE'] },
   { path: '/referral-partners', icon: Users, label: 'Đối tác', roles: ['ADMIN', 'BOD', 'SALE'] },

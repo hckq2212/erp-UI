@@ -37,7 +37,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
 
     const handleSubmit = async () => {
         const payload = Object.entries(decisions).map(([serviceId, data]) => ({
-            serviceId: Number(serviceId),
+            serviceId: serviceId,
             status: data.status,
             feedback: data.status === 'REJECTED' ? data.feedback : undefined
         }));

@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
 import { X, Plus, Trash2, Upload, Link as LinkIcon, Building2, FileText, MapPin, Calendar, Target, TrendingUp, Clock, Briefcase } from 'lucide-react';
 import { useCreateOpportunityMutation } from '../../api/opportunities';
 import { useGetServicesQuery } from '../../api/services';
+import { useGetServicePackagesQuery } from '../../api/servicePackages';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import Select from 'react-select';
 import { VIETNAM_PROVINCES } from '../../utils/provinces';
@@ -126,10 +127,50 @@ const FileItem = memo(({ file, index, onRemove, progress, isUploading }) => (
   </div>
 ));
 
+const PackageItem = memo(({ pkg, index, availableServices, onRemove, onServiceChange, onRemoveService, onAddService, onQuantityChange }) => {
+  return (
+    <div className="bg-blue-50/40 border-2 border-blue-100 rounded-2xl p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-500/20">
+            <Briefcase className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="font-bold text-blue-900">{pkg.name}</h4>
+            <p className="text-[10px] font-black uppercase tracking-wider text-blue-600 opacity-70">Gói dịch vụ</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm">
+            <input
+              type="number"
+              min="1"
+              className="w-12 text-center font-bold text-blue-900 bg-transparent outline-none"
+              value={pkg.quantity}
+              onChange={(e) => onQuantityChange(index, e.target.value)}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => onRemove(index)}
+            className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
   const [createOpportunity, { isLoading }] = useCreateOpportunityMutation();
   const { data: servicesData } = useGetServicesQuery();
   const services = useMemo(() => Array.isArray(servicesData) ? servicesData : (servicesData?.data || []), [servicesData]);
+
+  const { data: packageTemplatesData } = useGetServicePackagesQuery();
+  const packageTemplates = useMemo(() => Array.isArray(packageTemplatesData) ? packageTemplatesData : [], [packageTemplatesData]);
+
   const navigate = useNavigate();
 
   const fieldRefs = useRef({});
@@ -177,11 +218,99 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     { serviceId: '', quantity: 1 }
   ]);
 
+  const [selectedPackages, setSelectedPackages] = useState([
+    { servicePackageId: '', services: [], quantity: 1 }
+  ]);
+
   const [documentLinks, setDocumentLinks] = useState(Array(LINK_PLACEHOLDERS.length).fill(''));
   const [files, setFiles] = useState([]);
   const [uploadProgress, setUploadProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  const handlePackageTemplateChange = useCallback((index, templateId) => {
+    if (!templateId) {
+      setSelectedPackages(prev => {
+        const updated = [...prev];
+        updated[index] = { servicePackageId: '', services: [] };
+        return updated;
+      });
+      return;
+    }
+
+    const template = packageTemplates.find(t => String(t.id) === String(templateId));
+    if (!template) return;
+
+    setSelectedPackages(prev => {
+      const updated = [...prev];
+      updated[index] = {
+        servicePackageId: template.id,
+        name: template.name,
+        description: template.description || '',
+        quantity: 1,
+        services: (template.items || []).map(item => ({
+          serviceId: item.serviceId,
+          quantity: item.defaultQuantity || 1,
+          sellingPrice: item.service?.costPrice || 0
+        }))
+      };
+      return updated;
+    });
+  }, [packageTemplates]);
+
+  const addPackage = useCallback(() => {
+    setSelectedPackages(prev => [...prev, { servicePackageId: '', services: [], quantity: 1 }]);
+  }, []);
+
+  const removePackage = useCallback((index) => {
+    setSelectedPackages(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handlePackageQuantityChange = useCallback((index, value) => {
+    setSelectedPackages(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], quantity: Number(value) || 1 };
+      return updated;
+    });
+  }, []);
+
+  const handlePackageServiceChange = useCallback((pkgIndex, sIndex, field, value) => {
+    setSelectedPackages(prev => {
+      const updated = [...prev];
+      const pkg = { ...updated[pkgIndex] };
+      const pkgServices = [...pkg.services];
+      pkgServices[sIndex] = { ...pkgServices[sIndex], [field]: field === 'quantity' ? Number(value) : value };
+
+      if (field === 'serviceId') {
+        const service = services.find(s => String(s.id) === String(value));
+        pkgServices[sIndex].sellingPrice = service?.costPrice || 0;
+      }
+
+      pkg.services = pkgServices;
+      updated[pkgIndex] = pkg;
+      return updated;
+    });
+  }, [services]);
+
+  const removePackageService = useCallback((pkgIndex, sIndex) => {
+    setSelectedPackages(prev => {
+      const updated = [...prev];
+      const pkg = { ...updated[pkgIndex] };
+      pkg.services = pkg.services.filter((_, i) => i !== sIndex);
+      updated[pkgIndex] = pkg;
+      return updated;
+    });
+  }, []);
+
+  const addPackageService = useCallback((pkgIndex) => {
+    setSelectedPackages(prev => {
+      const updated = [...prev];
+      const pkg = { ...updated[pkgIndex] };
+      pkg.services = [...pkg.services, { serviceId: '', quantity: 1, sellingPrice: 0 }];
+      updated[pkgIndex] = pkg;
+      return updated;
+    });
+  }, []);
 
   useEffect(() => {
     if (formData.startDate && formData.endDate) {
@@ -287,12 +416,21 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
   }, []);
 
   const totalValue = useMemo(() => {
-    return selectedServices.reduce((total, item) => {
+    const standaloneTotal = selectedServices.reduce((total, item) => {
       if (!item.serviceId) return total;
       const service = services.find(s => String(s.id) === String(item.serviceId));
       return total + (service?.costPrice || 0) * item.quantity;
     }, 0);
-  }, [selectedServices, services]);
+
+    const packagesTotal = selectedPackages.reduce((total, pkg) => {
+      const pkgQuantity = Number(pkg.quantity) || 1;
+      return total + pkg.services.reduce((pTotal, s) => {
+        return pTotal + (s.sellingPrice || 0) * s.quantity * pkgQuantity;
+      }, 0);
+    }, 0);
+
+    return standaloneTotal + packagesTotal;
+  }, [selectedServices, selectedPackages, services]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -372,9 +510,24 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
           quantity: s.quantity
         }));
 
+      const validPackages = selectedPackages
+        .filter(pkg => pkg.servicePackageId)
+        .map(pkg => ({
+          servicePackageId: pkg.servicePackageId,
+          name: pkg.name,
+          description: pkg.description,
+          quantity: Number(pkg.quantity) || 1,
+          services: pkg.services.filter(s => s.serviceId).map(s => ({
+            serviceId: s.serviceId,
+            quantity: s.quantity,
+            sellingPrice: s.sellingPrice
+          }))
+        }));
+
       const result = await createOpportunity({
         ...formData,
         services: validServices,
+        packages: validPackages,
         attachments
       }).unwrap();
 
@@ -399,6 +552,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
         customerRequirements: '',
       });
       setSelectedServices([{ serviceId: '', quantity: 1 }]);
+      setSelectedPackages([{ servicePackageId: '', services: [] }]);
       setDocumentLinks(Array(LINK_PLACEHOLDERS.length).fill(''));
       setFiles([]);
     } catch (err) {
@@ -716,37 +870,98 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                     <Briefcase className="w-5 h-5 text-indigo-600" />
                     <h3 className="font-semibold text-gray-900">Dịch vụ đề xuất</h3>
                   </div>
-                  <button
-                    type="button"
-                    onClick={addService}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-all"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Thêm dịch vụ
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={addPackage}
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-all"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Gói dịch vụ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addService}
+                      className="text-indigo-600 hover:text-indigo-700 text-sm font-medium flex items-center gap-1 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-all"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Dịch vụ lẻ
+                    </button>
+                  </div>
                 </div>
 
-                <div className="space-y-3">
-                  {selectedServices.map((item, index) => {
-                    // Filter out already selected services (except current selection)
-                    const selectedIds = selectedServices
-                      .filter((_, i) => i !== index)
-                      .map(s => String(s.serviceId))
-                      .filter(id => id);
-                    const availableServices = services.filter(s => !selectedIds.includes(String(s.id)));
+                {/* Packages Selection */}
+                <div className="space-y-4 pt-2">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Gói dịch vụ đề xuất</p>
+                  <div className="grid grid-cols-1 gap-4">
+                    {selectedPackages.map((pkg, index) => (
+                      <div key={index} className="space-y-3">
+                        {!pkg.servicePackageId ? (
+                          <div className="flex items-center gap-3 p-3 rounded-xl border bg-blue-50/30 border-blue-100">
+                            <select
+                              className="flex-1 px-4 py-2.5 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all text-sm font-bold text-blue-900"
+                              value={pkg.servicePackageId}
+                              onChange={(e) => handlePackageTemplateChange(index, e.target.value)}
+                            >
+                              <option value="">-- Chọn gói mẫu --</option>
+                              {packageTemplates.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => removePackage(index)}
+                              className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <PackageItem
+                            index={index}
+                            pkg={pkg}
+                            availableServices={services}
+                            onRemove={removePackage}
+                            onServiceChange={handlePackageServiceChange}
+                            onRemoveService={removePackageService}
+                            onAddService={addPackageService}
+                            onQuantityChange={handlePackageQuantityChange}
+                          />
+                        )}
+                      </div>
+                    ))}
+                    {selectedPackages.length === 0 && (
+                      <p className="text-sm text-gray-400 italic text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                        Chưa chọn gói dịch vụ nào
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-                    return (
-                      <ServiceItem
-                        key={index}
-                        index={index}
-                        item={item}
-                        availableServices={availableServices}
-                        onServiceChange={handleServiceChange}
-                        onRemove={removeService}
-                        hasError={!!errors.services}
-                      />
-                    );
-                  })}
+                <div className="pt-2">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Dịch vụ lẻ</p>
+                  <div className="space-y-3">
+                    {selectedServices.map((item, index) => {
+                      // Filter out already selected services (except current selection)
+                      const selectedIds = selectedServices
+                        .filter((_, i) => i !== index)
+                        .map(s => String(s.serviceId))
+                        .filter(id => id);
+                      const availableServices = services.filter(s => !selectedIds.includes(String(s.id)));
+
+                      return (
+                        <ServiceItem
+                          key={index}
+                          index={index}
+                          item={item}
+                          availableServices={availableServices}
+                          onServiceChange={handleServiceChange}
+                          onRemove={removeService}
+                          hasError={!!errors.services}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {errors.services && <p className="text-sm text-red-500 flex items-center gap-1 mb-3"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.services}</p>}
