@@ -9,6 +9,7 @@ export const CONTRACT_STATUS_LABELS = {
   CANCELLED: 'Đã hủy',
   SIGNED: 'Đã ký',
   PROPOSAL_UPLOADED: 'Đã tải lên proposal',
+  PROPOSAL_REJECTED: 'Bị từ chối proposal',
 };
 
 export const CONTRACT_STATUS_COLORS = {
@@ -21,6 +22,7 @@ export const CONTRACT_STATUS_COLORS = {
   CANCELLED: 'bg-red-100 text-red-800',
   SIGNED: 'bg-green-100 text-green-800',
   PROPOSAL_UPLOADED: 'bg-green-100 text-green-800',
+  PROPOSAL_REJECTED: 'bg-red-100 text-red-800',
 };
 
 // Contract Service Status

@@ -249,7 +249,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
         description: template.description || '',
         quantity: 1,
         services: (template.items || []).map(item => ({
-          serviceId: item.serviceId,
+          serviceId: item.service?.id || item.serviceId,
           quantity: item.defaultQuantity || 1,
           sellingPrice: item.service?.costPrice || 0
         }))
@@ -282,7 +282,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       pkgServices[sIndex] = { ...pkgServices[sIndex], [field]: field === 'quantity' ? Number(value) : value };
 
       if (field === 'serviceId') {
-        const service = services.find(s => String(s.id) === String(value));
+        const service = availableServices.find(s => String(s.id) === String(value));
         pkgServices[sIndex].sellingPrice = service?.costPrice || 0;
       }
 

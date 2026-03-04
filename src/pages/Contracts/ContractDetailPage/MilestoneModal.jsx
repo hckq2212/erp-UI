@@ -68,10 +68,17 @@ export const MilestoneModal = ({ isOpen, onClose, milestones, contractId, sellin
     const handleSubmit = async (e) => {
         e.preventDefault();
         const totalPercentage = localMilestones.reduce((sum, m) => sum + Number(m.percentage || 0), 0);
+        const totalAmount = localMilestones.reduce((sum, m) => sum + Number(m.amount || 0), 0);
 
-        if (totalPercentage !== 100 && localMilestones.length > 0) {
-            toast.error(`Tổng tỷ lệ các đợt phải bằng 100% (hiện tại: ${totalPercentage || 0}%)`);
-            return;
+        if (localMilestones.length > 0) {
+            if (totalPercentage !== 100) {
+                toast.error(`Tổng tỷ lệ các đợt phải bằng 100% (hiện tại: ${totalPercentage || 0}%)`);
+                return;
+            }
+            if (totalAmount !== sellingPrice) {
+                toast.error(`Tổng số tiền (${formatNumber(totalAmount)}) phải bằng giá trị hợp đồng (${formatNumber(sellingPrice)})`);
+                return;
+            }
         }
 
         try {
@@ -83,23 +90,33 @@ export const MilestoneModal = ({ isOpen, onClose, milestones, contractId, sellin
         }
     };
 
-    const currentTotal = localMilestones.reduce((sum, m) => sum + Number(m.percentage || 0), 0);
+    const currentTotalPercent = localMilestones.reduce((sum, m) => sum + Number(m.percentage || 0), 0);
+    const currentTotalAmount = localMilestones.reduce((sum, m) => sum + Number(m.amount || 0), 0);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Quản lý kế hoạch thanh toán" className="max-w-3xl">
             <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-blue-400 uppercase tracking-wider">Tổng giá trị hợp đồng</p>
-                        <p className="text-lg font-bold text-blue-700">{sellingPrice.toLocaleString('vi-VN')} VNĐ</p>
+                <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Giá trị hợp đồng</p>
+                        <p className="text-lg font-black text-blue-700">{formatNumber(sellingPrice)} VNĐ</p>
                     </div>
-                    <div className="text-right">
-                        <p className="text-xs font-bold text-blue-400 uppercase tracking-wider">Tổng tỷ lệ đã chia</p>
+                    <div className="text-right space-y-1">
+                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Tổng tiền đã chia</p>
                         <p className={cn(
-                            "text-xl font-bold",
-                            currentTotal === 100 ? "text-green-600" : "text-orange-600"
+                            "text-lg font-black",
+                            currentTotalAmount === sellingPrice ? "text-green-600" : "text-red-500"
                         )}>
-                            {currentTotal}%
+                            {formatNumber(currentTotalAmount)} VNĐ
+                        </p>
+                    </div>
+                    <div className="col-span-2 pt-2 border-t border-blue-100/50 flex justify-between items-center">
+                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Trạng thái tỷ lệ</p>
+                        <p className={cn(
+                            "text-sm font-black",
+                            currentTotalPercent === 100 ? "text-green-600" : "text-orange-500"
+                        )}>
+                            {currentTotalPercent}% / 100%
                         </p>
                     </div>
                 </div>
@@ -134,7 +151,7 @@ export const MilestoneModal = ({ isOpen, onClose, milestones, contractId, sellin
                                 <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Số tiền (VNĐ)</label>
                                 <div className="relative">
                                     <Input
-                                        type="text"
+                                        type="number"
                                         value={formatNumber(m.amount)}
                                         onChange={(e) => handleChange(idx, 'amount', e.target.value)}
                                         className="h-9 text-sm pr-6"

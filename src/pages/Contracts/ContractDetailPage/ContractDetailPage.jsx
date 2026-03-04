@@ -5,6 +5,7 @@ import {
   useGetContractQuery,
   useUploadProposalMutation,
   useApproveProposalMutation,
+  useRejectProposalMutation,
   useUploadSignedMutation,
   useAddMilestoneMutation,
   useUpdateMilestoneMutation,
@@ -32,9 +33,14 @@ export const ContractDetailPage = () => {
     skip: !id,
   });
   const [activeTab, setActiveTab] = useState('MAIN'); // 'MAIN' | 'EXTRA'
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  const [uploadProposal, { isLoading: isUploadingProposal }] = useUploadProposalMutation();
-  const [approveProposal] = useApproveProposalMutation();
+  const [isCloudinaryUploading, setIsCloudinaryUploading] = useState(false);
+  const [uploadProposal, { isLoading: isMutationUploading }] = useUploadProposalMutation();
+  const isUploadingProposal = isMutationUploading || isCloudinaryUploading;
+
+  const [approveProposal, { isLoading: isApprovingProposal }] = useApproveProposalMutation();
+  const [rejectProposal, { isLoading: isRejectingProposal }] = useRejectProposalMutation();
   const [uploadSigned, { isLoading: isUploadingSigned }] = useUploadSignedMutation();
   const [addMilestone] = useAddMilestoneMutation();
   const [updateMilestone] = useUpdateMilestoneMutation();
@@ -59,13 +65,18 @@ export const ContractDetailPage = () => {
       }
 
       try {
+        setIsCloudinaryUploading(true);
+        setUploadProgress(0);
         // Direct upload to Cloudinary
-        const uploadedFile = await uploadToCloudinary(file, "GETVINI/ERP/proposal");
+        const uploadedFile = await uploadToCloudinary(file, "GETVINI/ERP/proposal", setUploadProgress);
 
         await uploadProposal({ id: contract.id, file: uploadedFile }).unwrap();
         toast.success('Upload proposal thành công');
       } catch (err) {
         toast.error(err?.data?.message || err?.message || 'Upload thất bại');
+      } finally {
+        setIsCloudinaryUploading(false);
+        setUploadProgress(0);
       }
     };
     input.click();
@@ -78,6 +89,16 @@ export const ContractDetailPage = () => {
       toast.success('Duyệt proposal thành công');
     } catch (err) {
       toast.error(err?.data?.message || 'Duyệt thất bại');
+    }
+  };
+
+  const handleRejectProposal = async (reason) => {
+    if (!reason) return;
+    try {
+      await rejectProposal({ id: contract.id, reason }).unwrap();
+      toast.success('Từ chối proposal thành công');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Từ chối thất bại');
     }
   };
 
@@ -95,13 +116,16 @@ export const ContractDetailPage = () => {
       }
 
       try {
+        setUploadProgress(0);
         // Direct upload to Cloudinary
-        const uploadedFile = await uploadToCloudinary(file, "GETVINI/ERP/signed");
+        const uploadedFile = await uploadToCloudinary(file, "GETVINI/ERP/signed", setUploadProgress);
 
         await uploadSigned({ id: contract.id, file: uploadedFile }).unwrap();
         toast.success('Upload hợp đồng đã ký thành công');
       } catch (err) {
         toast.error(err?.data?.message || err?.message || 'Upload thất bại');
+      } finally {
+        setUploadProgress(0);
       }
     };
     input.click();
@@ -237,9 +261,13 @@ export const ContractDetailPage = () => {
               contract={contract}
               onUploadProposal={handleUploadProposal}
               onApproveProposal={handleApproveProposal}
+              onRejectProposal={handleRejectProposal}
               onUploadSigned={handleUploadSigned}
               isUploadingProposal={isUploadingProposal}
               isUploadingSigned={isUploadingSigned}
+              isApprovingProposal={isApprovingProposal}
+              isRejectingProposal={isRejectingProposal}
+              uploadProgress={uploadProgress}
             />
             <FinancialInfo contract={contract} />
             <ContractAddendums addendums={contract.addendums} />

@@ -296,7 +296,8 @@ export const OpportunityDetailPage = () => {
               <button
                 onClick={async () => {
                   try {
-                    await createContract({ opportunityId: (id), name: opportunity.name || `Hợp đồng ${opportunity.opportunityCode}` }).unwrap();
+                    const result = await createContract({ opportunityId: (id), name: opportunity.name || `Hợp đồng ${opportunity.opportunityCode}` }).unwrap();
+                    navigate(`/contracts/${result.id}`);
                     toast.success('Tạo hợp đồng thành công');
                   } catch (err) {
                     toast.error(err?.data?.message || 'Tạo hợp đồng thất bại');

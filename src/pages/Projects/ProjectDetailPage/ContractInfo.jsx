@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, ExternalLink, LayoutList, Send } from 'lucide-react';
 import { formatNumber } from '../../../utils/format';
@@ -46,51 +46,74 @@ export const ContractInfo = ({ contract, projectId }) => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {contract.services?.length > 0 ? (
-                                    contract.services.map((item) => (
-                                        <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-4 py-3">
-                                                <div className="font-semibold text-gray-700">
-                                                    {item.service?.name || item.name || `Hạng mục #${item.id}`}
-                                                </div>
-                                                {item.outputTask && (
-                                                    <button
-                                                        onClick={() => navigate(`/tasks/${item.outputTask.id}`)}
-                                                        className="text-[10px] text-purple-600 font-bold hover:text-purple-800 transition-colors flex items-center gap-1 mt-0.5"
-                                                    >
-                                                        Công việc đầu ra: {item.outputTask.code}
-                                                        <ExternalLink className="w-2.5 h-2.5" />
-                                                    </button>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${CONTRACT_SERVICE_STATUS_COLORS[item.status] || 'bg-gray-50 text-gray-600 border-gray-100'}`}>
-                                                    {CONTRACT_SERVICE_STATUS_LABELS[item.status] || item.status}
-                                                </span>
-                                                {item.status === 'ACCEPTANCE_REJECTED' && item.feedback && (
-                                                    <div className="mt-1 text-[9px] text-red-500 italic max-w-[150px] mx-auto text-center leading-tight">
-                                                        Lý do: {item.feedback}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-right text-gray-500 italic">
-                                                {item.result && (
-                                                    <a
-                                                        href={getFilePreviewUrl(item.result?.url, item.result?.type)}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-[#f5530d] border-[#f5530d] font-bold border-2 bg-[#fff7ed] px-2 py-1 rounded-md">
-                                                        {item.result?.name}
-                                                    </a>
-                                                )}
-                                                {item.result === null && (
-                                                    <span className="text-gray-400 italic">Chưa có kết quả</span>
-                                                )}
+                                {(() => {
+                                    if (!contract.services || contract.services.length === 0) return null;
 
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
+                                    // Group services
+                                    const grouped = contract.services.reduce((acc, item) => {
+                                        const groupKey = item.packageName || 'Lẻ';
+                                        if (!acc[groupKey]) acc[groupKey] = [];
+                                        acc[groupKey].push(item);
+                                        return acc;
+                                    }, {});
+
+                                    return Object.entries(grouped).map(([groupName, items]) => (
+                                        <React.Fragment key={groupName}>
+                                            {groupName !== 'Lẻ' && (
+                                                <tr className="bg-gray-50/80 border-l-4 border-l-blue-500">
+                                                    <td colSpan="3" className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-blue-600 flex items-center gap-2">
+                                                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                                        Gói: {groupName}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            {items.map((item) => (
+                                                <tr key={item.id} className={`hover:bg-gray-50/50 transition-colors ${item.isPackageService ? 'bg-blue-50/10' : ''}`}>
+                                                    <td className={`px-4 py-3 ${item.isPackageService ? 'pl-8' : ''}`}>
+                                                        <div className="font-semibold text-gray-700">
+                                                            {item.name || item.service?.name || `Hạng mục #${item.id}`}
+                                                        </div>
+                                                        {item.outputTask && (
+                                                            <button
+                                                                onClick={() => navigate(`/tasks/${item.outputTask.id}`)}
+                                                                className="text-[10px] text-purple-600 font-bold hover:text-purple-800 transition-colors flex items-center gap-1 mt-0.5"
+                                                            >
+                                                                Công việc đầu ra: {item.outputTask.code}
+                                                                <ExternalLink className="w-2.5 h-2.5" />
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${CONTRACT_SERVICE_STATUS_COLORS[item.status] || 'bg-gray-50 text-gray-600 border-gray-100'}`}>
+                                                            {CONTRACT_SERVICE_STATUS_LABELS[item.status] || item.status}
+                                                        </span>
+                                                        {item.status === 'ACCEPTANCE_REJECTED' && item.feedback && (
+                                                            <div className="mt-1 text-[9px] text-red-500 italic max-w-[150px] mx-auto text-center leading-tight">
+                                                                Lý do: {item.feedback}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right text-gray-500 italic">
+                                                        {item.result && (
+                                                            <a
+                                                                href={getFilePreviewUrl(item.result?.url, item.result?.type)}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-[#f5530d] border-[#f5530d] font-bold border-2 bg-[#fff7ed] px-2 py-1 rounded-md">
+                                                                {item.result?.name}
+                                                            </a>
+                                                        )}
+                                                        {item.result === null && (
+                                                            <span className="text-gray-400 italic">Chưa có kết quả</span>
+                                                        )}
+
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </React.Fragment>
+                                    ));
+                                })()}
+                                {(!contract.services || contract.services.length === 0) && (
                                     <tr>
                                         <td colSpan="3" className="px-4 py-8 text-center text-gray-400 italic">
                                             Chưa có hạng mục dịch vụ

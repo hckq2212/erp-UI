@@ -11,6 +11,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Modal } from '../ui/Modal';
 import { toast } from 'react-toastify';
+import { formatNumber, parseNumber } from '../../utils/format';
 
 export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
     const [createPayment] = useCreatePaymentMutation();
@@ -24,7 +25,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
     useEffect(() => {
         if (isOpen && debt) {
             const totalPaid = debt.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0;
-            const remaining = Number(debt.amount || 0) - totalPaid;
+            const remaining = Math.round(Number(debt.amount || 0) - totalPaid);
             setPaymentAmount(Math.max(0, remaining).toString());
             setPaymentNote('');
         }
@@ -35,7 +36,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
         if (!debt) return;
 
         const currentTotalPaid = debt.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0;
-        const remaining = Number(debt.amount || 0) - currentTotalPaid;
+        const remaining = Math.round(Number(debt.amount || 0) - currentTotalPaid);
         const amount = Number(paymentAmount);
         if (amount <= 0) {
             toast.error('Số tiền thanh toán phải lớn hơn 0');
@@ -43,7 +44,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
         }
 
         if (amount > remaining) {
-            toast.error(`Số tiền không được vượt quá số tiền còn lại (${remaining.toLocaleString('vi-VN')} VNĐ)`);
+            toast.error(`Số tiền không được vượt quá số tiền còn lại (${formatNumber(remaining)} VNĐ)`);
             return;
         }
 
@@ -97,12 +98,10 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
                                 </label>
                                 <div className="relative">
                                     <Input
-                                        type="number"
-                                        value={paymentAmount}
-                                        onChange={(e) => setPaymentAmount(e.target.value)}
+                                        type="text"
+                                        value={formatNumber(paymentAmount)}
+                                        onChange={(e) => setPaymentAmount(parseNumber(e.target.value))}
                                         required
-                                        min="1"
-                                        max={Number(debt.amount || 0) - (debt.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0)}
                                         className="pr-12 text-sm font-bold"
                                     />
                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">
@@ -166,7 +165,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
                                     </div>
                                     <div>
                                         <div className="text-sm font-bold text-gray-900">
-                                            {Number(payment.amount).toLocaleString('vi-VN')} <span className="text-[10px] font-normal text-gray-500">VNĐ</span>
+                                            {formatNumber(payment.amount)} <span className="text-[10px] font-normal text-gray-500">VNĐ</span>
                                         </div>
                                         <div className="text-[10px] text-gray-400 font-medium">
                                             {new Date(payment.paymentDate).toLocaleDateString('vi-VN')} {payment.note && `• ${payment.note}`}
@@ -193,7 +192,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
                         <div className="text-right">
                             <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Tổng đã nộp</div>
                             <div className="text-lg font-bold text-green-600">
-                                {(debt?.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0).toLocaleString('vi-VN')} <span className="text-xs font-normal text-gray-500">VNĐ</span>
+                                {formatNumber(debt?.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0)} <span className="text-xs font-normal text-gray-500">VNĐ</span>
                             </div>
                         </div>
                     </div>

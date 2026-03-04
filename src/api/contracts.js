@@ -127,6 +127,17 @@ export const contractsApi = api.injectEndpoints({
         { type: 'Contracts', id: 'LIST' },
       ],
     }),
+    rejectProposal: builder.mutation({
+      query: ({ id, reason }) => ({
+        url: `/contracts/${id}/reject-proposal`,
+        method: 'POST',
+        body: { reason },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Contracts', id },
+        { type: 'Contracts', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -138,6 +149,7 @@ export const {
   useDeleteContractMutation,
   useUploadProposalMutation,
   useApproveProposalMutation,
+  useRejectProposalMutation,
   useUploadSignedMutation,
   useAddMilestoneMutation,
   useUpdateMilestoneMutation,

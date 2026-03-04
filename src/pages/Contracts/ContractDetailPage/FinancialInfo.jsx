@@ -107,23 +107,14 @@ export const FinancialInfo = ({ contract }) => {
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
       {/* Premium Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-2xl shadow-lg shadow-blue-100 text-white relative overflow-hidden group flex justify-around flex-col">
-          {/* <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-            <DollarSign size={120} />
-          </div> */}
           <p className="text-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Tổng giá trị hợp đồng</p>
           <div className="text-xl font-black">{formatCurrency(sellingPrice)}</div>
-          {/* <div className="mt-4 flex items-center gap-2">
-            <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
-              <div className="h-full bg-white transition-all duration-1000" style={{ width: `${progressPercent}%` }} />
-            </div>
-            <span className="text-[10px] font-bold">{progressPercent}%</span>
-          </div> */}
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between group hover:border-green-200 transition-all">
-          <div className='flex flex-col justify-between items-start mb-2'>
+          <div className='flex flex-col justify-between items-start  h-[100%]'>
             <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Tổng vốn</p>
             <div className="text-xl font-black text-green-600">{formatCurrency(contract.cost)}</div>
           </div>
@@ -184,26 +175,6 @@ export const FinancialInfo = ({ contract }) => {
 
               return (
                 <div key={m.id} className="relative flex gap-8 group animate-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${idx * 100}ms` }}>
-                  {/* Timeline Icon Node */}
-                  {/* <div className={cn(
-                    "relative z-10 w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm border-2",
-                    m.isCompleted ? "bg-green-600 border-green-500 text-white shadow-green-100" :
-                      m.isActive ? "bg-white border-indigo-600 text-indigo-600 shadow-indigo-100" :
-                        "bg-white border-gray-100 text-gray-300"
-                  )}>
-                    {m.isCompleted ? <CheckCircle2 size={24} /> :
-                      m.isActive ? <CreditCard size={24} className={cn(overdue && "animate-pulse text-red-500")} /> :
-                        <Clock size={24} />} */}
-
-                  {/* Step Number Badge */}
-                  {/* <div className={cn(
-                      "absolute -top-2 -right-2 w-6 h-6 rounded-lg text-[10px] font-black flex items-center justify-center border-2 border-white",
-                      m.isActive || m.isCompleted ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-400"
-                    )}>
-                      {idx + 1}
-                    </div> */}
-                  {/* </div> */}
-
                   {/* Content Card */}
                   <div className={cn(
                     "flex-1 p-6 rounded-2xl border transition-all duration-300",
