@@ -1,6 +1,6 @@
 // Contract Status
 export const CONTRACT_STATUS_LABELS = {
-  DRAFT: 'Bản nháp',
+  DRAFT: 'Mới',
   PENDING: 'Chờ duyệt',
   APPROVED: 'Đã duyệt',
   PROPOSAL_APPROVED: 'Đã duyệt proposal',
@@ -13,7 +13,7 @@ export const CONTRACT_STATUS_LABELS = {
 };
 
 export const CONTRACT_STATUS_COLORS = {
-  DRAFT: 'bg-gray-100 text-gray-800',
+  DRAFT: 'bg-blue-100 text-blue-800',
   PENDING: 'bg-yellow-100 text-yellow-800',
   APPROVED: 'bg-green-100 text-green-800',
   PROPOSAL_APPROVED: 'bg-green-100 text-green-800',

@@ -445,7 +445,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     if (!formData.startDate) newErrors.startDate = 'Vui lòng chọn ngày khởi công';
     if (!formData.endDate) newErrors.endDate = 'Vui lòng chọn ngày kết thúc';
     if (formData.successChance <= 0) newErrors.successChance = 'Khả năng thành công phải lớn hơn 0%';
-    if (!formData.durationMonths || formData.durationMonths <= 0) newErrors.durationMonths = 'Vui lòng nhập số tháng triển khai';
+    if (!formData.durationMonths || formData.durationMonths < 0) newErrors.durationMonths = 'Vui lòng nhập số tháng triển khai';
 
     // Validate end date after start date
     if (formData.startDate && formData.endDate && formData.endDate <= formData.startDate) {
@@ -797,6 +797,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                         value={formData.durationMonths}
                         onChange={handleChange}
                         min={0}
+                        disabled
                         className={`w-full px-4 py-3 pr-20 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all ${errors.durationMonths ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">Tháng</span>
@@ -904,9 +905,11 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                               onChange={(e) => handlePackageTemplateChange(index, e.target.value)}
                             >
                               <option value="">-- Chọn gói mẫu --</option>
-                              {packageTemplates.map(t => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                              ))}
+                              {packageTemplates
+                                .filter(t => !selectedPackages.some(pkg => String(pkg.servicePackageId) === String(t.id)))
+                                .map(t => (
+                                  <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
                             </select>
                             <button
                               type="button"
@@ -1081,7 +1084,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    <span>{isUploading ? 'Đang tải tệp...' : 'Đang tạo...'}</span>
+                    <span>{isUploading ? 'Đang tạo cơ hội...' : 'Đang tạo...'}</span>
                   </>
                 ) : 'Tạo cơ hội'}
               </button>

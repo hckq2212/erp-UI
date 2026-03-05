@@ -1,5 +1,5 @@
 import { useState, useMemo, Fragment } from 'react';
-import { X, FileText, ArrowLeft, Edit, CheckCircle, XCircle, Paperclip } from 'lucide-react';
+import { X, FileText, ArrowLeft, Edit, CheckCircle, XCircle, Paperclip, Briefcase } from 'lucide-react';
 import { useGetQuotationQuery, useApproveQuotationMutation, useRejectQuotationMutation } from '../../../api/quotations';
 import { formatNumber } from '../../../utils/format';
 import { toast } from 'react-toastify';
@@ -325,7 +325,15 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                   </table>
                 </div>
               </div>
-
+              <div>
+                <label className="font-medium text-gray-900 flex items-center gap-2 font-semibold">
+                  <Briefcase className="w-4 h-4 text-blue-600" />
+                  Brief
+                </label>
+                <p className="text-sm text-gray-400 italic text-left mb-4">
+                  {opportunity.description || 'Không có mô tả'}
+                </p>
+              </div>
               {/* Opportunity Attachments */}
               {opportunity?.attachments?.length > 0 && (
                 <div>

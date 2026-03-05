@@ -1,6 +1,6 @@
 import { Calendar, Tag } from 'lucide-react';
 import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../../utils/enums';
-import { FileText } from 'lucide-react';
+import { FileText, Briefcase } from 'lucide-react';
 import { getFilePreviewUrl } from '../../../utils/cloudinary';
 
 export const ProjectInfo = ({ project, formatDate }) => {
@@ -21,24 +21,23 @@ export const ProjectInfo = ({ project, formatDate }) => {
                         <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Tên hợp đồng</p>
                         <p className="text-sm font-medium text-gray-700">{project.contract.name}</p>
                     </div>
-                    <div>
-                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Đội thực hiện</p>
-                        <p className="text-sm font-medium text-gray-700">{project?.team?.name || 'Chưa phân công'}</p>
-                    </div>
                 </div>
-
-                {/* <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Đội thực hiện</p>
-                        <p className="text-sm font-medium text-gray-700">{project?.team?.name || 'Chưa phân công'}</p>
-                    </div>
-                </div> */}
                 {project?.contract?.attachments && project?.contract?.attachments.length > 0 ? (
                     <div className="flex flex-col items-start gap-2 overflow-hidden">
                         <div>
                             <h2 className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Mô tả khách hàng</h2>
                         </div>
-
+                        {project?.contract?.description && (
+                            <div className="">
+                                <div className="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                    <Briefcase className="w-5 h-5 text-blue-600" />
+                                    <span>Brief</span>
+                                </div>
+                                <div className="space-y-3">
+                                    <p className="text-gray-500 mt-1 italic text-sm">{project?.contract?.description}</p>
+                                </div>
+                            </div>
+                        )}
                         {/* <div className="space-x-3 flex flex-row"> */}
                         <div className="flex flex-row flex-nowrap gap-3 overflow-x-auto w-full pb-2">
                             {project?.contract?.attachments.map((file, idx) => (
@@ -64,6 +63,6 @@ export const ProjectInfo = ({ project, formatDate }) => {
                     <p className="text-sm text-gray-400 italic text-center py-4">Không có tài liệu đính kèm</p>
                 )}
             </div>
-        </div>
+        </div >
     );
 };

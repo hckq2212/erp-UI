@@ -24,6 +24,18 @@ export const CustomerInfo = ({ contract }) => (
             <p className="text-gray-900 mt-1">{contract.customer.email}</p>
           </div>
         )}
+        {contract.customer.address && (
+          <div>
+            <label className="text-sm font-medium text-gray-500">Địa chỉ</label>
+            <p className="text-gray-900 mt-1">{contract.customer.address}</p>
+          </div>
+        )}
+        {contract.customer.taxId && (
+          <div>
+            <label className="text-sm font-medium text-gray-500">Mã số thuế</label>
+            <p className="text-gray-900 mt-1">{contract.customer.taxId}</p>
+          </div>
+        )}
       </div>
     ) : (
       <p className="text-gray-500">Chưa có thông tin khách hàng</p>

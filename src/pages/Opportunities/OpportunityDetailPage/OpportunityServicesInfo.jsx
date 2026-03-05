@@ -20,7 +20,7 @@ export const OpportunityServicesInfo = ({ opportunity }) => {
                             <div className="p-2 bg-blue-600 rounded-lg text-white">
                                 <Briefcase className="w-4 h-4" />
                             </div>
-                            <h3 className="font-bold text-blue-900">{pkg.name} <span className="text-blue-500 ml-2">x{pkg.quantity || 1}</span></h3>
+                            <h3 className="font-bold text-blue-900">Gói: {pkg.name} <span className="text-blue-500 ml-2">x{pkg.quantity || 1}</span></h3>
                         </div>
 
                         <div className="space-y-2 ml-4 border-l-2 border-blue-100/50 pl-4">

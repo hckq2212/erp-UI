@@ -106,21 +106,6 @@ export const ProjectDetailPage = () => {
                 <span>{isConfirming ? 'Đang xử lý...' : 'Chấp nhận'}</span>
               </button>
             )}
-            {/* <button
-              onClick={() => setShowEditModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm transition-all active:scale-95"
-            >
-              <Edit className="w-4 h-4" />
-              <span>Chỉnh sửa</span>
-            </button> */}
-            {/* <button
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all disabled:opacity-50 active:scale-95 border border-red-100"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>{isDeleting ? 'Đang xóa...' : 'Xóa'}</span>
-            </button> */}
           </div>
         </div>
       </div>
@@ -128,28 +113,7 @@ export const ProjectDetailPage = () => {
       {/* Task Statistics */}
       <TaskStatistics tasks={project.tasks} />
 
-      {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        Main Content: Tasks Table
-        <div className="lg:col-span-2 space-y-6">
-          <TaskTable tasks={project.tasks} project={project} />
-          <ContractInfo contract={project.contract} projectId={project.id} />
-        </div>
-
-
-        Sidebar: Info Panels
-        <div className="space-y-6">
-          <ProjectInfo project={project} formatDate={formatDate} />
-
-          <TeamInfo team={project.team} />
-        </div>
-      </div> */}
-
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
-        {/* Main Content: Tasks Table
-        <div className="lg:col-span-2 space-y-6">
-          <TaskTable tasks={project.tasks} project={project} />
-          <ContractInfo contract={project.contract} projectId={project.id} />
-        </div> */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 ">
           <div className="space-y-6">
             <ProjectInfo project={project} formatDate={formatDate} />
@@ -160,19 +124,10 @@ export const ProjectDetailPage = () => {
         </div>
         <TaskTable tasks={project.tasks} project={project} />
 
-        
+
         <ContractInfo contract={project.contract} projectId={project.id} />
-
-        {/* Sidebar: Info Panels
-        <div className="space-y-6">
-          <ProjectInfo project={project} formatDate={formatDate} />
-
-          <TeamInfo team={project.team} />
-        </div> */}
       </div>
-      {/* Edit modal placeholder */}
-      {/* {showEditModal && <EditProjectModal ... />} */}
-    </div>
+    </div >
   );
 };
 

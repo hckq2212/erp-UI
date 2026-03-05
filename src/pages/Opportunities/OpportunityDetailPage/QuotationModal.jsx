@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, Fragment } from 'react';
-import { X, FileText, Plus, Trash2 } from 'lucide-react';
+import { X, FileText, Plus, Trash2, Briefcase } from 'lucide-react';
 import { formatNumber, parseNumber } from '../../../utils/format';
 import { useGetOpportunityServicesByOpportunityQuery } from '../../../api/opportunityService';
 import { useGetServicesQuery } from '../../../api/services';
+import { useGetServicePackagesQuery } from '../../../api/servicePackages';
 
 export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuotation = null, isSubmitting = false }) => {
   const [items, setItems] = useState([]);
@@ -10,6 +11,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
   const [notes, setNotes] = useState('');
   const [showAddService, setShowAddService] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState('');
+  const [showAddPackage, setShowAddPackage] = useState(false);
+  const [selectedPackageId, setSelectedPackageId] = useState('');
   const isEditMode = !!editQuotation;
 
   // Fetch opportunity services using RTK Query (only for create mode)
@@ -20,6 +23,11 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
 
   // Fetch all available services
   const { data: allServices = [] } = useGetServicesQuery(
+    {},
+    { skip: !isOpen }
+  );
+
+  const { data: packageTemplates = [] } = useGetServicePackagesQuery(
     {},
     { skip: !isOpen }
   );
@@ -217,6 +225,48 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     setItems([...items, { ...newItem, packageName: 'STANDALONE' }]);
     setSelectedServiceId('');
     setShowAddService(false);
+  };
+
+  const handleAddPackage = () => {
+    if (!selectedPackageId) return;
+
+    const template = packageTemplates.find(t => String(t.id) === String(selectedPackageId));
+    if (!template) return;
+
+    // Check if package name already exists to avoid confusion
+    if (items.find(item => item.packageName === template.name)) {
+      alert(`Gói "${template.name}" đã có trong báo giá.`);
+      return;
+    }
+
+    const packageItems = (template.items || []).map(ps => {
+      const costPrice = parseFloat(ps.service?.costPrice || ps.sellingPrice) || 0;
+      const minPrice = costPrice / 0.8;
+      const recommendedPrice = costPrice / 0.6;
+
+      return {
+        serviceId: ps.service?.id || ps.serviceId,
+        serviceName: ps.service?.name || ps.name || 'Dịch vụ trong gói',
+        quantity: ps.defaultQuantity || 1,
+        costPrice: costPrice,
+        minPrice: minPrice,
+        recommendedPrice: recommendedPrice,
+        customPrice: recommendedPrice,
+        selectedPrice: priceType === 'minimum' ? minPrice : recommendedPrice,
+        profitMargin: calculateProfitMargin(
+          priceType === 'minimum' ? minPrice : recommendedPrice,
+          costPrice
+        ),
+        packageName: template.name,
+        packageQuantity: 1,
+        norm: ps.defaultQuantity || 1,
+        servicePackageId: template.id
+      };
+    });
+
+    setItems([...items, ...packageItems]);
+    setSelectedPackageId('');
+    setShowAddPackage(false);
   };
 
   // Get available services that are not already in the list
@@ -491,22 +541,21 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
               {!showAddService ? (
                 <button
                   onClick={() => setShowAddService(true)}
-                  disabled={availableServices.length === 0}
-                  className="flex items-center gap-2 px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 mb-2 px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   <span className="text-sm font-medium">Thêm dịch vụ</span>
                 </button>
               ) : (
-                <div className="flex gap-3 items-end">
+                <div className="flex gap-3 items-end p-4 bg-gray-50 rounded-xl animate-in fade-in slide-in-from-top-2 border border-blue-100">
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Chọn dịch vụ
+                      Chọn dịch vụ lẻ
                     </label>
                     <select
                       value={selectedServiceId}
                       onChange={(e) => setSelectedServiceId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                     >
                       <option value="">-- Chọn dịch vụ --</option>
                       {availableServices.map(service => (
@@ -516,10 +565,11 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                       ))}
                     </select>
                   </div>
+
                   <button
                     onClick={handleAddService}
                     disabled={!selectedServiceId}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   >
                     Thêm
                   </button>
@@ -528,14 +578,60 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                       setShowAddService(false);
                       setSelectedServiceId('');
                     }}
-                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                   >
                     Hủy
                   </button>
                 </div>
               )}
-              {availableServices.length === 0 && !showAddService && (
-                <p className="text-sm text-gray-500 mt-2">Tất cả dịch vụ đã được thêm vào báo giá</p>
+
+              {/* Add Package Section */}
+              {!showAddPackage ? (
+                <button
+                  onClick={() => setShowAddPackage(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors"
+                >
+                  <Briefcase className="w-4 h-4" />
+                  <span className="text-sm font-medium">Thêm gói</span>
+                </button>
+              ) : (
+                <div className="flex gap-3 items-end p-4 bg-indigo-50/30 rounded-xl animate-in fade-in slide-in-from-top-2 border border-indigo-100">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-indigo-900 mb-2">
+                      Chọn gói dịch vụ mẫu
+                    </label>
+                    <select
+                      value={selectedPackageId}
+                      onChange={(e) => setSelectedPackageId(e.target.value)}
+                      className="w-full px-3 py-2 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shrink-0"
+                    >
+                      <option value="">-- Chọn gói mẫu --</option>
+                      {packageTemplates
+                        .filter(t => !items.some(item => item.packageName === t.name))
+                        .map(template => (
+                          <option key={template.id} value={template.id}>
+                            {template.name} ({template.items?.length || 0} dịch vụ)
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={handleAddPackage}
+                    disabled={!selectedPackageId}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  >
+                    Áp dụng gói
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAddPackage(false);
+                      setSelectedPackageId('');
+                    }}
+                    className="px-4 py-2 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors font-medium"
+                  >
+                    Hủy
+                  </button>
+                </div>
               )}
             </div>
 
