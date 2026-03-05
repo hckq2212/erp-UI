@@ -25,6 +25,7 @@ export const TaskReviewPage = () => {
     const [rejectTask, { isLoading: isRejecting }] = useRejectTaskMutation();
 
     const [note, setNote] = useState('');
+    const [passedIds, setPassedIds] = useState([]);
     const [activeTab, setActiveTab] = useState(null); // 'TEAM_LEAD' or 'ASSIGNER'
 
     const isLead = user?.id === task?.project?.team?.teamLead?.id;
@@ -44,15 +45,21 @@ export const TaskReviewPage = () => {
         }
     }, [user, task, isLead, isAssigner, isDualReview, activeTab]);
 
+    useEffect(() => {
+        if (reviews) {
+            setPassedIds(reviews.filter(r => r.isPassed).map(r => r.id));
+        }
+    }, [reviews]);
+
     const leadReviews = reviews?.filter(r => r.reviewerType === 'TEAM_LEAD') || [];
     const assignerReviews = reviews?.filter(r => r.reviewerType === 'ASSIGNER') || [];
 
-    const isLeadPassed = leadReviews.length === 0 || leadReviews.every(r => r.isPassed);
-    const isAssignerPassed = assignerReviews.length === 0 || assignerReviews.every(r => r.isPassed);
+    const isLeadPassed = leadReviews.length === 0 || leadReviews.every(r => passedIds.includes(r.id));
+    const isAssignerPassed = assignerReviews.length === 0 || assignerReviews.every(r => passedIds.includes(r.id));
 
     const isAllPassed = isLeadPassed && isAssignerPassed;
 
-    const handleToggle = async (review) => {
+    const handleToggle = (review) => {
         // Permission check: 
         // 1. If dual review: must match active tab role
         // 2. If single review: must be either lead or assigner
@@ -68,21 +75,18 @@ export const TaskReviewPage = () => {
             return;
         }
 
-        try {
-            await toggleReview({
-                id: review.id,
-                isPassed: !review.isPassed,
-                note: review.note // Keep existing note if any
-            }).unwrap();
-        } catch (err) {
-            toast.error('Không thể cập nhật trạng thái tiêu chí');
-        }
+        setPassedIds(prev =>
+            prev.includes(review.id)
+                ? prev.filter(id => id !== review.id)
+                : [...prev, review.id]
+        );
     };
 
     const handleApprove = async () => {
         try {
             await finalizeTask({
                 taskId: id,
+                passedCriteriaIds: passedIds,
                 reviewNote: note,
                 projectId: task.project?.id
             }).unwrap();
@@ -101,6 +105,7 @@ export const TaskReviewPage = () => {
         try {
             await rejectTask({
                 taskId: id,
+                passedCriteriaIds: passedIds,
                 reviewNote: note,
                 projectId: task.project?.id
             }).unwrap();
@@ -247,19 +252,19 @@ export const TaskReviewPage = () => {
                                         key={review.id}
                                         className={cn(
                                             "flex items-center gap-4 p-5 rounded-3xl border transition-all group",
-                                            review.isPassed ? "bg-green-50/50 border-green-100" : "bg-gray-50/20 border-gray-50",
+                                            passedIds.includes(review.id) ? "bg-green-50/50 border-green-100" : "bg-gray-50/20 border-gray-50",
                                             ((activeTab === 'TEAM_LEAD' && isLead) || (activeTab === 'ASSIGNER' && isAssigner)) ? "cursor-pointer hover:border-blue-200 hover:bg-white" : "opacity-70"
                                         )}
                                         onClick={() => handleToggle(review)}
                                     >
                                         <div className={cn(
                                             "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0",
-                                            review.isPassed ? "bg-green-500 border-green-500 text-white" : "border-gray-200"
+                                            passedIds.includes(review.id) ? "bg-green-500 border-green-500 text-white" : "border-gray-200"
                                         )}>
-                                            {review.isPassed && <CheckCircle2 className="w-4 h-4" />}
+                                            {passedIds.includes(review.id) && <CheckCircle2 className="w-4 h-4" />}
                                         </div>
                                         <div className="flex-1">
-                                            <p className={cn("font-bold text-sm", review.isPassed ? "text-green-700" : "text-gray-700")}>
+                                            <p className={cn("font-bold text-sm", passedIds.includes(review.id) ? "text-green-700" : "text-gray-700")}>
                                                 {review.criteria?.name}
                                             </p>
                                             <p className="text-xs text-gray-400 mt-0.5">{review.criteria?.description}</p>
@@ -279,7 +284,7 @@ export const TaskReviewPage = () => {
                                         key={review.id}
                                         className={cn(
                                             "flex items-center gap-4 p-5 rounded-3xl border transition-all cursor-pointer group",
-                                            review.isPassed
+                                            passedIds.includes(review.id)
                                                 ? "bg-green-50/50 border-green-100"
                                                 : "bg-gray-50/50 border-gray-100 hover:border-blue-200 hover:bg-white"
                                         )}
@@ -287,17 +292,17 @@ export const TaskReviewPage = () => {
                                     >
                                         <div className={cn(
                                             "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0",
-                                            review.isPassed
+                                            passedIds.includes(review.id)
                                                 ? "bg-green-500 border-green-500 text-white"
                                                 : "border-gray-300 group-hover:border-blue-400"
                                         )}>
-                                            {review.isPassed && <CheckCircle2 className="w-4 h-4" />}
+                                            {passedIds.includes(review.id) && <CheckCircle2 className="w-4 h-4" />}
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2">
                                                 <p className={cn(
                                                     "font-bold text-sm",
-                                                    review.isPassed ? "text-green-700" : "text-gray-700"
+                                                    passedIds.includes(review.id) ? "text-green-700" : "text-gray-700"
                                                 )}>
                                                     {review.criteria?.name || 'Tiêu chí'}
                                                 </p>

@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Trash2, Calendar, User, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Calendar, User, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks } from 'lucide-react';
 import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetMeQuery } from '../../api/auth';
@@ -220,12 +220,20 @@ export const TaskDetailPage = () => {
 
                         return (
                             <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
-                                        <CheckCircle2 className="w-5 h-5" />
+                                <div className="flex items-center gap-3 mb-6 justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                                            <ListChecks className="w-5 h-5" />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kết quả đánh giá</h2>
                                     </div>
-                                    <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kết quả đánh giá</h2>
+                                    <div>
+                                        <p className="text-sm">
+                                            {reviews.filter(r => r.isPassed).length === reviews.length ? <span className="text-green-500 font-semibold bg-green-100 px-2 py-1 rounded-lg">Đạt</span> : <span className="text-red-500 font-semibold bg-red-100 px-2 py-1 rounded-lg">Không đạt</span>}
+                                        </p>
+                                    </div>
                                 </div>
+
 
                                 <div className="space-y-6">
                                     {isDualReview ? (
@@ -275,14 +283,14 @@ export const TaskDetailPage = () => {
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kết quả</h2>
                             </div>
-                            {/* {task.status == "DOING" || task.status == "REJECTED" && ( */}
-                            <button
-                                onClick={() => setIsResultModalOpen(true)}
-                                className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors"
-                            >
-                                {task.resultFiles ? 'Cập nhật kết quả' : 'Thêm kết quả'}
-                            </button>
-                            {/* )} */}
+                            {(task.status == "DOING" || task.status == "REJECTED") && task.assigneeId !== null && (
+                                <button
+                                    onClick={() => setIsResultModalOpen(true)}
+                                    className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors"
+                                >
+                                    {task.resultFiles ? 'Cập nhật kết quả' : 'Thêm kết quả'}
+                                </button>
+                            )}
                         </div>
                         {task.result ? (
                             <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100 flex items-center justify-between gap-4">
@@ -474,13 +482,13 @@ export const TaskDetailPage = () => {
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kế hoạch</h2>
                             </div>
-                            <div className="space-y-4">
+                            <div className="space-y-4 grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Ngày bắt đầu</p>
                                     <p className="text-lg font-bold text-gray-700">{formatDate(task.plannedStartDate)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Hạn hoàn thành</p>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Deadline</p>
                                     <p className="text-lg font-bold text-gray-700">{formatDate(task.plannedEndDate)}</p>
                                 </div>
                             </div>
