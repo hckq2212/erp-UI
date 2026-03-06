@@ -16,6 +16,12 @@ export const AdditionalInfo = ({ opportunity, formatDate }) => {
           <span className="text-gray-500">Cập nhật lần cuối</span>
           <span className="font-medium text-gray-900">{formatDate(opportunity.updatedAt)}</span>
         </div>
+        {opportunity.createdBy && (
+          <div className="flex justify-between">
+            <span className="text-gray-500">Người tạo</span>
+            <span className="font-medium text-gray-900">{opportunity.createdBy.fullName}</span>
+          </div>
+        )}
         {opportunity.referralPartner && (
           <div className="flex justify-between">
             <span className="text-gray-500">Đối tác giới thiệu</span>

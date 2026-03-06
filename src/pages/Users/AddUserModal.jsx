@@ -150,8 +150,10 @@ export const AddUserModal = ({ isOpen, onClose }) => {
                                         onChange={handleChange}
                                         className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 transition-all text-gray-900 appearance-none shadow-sm"
                                     >
-                                        <option value="MEMBER">MEMBER</option>
-                                        <option value="SALE">SALE</option>
+                                        <option value="MEMBER">member</option>
+                                        <option value="BD">BD</option>
+                                        <option value="ACCOUNTANT">Kế toán</option>
+                                        <option value="ADMIN_SALE">Admin kinh doanh</option>
                                         <option value="BOD">BOD</option>
                                     </select>
                                 </div>

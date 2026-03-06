@@ -9,20 +9,20 @@ import { useGetMeQuery } from '../../api/auth';
 
 const menuItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/customers', icon: Users, label: 'Khách Hàng', roles: ['ADMIN', 'BOD', 'SALE'] },
-  { path: '/opportunities', icon: Briefcase, label: 'Cơ Hội', roles: ['ADMIN', 'BOD', 'SALE'] },
-  { path: '/vendors', icon: Store, label: 'Vendor' },
-  { path: '/contracts', icon: FileSignature, label: 'Hợp Đồng', roles: ['ADMIN', 'BOD', 'SALE'] },
+  { path: '/opportunities', icon: Briefcase, label: 'Cơ Hội', roles: ['ADMIN', 'BOD', 'BD', 'ACCOUNTANT'] },
+  { path: '/contracts', icon: FileSignature, label: 'Hợp Đồng', roles: ['ADMIN', 'BOD', 'BD', 'ACCOUNTANT'] },
+  { path: '/customers', icon: Users, label: 'Khách Hàng', roles: ['ADMIN', 'BOD', 'BD'] },
   { path: '/projects', icon: Rocket, label: 'Dự Án' },
   { path: '/tasks', icon: CheckSquare, label: 'Công Việc' },
   { path: '/acceptance', icon: CheckCircle2, label: 'Nghiệm thu', roles: ['ADMIN', 'BOD'] },
-  { path: '/finance', icon: DollarSign, label: 'Lộ trình thanh toán' },
-  { path: '/services', icon: Briefcase, label: 'Dịch vụ', roles: ['ADMIN', 'BOD', 'SALE'] },
-  { path: '/service-packages', icon: Package, label: 'Gói dịch vụ', roles: ['ADMIN', 'BOD', 'SALE'] },
-  { path: '/jobs', icon: CheckSquare, label: 'Hạng mục công việc', roles: ['ADMIN', 'BOD', 'SALE'] },
-  { path: '/teams', icon: Users, label: 'Đội dự án', roles: ['ADMIN', 'BOD', 'SALE'] },
-  { path: '/users', icon: Users, label: 'Nhân sự', roles: ['ADMIN', 'BOD', 'SALE'] },
-  { path: '/referral-partners', icon: Users, label: 'Đối tác', roles: ['ADMIN', 'BOD', 'SALE'] },
+  { path: '/finance', icon: DollarSign, label: 'Lộ trình thanh toán', roles: ['ADMIN', 'BOD', 'BD', 'ACCOUNTANT'] },
+  { path: '/services', icon: Briefcase, label: 'Dịch vụ', roles: ['ADMIN', 'BOD', 'BD'] },
+  { path: '/service-packages', icon: Package, label: 'Gói dịch vụ', roles: ['ADMIN', 'BOD', 'BD'] },
+  { path: '/jobs', icon: CheckSquare, label: 'Hạng mục công việc', roles: ['ADMIN', 'BOD', 'BD'] },
+  { path: '/teams', icon: Users, label: 'Đội dự án', roles: ['ADMIN', 'BOD', 'BD'] },
+  { path: '/users', icon: Users, label: 'Nhân sự', roles: ['ADMIN', 'BOD', 'ACCOUNTANT'] },
+  { path: '/vendors', icon: Store, label: 'Vendor', roles: ['ADMIN', 'BOD', 'ACCOUNTANT'] },
+  { path: '/referral-partners', icon: Users, label: 'Đối tác', roles: ['ADMIN', 'BOD', 'BD'] },
 
 ];
 

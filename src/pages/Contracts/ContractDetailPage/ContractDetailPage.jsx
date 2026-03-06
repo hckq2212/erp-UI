@@ -25,6 +25,7 @@ import { ContractAddendums } from './ContractAddendums';
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS } from '../../../utils/enums';
 import { cn } from '../../../utils/cn';
 
+
 export const ContractDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();

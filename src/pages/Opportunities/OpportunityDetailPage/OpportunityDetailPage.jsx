@@ -30,6 +30,7 @@ import {
   OPPORTUNITY_STATUS_LABELS,
   OPPORTUNITY_STATUS_COLORS
 } from '../../../utils/enums';
+import { useGetMeQuery } from '../../../api/auth';
 
 export const OpportunityDetailPage = () => {
   const user = useSelector(selectCurrentUser);
@@ -39,6 +40,7 @@ export const OpportunityDetailPage = () => {
   const [deleteOpportunity, { isLoading: isDeleting }] = useDeleteOpportunityMutation();
   const [updateOpportunity, { isLoading: isUpdating }] = useUpdateOpportunityMutation();
   const { data: quotations = [], isLoading: isLoadingQuotations } = useGetQuotationsByOpportunityQuery(id);
+  const { data: currentUser = [] } = useGetMeQuery();
   const [createQuotation, { isLoading: isCreatingQuotation }] = useCreateQuotationMutation();
   const [updateQuotation, { isLoading: isUpdatingQuotation }] = useUpdateQuotationMutation();
   const [createContract, { isLoading: isCreatingContract }] = useCreateContractMutation();
@@ -280,16 +282,17 @@ export const OpportunityDetailPage = () => {
                     Tạo báo giá
                   </button>
                 )}
-                {opportunity.status === 'PENDING_OPP_APPROVAL' && (opportunity.customer || opportunity.leadName) && (
-                  <button
-                    onClick={handleApproveOpportunity}
-                    disabled={isApproving}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    {isApproving ? 'Đang duyệt...' : 'Duyệt cơ hội'}
-                  </button>
-                )}
+                {opportunity.status === 'PENDING_OPP_APPROVAL' && (opportunity.customer || opportunity.leadName) &&
+                  (currentUser.role == 'ADMIN' || currentUser.role == 'BOD') && (
+                    <button
+                      onClick={handleApproveOpportunity}
+                      disabled={isApproving}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      {isApproving ? 'Đang duyệt...' : 'Duyệt cơ hội'}
+                    </button>
+                  )}
               </>
             )}
             {opportunity.status === 'QUOTE_APPROVED' && (
@@ -341,6 +344,7 @@ export const OpportunityDetailPage = () => {
         onSubmit={handleQuotationSubmit}
         editQuotation={editingQuotation}
         isSubmitting={isUpdatingQuotation || isCreatingQuotation}
+        currentUser={currentUser}
       />
 
       <CustomerModal
@@ -371,6 +375,7 @@ export const OpportunityDetailPage = () => {
         onEditQuotation={handleEditQuotation}
         opportunity={opportunity}
         formatDate={formatDate}
+        currentUser={currentUser}
       />
     </div>
   );

@@ -4,7 +4,38 @@ import { cn } from '../../utils/cn';
 export const Pagination = ({ currentPage, totalPages, onPageChange, totalItems }) => {
     if (totalPages <= 1) return null;
 
-    const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+    const getPageNumbers = () => {
+        const pages = [];
+        const showEllipsisThreshold = 7;
+
+        if (totalPages <= showEllipsisThreshold) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            // Always show first page
+            pages.push(1);
+
+            const leftBoundary = Math.max(2, currentPage - 1);
+            const rightBoundary = Math.min(totalPages - 1, currentPage + 1);
+
+            if (leftBoundary > 2) {
+                pages.push('...');
+            }
+
+            for (let i = leftBoundary; i <= rightBoundary; i++) {
+                pages.push(i);
+            }
+
+            if (rightBoundary < totalPages - 1) {
+                pages.push('...');
+            }
+
+            // Always show last page
+            pages.push(totalPages);
+        }
+        return pages;
+    };
+
+    const pages = getPageNumbers();
 
     return (
         <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-gray-100">
@@ -44,19 +75,28 @@ export const Pagination = ({ currentPage, totalPages, onPageChange, totalItems }
                         </button>
 
                         <div className="flex gap-1 px-1">
-                            {pages.map((page) => (
-                                <button
-                                    key={page}
-                                    onClick={() => onPageChange(page)}
-                                    className={cn(
-                                        "relative inline-flex items-center rounded-lg px-3.5 py-1.5 text-xs font-black transition-all",
-                                        currentPage === page
-                                            ? "z-10 bg-blue-600 text-white shadow-md shadow-blue-100 scale-105"
-                                            : "text-gray-500 hover:bg-white hover:text-blue-600"
-                                    )}
-                                >
-                                    {page}
-                                </button>
+                            {pages.map((page, index) => (
+                                page === '...' ? (
+                                    <span
+                                        key={`ellipsis-${index}`}
+                                        className="relative inline-flex items-center px-2 py-1.5 text-xs font-medium text-gray-400"
+                                    >
+                                        ...
+                                    </span>
+                                ) : (
+                                    <button
+                                        key={page}
+                                        onClick={() => onPageChange(page)}
+                                        className={cn(
+                                            "relative inline-flex items-center rounded-lg px-3.5 py-1.5 text-xs font-black transition-all",
+                                            currentPage === page
+                                                ? "z-10 bg-blue-600 text-white shadow-md shadow-blue-100 scale-105"
+                                                : "text-gray-500 hover:bg-white hover:text-blue-600"
+                                        )}
+                                    >
+                                        {page}
+                                    </button>
+                                )
                             ))}
                         </div>
 

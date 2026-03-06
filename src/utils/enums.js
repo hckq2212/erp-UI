@@ -195,6 +195,17 @@ export const TEAM_MEMBER_ROLE = {
   SEO_SPECIALIST: "SEO_SPECIALIST"
 };
 
+
+export const USER_ROLE = {
+  SALE: "SALE",
+  BOD: "BOD",
+  MEMBER: "Nhân viên",
+  ACCOUNTANT: "Kế toán",
+  ADMIN_SALE: "ADMIN kinh doanh",
+  BD: "BD",
+  HR: "HR",
+};
+
 export const TEAM_MEMBER_ROLE_LABELS = {
   [TEAM_MEMBER_ROLE.CONTENT_CREATOR]: 'Nội dung',
   [TEAM_MEMBER_ROLE.EDITOR]: 'Editor',

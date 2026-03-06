@@ -26,15 +26,15 @@ export const ContractInfo = ({ contract, projectId }) => {
                             <LayoutList className="w-4 h-4 text-emerald-600" />
                             <p className="text-xs text-gray-400 font-black uppercase tracking-widest">Hạng mục dịch vụ</p>
                         </div>
-                        {isTeamLeadOrAdmin && (
-                            <button
-                                onClick={() => setIsAcceptanceModalOpen(true)}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-100"
-                            >
-                                <Send className="w-3.5 h-3.5" />
-                                Gửi nghiệm thu
-                            </button>
-                        )}
+                        {/* {isTeamLeadOrAdmin && ( */}
+                        <button
+                            onClick={() => setIsAcceptanceModalOpen(true)}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-100"
+                        >
+                            <Send className="w-3.5 h-3.5" />
+                            Gửi nghiệm thu
+                        </button>
+                        {/* )} */}
                     </div>
                     <div className="overflow-hidden border border-gray-100 rounded-xl">
                         <table className="w-full text-left text-xs">

@@ -165,14 +165,17 @@ export const Header = () => {
         </div>
 
         <div className="flex items-center space-x-3 pl-1 pr-3 py-1 rounded-xl">
-          <div className="flex items-center space-x-2">
+          <button
+            className="flex items-center space-x-2"
+            onClick={() => navigate(`/users/${user.id}`)}
+          >
             <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
               <User className="h-5 w-5" />
             </div>
             <div className="flex flex-col">
               <span className="text-xs font-black text-gray-900 leading-none">{user?.fullName || user?.username || 'User'}</span>
             </div>
-          </div>
+          </button>
           <div className="w-px h-4 bg-gray-200 mx-1" />
           <button
             onClick={handleLogout}

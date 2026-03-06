@@ -5,7 +5,7 @@ import { formatNumber } from '../../../utils/format';
 import { toast } from 'react-toastify';
 import { getFilePreviewUrl } from '../../../utils/cloudinary';
 
-export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate, onEdit, opportunity }) => {
+export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate, onEdit, opportunity, currentUser }) => {
   const { data: quotation, isLoading, error } = useGetQuotationQuery(quotationId, {
     skip: !isOpen || !quotationId
   });
@@ -411,7 +411,7 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
         </div>
 
         <div className="flex gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
-          {quotation && quotation.status === 'DRAFT' && (opportunity?.status === 'PENDING_QUOTE_APPROVAL' || opportunity?.status === 'QUOTATION_DRAFTING' || quotation.type === 'ADDENDUM') && (
+          {quotation && quotation.status === 'DRAFT' && (opportunity?.status === 'PENDING_QUOTE_APPROVAL' || opportunity?.status === 'QUOTATION_DRAFTING' || quotation.type === 'ADDENDUM') && (currentUser.role === 'BOD' || currentUser.role === 'ADMIN') && (
             <>
               {!isRejectingMode && (
                 <button

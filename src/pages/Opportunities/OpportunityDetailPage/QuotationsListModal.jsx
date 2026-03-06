@@ -12,7 +12,8 @@ export const QuotationsListModal = ({
   onCreateNew,
   onEditQuotation,
   opportunity,
-  formatDate
+  formatDate,
+  currentUser
 }) => {
   const [selectedQuotationId, setSelectedQuotationId] = useState(null);
 
@@ -124,6 +125,7 @@ export const QuotationsListModal = ({
         }}
         opportunity={opportunity}
         formatDate={formatDate}
+        currentUser={currentUser}
       />
     </div>
   );

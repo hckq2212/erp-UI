@@ -210,7 +210,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     priority: 'Medium',
     successChance: 0,
     region: [],
-    durationMonths: 0,
+    durationMonths: 1,
     customerRequirements: '',
   });
 
@@ -327,7 +327,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
         if (formData.durationMonths !== totalMonths) {
           setFormData(prev => ({
             ...prev,
-            durationMonths: totalMonths < 0 ? 0 : totalMonths
+            durationMonths: totalMonths <= 0 ? 1 : totalMonths
           }));
         }
       }
@@ -445,7 +445,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     if (!formData.startDate) newErrors.startDate = 'Vui lòng chọn ngày khởi công';
     if (!formData.endDate) newErrors.endDate = 'Vui lòng chọn ngày kết thúc';
     if (formData.successChance <= 0) newErrors.successChance = 'Khả năng thành công phải lớn hơn 0%';
-    if (!formData.durationMonths || formData.durationMonths < 0) newErrors.durationMonths = 'Vui lòng nhập số tháng triển khai';
+    if (!formData.durationMonths || formData.durationMonths < 1) newErrors.durationMonths = 'Vui lòng nhập số tháng triển khai';
 
     // Validate end date after start date
     if (formData.startDate && formData.endDate && formData.endDate <= formData.startDate) {
@@ -796,7 +796,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                         name="durationMonths"
                         value={formData.durationMonths}
                         onChange={handleChange}
-                        min={0}
+                        min={1}
                         disabled
                         className={`w-full px-4 py-3 pr-20 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all ${errors.durationMonths ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                       />
