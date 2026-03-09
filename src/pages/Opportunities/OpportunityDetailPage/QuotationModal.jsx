@@ -39,8 +39,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
       const loadedItems = editQuotation.details?.map(detail => {
         const costPrice = parseFloat(detail.costAtSale) || 0;
         const sellingPrice = parseFloat(detail.sellingPrice) || 0;
-        const minPrice = costPrice / 0.8;
-        const recommendedPrice = costPrice / 0.6;
+        const minPrice = roundToHundredThousands(costPrice / 0.8);
+        const recommendedPrice = roundToHundredThousands(costPrice / 0.6);
 
         return {
           serviceId: detail.service?.id || detail.serviceId,
@@ -52,6 +52,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
           customPrice: sellingPrice,
           selectedPrice: sellingPrice,
           profitMargin: calculateProfitMargin(sellingPrice, costPrice),
+          vat: sellingPrice * 0.08,
+          totalWithVat: roundToHundredThousands(sellingPrice * 1.08),
           packageName: detail.packageName || 'STANDALONE',
           packageQuantity: detail.packageQuantity || 1,
           norm: detail.quantity / (detail.packageQuantity || 1),
@@ -71,8 +73,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
         .filter(service => !service.opportunityPackageId)
         .map(service => {
           const costPrice = parseFloat(service.service?.costPrice || service.costPrice) || 0;
-          const minPrice = costPrice / 0.8;
-          const recommendedPrice = costPrice / 0.6;
+          const minPrice = roundToHundredThousands(costPrice / 0.8);
+          const recommendedPrice = roundToHundredThousands(costPrice / 0.6);
 
           return {
             serviceId: service.service?.id || service.id,
@@ -83,7 +85,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             recommendedPrice: recommendedPrice,
             customPrice: recommendedPrice,
             selectedPrice: recommendedPrice,
-            profitMargin: 40.0,
+            profitMargin: calculateProfitMargin(recommendedPrice, costPrice),
             packageName: 'STANDALONE'
           };
         });
@@ -92,8 +94,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
       const packageItems = (opportunity?.packages || []).flatMap(pkg =>
         (pkg.services || []).map(ps => {
           const costPrice = parseFloat(ps.service?.costPrice || ps.sellingPrice) || 0;
-          const minPrice = costPrice / 0.8;
-          const recommendedPrice = costPrice / 0.6;
+          const minPrice = roundToHundredThousands(costPrice / 0.8);
+          const recommendedPrice = roundToHundredThousands(costPrice / 0.6);
 
           return {
             serviceId: ps.serviceId,
@@ -104,7 +106,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             recommendedPrice: recommendedPrice,
             customPrice: recommendedPrice,
             selectedPrice: recommendedPrice,
-            profitMargin: 40.0,
+            profitMargin: calculateProfitMargin(recommendedPrice, costPrice),
             packageName: pkg.name,
             packageQuantity: pkg.quantity || 1,
             norm: ps.quantity / (pkg.quantity || 1),
@@ -118,6 +120,10 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
       setPriceType('recommended');
     }
   }, [isOpen, !isEditMode, servicesData, opportunity?.packages]);
+
+  const roundToHundredThousands = (value) => {
+    return Math.ceil(value / 100000) * 100000;
+  };
 
   const calculateProfitMargin = (sellingPrice, costPrice) => {
     if (sellingPrice === 0) return 0;
@@ -202,8 +208,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     }
 
     const costPrice = parseFloat(service.costPrice) || 0;
-    const minPrice = costPrice / 0.8;
-    const recommendedPrice = costPrice / 0.6;
+    const minPrice = roundToHundredThousands(costPrice / 0.8);
+    const recommendedPrice = roundToHundredThousands(costPrice / 0.6);
 
     const newItem = {
       serviceId: service.id,
@@ -241,8 +247,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
 
     const packageItems = (template.items || []).map(ps => {
       const costPrice = parseFloat(ps.service?.costPrice || ps.sellingPrice) || 0;
-      const minPrice = costPrice / 0.8;
-      const recommendedPrice = costPrice / 0.6;
+      const minPrice = roundToHundredThousands(costPrice / 0.8);
+      const recommendedPrice = roundToHundredThousands(costPrice / 0.6);
 
       return {
         serviceId: ps.service?.id || ps.serviceId,
@@ -275,13 +281,17 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
   );
 
   const totals = items.reduce((acc, item) => {
-    const revenue = item.selectedPrice * item.quantity;
-    const cost = item.costPrice * item.quantity;
+    const revenue = (item.selectedPrice || 0) * (item.quantity || 0);
+    const cost = (item.costPrice || 0) * (item.quantity || 0);
+    const vat = revenue * 0.08;
+    const totalWithVat = roundToHundredThousands(revenue + vat);
     return {
       revenue: acc.revenue + revenue,
-      cost: acc.cost + cost
+      cost: acc.cost + cost,
+      vat: acc.vat + vat,
+      totalWithVat: acc.totalWithVat + totalWithVat
     };
-  }, { revenue: 0, cost: 0 });
+  }, { revenue: 0, cost: 0, vat: 0, totalWithVat: 0 });
 
   const overallProfitMargin = totals.revenue > 0
     ? ((totals.revenue - totals.cost) / totals.revenue) * 100
@@ -305,14 +315,22 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             recommendedPrice: 0,
             customPrice: 0,
             selectedPrice: 0,
+            vat: 0,
+            totalWithVat: 0,
             items: []
           };
         }
+        const itemRevenue = item.selectedPrice * item.quantity;
+        const itemVat = itemRevenue * 0.08;
+        const itemTotalWithVat = roundToHundredThousands(itemRevenue + itemVat);
+
         packages[key].costPrice += item.costPrice;
         packages[key].minPrice += item.minPrice;
         packages[key].recommendedPrice += item.recommendedPrice;
         packages[key].customPrice += item.customPrice;
         packages[key].selectedPrice += item.selectedPrice;
+        packages[key].vat += itemVat;
+        packages[key].totalWithVat += itemTotalWithVat;
         packages[key].items.push({ ...item, originalIndex: index });
       }
     });
@@ -403,6 +421,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                       <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá bán tùy chỉnh</th>
                     )}
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Tỉ suất lợi nhuận</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">VAT (8%)</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Thành tiền</th>
                     <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Hành động</th>
                   </tr>
                 </thead>
@@ -446,6 +466,12 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                         <td className={`px-4 py-2 text-right text-sm font-black ${pkg.profitMargin < 0 ? 'text-red-600' : 'text-blue-600'}`}>
                           {pkg.profitMargin.toFixed(1)}%
                         </td>
+                        <td className="px-4 py-2 text-right text-sm font-bold text-blue-900">
+                          {formatNumber(pkg.vat)}
+                        </td>
+                        <td className="px-4 py-2 text-right text-sm font-bold text-blue-900">
+                          {formatNumber(pkg.totalWithVat)}
+                        </td>
                         <td className="px-4 py-2 text-center">
                           <button
                             onClick={() => handleRemovePackage(pkg.name)}
@@ -480,7 +506,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                   {displayGroups.standalone.length > 0 && (
                     <>
                       <tr className="bg-gray-100 border-b border-gray-200">
-                        <td colSpan={priceType === 'custom' ? 8 : 7} className="px-4 py-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                        <td colSpan={priceType === 'custom' ? 10 : 9} className="px-4 py-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
                           Dịch vụ lẻ
                         </td>
                       </tr>
@@ -519,6 +545,12 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                           )}
                           <td className={`px-4 py-3 text-right text-sm font-medium ${item.profitMargin < 0 ? 'text-red-600' : 'text-blue-600'}`}>
                             {item.profitMargin.toFixed(1)}%
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-gray-900">
+                            {formatNumber((item.selectedPrice * item.quantity) * 0.08)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm font-bold text-gray-900">
+                            {formatNumber(roundToHundredThousands((item.selectedPrice * item.quantity) * 1.08))}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <button
@@ -679,6 +711,14 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                 <div>
                   <p className="text-sm text-blue-700 mb-1">Tổng doanh thu:</p>
                   <p className="text-xl font-bold text-blue-900">{formatNumber(totals.revenue)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-blue-700 mb-1">Tổng VAT (8%):</p>
+                  <p className="text-xl font-bold text-blue-900">{formatNumber(totals.vat)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-blue-700 mb-1">Tổng cộng (có VAT):</p>
+                  <p className="text-xl font-bold text-blue-900">{formatNumber(totals.totalWithVat)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-blue-700 mb-1">Tổng vốn:</p>

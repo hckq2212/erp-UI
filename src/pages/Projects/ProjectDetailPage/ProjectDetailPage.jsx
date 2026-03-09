@@ -19,17 +19,6 @@ export const ProjectDetailPage = () => {
   const [confirmProject, { isLoading: isConfirming }] = useConfirmProjectMutation();
   const [showEditModal, setShowEditModal] = useState(false);
 
-  const handleDelete = async () => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa dự án này?')) {
-      try {
-        await deleteProject(id).unwrap();
-        toast.success('Xóa dự án thành công');
-        navigate('/projects');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Có lỗi xảy ra khi xóa');
-      }
-    }
-  };
 
   const handleConfirm = async () => {
     if (window.confirm('Bạn có chắc chắn muốn chấp nhận dự án này?')) {

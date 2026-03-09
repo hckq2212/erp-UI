@@ -258,22 +258,24 @@ export const OpportunityDetailPage = () => {
           <div className="flex gap-2">
             {(opportunity.customer || opportunity.leadName) && (
               <>
-                <div className="relative">
-                  <button
-                    onClick={() => setShowQuotationsListModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                  >
-                    Xem báo giá
-                  </button>
-                  {(() => {
-                    const draftCount = quotations.filter(q => q.status === 'DRAFT').length;
-                    return draftCount > 0 && (
-                      <span className="absolute -top-2 -right-2 flex items-center justify-center h-5 w-5 text-[10px] font-black text-white bg-red-500 rounded-full ring-2 ring-white shadow-sm">
-                        {draftCount > 9 ? '9+' : draftCount}
-                      </span>
-                    );
-                  })()}
-                </div>
+                {opportunity.quotations.length > 0 && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowQuotationsListModal(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                      Xem báo giá
+                    </button>
+                    {(() => {
+                      const draftCount = quotations.filter(q => q.status === 'DRAFT').length;
+                      return draftCount > 0 && (
+                        <span className="absolute -top-2 -right-2 flex items-center justify-center h-5 w-5 text-[10px] font-black text-white bg-red-500 rounded-full ring-2 ring-white shadow-sm">
+                          {draftCount > 9 ? '9+' : draftCount}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                )}
                 {(opportunity.status === 'QUOTATION_DRAFTING' || opportunity.status === 'PENDING_QUOTE_APPROVAL' || opportunity.status === 'OPP_APPROVED') && (
                   <button
                     onClick={() => setShowQuotationModal(true)}
