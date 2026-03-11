@@ -7,24 +7,37 @@ import { format } from 'date-fns';
  */
 export const formatNumber = (value) => {
   if (value === null || value === undefined || value === '') return '';
-  // Parse string directly without removing dots (for decimal numbers like "10000000.00")
-  const num = typeof value === 'string' ? parseFloat(value) : value;
-  if (isNaN(num)) return '';
-  // Round to integer to avoid decimal places
-  return Math.round(num).toLocaleString('vi-VN', { maximumFractionDigits: 0 });
+
+  // Convert to string and handle both dot and comma as decimal separators initially
+  const strValue = String(value).replace(/,/g, '.');
+  const parts = strValue.split('.');
+  const integerPart = parts[0];
+  const decimalPart = parts[1];
+
+  // Format integer part with dots as thousand separators
+  const numInteger = parseInt(integerPart || '0');
+  const formattedInteger = isNaN(numInteger) ? '0' : numInteger.toLocaleString('vi-VN');
+
+  // If there's a decimal part, append it with a comma
+  if (decimalPart !== undefined) {
+    return `${formattedInteger},${decimalPart}`;
+  }
+
+  return formattedInteger;
 };
 
 /**
  * Parse formatted number string back to number
- * @param {string} value - The formatted string (e.g., "100.000.000")
- * @returns {number} The parsed number (rounded to integer)
+ * @param {string} value - The formatted string (e.g., "100.000,500")
+ * @returns {number} The parsed number (float)
  */
 export const parseNumber = (value) => {
-  if (!value) return 0;
+  if (value === null || value === undefined || value === '') return 0;
   const cleaned = String(value).replace(/\./g, '').replace(/,/g, '.');
   const num = parseFloat(cleaned);
-  return isNaN(num) ? 0 : Math.round(num);
+  return isNaN(num) ? 0 : num;
 };
+
 
 /**
  * Format currency with VNĐ suffix

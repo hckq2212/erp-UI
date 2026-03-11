@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGetJobQuery } from '../../api/jobs';
+import { useGetMeQuery } from '../../api/auth';
 import {
     Briefcase,
     Code,
@@ -21,12 +22,17 @@ import { Button } from '../../components/ui/Button';
 import { formatCurrency } from '../../utils/format';
 import { useState } from 'react';
 import { EditJobCriteriaModal } from './EditJobCriteriaModal';
+import { EditJobInfoModal } from './EditJobInfoModal';
 
 export const JobDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { data: job, isLoading, error } = useGetJobQuery(id);
+    const { data: me } = useGetMeQuery();
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isEditInfoModalOpen, setIsEditInfoModalOpen] = useState(false);
+
+    const canEdit = me?.role === 'ADMIN' || me?.role === 'BOD';
 
     if (isLoading) {
         return (
@@ -67,6 +73,14 @@ export const JobDetailPage = () => {
                         </div>
                         <p className="text-gray-500 text-sm mt-1">Quản lý chi tiết và tiêu chí đánh giá hạng mục công việc</p>
                     </div>
+                    {canEdit && (
+                        <Button
+                            onClick={() => setIsEditInfoModalOpen(true)}
+                            className="flex items-center gap-2 font-bold"
+                        >
+                            <Pencil className="w-4 h-4" /> Chỉnh sửa
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -267,6 +281,12 @@ export const JobDetailPage = () => {
             <EditJobCriteriaModal
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
+                job={job}
+            />
+
+            <EditJobInfoModal
+                isOpen={isEditInfoModalOpen}
+                onClose={() => setIsEditInfoModalOpen(false)}
                 job={job}
             />
         </div>

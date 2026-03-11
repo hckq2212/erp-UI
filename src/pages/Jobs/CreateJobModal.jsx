@@ -6,15 +6,15 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useCreateJobMutation } from '../../api/jobs';
 import { toast } from 'react-toastify';
-import { formatNumber } from '../../utils/format';
+import { formatNumber, parseNumber } from '../../utils/format';
 import { Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const jobSchema = z.object({
     name: z.string().min(1, 'Tên hạng mục là bắt buộc'),
     code: z.string().min(1, 'Mã hạng mục là bắt buộc'),
-    costPrice: z.string().transform((val) => val.replace(/\D/g, '')).optional().default('0'),
-    vinicoin: z.string().transform((val) => val.replace(/\D/g, '')).optional().default('0'),
+    costPrice: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
+    vinicoin: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     timeToComplete: z.string().transform((val) => val.replace(/[^0-9.]/g, '')).optional().default('0'),
     defaultPerformerType: z.enum(['INTERNAL', 'EXTERNAL']).default('INTERNAL'),
     criteria: z.array(z.object({
@@ -61,8 +61,8 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
 
             const result = await createJob({
                 ...data,
-                costPrice: parseInt(data.costPrice || '0'),
-                vinicoin: parseInt(data.vinicoin || '0'),
+                costPrice: parseNumber(data.costPrice),
+                vinicoin: parseNumber(data.vinicoin),
                 timeToComplete: parseFloat(data.timeToComplete || '0'),
                 criteria: data.criteria.map(c => ({
                     name: c.name,
@@ -101,22 +101,24 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                         {...register('costPrice')}
                         value={formatNumber(costPriceValue)}
                         onChange={(e) => {
-                            const rawValue = e.target.value.replace(/\D/g, '');
+                            const rawValue = e.target.value.replace(/[^0-9,]/g, '').replace(/(,.*),/g, '$1');
                             setValue('costPrice', rawValue);
                         }}
                         error={errors.costPrice?.message}
                         placeholder="0"
+                        suffix="VNĐ"
                     />
                     <Input
                         label="Vinicoin"
                         {...register('vinicoin')}
                         value={formatNumber(vinicoinValue)}
                         onChange={(e) => {
-                            const rawValue = e.target.value.replace(/\D/g, '');
+                            const rawValue = e.target.value.replace(/[^0-9,]/g, '').replace(/(,.*),/g, '$1');
                             setValue('vinicoin', rawValue);
                         }}
                         error={errors.vinicoin?.message}
                         placeholder="0"
+                        suffix="VNĐ"
                     />
                     <Input
                         label="Thời gian hoàn thành (theo giờ)"

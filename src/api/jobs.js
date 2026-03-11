@@ -27,7 +27,7 @@ export const jobsApi = api.injectEndpoints({
     updateJob: builder.mutation({
       query: ({ id, ...data }) => ({
         url: `/jobs/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [
