@@ -14,6 +14,7 @@ const jobSchema = z.object({
     code: z.string().min(1, 'Mã hạng mục là bắt buộc'),
     costPrice: z.string().transform((val) => val.replace(/\D/g, '')).optional().default('0'),
     vinicoin: z.string().transform((val) => val.replace(/\D/g, '')).optional().default('0'),
+    timeToComplete: z.string().transform((val) => val.replace(/\D/g, '')).optional().default('0'),
     defaultPerformerType: z.enum(['INTERNAL', 'EXTERNAL']).default('INTERNAL'),
     criteria: z.array(z.object({
         name: z.string().min(1, 'Tên tiêu chí không được để trống'),
@@ -39,6 +40,7 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
             code: '',
             costPrice: '',
             vinicoin: '',
+            timeToComplete: '',
             defaultPerformerType: 'INTERNAL',
             criteria: [],
         },
@@ -51,6 +53,7 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
 
     const costPriceValue = watch('costPrice');
     const vinicoinValue = watch('vinicoin');
+    const timeToCompleteValue = watch('timeToComplete');
 
     const onSubmit = async (data) => {
         try {
@@ -110,6 +113,17 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                         }}
                         error={errors.vinicoin?.message}
                         placeholder="0"
+                    />
+                    <Input
+                        label="Thời gian hoàn thành (theo giờ)"
+                        {...register('timeToComplete')}
+                        value={formatNumber(timeToCompleteValue)}
+                        onChange={(e) => {
+                            const rawValue = e.target.value.replace(/\D/g, '');
+                            setValue('timeToComplete', rawValue);
+                        }}
+                        error={errors.timeToComplete?.message}
+                        placeholder="Số giờ dự kiến để hoàn thành"
                     />
                 </div>
 

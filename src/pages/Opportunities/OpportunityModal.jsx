@@ -256,6 +256,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       };
       return updated;
     });
+    // Clear services error
+    setErrors(prev => prev.services ? { ...prev, services: null } : prev);
   }, [packageTemplates]);
 
   const addPackage = useCallback(() => {
@@ -340,6 +342,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       ...prev,
       [name]: type === 'number' ? Number(value) : value
     }));
+    // Clear error for this field
+    setErrors(prev => prev[name] ? { ...prev, [name]: null } : prev);
   }, []);
 
   const handleNumberChange = useCallback((name, value) => {
@@ -348,6 +352,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       ...prev,
       [name]: numValue
     }));
+    // Clear error for this field
+    setErrors(prev => prev[name] ? { ...prev, [name]: null } : prev);
   }, []);
 
   const handleServiceChange = useCallback((index, field, value) => {
@@ -356,6 +362,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       updated[index] = { ...updated[index], [field]: field === 'quantity' ? Number(value) : value };
       return updated;
     });
+    // Clear services error
+    setErrors(prev => prev.services ? { ...prev, services: null } : prev);
   }, []);
 
   const addService = useCallback(() => {
