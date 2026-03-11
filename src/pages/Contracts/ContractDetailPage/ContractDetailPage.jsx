@@ -24,6 +24,7 @@ import { AssessExtraTasks } from './AssessExtraTasks';
 import { ContractAddendums } from './ContractAddendums';
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS } from '../../../utils/enums';
 import { cn } from '../../../utils/cn';
+import { AttachmentsList } from '../../Opportunities/OpportunityDetailPage/AttachmentsList';
 
 
 export const ContractDetailPage = () => {
@@ -288,6 +289,7 @@ export const ContractDetailPage = () => {
                 </div>
               </div>
             )}
+            <AttachmentsList attachments={contract.attachments} />
           </div>
         </div>
       ) : (

@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Trash2, Calendar, User, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks } from 'lucide-react';
-import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation } from '../../api/tasks';
+import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation, useRequestReworkMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetMeQuery } from '../../api/auth';
 import { formatDate } from '../../utils/format';
@@ -11,6 +11,8 @@ import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../utils/cn';
 import { uploadToCloudinary, getFilePreviewUrl } from '../../utils/cloudinary';
+import { ReworkTaskModal } from '../../components/tasks/ReworkTaskModal';
+import { History, MessageSquare, Paperclip } from 'lucide-react';
 
 export const TaskDetailPage = () => {
     const { id } = useParams();
@@ -20,8 +22,11 @@ export const TaskDetailPage = () => {
     const { data: reviews } = useGetTaskReviewsQuery(id);
     const [updateStatus, { isLoading: isUpdatingStatus }] = useUpdateTaskStatusMutation();
     const [submitResult, { isLoading: isSubmittingResult }] = useSubmitTaskResultMutation();
+    const [requestRework, { isLoading: isRequestingRework }] = useRequestReworkMutation();
 
     const isLoading = isTaskLoading || !user;
+
+    const [isReworkModalOpen, setIsReworkModalOpen] = useState(false);
 
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);
     const [submissionType, setSubmissionType] = useState('file'); // 'file' or 'link'
@@ -43,6 +48,8 @@ export const TaskDetailPage = () => {
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase"><AlertCircle className="w-3 h-3" /> Quá hạn</span>;
             case 'REJECTED':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase">Đã từ chối</span>;
+            case 'REWORKING':
+                return <span className="flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold uppercase"><Clock className="w-3 h-3" /> Làm lại</span>;
             case 'TODO':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold uppercase">Chưa bắt đầu</span>;
             default:
@@ -154,12 +161,33 @@ export const TaskDetailPage = () => {
                 <div className="flex flex-wrap gap-3">
                     {task.status === 'AWAITING_REVIEW' &&
                         (user?.id === task.assignerId || user?.id === task.project?.team?.teamLead?.id) && (
+                            <div className="flex gap-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsReworkModalOpen(true)}
+                                    className="rounded-2xl py-3 px-6 shadow-sm border-purple-200 text-purple-600 hover:bg-purple-50 flex items-center gap-2"
+                                >
+                                    <History className="w-5 h-5" />
+                                    Yêu cầu làm lại
+                                </Button>
+                                <Button
+                                    onClick={() => navigate(`/tasks/${id}/review`)}
+                                    className="rounded-2xl py-3 px-6 shadow-lg shadow-blue-100 flex items-center gap-2"
+                                >
+                                    <CheckCircle2 className="w-5 h-5" />
+                                    Đánh giá & Duyệt
+                                </Button>
+                            </div>
+                        )}
+                    {(task.status === 'DONE' || task.status === 'COMPLETED') &&
+                        (user?.id === task.assignerId || user?.id === task.project?.team?.teamLead?.id) && (
                             <Button
-                                onClick={() => navigate(`/tasks/${id}/review`)}
-                                className="rounded-2xl py-3 px-6 shadow-lg shadow-blue-100 flex items-center gap-2"
+                                variant="outline"
+                                onClick={() => setIsReworkModalOpen(true)}
+                                className="rounded-2xl py-3 px-6 shadow-sm border-purple-200 text-purple-600 hover:bg-purple-50 flex items-center gap-2"
                             >
-                                <CheckCircle2 className="w-5 h-5" />
-                                Đánh giá & Duyệt
+                                <History className="w-5 h-5" />
+                                Yêu cầu làm lại
                             </Button>
                         )}
                 </div>
@@ -275,7 +303,7 @@ export const TaskDetailPage = () => {
                     })()}
 
                     {/* Result Files Section */}
-                    <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                    <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8 overflow-hidden">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
@@ -283,12 +311,12 @@ export const TaskDetailPage = () => {
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kết quả</h2>
                             </div>
-                            {(task.status == "DOING" || task.status == "REJECTED") && task.assigneeId !== null && (
+                            {(task.status == "DOING" || task.status == "REJECTED" || task.status == "REWORKING") && task.assigneeId !== null && (
                                 <button
                                     onClick={() => setIsResultModalOpen(true)}
                                     className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors"
                                 >
-                                    {task.resultFiles ? 'Cập nhật kết quả' : 'Thêm kết quả'}
+                                    {task.result ? 'Cập nhật kết quả' : 'Thêm kết quả'}
                                 </button>
                             )}
                         </div>
@@ -298,7 +326,7 @@ export const TaskDetailPage = () => {
                                     <div className="w-12 h-12 bg-white rounded-2xl border border-blue-200 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
                                         <FileText className="w-6 h-6" />
                                     </div>
-                                    <div className="min-w-0">
+                                    <div className="min-w-0 overflow-hidden">
                                         <p className="text-sm font-bold text-gray-900">{task.result.name}</p>
                                     </div>
                                 </div>
@@ -318,6 +346,111 @@ export const TaskDetailPage = () => {
                             </div>
                         )}
                     </div>
+
+                    {/* Iteration History Section */}
+                    {task.iterations && task.iterations.length > 0 && (
+                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                            <div className="flex items-center gap-3 mb-8">
+                                <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600">
+                                    <History className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-xl font-bold text-gray-900 tracking-tight">Lịch sử làm lại</h2>
+                            </div>
+
+                            <div className="space-y-6 relative before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
+                                {task.iterations.slice().sort((a, b) => b.version - a.version).map((iteration, index) => (
+                                    <div key={iteration.id} className="relative pl-12">
+                                        <div className="absolute left-0 top-1.5 w-10 h-10 bg-white border-2 border-purple-500 rounded-full flex items-center justify-center text-purple-600 z-10 shadow-sm">
+                                            <span className="text-xs font-black">v{iteration.version}</span>
+                                        </div>
+
+                                        <div className="bg-gray-50/50 rounded-3xl p-6 border border-gray-100 space-y-4">
+                                            <div className="flex flex-wrap items-center justify-between gap-4">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-bold text-purple-600 uppercase tracking-widest bg-purple-50 px-2 py-1 rounded-lg">Đợt {iteration.version}</span>
+                                                    <span className="text-[10px] font-bold text-gray-400">{formatDate(iteration.createdAt)}</span>
+                                                </div>
+                                                {iteration.deadlineAt && (
+                                                    <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-lg">Deadline mới: {formatDate(iteration.deadlineAt)}</span>
+                                                )}
+                                            </div>
+
+                                            {/* Feedback from Lead */}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2 text-gray-400">
+                                                    <MessageSquare className="w-3.5 h-3.5" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Phản hồi của Lead</span>
+                                                </div>
+                                                <p className="text-sm text-gray-700 font-medium italic border-l-2 border-purple-200 pl-3 py-1">
+                                                    "{iteration.leadFeedback}"
+                                                </p>
+                                            </div>
+
+                                            {/* Lead Attachments */}
+                                            {iteration.feedbackAttachments && iteration.feedbackAttachments.length > 0 && (
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2 text-gray-400">
+                                                        <Paperclip className="w-3.5 h-3.5" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">Tài liệu đính kèm</span>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {iteration.feedbackAttachments.map((file, fIdx) => (
+                                                            file.type === 'FILE' ? (
+                                                                <a
+                                                                    key={fIdx}
+                                                                    href={getFilePreviewUrl(file.url, file.type)}
+                                                                    target="_blank"
+                                                                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-xl text-[10px] font-bold text-gray-600 hover:border-blue-200 transition-all"
+                                                                >
+                                                                    <FileText className="w-3 h-3 text-blue-500" />
+                                                                    <span className="max-w-[120px] truncate">{file.name}</span>
+                                                                </a>
+                                                            ) : file.type === 'LINK' ? (
+                                                                <a
+                                                                    key={fIdx}
+                                                                    href={file.url}
+                                                                    target="_blank"
+                                                                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-xl text-[10px] font-bold text-gray-600 hover:border-blue-200 transition-all"
+                                                                >
+                                                                    <LinkIcon className="w-3 h-3 text-blue-500" />
+                                                                    <span className="max-w-[120px] truncate">{file.name}</span>
+                                                                </a>
+                                                            ) : null
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Historical Result */}
+                                            {iteration.submittedResult && (
+                                                <div className="space-y-2 pt-2 border-t border-gray-100">
+                                                    <div className="flex items-center gap-2 text-gray-400">
+                                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">Kết quả đã nộp cũ</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-4 p-3 bg-white rounded-2xl border border-gray-100">
+                                                        <div className="flex items-center gap-3 min-w-0">
+                                                            <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500 shrink-0">
+                                                                <FileText className="w-4 h-4" />
+                                                            </div>
+                                                            <p className="text-xs font-bold text-gray-700 truncate">{iteration.submittedResult.name}</p>
+                                                        </div>
+                                                        <a
+                                                            href={iteration.submittedResult.url}
+                                                            target="_blank"
+                                                            className="text-[10px] font-black text-blue-600 hover:underline uppercase"
+                                                        >
+                                                            Xem lại
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Modal Gửi kết quả */}
@@ -438,6 +571,26 @@ export const TaskDetailPage = () => {
                         </div>
                     </div>
                 </Modal>
+
+                <ReworkTaskModal
+                    isOpen={isReworkModalOpen}
+                    onClose={() => setIsReworkModalOpen(false)}
+                    taskName={task.name}
+                    isLoading={isRequestingRework}
+                    onSubmit={async (data) => {
+                        try {
+                            await requestRework({
+                                id,
+                                projectId: task.project?.id,
+                                ...data
+                            }).unwrap();
+                            toast.success('Gửi yêu cầu làm lại thành công');
+                            setIsReworkModalOpen(false);
+                        } catch (err) {
+                            toast.error(err.data?.message || 'Lỗi khi gửi yêu cầu làm lại');
+                        }
+                    }}
+                />
                 {/* Sidebar */}
                 <div className="space-y-8 ">
                     {/* Performer / Assignee */}

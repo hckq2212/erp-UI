@@ -4,15 +4,18 @@ import { TaskAssignModal } from './TaskAssignModal';
 import { AddExtraTaskModal } from './AddExtraTaskModal';
 import { useNavigate } from 'react-router-dom';
 import { useGetTeamMembersQuery } from '../../../api/teams';
+import { useRequestSupportMutation } from '../../../api/tasks';
 import { useTableFeatures } from '../../../hooks/useTableFeatures';
 import { Pagination } from '../../../components/ui/Pagination';
 import { cn } from '../../../utils/cn';
 import { TASK_STATUS_LABELS } from '../../../utils/enums';
+import { toast } from 'react-toastify';
 
 export const TaskTable = ({ tasks = [], project }) => {
     const navigate = useNavigate();
     const teamId = project?.team?.id;
     const { data: members = [] } = useGetTeamMembersQuery(teamId, { skip: !teamId });
+    const [requestSupport, { isLoading: isRequestingSupport }] = useRequestSupportMutation();
 
     const [filter, setFilter] = useState({
         status: 'ALL',
@@ -48,6 +51,8 @@ export const TaskTable = ({ tasks = [], project }) => {
                 return <span className="flex items-center gap-1.5 text-md font-medium text-gray-400"> {label}</span>;
             case 'AWAITING_REVIEW':
                 return <span className="flex items-center gap-1.5 text-md font-medium text-gray-400"> {label}</span>;
+            case 'AWAITING_SUPPORT':
+                return <span className="flex items-center gap-1.5 text-md font-medium text-red-500"> {label}</span>;
             default:
                 return <span className="flex items-center gap-1.5 text-md font-medium text-gray-500"> {label}</span>;
         }
@@ -169,7 +174,13 @@ export const TaskTable = ({ tasks = [], project }) => {
                     <tbody className="divide-y divide-gray-100">
                         {paginatedTasks.length > 0 ? (
                             paginatedTasks.map((task, index) => (
-                                <tr key={task.id} className="hover:bg-gray-50/50 transition-colors">
+                                <tr
+                                    key={task.id}
+                                    className={cn(
+                                        "transition-colors",
+                                        task.isSupportRequested ? "bg-red-50/50 hover:bg-red-50 border-l-4 border-l-red-500" : "hover:bg-gray-50/50"
+                                    )}
+                                >
                                     <td className="px-6 py-4 text-gray-500">{(currentPage - 1) * 10 + index + 1}</td>
                                     <td className="px-6 py-4">
                                         <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
@@ -203,12 +214,20 @@ export const TaskTable = ({ tasks = [], project }) => {
 
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex justify-center gap-2">
-                                            {isProjectInProgress && task.status === 'PENDING' && (
+                                            {isProjectInProgress && (task.status === 'PENDING') && (
                                                 <button
                                                     onClick={() => setAssigningTask(task)}
                                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
                                                 >
                                                     Phân công
+                                                </button>
+                                            )}
+                                            {isProjectInProgress && task.status === 'DOING' && !task.isSupportRequested && (
+                                                <button
+                                                    onClick={() => setAssigningTask(task)}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                >
+                                                    Hỗ trợ
                                                 </button>
                                             )}
                                             <button

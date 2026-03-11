@@ -148,6 +148,42 @@ export const tasksApi = api.injectEndpoints({
       }),
       invalidatesTags: [{ type: 'Tasks', id: 'LIST' }],
     }),
+    requestSupport: builder.mutation({
+      query: ({ id, note }) => ({
+        url: `/tasks/${id}/request-support`,
+        method: 'PATCH',
+        body: { note },
+      }),
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
+    }),
+    assignSupportTeam: builder.mutation({
+      query: ({ id, teamId }) => ({
+        url: `/tasks/${id}/assign-support-team`,
+        method: 'PUT',
+        body: { teamId },
+      }),
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
+    }),
+    requestRework: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/tasks/${id}/rework`,
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
+    }),
   }),
 });
 
@@ -166,4 +202,7 @@ export const {
   useUpdatePricingMutation,
   useAssessExtraTaskMutation,
   useCreateInternalTaskMutation,
+  useRequestSupportMutation,
+  useAssignSupportTeamMutation,
+  useRequestReworkMutation,
 } = tasksApi;

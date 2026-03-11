@@ -247,30 +247,34 @@ export const TaskReviewPage = () => {
                             </div>
 
                             <div className="space-y-4">
-                                {(activeTab === 'TEAM_LEAD' ? leadReviews : assignerReviews).map((review) => (
-                                    <div
-                                        key={review.id}
-                                        className={cn(
-                                            "flex items-center gap-4 p-5 rounded-3xl border transition-all group",
-                                            passedIds.includes(review.id) ? "bg-green-50/50 border-green-100" : "bg-gray-50/20 border-gray-50",
-                                            ((activeTab === 'TEAM_LEAD' && isLead) || (activeTab === 'ASSIGNER' && isAssigner)) ? "cursor-pointer hover:border-blue-200 hover:bg-white" : "opacity-70"
-                                        )}
-                                        onClick={() => handleToggle(review)}
-                                    >
-                                        <div className={cn(
-                                            "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0",
-                                            passedIds.includes(review.id) ? "bg-green-500 border-green-500 text-white" : "border-gray-200"
-                                        )}>
-                                            {passedIds.includes(review.id) && <CheckCircle2 className="w-4 h-4" />}
+                                {(activeTab === 'TEAM_LEAD' ? leadReviews : assignerReviews)
+                                    .filter((r, idx, self) =>
+                                        self.findIndex(t => t.criteria?.id === r.criteria?.id && t.reviewerType === r.reviewerType) === idx
+                                    )
+                                    .map((review) => (
+                                        <div
+                                            key={review.id}
+                                            className={cn(
+                                                "flex items-center gap-4 p-5 rounded-3xl border transition-all group",
+                                                passedIds.includes(review.id) ? "bg-green-50/50 border-green-100" : "bg-gray-50/20 border-gray-50",
+                                                ((activeTab === 'TEAM_LEAD' && isLead) || (activeTab === 'ASSIGNER' && isAssigner)) ? "cursor-pointer hover:border-blue-200 hover:bg-white" : "opacity-70"
+                                            )}
+                                            onClick={() => handleToggle(review)}
+                                        >
+                                            <div className={cn(
+                                                "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0",
+                                                passedIds.includes(review.id) ? "bg-green-500 border-green-500 text-white" : "border-gray-200"
+                                            )}>
+                                                {passedIds.includes(review.id) && <CheckCircle2 className="w-4 h-4" />}
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className={cn("font-bold text-sm", passedIds.includes(review.id) ? "text-green-700" : "text-gray-700")}>
+                                                    {review.criteria?.name}
+                                                </p>
+                                                <p className="text-xs text-gray-400 mt-0.5">{review.criteria?.description}</p>
+                                            </div>
                                         </div>
-                                        <div className="flex-1">
-                                            <p className={cn("font-bold text-sm", passedIds.includes(review.id) ? "text-green-700" : "text-gray-700")}>
-                                                {review.criteria?.name}
-                                            </p>
-                                            <p className="text-xs text-gray-400 mt-0.5">{review.criteria?.description}</p>
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))}
                                 {(activeTab === 'TEAM_LEAD' ? leadReviews : assignerReviews).length === 0 && (
                                     <p className="text-gray-400 italic text-center py-8">Không có tiêu chí cho phần này</p>
                                 )}
@@ -279,43 +283,44 @@ export const TaskReviewPage = () => {
                     ) : (
                         <div className="space-y-4">
                             {reviews && reviews.length > 0 ? (
-                                reviews.map((review) => (
-                                    <div
-                                        key={review.id}
-                                        className={cn(
-                                            "flex items-center gap-4 p-5 rounded-3xl border transition-all cursor-pointer group",
-                                            passedIds.includes(review.id)
-                                                ? "bg-green-50/50 border-green-100"
-                                                : "bg-gray-50/50 border-gray-100 hover:border-blue-200 hover:bg-white"
-                                        )}
-                                        onClick={() => handleToggle(review)}
-                                    >
-                                        <div className={cn(
-                                            "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0",
-                                            passedIds.includes(review.id)
-                                                ? "bg-green-500 border-green-500 text-white"
-                                                : "border-gray-300 group-hover:border-blue-400"
-                                        )}>
-                                            {passedIds.includes(review.id) && <CheckCircle2 className="w-4 h-4" />}
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <p className={cn(
-                                                    "font-bold text-sm",
-                                                    passedIds.includes(review.id) ? "text-green-700" : "text-gray-700"
-                                                )}>
-                                                    {review.criteria?.name || 'Tiêu chí'}
-                                                </p>
-                                                {/* <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">
-                                                    {review.reviewerType === 'TEAM_LEAD' ? 'Lead' : 'Assigner'}
-                                                </span> */}
-                                            </div>
-                                            {review.criteria?.description && (
-                                                <p className="text-xs text-gray-400 mt-1">{review.criteria.description}</p>
+                                reviews
+                                    .filter((r, idx, self) =>
+                                        self.findIndex(t => t.criteria?.id === r.criteria?.id && t.reviewerType === r.reviewerType) === idx
+                                    )
+                                    .map((review) => (
+                                        <div
+                                            key={review.id}
+                                            className={cn(
+                                                "flex items-center gap-4 p-5 rounded-3xl border transition-all cursor-pointer group",
+                                                passedIds.includes(review.id)
+                                                    ? "bg-green-50/50 border-green-100"
+                                                    : "bg-gray-50/50 border-gray-100 hover:border-blue-200 hover:bg-white"
                                             )}
+                                            onClick={() => handleToggle(review)}
+                                        >
+                                            <div className={cn(
+                                                "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0",
+                                                passedIds.includes(review.id)
+                                                    ? "bg-green-500 border-green-500 text-white"
+                                                    : "border-gray-300 group-hover:border-blue-400"
+                                            )}>
+                                                {passedIds.includes(review.id) && <CheckCircle2 className="w-4 h-4" />}
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <p className={cn(
+                                                        "font-bold text-sm",
+                                                        passedIds.includes(review.id) ? "text-green-700" : "text-gray-700"
+                                                    )}>
+                                                        {review.criteria?.name || 'Tiêu chí'}
+                                                    </p>
+                                                </div>
+                                                {review.criteria?.description && (
+                                                    <p className="text-xs text-gray-400 mt-1">{review.criteria.description}</p>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))
+                                    ))
                             ) : (
                                 <p className="text-gray-400 italic text-center py-4">Không có tiêu chí đánh giá cho loại công việc này.</p>
                             )}

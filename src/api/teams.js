@@ -103,4 +103,6 @@ export const {
   useUpdateTeamMemberMutation,
   useRemoveTeamMemberMutation,
   useChangeLeadMutation,
+  useLazyGetTeamMembersQuery,
+  useLazyGetTeamsQuery
 } = teamsApi;

@@ -8,16 +8,15 @@ export const CreateAcceptanceModal = ({ isOpen, onClose, contract, projectId }) 
     const [createAcceptance, { isLoading }] = useCreateAcceptanceRequestMutation();
     const [selectedServiceIds, setSelectedServiceIds] = useState([]);
     const [formData, setFormData] = useState({
-        name: `Nghiệm thu đợt ${new Date().toLocaleDateString('vi-VN')}`,
+        name: `NT-${contract.contractCode}-${new Date().toLocaleDateString('vi-VN')}`,
         note: '',
     });
 
     if (!isOpen) return null;
 
-    // Filter services: status === 'ACTIVE' and result !== null
     // Also exclude services already pending or completed (though status check might cover this)
     const availableServices = contract.services?.filter(
-        (s) => s.status === 'ACTIVE' && s.result !== null
+        (s) => s.status === 'AWAITING_ACCEPTANCE' && s.result !== null
     ) || [];
 
     const toggleService = (id) => {
@@ -36,7 +35,6 @@ export const CreateAcceptanceModal = ({ isOpen, onClose, contract, projectId }) 
         try {
             await createAcceptance({
                 projectId,
-                name: formData.name,
                 note: formData.note,
                 serviceIds: selectedServiceIds,
             }).unwrap();
@@ -115,11 +113,11 @@ export const CreateAcceptanceModal = ({ isOpen, onClose, contract, projectId }) 
                             <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">Tên đợt nghiệm thu</label>
                             <input
                                 type="text"
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                                className="w-full px-4 py-3 bg-gray-200 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 placeholder="Ví dụ: Nghiệm thu đợt 1"
-                                required
+                                disabled
                             />
                         </div>
 

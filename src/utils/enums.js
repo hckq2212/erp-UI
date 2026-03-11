@@ -28,7 +28,7 @@ export const CONTRACT_STATUS_COLORS = {
 // Contract Service Status
 export const CONTRACT_SERVICE_STATUS_LABELS = {
   ACTIVE: 'Đang thực hiện',
-  AWAITING_ACCEPTANCE: 'Chờ nghiệm thu',
+  AWAITING_ACCEPTANCE: 'Sẵn sàng nghiệm thu',
   ACCEPTANCE_REJECTED: 'Từ chối nghiệm thu',
   COMPLETED: 'Hoàn thành',
   CANCELLED: 'Đã hủy',
@@ -121,7 +121,8 @@ export const TASK_STATUS_LABELS = {
   REJECTED: 'Yêu cầu làm lại',
   AWAITING_ACCEPTANCE: 'Đang chờ nghiệm thu',
   AWAITING_REVIEW: 'Đang chờ duyệt',
-  OVERDUE: 'Quá hạn'
+  OVERDUE: 'Quá hạn',
+  AWAITING_SUPPORT: 'Đã nhờ hỗ trợ'
 };
 
 export const TASK_STATUS_COLORS = {
@@ -175,7 +176,8 @@ export const TASK_STATUS = {
   AWAITING_REVIEW: "Đang chờ duyệt",
   AWAITING_PRICING: "Chờ định giá",
   CANCELLED: "Đã hủy",
-  OVERDUE: "Quá hạn"
+  OVERDUE: "Quá hạn",
+  AWAITING_SUPPORT: "Đã nhờ hỗ trợ"
 };
 
 export const PARTNER_TYPE_LABELS = {
