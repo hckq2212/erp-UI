@@ -14,6 +14,7 @@ const serviceSchema = z.object({
     name: z.string().min(1, 'Tên dịch vụ là bắt buộc'),
     description: z.string().optional(),
     outputJobId: z.string().min(1, 'Vui lòng chọn công việc đầu ra'),
+    jobIds: z.array(z.string()).optional().default([]),
 });
 
 export const CreateServiceModal = ({ isOpen, onClose }) => {
@@ -38,6 +39,7 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
             name: '',
             description: '',
             outputJobId: '',
+            jobIds: [],
         },
     });
 
@@ -52,6 +54,51 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
             toast.error(err?.data?.message || 'Có lỗi xảy ra khi tạo dịch vụ');
         }
     };
+
+    const selectStyles = (hasError) => ({
+        control: (base, state) => ({
+            ...base,
+            borderRadius: '0.5rem',
+            padding: '1px',
+            borderColor: hasError
+                ? '#ef4444'
+                : state.isFocused ? '#3b82f6' : '#d1d5db',
+            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+            '&:hover': {
+                borderColor: hasError ? '#ef4444' : '#3b82f6'
+            }
+        }),
+        placeholder: (base) => ({
+            ...base,
+            color: '#9ca3af',
+            fontSize: '0.875rem'
+        }),
+        option: (base, state) => ({
+            ...base,
+            fontSize: '0.875rem',
+            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+            color: state.isSelected ? 'white' : '#374151',
+        }),
+        multiValue: (base) => ({
+            ...base,
+            backgroundColor: '#eff6ff',
+            borderRadius: '0.375rem',
+        }),
+        multiValueLabel: (base) => ({
+            ...base,
+            color: '#1d4ed8',
+            fontSize: '0.75rem',
+            fontWeight: '600',
+        }),
+        multiValueRemove: (base) => ({
+            ...base,
+            color: '#60a5fa',
+            '&:hover': {
+                backgroundColor: '#dbeafe',
+                color: '#1d4ed8',
+            },
+        }),
+    });
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Thêm Dịch Vụ Mới">
@@ -78,36 +125,36 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
                                 value={jobOptions.find(opt => opt.value === field.value) || null}
                                 onChange={(val) => field.onChange(val ? val.value : '')}
                                 classNamePrefix="react-select"
-                                styles={{
-                                    control: (base, state) => ({
-                                        ...base,
-                                        borderRadius: '0.5rem',
-                                        padding: '1px',
-                                        borderColor: errors.outputJobId
-                                            ? '#ef4444'
-                                            : state.isFocused ? '#3b82f6' : '#d1d5db',
-                                        boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
-                                        '&:hover': {
-                                            borderColor: errors.outputJobId ? '#ef4444' : '#3b82f6'
-                                        }
-                                    }),
-                                    placeholder: (base) => ({
-                                        ...base,
-                                        color: '#9ca3af',
-                                        fontSize: '0.875rem'
-                                    }),
-                                    option: (base, state) => ({
-                                        ...base,
-                                        fontSize: '0.875rem',
-                                        backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                        color: state.isSelected ? 'white' : '#374151',
-                                    })
-                                }}
+                                styles={selectStyles(errors.outputJobId)}
                             />
                         )}
                     />
                     {errors.outputJobId && (
                         <p className="mt-1 text-sm text-red-600 font-medium">{errors.outputJobId.message}</p>
+                    )}
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Các hạng mục thực hiện</label>
+                    <Controller
+                        name="jobIds"
+                        control={control}
+                        render={({ field }) => (
+                            <Select
+                                {...field}
+                                options={jobOptions}
+                                placeholder="-- Chọn các hạng mục thuộc dịch vụ này --"
+                                isMulti
+                                isSearchable
+                                value={jobOptions.filter(opt => field.value?.includes(opt.value))}
+                                onChange={(vals) => field.onChange(vals ? vals.map(v => v.value) : [])}
+                                classNamePrefix="react-select"
+                                styles={selectStyles(errors.jobIds)}
+                            />
+                        )}
+                    />
+                    {errors.jobIds && (
+                        <p className="mt-1 text-sm text-red-600 font-medium">{errors.jobIds.message}</p>
                     )}
                 </div>
 
