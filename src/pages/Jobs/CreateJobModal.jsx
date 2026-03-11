@@ -8,13 +8,14 @@ import { useCreateJobMutation } from '../../api/jobs';
 import { toast } from 'react-toastify';
 import { formatNumber } from '../../utils/format';
 import { Plus, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const jobSchema = z.object({
     name: z.string().min(1, 'Tên hạng mục là bắt buộc'),
     code: z.string().min(1, 'Mã hạng mục là bắt buộc'),
     costPrice: z.string().transform((val) => val.replace(/\D/g, '')).optional().default('0'),
     vinicoin: z.string().transform((val) => val.replace(/\D/g, '')).optional().default('0'),
-    timeToComplete: z.string().transform((val) => val.replace(/\D/g, '')).optional().default('0'),
+    timeToComplete: z.string().transform((val) => val.replace(/[^0-9.]/g, '')).optional().default('0'),
     defaultPerformerType: z.enum(['INTERNAL', 'EXTERNAL']).default('INTERNAL'),
     criteria: z.array(z.object({
         name: z.string().min(1, 'Tên tiêu chí không được để trống'),
@@ -24,7 +25,7 @@ const jobSchema = z.object({
 
 export const CreateJobModal = ({ isOpen, onClose }) => {
     const [createJob, { isLoading }] = useCreateJobMutation();
-
+    const navigate = useNavigate();
     const {
         register,
         handleSubmit,
@@ -57,16 +58,19 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
 
     const onSubmit = async (data) => {
         try {
-            await createJob({
+
+            const result = await createJob({
                 ...data,
                 costPrice: parseInt(data.costPrice || '0'),
                 vinicoin: parseInt(data.vinicoin || '0'),
+                timeToComplete: parseFloat(data.timeToComplete || '0'),
                 criteria: data.criteria.map(c => ({
                     name: c.name,
                     description: c.description
                 }))
             }).unwrap();
             toast.success('Tạo hạng mục thành công');
+            navigate(`/jobs/${result.id}`);
             reset();
             onClose();
         } catch (err) {
@@ -117,9 +121,9 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                     <Input
                         label="Thời gian hoàn thành (theo giờ)"
                         {...register('timeToComplete')}
-                        value={formatNumber(timeToCompleteValue)}
+                        value={timeToCompleteValue}
                         onChange={(e) => {
-                            const rawValue = e.target.value.replace(/\D/g, '');
+                            const rawValue = e.target.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
                             setValue('timeToComplete', rawValue);
                         }}
                         error={errors.timeToComplete?.message}
