@@ -19,7 +19,7 @@ export const formatNumber = (value) => {
   const formattedInteger = isNaN(numInteger) ? '0' : numInteger.toLocaleString('vi-VN');
 
   // If there's a decimal part, append it with a comma
-  if (decimalPart !== undefined) {
+  if (decimalPart !== undefined && decimalPart !== '000') {
     return `${formattedInteger},${decimalPart}`;
   }
 
