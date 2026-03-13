@@ -2,11 +2,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useGetServiceQuery, useAddJobMutation, useRemoveJobMutation } from '../../api/services';
 import { formatCurrency } from '../../utils/format';
-import { ArrowLeft, Briefcase, Clock, DollarSign, List, Trash2, Plus, Star } from 'lucide-react';
+import { ArrowLeft, Briefcase, Clock, DollarSign, List, Trash2, Plus, Star, Edit } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { AddJobModal } from './AddJobModal';
 import { toast } from 'react-toastify';
-import { useUpdateServiceMutation } from '../../api/services';
+import { useUpdateServiceMutation, useDeleteServiceMutation } from '../../api/services';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../../store/authSlice';
 
 export const ServiceDetailPage = () => {
     const { id } = useParams();
@@ -17,6 +19,9 @@ export const ServiceDetailPage = () => {
     const [addJob] = useAddJobMutation();
     const [removeJob] = useRemoveJobMutation();
     const [updateService] = useUpdateServiceMutation();
+    const [deleteService] = useDeleteServiceMutation();
+    const user = useSelector(selectCurrentUser);
+    const isAdminOrBOD = ['ADMIN', 'BOD'].includes(user?.role);
 
     const handleAddJob = async (jobId) => {
         try {
@@ -49,6 +54,30 @@ export const ServiceDetailPage = () => {
                 toast.success('Xóa hạng mục thành công');
             } catch (err) {
                 toast.error(err?.data?.message || 'Có lỗi xảy ra khi xóa hạng mục');
+            }
+        }
+    };
+
+    const handleEditName = async () => {
+        const newName = window.prompt('Nhập tên dịch vụ mới:', service.name);
+        if (newName && newName !== service.name) {
+            try {
+                await updateService({ id, name: newName }).unwrap();
+                toast.success('Cập nhật tên dịch vụ thành công');
+            } catch (err) {
+                toast.error(err?.data?.message || 'Có lỗi xảy ra khi cập nhật tên');
+            }
+        }
+    };
+
+    const handleDeleteService = async () => {
+        if (window.confirm(`Bạn có chắc muốn xóa dịch vụ "${service.name}"? Hành động này không thể hoàn tác.`)) {
+            try {
+                await deleteService(id).unwrap();
+                toast.success('Xóa dịch vụ thành công');
+                navigate('/services');
+            } catch (err) {
+                toast.error(err?.data?.message || 'Có lỗi xảy ra khi xóa dịch vụ');
             }
         }
     };
@@ -89,6 +118,27 @@ export const ServiceDetailPage = () => {
                         <p className="text-gray-500 text-sm mt-1">Chi tiết thông tin dịch vụ và các hạng mục đi kèm</p>
                     </div>
                 </div>
+
+                {isAdminOrBOD && (
+                    <div className="flex gap-2">
+                        <Button
+                            variant="secondary"
+                            onClick={handleEditName}
+                            className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
+                        >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Sửa tên
+                        </Button>
+                        <Button
+                            variant="danger"
+                            onClick={handleDeleteService}
+                            className="bg-red-50 text-red-600 border-red-100 hover:bg-red-100 shadow-sm"
+                        >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Xóa dịch vụ
+                        </Button>
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
