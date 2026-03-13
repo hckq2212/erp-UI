@@ -73,15 +73,16 @@ export const ContractInfo = ({ contract, projectId }) => {
                                                         <div className="font-semibold text-gray-700">
                                                             {item.name || item.service?.name || `Hạng mục #${item.id}`}
                                                         </div>
-                                                        {item.outputTask && (
+                                                        {item.tasks?.filter(t => t.isOutput).map(task => (
                                                             <button
-                                                                onClick={() => navigate(`/tasks/${item.outputTask.id}`)}
+                                                                key={task.id}
+                                                                onClick={() => navigate(`/tasks/${task.id}`)}
                                                                 className="text-[10px] text-purple-600 font-bold hover:text-purple-800 transition-colors flex items-center gap-1 mt-0.5"
                                                             >
-                                                                Công việc đầu ra: {item.outputTask.code}
+                                                                Công việc đầu ra: {task.code}
                                                                 <ExternalLink className="w-2.5 h-2.5" />
                                                             </button>
-                                                        )}
+                                                        ))}
                                                     </td>
                                                     <td className="px-4 py-3 text-center">
                                                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${CONTRACT_SERVICE_STATUS_COLORS[item.status] || 'bg-gray-50 text-gray-600 border-gray-100'}`}>
@@ -94,16 +95,30 @@ export const ContractInfo = ({ contract, projectId }) => {
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-3 text-right text-gray-500 italic">
-                                                        {item.result && (
-                                                            <a
-                                                                href={getFilePreviewUrl(item.result?.url, item.result?.type)}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-[#f5530d] border-[#f5530d] font-bold border-2 bg-[#fff7ed] px-2 py-1 rounded-md">
-                                                                {item.result?.name}
-                                                            </a>
-                                                        )}
-                                                        {item.result === null && (
+                                                        {item.results && item.results.length > 0 ? (
+                                                            <div className="flex flex-col gap-2 items-end">
+                                                                {item.results.map((res, index) => (
+                                                                    <div key={index} className="flex flex-col items-end">
+                                                                        <a
+                                                                            href={getFilePreviewUrl(res?.url, res?.type)}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className={`font-bold border-2 px-2 py-1 rounded-md text-[10px] whitespace-nowrap transition-all hover:scale-105 active:scale-95 ${res.status === 'APPROVED' ? 'text-green-600 border-green-200 bg-green-50' :
+                                                                                res.status === 'REJECTED' ? 'text-red-600 border-red-200 bg-red-50' :
+                                                                                    'text-amber-600 border-amber-200 bg-amber-50'
+                                                                                }`}
+                                                                        >
+                                                                            {res?.name}
+                                                                        </a>
+                                                                        {res.status === 'REJECTED' && res.feedback && (
+                                                                            <span className="text-[9px] text-red-500 mt-1 max-w-[120px] text-right italic leading-tight">
+                                                                                Phản hồi: {res.feedback}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
                                                             <span className="text-gray-400 italic">Chưa có kết quả</span>
                                                         )}
 

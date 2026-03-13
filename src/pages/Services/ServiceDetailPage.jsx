@@ -6,6 +6,7 @@ import { ArrowLeft, Briefcase, Clock, DollarSign, List, Trash2, Plus, Star } fro
 import { Button } from '../../components/ui/Button';
 import { AddJobModal } from './AddJobModal';
 import { toast } from 'react-toastify';
+import { useUpdateServiceMutation } from '../../api/services';
 
 export const ServiceDetailPage = () => {
     const { id } = useParams();
@@ -15,6 +16,7 @@ export const ServiceDetailPage = () => {
     const { data: service, isLoading, error } = useGetServiceQuery(id);
     const [addJob] = useAddJobMutation();
     const [removeJob] = useRemoveJobMutation();
+    const [updateService] = useUpdateServiceMutation();
 
     const handleAddJob = async (jobId) => {
         try {
@@ -22,6 +24,21 @@ export const ServiceDetailPage = () => {
             toast.success('Thêm hạng mục thành công');
         } catch (err) {
             toast.error(err?.data?.message || 'Có lỗi xảy ra khi thêm hạng mục');
+        }
+    };
+
+    const handleUpdateJobConfig = async (jobId, updates) => {
+        try {
+            const currentConfigs = service.serviceJobs.map(sj => ({
+                jobId: sj.jobId,
+                quantity: sj.jobId === jobId ? (updates.quantity ?? sj.quantity) : sj.quantity,
+                isOutput: sj.jobId === jobId ? (updates.isOutput ?? sj.isOutput) : sj.isOutput
+            }));
+
+            await updateService({ id, jobConfigs: currentConfigs }).unwrap();
+            toast.success('Cập nhật cấu hình hạng mục thành công');
+        } catch (err) {
+            toast.error(err?.data?.message || 'Có lỗi xảy ra khi cập nhật');
         }
     };
 
@@ -91,12 +108,6 @@ export const ServiceDetailPage = () => {
                                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Giá vốn</label>
                                 <p className="text-md font-bold text-blue-600">{formatCurrency(service.costPrice)}</p>
                             </div>
-                            {service.outputJob && (
-                                <div>
-                                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Công việc đầu ra</label>
-                                    <p className="text-md font-bold text-purple-600">{service.outputJob.name}</p>
-                                </div>
-                            )}
                             {service.description && (
                                 <div>
                                     <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Mô tả</label>
@@ -126,49 +137,61 @@ export const ServiceDetailPage = () => {
                                     <tr className="bg-gray-50 border-b border-gray-100">
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Mã</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Tên hạng mục</th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Số lượng</th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Đầu ra</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Giá vốn</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right"></th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {service.jobs?.map((job) => (
-                                        <tr key={job.id} className="hover:bg-gray-50/50 transition-colors">
+                                    {service.serviceJobs?.map((sj) => (
+                                        <tr key={sj.id} className="hover:bg-gray-50/50 transition-colors">
                                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                                {job.code}
-                                                {service.outputJob?.id === job.id && (
-                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 uppercase tracking-tight border border-purple-200 ml-2">
-                                                        Công việc đầu ra
-                                                    </span>
-                                                )}
+                                                {sj.job?.code}
                                             </td>
                                             <td className="px-6 py-4 text-sm">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-gray-600">{job.name}</span>
+                                                    <span className="text-gray-600">{sj.job?.name}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-blue-600 font-medium">{formatCurrency(job.costPrice)}</td>
+                                            <td className="px-6 py-4 text-sm">
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    step="1"
+                                                    value={sj.quantity}
+                                                    onChange={(e) => handleUpdateJobConfig(sj.jobId, { quantity: parseInt(e.target.value) })}
+                                                    className="w-16 px-2 py-1 border rounded focus:ring-1 focus:ring-blue-500 outline-none"
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4 text-sm">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={sj.isOutput}
+                                                    onChange={(e) => handleUpdateJobConfig(sj.jobId, { isOutput: e.target.checked })}
+                                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-blue-600 font-medium">
+                                                {formatCurrency(sj.job?.costPrice * sj.quantity)}
+                                                <div className="text-[10px] text-gray-400 font-normal">
+                                                    {formatCurrency(sj.job?.costPrice)} / đơn vị
+                                                </div>
+                                            </td>
                                             <td className="px-6 py-4 text-sm text-right flex items-center justify-end gap-3">
-                                                {/* <span className={`px-2 py-1 rounded-md text-xs font-medium ${job.defaultPerformerType === 'INTERNAL'
-                                                    ? 'bg-blue-50 text-blue-700'
-                                                    : 'bg-orange-50 text-orange-700'
-                                                    }`}>
-                                                    {job.performerType === 'INTERNAL' ? 'Nội bộ' : 'Bên ngoài'}
-                                                </span> */}
-                                                {service.outputJob?.id !== job.id && (
-                                                    <button
-                                                        onClick={() => handleRemoveJob(job.id)}
-                                                        className="p-1 hover:bg-red-50 rounded text-red-500 transition-colors"
-                                                        title="Xóa hạng mục"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
-                                                )}
+                                                <button
+                                                    onClick={() => handleRemoveJob(sj.jobId)}
+                                                    className="p-1 hover:bg-red-50 rounded text-red-500 transition-colors"
+                                                    title="Xóa hạng mục"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
-                                    {(!service.jobs || service.jobs.length === 0) && (
+                                    {(!service.serviceJobs || service.serviceJobs.length === 0) && (
                                         <tr>
-                                            <td colSpan="4" className="px-6 py-10 text-center text-gray-500">
+                                            <td colSpan="6" className="px-6 py-10 text-center text-gray-500">
                                                 Chưa có hạng mục công việc nào cho dịch vụ này
                                             </td>
                                         </tr>
@@ -185,7 +208,7 @@ export const ServiceDetailPage = () => {
                 onClose={() => setIsAddJobModalOpen(false)}
                 onAddJob={handleAddJob}
                 serviceId={id}
-                existingJobIds={service.jobs?.map(j => j.id)}
+                existingJobIds={service.serviceJobs?.map(sj => sj.jobId)}
             />
         </div>
     );

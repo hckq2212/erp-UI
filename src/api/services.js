@@ -30,7 +30,7 @@ export const servicesApi = api.injectEndpoints({
     updateService: builder.mutation({
       query: ({ id, ...data }) => ({
         url: `/services/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [

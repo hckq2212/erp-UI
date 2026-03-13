@@ -100,7 +100,7 @@ export const TaskTable = ({ tasks = [], project }) => {
         </th>
     );
 
-    const isProjectInProgress = project?.status === 'IN_PROGRESS';
+    const isProjectInProgress = project?.status === 'IN_PROGRESS' || project?.status === 'CONFIRMED';
 
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

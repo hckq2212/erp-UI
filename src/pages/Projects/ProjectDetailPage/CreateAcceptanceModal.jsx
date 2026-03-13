@@ -14,9 +14,9 @@ export const CreateAcceptanceModal = ({ isOpen, onClose, contract, projectId }) 
 
     if (!isOpen) return null;
 
-    // Also exclude services already pending or completed (though status check might cover this)
+    // Services with at least one pending result are available for acceptance
     const availableServices = contract.services?.filter(
-        (s) => s.status === 'AWAITING_ACCEPTANCE' && s.result !== null
+        (s) => s.results?.some(r => r.status === 'PENDING')
     ) || [];
 
     const toggleService = (id) => {
@@ -87,15 +87,18 @@ export const CreateAcceptanceModal = ({ isOpen, onClose, contract, projectId }) 
                                                 {service.service?.name || service.name}
                                             </p>
                                         </div>
-                                        {service.result && (
-                                            <a href={getFilePreviewUrl(service.result.url, service.result.type)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-1 text-[10px] bg-white px-2 py-0.5 rounded-lg border border-gray-100 text-gray-500">
-                                                <FileText className="w-3 h-3" />
-                                                {service.result.name}
-                                            </a>
-                                        )}
+                                        <div className="flex flex-col gap-1 items-end">
+                                            {service.results?.filter(r => r.status === 'PENDING').map((res, i) => (
+                                                <a key={i} href={getFilePreviewUrl(res.url, res.type)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-1 text-[10px] bg-white px-2 py-0.5 rounded-lg border border-gray-100 text-gray-500 hover:text-emerald-600 transition-colors">
+                                                    <FileText className="w-3 h-3" />
+                                                    {res.name}
+                                                </a>
+                                            ))}
+                                        </div>
                                     </label>
                                 ))}
                             </div>
