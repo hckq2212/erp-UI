@@ -13,6 +13,15 @@ const Chatbot = () => {
   const [sendMessage, { isLoading }] = useSendMessageMutation();
   const scrollRef = useRef(null);
 
+  // Get or create sessionId for this browser session
+  const [sessionId] = useState(() => {
+    const existingId = sessionStorage.getItem('chat_session_id');
+    if (existingId) return existingId;
+    const newId = crypto.randomUUID();
+    sessionStorage.setItem('chat_session_id', newId);
+    return newId;
+  });
+
   // Get user info from redux store if available
   const { user } = useSelector((state) => state.auth || {});
 
@@ -37,7 +46,8 @@ const Chatbot = () => {
 
     try {
       const response = await sendMessage({
-        message: userMessage.text
+        message: userMessage.text,
+        sessionId: sessionId
       }).unwrap();
 
       const botResponse = {
