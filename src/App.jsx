@@ -33,6 +33,7 @@ import { UserDetailPage } from './pages/Users/UserDetailPage';
 import { AcceptanceInboxPage } from './pages/Acceptance/AcceptanceInboxPage';
 import { ServicePackageListPage } from './pages/ServicePackages/ServicePackageListPage';
 import { ServicePackageDetailPage } from './pages/ServicePackages/ServicePackageDetailPage';
+import Chatbot from './components/Chatbot';
 
 function App() {
   // Use the query to check if the user is logged in via cookies on startup
@@ -351,6 +352,7 @@ function App() {
         />
         <Route path='*' element={<Navigate to='/' replace />} />
       </Routes>
+      <Chatbot />
     </BrowserRouter>
   );
 }
