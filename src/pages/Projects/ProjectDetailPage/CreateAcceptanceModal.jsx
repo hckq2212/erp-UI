@@ -14,9 +14,20 @@ export const CreateAcceptanceModal = ({ isOpen, onClose, contract, projectId }) 
 
     if (!isOpen) return null;
 
-    // Services with at least one pending result are available for acceptance
+    // Services with at least one pending result AND ALL tasks completed are available for acceptance
+    // Must be ACTIVE or ACCEPTANCE_REJECTED (AWAITING_ACCEPTANCE or COMPLETED are invalid for new requests)
+    const isValidStatus = (s) => s.status === 'ACTIVE' || s.status === 'ACCEPTANCE_REJECTED';
+
     const availableServices = contract.services?.filter(
-        (s) => s.results?.some(r => r.status === 'PENDING')
+        (s) => isValidStatus(s) && 
+               s.results?.some(r => r.status === 'PENDING') && 
+               s.tasks?.every(t => t.status === 'COMPLETED')
+    ) || [];
+
+    const rejectedServices = contract.services?.filter(
+        (s) => isValidStatus(s) && 
+               s.results?.some(r => r.status === 'PENDING') && 
+               s.tasks?.some(t => t.status !== 'COMPLETED')
     ) || [];
 
     const toggleService = (id) => {
@@ -88,25 +99,57 @@ export const CreateAcceptanceModal = ({ isOpen, onClose, contract, projectId }) 
                                             </p>
                                         </div>
                                         <div className="flex flex-col gap-1 items-end">
-                                            {service.results?.filter(r => r.status === 'PENDING').map((res, i) => (
-                                                <a key={i} href={getFilePreviewUrl(res.url, res.type)}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-1 text-[10px] bg-white px-2 py-0.5 rounded-lg border border-gray-100 text-gray-500 hover:text-emerald-600 transition-colors">
-                                                    <FileText className="w-3 h-3" />
-                                                    {res.name}
-                                                </a>
-                                            ))}
+                                            {(() => {
+                                                const uniqueResults = [];
+                                                const seenTaskIds = new Set();
+                                                const reversedResults = [...(service.results || [])].reverse();
+                                                for (const res of reversedResults) {
+                                                    if (!seenTaskIds.has(res.taskId)) {
+                                                        uniqueResults.push(res);
+                                                        seenTaskIds.add(res.taskId);
+                                                    }
+                                                }
+                                                return uniqueResults.reverse()
+                                                    .filter(r => r.status === 'PENDING')
+                                                    .map((res, i) => (
+                                                        <a key={i} href={getFilePreviewUrl(res.url, res.type)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-1 text-[10px] bg-white px-2 py-0.5 rounded-lg border border-gray-100 text-gray-500 hover:text-emerald-600 transition-colors">
+                                                            <FileText className="w-3 h-3" />
+                                                            {res.name}
+                                                        </a>
+                                                    ));
+                                            })()}
                                         </div>
                                     </label>
                                 ))}
                             </div>
-                        ) : (
+                        ) : availableServices.length === 0 && rejectedServices.length === 0 ? (
                             <div className="p-8 text-center bg-amber-50 rounded-3xl border border-amber-100">
                                 <AlertCircle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
                                 <p className="text-sm text-amber-700 font-medium">Không có dịch vụ nào đủ điều kiện nghiệm thu.</p>
                                 <p className="text-xs text-amber-600 mt-1">(Dịch vụ phải ở trạng thái ACTIVE và đã có file kết quả)</p>
+                            </div>
+                        ) : null}
+
+                        {rejectedServices.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Chưa đủ điều kiện (Còn task chưa xong)</p>
+                                {rejectedServices.map((service) => (
+                                    <div key={service.id} className="flex items-center gap-3 p-3 rounded-2xl border border-gray-100 bg-gray-50/50 opacity-60">
+                                        <div className="w-4 h-4 rounded border border-gray-300 bg-gray-200" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-bold text-gray-400 truncate">
+                                                {service.service?.name || service.name}
+                                            </p>
+                                            <p className="text-[10px] text-red-400 font-medium mt-0.5">
+                                                {service.tasks?.filter(t => t.status !== 'COMPLETED').length} task chưa xong
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </div>

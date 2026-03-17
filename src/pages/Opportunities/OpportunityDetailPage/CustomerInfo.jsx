@@ -41,6 +41,16 @@ export const CustomerInfo = ({ opportunity, onAddCustomer }) => {
   }, [opportunity, isEditing]);
 
   const handleSave = async () => {
+    const nameRegex = /^[a-zA-ZÀ-ỹ0-9\s]+$/;
+    const phoneRegex = /^\+?[0-9]{10,15}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const taxIdRegex = /^\d{10}(\s?-\s?\d{3})?$/;
+
+    if (editData.name && !nameRegex.test(editData.name)) return toast.error('Tên không được chứa ký tự đặc biệt');
+    if (editData.phone && !phoneRegex.test(editData.phone)) return toast.error('Số điện thoại không hợp lệ');
+    if (editData.email && !emailRegex.test(editData.email)) return toast.error('Email không hợp lệ');
+    if (editData.taxId && !taxIdRegex.test(editData.taxId)) return toast.error('Mã số thuế không hợp lệ (Phải là 10 số hoặc 13 số định dạng XXXXXXXXXX-XXX)');
+
     try {
       if (opportunity.customer) {
         await updateCustomer({

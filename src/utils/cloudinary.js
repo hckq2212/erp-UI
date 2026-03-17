@@ -69,10 +69,16 @@ export const uploadToCloudinary = async (file, folder = 'GETVINI/ERP/others', on
  */
 export const getFilePreviewUrl = (url, type = 'FILE') => {
     if (!url) return '';
-    if (type === 'LINK') return url;
+    
+    const normalizedType = String(type).toUpperCase();
+    if (normalizedType === 'LINK') return url;
 
     // Check if it's already a Google Docs Viewer link
     if (url.includes('docs.google.com/viewer')) return url;
+
+    // For images, we might not want to wrap them in Google Viewer (optional but better)
+    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+    if (isImage) return url;
 
     // Wrap with Google Docs Viewer
     return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;

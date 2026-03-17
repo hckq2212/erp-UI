@@ -18,6 +18,15 @@ export const AddUserModal = ({ isOpen, onClose }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        const nameRegex = /^[a-zA-ZÀ-ỹ0-9\s]+$/;
+        const phoneRegex = /^\+?[0-9]{10,15}$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (formData.fullName && !nameRegex.test(formData.fullName)) return toast.error('Họ tên không được chứa ký tự đặc biệt');
+        if (formData.phoneNumber && !phoneRegex.test(formData.phoneNumber)) return toast.error('Số điện thoại không hợp lệ');
+        if (formData.email && !emailRegex.test(formData.email)) return toast.error('Email không hợp lệ');
+
         try {
             await createUser(formData).unwrap();
             toast.success('Thêm nhân sự thành công!');

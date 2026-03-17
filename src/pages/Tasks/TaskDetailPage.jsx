@@ -331,7 +331,7 @@ export const TaskDetailPage = () => {
                                     </div>
                                 </div>
                                 <a
-                                    href={getFilePreviewUrl(task.result.url)}
+                                    href={getFilePreviewUrl(task.result.url, task.result.type)}
                                     target="blank"
                                     rel="noopener noreferrer"
                                     className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all shrink-0"

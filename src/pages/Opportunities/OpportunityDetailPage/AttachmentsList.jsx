@@ -30,12 +30,12 @@ export const AttachmentsList = ({ attachments }) => {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex items-center gap-2 mb-5 ">
         <FileText className="w-5 h-5 text-cyan-600" />
         <h2 className="font-semibold text-gray-900">Tài liệu đính kèm</h2>
         <span className="text-sm text-gray-500">({attachments.length})</span>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-3 overflow-hidden">
         {attachments.map((attachment, index) => (
           <a
             key={index}

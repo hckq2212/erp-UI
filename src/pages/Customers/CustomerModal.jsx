@@ -7,11 +7,11 @@ import { Input } from '../../components/ui/Input';
 import { useEffect } from 'react';
 
 const customerSchema = z.object({
-  name: z.string().min(1, 'Tên khách hàng là bắt buộc'),
-  phone: z.string().min(10, 'Số điện thoại không hợp lệ'),
+  name: z.string().min(1, 'Tên khách hàng là bắt buộc').regex(/^[a-zA-ZÀ-ỹ0-9\s]+$/, 'Tên không được chứa ký tự đặc biệt'),
+  phone: z.string().min(10, 'Số điện thoại không hợp lệ').regex(/^\+?[0-9]{10,15}$/, 'Số điện thoại không hợp lệ'),
   email: z.string().email('Email không hợp lệ'),
   address: z.string().min(1, 'Địa chỉ là bắt buộc'),
-  taxId: z.string().optional(),
+  taxId: z.string().regex(/^\d{10}(\s?-\s?\d{3})?$/, 'Mã số thuế không hợp lệ (Phải là 10 số hoặc 13 số định dạng XXXXXXXXXX-XXX)').optional().or(z.literal('')),
   source: z.enum(['INTERNAL', 'REFERRAL_PARTNER']),
 });
 

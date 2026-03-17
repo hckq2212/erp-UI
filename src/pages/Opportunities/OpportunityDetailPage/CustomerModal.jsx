@@ -1,4 +1,5 @@
 import { X } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 export const CustomerModal = ({
   isOpen,
@@ -18,6 +19,21 @@ export const CustomerModal = ({
   onSave,
   isUpdating
 }) => {
+  const handleSave = () => {
+    if (customerStatus === 'POTENTIAL') {
+      const nameRegex = /^[a-zA-ZÀ-ỹ0-9\s]+$/;
+      const phoneRegex = /^\+?[0-9]{10,15}$/;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const taxIdRegex = /^\d{10}(\s?-\s?\d{3})?$/;
+
+      if (leadInfo.leadName && !nameRegex.test(leadInfo.leadName)) return toast.error('Tên khách hàng không được chứa ký tự đặc biệt');
+      if (leadInfo.leadPhone && !phoneRegex.test(leadInfo.leadPhone)) return toast.error('Số điện thoại không hợp lệ');
+      if (leadInfo.leadEmail && !emailRegex.test(leadInfo.leadEmail)) return toast.error('Email không hợp lệ');
+      if (leadInfo.leadTaxId && !taxIdRegex.test(leadInfo.leadTaxId)) return toast.error('Mã số thuế không hợp lệ (Phải là 10 số hoặc 13 số định dạng XXXXXXXXXX-XXX)');
+    }
+    onSave();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -211,7 +227,7 @@ export const CustomerModal = ({
         {/* Footer buttons */}
         <div className="flex gap-3 p-6 border-t border-gray-100">
           <button
-            onClick={onSave}
+            onClick={handleSave}
             disabled={isUpdating || !customerStatus || (customerStatus === 'EXISTING' && !selectedCustomerId) || (customerType === 'REFERRAL' && !selectedReferralPartner)}
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >

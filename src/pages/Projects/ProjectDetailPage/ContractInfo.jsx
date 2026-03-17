@@ -73,13 +73,14 @@ export const ContractInfo = ({ contract, projectId }) => {
                                                         <div className="font-semibold text-gray-700">
                                                             {item.name || item.service?.name || `Hạng mục #${item.id}`}
                                                         </div>
+                                                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Công việc đầu ra:</p>
                                                         {item.tasks?.filter(t => t.isOutput).map(task => (
                                                             <button
                                                                 key={task.id}
                                                                 onClick={() => navigate(`/tasks/${task.id}`)}
                                                                 className="text-[10px] text-purple-600 font-bold hover:text-purple-800 transition-colors flex items-center gap-1 mt-0.5"
                                                             >
-                                                                Công việc đầu ra: {task.code}
+                                                                {task.code}
                                                                 <ExternalLink className="w-2.5 h-2.5" />
                                                             </button>
                                                         ))}

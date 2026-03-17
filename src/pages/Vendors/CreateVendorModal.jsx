@@ -12,9 +12,9 @@ import { toast } from 'react-toastify';
 import { VIETNAM_BANKS } from '../../utils/enums';
 
 const vendorSchema = z.object({
-    name: z.string().min(1, 'Tên vendor là bắt buộc'),
+    name: z.string().min(1, 'Tên vendor là bắt buộc').regex(/^[a-zA-ZÀ-ỹ0-9\s]+$/, 'Tên không được chứa ký tự đặc biệt'),
     email: z.string().email('Email không hợp lệ').optional().or(z.literal('')),
-    phone: z.string().optional(),
+    phone: z.string().regex(/^\+?[0-9]{10,15}$/, 'Số điện thoại không hợp lệ').optional().or(z.literal('')),
     address: z.string().optional(),
     taxId: z.string().optional(),
     type: z.enum(['BUSINESS', 'INDIVIDUAL']).default('BUSINESS'),
@@ -22,6 +22,26 @@ const vendorSchema = z.object({
     bankName: z.string().optional(),
     idCardFront: z.any().optional(),
     idCardBack: z.any().optional(),
+}).superRefine((data, ctx) => {
+    if (data.taxId) {
+        if (data.type === 'INDIVIDUAL') {
+            if (!/^(\d{9}|\d{12})$/.test(data.taxId)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "CMND/CCCD không hợp lệ (Phải là 9 hoặc 12 số)",
+                    path: ["taxId"]
+                });
+            }
+        } else {
+            if (!/^\d{10}(\s?-\s?\d{3})?$/.test(data.taxId)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Mã số thuế không hợp lệ (Phải là 10 số hoặc 13 số định dạng XXXXXXXXXX-XXX)",
+                    path: ["taxId"]
+                });
+            }
+        }
+    }
 });
 
 export const CreateVendorModal = ({ isOpen, onClose }) => {
