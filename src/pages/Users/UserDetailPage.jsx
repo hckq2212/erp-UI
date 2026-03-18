@@ -1,18 +1,75 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-    ArrowLeft, Mail, Phone, Shield, User,
-    MapPin, Calendar, CheckCircle, Clock, XCircle,
-    Briefcase, Activity
-} from 'lucide-react';
-import { useGetUserQuery } from '../../api/users';
+import { useGetUserQuery, useUpdateUserMutation } from '../../api/users';
 import { TASK_STATUS_LABELS } from '../../utils/enums';
+import { uploadToCloudinary, getFilePreviewUrl } from '../../utils/cloudinary';
+import { toast } from 'react-toastify';
+import { Modal } from '../../components/ui/Modal';
+import {
+    X, Plus, Trash2, Upload, FileText, Download, Eye, Loader2,
+    ArrowLeft, CheckCircle, Activity, Clock, XCircle, Briefcase, Mail, Phone, User, Shield, MapPin, Calendar
+} from 'lucide-react';
 export const UserDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { data: user, isLoading, error } = useGetUserQuery(id);
+    const [updateUser, { isLoading: isUpdatingUser }] = useUpdateUserMutation();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 4;
+
+    // File handling state
+    const [isUploading, setIsUploading] = useState(false);
+    const [previewFile, setPreviewFile] = useState(null);
+    const [selectedFiles, setSelectedFiles] = useState([]);
+
+    const handleFileChange = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length > 3) {
+            toast.error('Tối đa 3 tệp tin');
+            return;
+        }
+        setSelectedFiles(files);
+    };
+
+    const handleUploadContracts = async () => {
+        if (selectedFiles.length === 0) return;
+
+        try {
+            setIsUploading(true);
+            const uploadPromises = selectedFiles.map(file =>
+                uploadToCloudinary(file, "GETVINI/ERP/user/labor_contract")
+            );
+            const uploadedFiles = await Promise.all(uploadPromises);
+
+            await updateUser({
+                id,
+                laborContract: uploadedFiles
+            }).unwrap();
+
+            toast.success('Cập nhật hợp đồng lao động thành công');
+            setSelectedFiles([]);
+        } catch (err) {
+            toast.error(err.message || 'Lỗi khi tải tệp lên');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleDeleteContracts = async () => {
+        if (!window.confirm('Bạn có chắc chắn muốn xóa tất cả hợp đồng?')) return;
+        try {
+            setIsUploading(true);
+            await updateUser({
+                id,
+                laborContract: []
+            }).unwrap();
+            toast.success('Đã xóa tất cả hợp đồng');
+        } catch (err) {
+            toast.error(err.message || 'Lỗi khi xóa');
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -81,6 +138,7 @@ export const UserDetailPage = () => {
                 {/* Left: Profile Card */}
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                        {/* ... existing profile card content ... */}
                         <div className="p-8 text-center bg-gradient-to-b from-blue-50 to-white pt-10">
                             <div className="w-24 h-24 bg-blue-600 text-white rounded-3xl flex items-center justify-center font-black text-4xl mx-auto shadow-xl shadow-blue-100 mb-6">
                                 {user.fullName?.[0]}
@@ -108,6 +166,89 @@ export const UserDetailPage = () => {
                                         <User className="w-4 h-4 text-blue-500" />
                                         <span>Username: <span className="font-bold text-gray-900">@{user.account?.username}</span></span>
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Labor Contract Section */}
+                            <div className="space-y-4 pt-4 border-t border-gray-50">
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center justify-between">
+                                    Hợp đồng lao động
+                                    {user.laborContract?.length > 0 && (
+                                        <button
+                                            onClick={handleDeleteContracts}
+                                            className="text-red-500 hover:text-red-700 normal-case font-bold"
+                                        >
+                                            Xóa tất cả
+                                        </button>
+                                    )}
+                                </h3>
+
+                                {user.laborContract?.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {user.laborContract.map((file, idx) => (
+                                            <div key={idx} className="flex items-center justify-between p-3 bg-blue-50/50 rounded-2xl border border-blue-100/50 group">
+                                                <div className="flex items-center gap-3 overflow-hidden">
+                                                    <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                                                    <span className="text-sm text-gray-700 truncate font-medium">{file.name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => setPreviewFile(file)}
+                                                        className="p-1.5 hover:bg-white rounded-lg text-blue-600 transition-colors"
+                                                        title="Xem trước"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                    <a
+                                                        href={file.url}
+                                                        download
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="p-1.5 hover:bg-white rounded-lg text-gray-600 transition-colors"
+                                                        title="Tải xuống"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                        <Upload className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                        <p className="text-xs text-gray-500 italic">Chưa có hợp đồng</p>
+                                    </div>
+                                )}
+
+                                <div className="space-y-3">
+                                    <input
+                                        type="file"
+                                        multiple
+                                        onChange={handleFileChange}
+                                        className="hidden"
+                                        id="contract-upload"
+                                        accept=".pdf,.doc,.docx,image/*"
+                                    />
+                                    <label
+                                        htmlFor="contract-upload"
+                                        className="flex items-center justify-center gap-2 w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-2xl cursor-pointer transition-all border-2 border-transparent hover:border-blue-100 group"
+                                    >
+                                        <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                        <span className="text-sm font-bold">
+                                            {selectedFiles.length > 0 ? `Đã chọn ${selectedFiles.length} tệp` : 'Chọn tệp hợp đồng'}
+                                        </span>
+                                    </label>
+
+                                    {selectedFiles.length > 0 && (
+                                        <button
+                                            onClick={handleUploadContracts}
+                                            disabled={isUploading || isUpdatingUser}
+                                            className="w-full py-3 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
+                                        >
+                                            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                                            Tải lên tất cả
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -198,6 +339,34 @@ export const UserDetailPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Document Preview Modal */}
+            <Modal
+                isOpen={!!previewFile}
+                onClose={() => setPreviewFile(null)}
+                title={previewFile?.name || 'Xem tài liệu'}
+                className="max-w-2xl"
+            >
+                <div className="w-full aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden relative">
+                    {previewFile && (
+                        <iframe
+                            src={getFilePreviewUrl(previewFile.url, 'FILE')}
+                            className="w-full h-full border-none"
+                            title="Tài liệu"
+                        />
+                    )}
+                </div>
+                <div className="flex justify-end pt-4">
+                    <a
+                        href={previewFile?.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-all text-sm shadow-lg shadow-blue-100"
+                    >
+                        <Download className="w-4 h-4" /> Tải về máy
+                    </a>
+                </div>
+            </Modal>
         </div>
     );
 };
