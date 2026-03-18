@@ -37,7 +37,8 @@ import Chatbot from './components/Chatbot';
 
 function App() {
   // Use the query to check if the user is logged in via cookies on startup
-  const { isLoading } = useGetMeQuery();
+  const { data: currentUser, isLoading } = useGetMeQuery();
+  const canChat = currentUser?.role === 'ADMIN';
 
   if (isLoading) {
     return (
@@ -352,7 +353,7 @@ function App() {
         />
         <Route path='*' element={<Navigate to='/' replace />} />
       </Routes>
-      {/* <Chatbot /> */}
+      {canChat && <Chatbot />}
     </BrowserRouter>
   );
 }
