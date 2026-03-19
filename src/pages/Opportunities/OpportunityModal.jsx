@@ -741,7 +741,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Vùng miền triển khai
+                      Địa điểm triển khai
                     </label>
                     <Select
                       isMulti
