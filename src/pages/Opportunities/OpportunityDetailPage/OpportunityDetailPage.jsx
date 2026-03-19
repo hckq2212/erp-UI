@@ -59,7 +59,6 @@ export const OpportunityDetailPage = () => {
     leadName: '',
     leadPhone: '',
     leadEmail: '',
-    leadIdNumber: '',
     leadTaxId: '',
     leadAddress: ''
   });
@@ -95,7 +94,6 @@ export const OpportunityDetailPage = () => {
       leadName: '',
       leadPhone: '',
       leadEmail: '',
-      leadIdNumber: '',
       leadTaxId: '',
       leadAddress: ''
     });
@@ -111,7 +109,6 @@ export const OpportunityDetailPage = () => {
         updateData.leadName = '';
         updateData.leadPhone = '';
         updateData.leadEmail = '';
-        updateData.leadIdNumber = '';
         updateData.leadTaxId = '';
         updateData.leadAddress = '';
 
@@ -132,7 +129,6 @@ export const OpportunityDetailPage = () => {
         if (leadInfo.leadName) updateData.leadName = leadInfo.leadName;
         if (leadInfo.leadPhone) updateData.leadPhone = leadInfo.leadPhone;
         if (leadInfo.leadEmail) updateData.leadEmail = leadInfo.leadEmail;
-        if (leadInfo.leadIdNumber) updateData.leadIdNumber = leadInfo.leadIdNumber;
         if (leadInfo.leadTaxId) updateData.leadTaxId = leadInfo.leadTaxId;
         if (leadInfo.leadAddress) updateData.leadAddress = leadInfo.leadAddress;
 

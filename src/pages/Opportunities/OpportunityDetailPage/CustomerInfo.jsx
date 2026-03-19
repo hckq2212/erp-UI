@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { User, Phone, Mail, Hash, MapPin, Plus, Edit2, Save, X } from 'lucide-react';
 import { useUpdateCustomerMutation } from '../../../api/customers';
 import { useUpdateOpportunityMutation } from '../../../api/opportunities';
+import { api } from '../../../store/api';
 import { toast } from 'react-toastify';
 
 export const CustomerInfo = ({ opportunity, onAddCustomer }) => {
+  const dispatch = useDispatch();
   const [isEditing, setIsEditing] = useState(false);
   const [updateCustomer, { isLoading: isUpdatingCustomer }] = useUpdateCustomerMutation();
   const [updateOpportunity, { isLoading: isUpdatingOpportunity }] = useUpdateOpportunityMutation();
@@ -20,14 +23,15 @@ export const CustomerInfo = ({ opportunity, onAddCustomer }) => {
   const hasData = !!(opportunity.customer || opportunity.leadName);
   const isLead = !opportunity.customer && !!opportunity.leadName;
 
-  useEffect(() => {
+    useEffect(() => {
     if (opportunity.customer) {
       setEditData({
         name: opportunity.customer.name,
         phone: opportunity.customer.phoneNumber || opportunity.customer.phone || '',
         email: opportunity.customer.email || '',
         taxId: opportunity.customer.taxId || '',
-        address: opportunity.customer.address || ''
+        address: opportunity.customer.address || '',
+        idNumber: opportunity.customer.idNumber || ''
       });
     } else if (opportunity.leadName) {
       setEditData({
@@ -54,12 +58,16 @@ export const CustomerInfo = ({ opportunity, onAddCustomer }) => {
     try {
       if (opportunity.customer) {
         await updateCustomer({
-          id: opportunity.customerId,
+          id: opportunity.customer.id,
           phoneNumber: editData.phone,
           email: editData.email,
           taxId: editData.taxId,
-          address: editData.address
+          address: editData.address,
+          idNumber: editData.idNumber
         }).unwrap();
+        // After customer update, invalidate the specific opportunity cache
+        // so the detail page re-fetches the embedded customer data immediately
+        dispatch(api.util.invalidateTags([{ type: 'Opportunities', id: opportunity.id }]));
       } else {
         await updateOpportunity({
           id: opportunity.id,

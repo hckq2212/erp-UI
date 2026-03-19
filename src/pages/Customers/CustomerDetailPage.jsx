@@ -30,7 +30,7 @@ import { OPPORTUNITY_STATUS_LABELS, OPPORTUNITY_STATUS_COLORS, CONTRACT_STATUS_L
 export const CustomerDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { data: customer, isLoading, error } = useGetCustomerQuery(id);
+    const { data: customer, isLoading, error, refetch } = useGetCustomerQuery(id);
     const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
 
     // Fetch associated data
@@ -47,6 +47,9 @@ export const CustomerDetailPage = () => {
             await updateCustomer({ id, ...data }).unwrap();
             toast.success('Cập nhật thông tin khách hàng thành công');
             setIsEditModalOpen(false);
+            // Force-refetch customer detail since tag invalidation may not trigger
+            // if the detail query is no longer the primary subscriber
+            refetch();
         } catch (err) {
             toast.error(err?.data?.message || 'Có lỗi xảy ra khi cập nhật');
         }

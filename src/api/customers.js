@@ -36,6 +36,9 @@ export const customersApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [
         { type: 'Customers', id },
         { type: 'Customers', id: 'LIST' },
+        // Also invalidate all Opportunities so the detail page re-fetches
+        // the embedded customer data without a manual page refresh
+        { type: 'Opportunities', id: 'LIST' },
       ],
     }),
     deleteCustomer: builder.mutation({
