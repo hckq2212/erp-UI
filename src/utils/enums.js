@@ -122,7 +122,8 @@ export const TASK_STATUS_LABELS = {
   AWAITING_ACCEPTANCE: 'Đang chờ nghiệm thu',
   AWAITING_REVIEW: 'Đang chờ duyệt',
   OVERDUE: 'Quá hạn',
-  AWAITING_SUPPORT: 'Đã nhờ hỗ trợ'
+  AWAITING_SUPPORT: 'Đã nhờ hỗ trợ',
+  COMPLETED: "Hoàn thành",
 };
 
 export const TASK_STATUS_COLORS = {
