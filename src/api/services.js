@@ -7,13 +7,15 @@ export const servicesApi = api.injectEndpoints({
         url: '/services',
         params,
       }),
-      providesTags: (result) =>
-        result
+      providesTags: (result) => {
+        const services = Array.isArray(result) ? result : (result?.data || []);
+        return result
           ? [
-            ...result.map(({ id }) => ({ type: 'Services', id })),
+            ...services.map(({ id }) => ({ type: 'Services', id })),
             { type: 'Services', id: 'LIST' },
           ]
-          : [{ type: 'Services', id: 'LIST' }],
+          : [{ type: 'Services', id: 'LIST' }];
+      },
     }),
     getService: builder.query({
       query: (id) => `/services/${id}`,

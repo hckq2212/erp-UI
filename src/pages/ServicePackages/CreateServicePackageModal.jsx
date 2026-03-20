@@ -1,15 +1,42 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { X, Plus, Trash2, Package, LayoutList, CheckCircle2 } from 'lucide-react';
+import Select from 'react-select';
 import { useCreateServicePackageMutation } from '../../api/servicePackages';
 import { useGetServicesQuery } from '../../api/services';
 import { toast } from 'react-toastify';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { formatCurrency } from '../../utils/format';
 
 export const CreateServicePackageModal = ({ isOpen, onClose }) => {
     const [createPackage, { isLoading }] = useCreateServicePackageMutation();
-    const { data: servicesData = [] } = useGetServicesQuery();
-    const services = Array.isArray(servicesData) ? servicesData : (servicesData?.data || []);
+    
+    // Lazy fetching state
+    const [page, setPage] = useState(1);
+    const [allServices, setAllServices] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    
+    const { data: servicesResponse, isFetching } = useGetServicesQuery({ 
+        page, 
+        limit: 20,
+        name: searchTerm || undefined
+    }, { skip: !isOpen });
+
+    useEffect(() => {
+        if (servicesResponse?.data) {
+            if (page === 1) {
+                setAllServices(servicesResponse.data);
+            } else {
+                setAllServices(prev => {
+                    const existingIds = new Set(prev.map(s => s.id));
+                    const newItems = servicesResponse.data.filter(s => !existingIds.has(s.id));
+                    return [...prev, ...newItems];
+                });
+            }
+        }
+    }, [servicesResponse, page]);
+
+    const hasMore = servicesResponse?.meta ? page < servicesResponse.meta.totalPages : false;
 
     const [formData, setFormData] = useState({
         name: '',
@@ -19,8 +46,6 @@ export const CreateServicePackageModal = ({ isOpen, onClose }) => {
     const [selectedItems, setSelectedItems] = useState([
         { serviceId: '', defaultQuantity: 1 }
     ]);
-
-    if (!isOpen) return null;
 
     const addItem = () => {
         setSelectedItems([...selectedItems, { serviceId: '', defaultQuantity: 1 }]);
@@ -34,6 +59,17 @@ export const CreateServicePackageModal = ({ isOpen, onClose }) => {
         const updated = [...selectedItems];
         updated[index] = { ...updated[index], [field]: value };
         setSelectedItems(updated);
+    };
+
+    const handleMenuScrollToBottom = () => {
+        if (hasMore && !isFetching) {
+            setPage(prev => prev + 1);
+        }
+    };
+
+    const handleSearchChange = (value) => {
+        setSearchTerm(value);
+        setPage(1);
     };
 
     const handleSubmit = async (e) => {
@@ -63,9 +99,50 @@ export const CreateServicePackageModal = ({ isOpen, onClose }) => {
         }
     };
 
+    // Filtered options for each row
+    const selectedIds = useMemo(() => 
+        selectedItems.map(item => item.serviceId).filter(Boolean),
+    [selectedItems]);
+
+    const getOptions = (currentIndex) => {
+        const currentId = selectedItems[currentIndex].serviceId;
+        const otherSelectedIds = selectedIds.filter(id => id !== currentId);
+            
+        return allServices
+            .filter(s => !otherSelectedIds.includes(s.id))
+            .map(s => ({
+                value: s.id,
+                label: s.name,
+                price: s.costPrice,
+                service: s
+            }));
+    };
+
+    const selectStyles = {
+        control: (base) => ({
+            ...base,
+            borderRadius: '1rem',
+            padding: '2px',
+            border: '1px solid #e5e7eb',
+            backgroundColor: '#f9fafb',
+            boxShadow: 'none',
+            '&:hover': {
+                border: '1px solid #3b82f6'
+            }
+        }),
+        option: (base, state) => ({
+            ...base,
+            fontSize: '0.875rem',
+            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+            color: state.isSelected ? 'white' : '#374151',
+        })
+    };
+
+    if (!isOpen) return null;
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in duration-200">
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-3xl">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
@@ -120,42 +197,54 @@ export const CreateServicePackageModal = ({ isOpen, onClose }) => {
                         </div>
 
                         <div className="space-y-3">
-                            {selectedItems.map((item, index) => (
-                                <div key={index} className="flex gap-3 items-end group animate-in slide-in-from-left-2 duration-200">
-                                    <div className="flex-1">
-                                        {index === 0 && <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Dịch vụ</label>}
-                                        <select
-                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
-                                            value={item.serviceId}
-                                            onChange={(e) => handleItemChange(index, 'serviceId', e.target.value)}
-                                            required={index === 0}
+                            {selectedItems.map((item, index) => {
+                                const options = getOptions(index);
+                                const selectedOption = options.find(opt => opt.value === item.serviceId);
+                                
+                                return (
+                                    <div key={index} className="flex gap-3 items-end group">
+                                        <div className="flex-1">
+                                            {index === 0 && <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Dịch vụ</label>}
+                                            <Select
+                                                options={options}
+                                                value={selectedOption || null}
+                                                onChange={(val) => handleItemChange(index, 'serviceId', val ? val.value : '')}
+                                                onMenuScrollToBottom={handleMenuScrollToBottom}
+                                                onInputChange={handleSearchChange}
+                                                placeholder="-- Tìm dịch vụ --"
+                                                isClearable
+                                                styles={selectStyles}
+                                                isLoading={isFetching && page === 1}
+                                                noOptionsMessage={() => isFetching ? "Đang tải..." : "Không tìm thấy dịch vụ"}
+                                            />
+                                        </div>
+                                        <div className="w-40">
+                                            {index === 0 && <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1 text-right">Giá tiền</label>}
+                                            <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-blue-600 text-right h-[46px] flex items-center justify-end">
+                                                {selectedOption ? formatCurrency(selectedOption.price) : '-'}
+                                            </div>
+                                        </div>
+                                        <div className="w-24">
+                                            {index === 0 && <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1 text-center">Số lượng</label>}
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm text-center h-[46px]"
+                                                value={item.defaultQuantity}
+                                                onChange={(e) => handleItemChange(index, 'defaultQuantity', e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeItem(index)}
+                                            className={`p-3 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all ${selectedItems.length === 1 ? 'invisible' : ''} mb-0.5`}
                                         >
-                                            <option value="">-- Chọn dịch vụ --</option>
-                                            {services.map(s => (
-                                                <option key={s.id} value={s.id}>{s.name}</option>
-                                            ))}
-                                        </select>
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
                                     </div>
-                                    <div className="w-24">
-                                        {index === 0 && <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Số lượng</label>}
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm text-center"
-                                            value={item.defaultQuantity}
-                                            onChange={(e) => handleItemChange(index, 'defaultQuantity', e.target.value)}
-                                            required
-                                        />
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeItem(index)}
-                                        className={`p-3 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all ${selectedItems.length === 1 ? 'invisible' : ''}`}
-                                    >
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </form>
@@ -164,14 +253,14 @@ export const CreateServicePackageModal = ({ isOpen, onClose }) => {
                     <button
                         type="button"
                         onClick={onClose}
-                        className="flex-1 px-4 py-3 bg-white text-gray-600 font-bold rounded-2xl border border-gray-200 hover:bg-gray-100 transition-all active:scale-95"
+                        className="flex-1 px-4 py-3 bg-white text-gray-600 font-bold rounded-2xl border border-gray-200 hover:bg-gray-100 transition-all"
                     >
                         Hủy bỏ
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={isLoading}
-                        className="flex-[2] px-4 py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all active:scale-95 disabled:bg-blue-300 disabled:shadow-none flex items-center justify-center gap-2"
+                        className="flex-[2] px-4 py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all disabled:bg-blue-300 disabled:shadow-none flex items-center justify-center gap-2"
                     >
                         {isLoading ? (
                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

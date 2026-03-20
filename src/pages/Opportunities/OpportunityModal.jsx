@@ -284,7 +284,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       pkgServices[sIndex] = { ...pkgServices[sIndex], [field]: field === 'quantity' ? Number(value) : value };
 
       if (field === 'serviceId') {
-        const service = availableServices.find(s => String(s.id) === String(value));
+        const service = services.find(s => String(s.id) === String(value));
         pkgServices[sIndex].sellingPrice = service?.costPrice || 0;
       }
 

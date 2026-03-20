@@ -203,9 +203,8 @@ export const ServicePackageDetailPage = () => {
                             </div>
                             <div>
                                 <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
-                                    {isEditing ? 'Sửa thông tin' : packageData.name}
+                                    {packageData.name}
                                 </h1>
-                                <p className="text-sm font-medium text-gray-400">ID: {packageData.id}</p>
                             </div>
                         </div>
 

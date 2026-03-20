@@ -22,10 +22,11 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
   );
 
   // Fetch all available services
-  const { data: allServices = [] } = useGetServicesQuery(
+  const { data: servicesResponse } = useGetServicesQuery(
     {},
     { skip: !isOpen }
   );
+  const allServices = useMemo(() => Array.isArray(servicesResponse) ? servicesResponse : (servicesResponse?.data || []), [servicesResponse]);
 
   const { data: packageTemplates = [] } = useGetServicePackagesQuery(
     {},

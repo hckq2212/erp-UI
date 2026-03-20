@@ -88,11 +88,11 @@ export const ServicePackageListPage = () => {
                                 </div>
                             </div>
 
-                            <div className="space-y-2 mb-6">
+                            <div className="space-y-2 mb-6 overflow-hidden">
                                 <h3 className="text-lg font-bold text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors uppercase">
                                     {pkg.name}
                                 </h3>
-                                <p className="text-sm text-gray-500 line-clamp-2 min-h-[2.5rem] leading-relaxed">
+                                <p className="text-sm text-gray-500 line-clamp-2 min-h-[2.5rem] leading-relaxed ">
                                     {pkg.description || 'Không có mô tả'}
                                 </p>
                             </div>
