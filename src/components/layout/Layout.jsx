@@ -1,7 +1,9 @@
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
+import { useSSE } from '../../hooks/useSSE';
 
 export const Layout = ({ children }) => {
+  useSSE(); // Initialize real-time notifications
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
