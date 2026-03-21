@@ -23,7 +23,7 @@ export const CustomerInfo = ({ opportunity, onAddCustomer }) => {
   const hasData = !!(opportunity.customer || opportunity.leadName);
   const isLead = !opportunity.customer && !!opportunity.leadName;
 
-    useEffect(() => {
+  useEffect(() => {
     if (opportunity.customer) {
       setEditData({
         name: opportunity.customer.name,
@@ -31,7 +31,6 @@ export const CustomerInfo = ({ opportunity, onAddCustomer }) => {
         email: opportunity.customer.email || '',
         taxId: opportunity.customer.taxId || '',
         address: opportunity.customer.address || '',
-        idNumber: opportunity.customer.idNumber || ''
       });
     } else if (opportunity.leadName) {
       setEditData({
@@ -63,7 +62,6 @@ export const CustomerInfo = ({ opportunity, onAddCustomer }) => {
           email: editData.email,
           taxId: editData.taxId,
           address: editData.address,
-          idNumber: editData.idNumber
         }).unwrap();
         // After customer update, invalidate the specific opportunity cache
         // so the detail page re-fetches the embedded customer data immediately
