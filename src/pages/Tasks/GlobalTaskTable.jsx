@@ -4,6 +4,7 @@ import { cn } from '../../utils/cn';
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../../components/ui/Pagination';
+import { formatDateTime } from '../../utils/format';
 
 export const GlobalTaskTable = ({
     tasks = [],
@@ -50,10 +51,6 @@ export const GlobalTaskTable = ({
         requestSort(key);
     };
 
-    const formatDate = (dateString) => {
-        if (!dateString) return '---';
-        return new Date(dateString).toLocaleDateString('vi-VN');
-    };
 
     const getSortIcon = (key) => {
         if (sortConfig?.key !== key) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-30" />;
@@ -127,7 +124,7 @@ export const GlobalTaskTable = ({
                                         <div className="flex flex-col gap-1">
                                             <div className="flex items-center gap-1.5 text-gray-500 text-xs text-nowrap">
                                                 <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                                                <span>Deadline: {formatDate(task.plannedEndDate)}</span>
+                                                <span>Deadline: {formatDateTime(task.plannedEndDate) || '---'}</span>
                                             </div>
                                             {task.status === 'PENDING' && task.plannedEndDate && new Date(task.plannedEndDate) < new Date() && (
                                                 <span className="text-[10px] text-red-500 font-bold flex items-center gap-1">

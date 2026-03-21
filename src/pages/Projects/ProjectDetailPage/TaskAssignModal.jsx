@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Upload, Link as LinkIcon, Calendar, User, Users, FileText, Trash2, Plus, Info } from 'lucide-react';
+import { X, Upload, Link as LinkIcon, Calendar, User, Users, FileText, Trash2, Plus, Info, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGetTeamMembersQuery, useGetTeamsQuery, useLazyGetTeamsQuery, useLazyGetTeamMembersQuery } from '../../../api/teams';
 import { useAssignTaskMutation, useAssignSupportTeamMutation, useRequestSupportMutation } from '../../../api/tasks';
+import { formatDate, formatDateTimeISO } from '../../../utils/format';
 import { useGetVendorsByJobQuery } from '../../../api/vendors';
 import { uploadToCloudinary } from '../../../utils/cloudinary';
 import { toast } from 'react-toastify';
@@ -28,13 +29,13 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     const [formData, setFormData] = useState({
         assigneeId: '',
         performerType: 'INTERNAL',
-        plannedEndDate: task?.plannedEndDate?.split('T')[0] || '',
-        plannedStartDate: task?.plannedStartDate?.split('T')[0] || '',
         description: task?.description || '',
         links: [''],
         selectedTeamId: '',
         isTeamAssignment: false
     });
+    const [plannedStartDate, setPlannedStartDate] = useState(formatDateTimeISO(task?.plannedStartDate) || formatDateTimeISO(new Date()));
+    const [plannedEndDate, setPlannedEndDate] = useState(formatDateTimeISO(task?.plannedEndDate) || '');
 
     const jobId = task?.jobId || task?.job?.id;
     const { data: vendorsResult, isLoading: isLoadingVendors } = useGetVendorsByJobQuery(jobId, {
@@ -149,8 +150,8 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                     id: task.id,
                     assigneeId: formData.assigneeId,
                     performerType: formData.performerType,
-                    plannedEndDate: formData.plannedEndDate || undefined,
-                    plannedStartDate: formData.plannedStartDate || undefined,
+                    plannedEndDate: plannedEndDate || undefined,
+                    plannedStartDate: plannedStartDate || undefined,
                     description: formData.description || undefined,
                     attachments,
                     projectId: project.id
@@ -162,7 +163,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi phân công');
         }
-    }, [formData, files, task.id, project.id, assignTask, assignSupportTeam, onClose]);
+    }, [formData, files, task.id, project.id, assignTask, assignSupportTeam, onClose, plannedStartDate, plannedEndDate, requestSupport, task.status, task.isSupportRequested]);
 
     return (
         <AnimatePresence>
@@ -348,10 +349,10 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                     <div className="relative group">
                                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                         <input
-                                            type="date"
+                                            type="datetime-local"
                                             className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all text-slate-700 font-medium"
-                                            value={formData.plannedStartDate}
-                                            onChange={(e) => setFormData({ ...formData, plannedStartDate: e.target.value })}
+                                            value={plannedStartDate}
+                                            onChange={(e) => setPlannedStartDate(e.target.value)}
                                         />
                                     </div>
                                 </div>
@@ -360,10 +361,10 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                     <div className="relative group">
                                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                         <input
-                                            type="date"
+                                            type="datetime-local"
                                             className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all text-slate-700 font-medium"
-                                            value={formData.plannedEndDate}
-                                            onChange={(e) => setFormData({ ...formData, plannedEndDate: e.target.value })}
+                                            value={plannedEndDate}
+                                            onChange={(e) => setPlannedEndDate(e.target.value)}
                                         />
                                     </div>
                                 </div>
@@ -534,8 +535,3 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     );
 };
 
-const Briefcase = ({ className }) => (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-    </svg>
-);

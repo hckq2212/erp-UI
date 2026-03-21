@@ -10,6 +10,7 @@ import { Pagination } from '../../../components/ui/Pagination';
 import { cn } from '../../../utils/cn';
 import { TASK_STATUS_LABELS } from '../../../utils/enums';
 import { toast } from 'react-toastify';
+import { formatDateTime } from '../../../utils/format';
 
 export const TaskTable = ({ tasks = [], project }) => {
     const navigate = useNavigate();
@@ -25,10 +26,6 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [assigningTask, setAssigningTask] = useState(null);
     const [showAddExtraModal, setShowAddExtraModal] = useState(false);
 
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        return new Date(dateString).toLocaleDateString('vi-VN');
-    };
 
     const getStatusBadge = (status) => {
         const label = TASK_STATUS_LABELS[status] || status;
@@ -197,7 +194,7 @@ export const TaskTable = ({ tasks = [], project }) => {
 
                                     <td className="px-6 py-4 text-gray-600">
                                         <div className="flex items-center gap-1 whitespace-nowrap">
-                                            {formatDate(task.plannedStartDate)} <span className="text-gray-400">→</span> {formatDate(task.plannedEndDate)}
+                                            {formatDateTime(task.plannedStartDate) || '---'} <span className="text-gray-400">→</span> {formatDateTime(task.plannedEndDate) || '---'}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-gray-600">

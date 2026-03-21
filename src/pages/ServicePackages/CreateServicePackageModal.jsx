@@ -138,6 +138,13 @@ export const CreateServicePackageModal = ({ isOpen, onClose }) => {
         })
     };
 
+    const totalPackagePrice = useMemo(() => {
+        return selectedItems.reduce((acc, item) => {
+            const service = allServices.find(s => s.id === item.serviceId);
+            return acc + (service?.costPrice || 0) * (item.defaultQuantity || 0);
+        }, 0);
+    }, [selectedItems, allServices]);
+
     if (!isOpen) return null;
 
     return (
@@ -235,6 +242,12 @@ export const CreateServicePackageModal = ({ isOpen, onClose }) => {
                                                 required
                                             />
                                         </div>
+                                        <div className="w-40">
+                                            {index === 0 && <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1 text-right">Thành tiền</label>}
+                                            <div className="px-4 py-3 bg-blue-50 border border-blue-100 rounded-2xl text-sm font-black text-blue-700 text-right h-[46px] flex items-center justify-end shadow-sm">
+                                                {selectedOption ? formatCurrency(selectedOption.price * item.defaultQuantity) : '-'}
+                                            </div>
+                                        </div>
                                         <button
                                             type="button"
                                             onClick={() => removeItem(index)}
@@ -246,6 +259,20 @@ export const CreateServicePackageModal = ({ isOpen, onClose }) => {
                                 );
                             })}
                         </div>
+
+                        {selectedItems.length > 0 && (
+                            <div className="pt-4 mt-2 border-t border-gray-100 flex justify-end">
+                                <div className="bg-blue-600 px-6 py-4 rounded-3xl shadow-xl shadow-blue-200 flex items-center gap-6 text-white">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black uppercase tracking-widest opacity-70">Tổng giá trị gói</span>
+                                        <span className="text-2xl font-black">{formatCurrency(totalPackagePrice)}</span>
+                                    </div>
+                                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                                        <CheckCircle2 className="w-6 h-6" />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </form>
 

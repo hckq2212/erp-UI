@@ -321,7 +321,7 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
                             <div className="relative">
                                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                 <input
-                                    type="date"
+                                    type="datetime-local"
                                     className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-sm"
                                     value={formData.plannedStartDate}
                                     onChange={(e) => handleFieldChange('plannedStartDate', e.target.value)}
@@ -333,7 +333,7 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
                             <div className="relative">
                                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                 <input
-                                    type="date"
+                                    type="datetime-local"
                                     className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-sm"
                                     value={formData.plannedEndDate}
                                     onChange={(e) => handleFieldChange('plannedEndDate', e.target.value)}

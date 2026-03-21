@@ -13,6 +13,7 @@ import {
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { toast } from 'react-toastify';
+import { formatCurrency } from '../../utils/format';
 
 export const ServicePackageDetailPage = () => {
     const { id } = useParams();
@@ -32,6 +33,14 @@ export const ServicePackageDetailPage = () => {
         items: []
     });
 
+    const calculatedTotalPrice = useMemo(() => {
+        const itemsToUse = isEditing ? formData.items : packageData?.items || [];
+        return itemsToUse.reduce((acc, item) => {
+            const s = services.find(s => String(s.id) === String(item.serviceId));
+            return acc + (s?.costPrice || 0) * (item.defaultQuantity || 0);
+        }, 0);
+    }, [isEditing, formData.items, packageData?.items, services]);
+
     // Sync formData when packageData is fetched
     useMemo(() => {
         if (packageData) {
@@ -39,7 +48,7 @@ export const ServicePackageDetailPage = () => {
                 name: packageData.name || '',
                 description: packageData.description || '',
                 items: (packageData.items || []).map(item => ({
-                    id: item.id, // backend ID for the item
+                    id: item.id,
                     serviceId: item.serviceId,
                     defaultQuantity: item.defaultQuantity || 1
                 }))
@@ -238,10 +247,7 @@ export const ServicePackageDetailPage = () => {
                                             {packageData.description || 'Không có mô tả cho gói dịch vụ này.'}
                                         </p>
                                     </div>
-                                    <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-100 rounded-2xl">
-                                        <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Tổng số hạng mục</div>
-                                        <div className="text-2xl font-black text-blue-600">{packageData.items?.length || 0}</div>
-                                    </div>
+
                                 </>
                             )}
                         </div>
@@ -274,7 +280,9 @@ export const ServicePackageDetailPage = () => {
                                 <thead className="bg-gray-50/30 border-b border-gray-100">
                                     <tr>
                                         <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Dịch vụ</th>
+                                        <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Đơn giá</th>
                                         <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Số lượng</th>
+                                        <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Thành tiền</th>
                                         {isEditing && <th className="px-8 py-4"></th>}
                                     </tr>
                                 </thead>
@@ -308,6 +316,11 @@ export const ServicePackageDetailPage = () => {
                                                     )}
                                                 </td>
                                                 <td className="px-8 py-5">
+                                                    <div className="text-center font-medium text-gray-600 text-sm">
+                                                        {formatCurrency(serviceInfo?.costPrice || 0)}
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-5">
                                                     <div className="flex justify-center">
                                                         {isEditing ? (
                                                             <input
@@ -324,6 +337,9 @@ export const ServicePackageDetailPage = () => {
                                                         )}
                                                     </div>
                                                 </td>
+                                                <td className="px-8 py-5 text-right font-bold text-blue-600 text-sm">
+                                                    {formatCurrency((serviceInfo?.costPrice || 0) * item.defaultQuantity)}
+                                                </td>
                                                 {isEditing && (
                                                     <td className="px-8 py-5 text-right">
                                                         <button
@@ -338,12 +354,22 @@ export const ServicePackageDetailPage = () => {
                                         );
                                     })}
 
-                                    {(isEditing ? formData.items : packageData.items || []).length === 0 && (
+                                    {(isEditing ? formData.items : packageData.items || []).length === 0 ? (
                                         <tr>
-                                            <td colSpan={isEditing ? 3 : 2} className="px-8 py-12 text-center text-gray-400 italic font-medium">
+                                            <td colSpan={isEditing ? 5 : 4} className="px-8 py-12 text-center text-gray-400 italic font-medium">
                                                 Chưa có hạng mục nào cho gói này.
                                                 {isEditing && ' Hãy bấm "Thêm dịch vụ" ở trên.'}
                                             </td>
+                                        </tr>
+                                    ) : (
+                                        <tr className="bg-gray-50/50 border-t border-gray-100 font-bold">
+                                            <td colSpan={isEditing ? 3 : 3} className="px-8 py-4 text-gray-900 text-left uppercase tracking-widest text-md">
+                                                Tổng cộng
+                                            </td>
+                                            <td className=" pr-7 py-2 text-right text-md font-black text-blue-700">
+                                                {formatCurrency(calculatedTotalPrice)}
+                                            </td>
+                                            {isEditing && <td></td>}
                                         </tr>
                                     )}
                                 </tbody>

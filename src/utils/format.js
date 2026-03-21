@@ -62,6 +62,18 @@ export const formatDate = (date) => {
 };
 
 /**
+ * Format date time to Vietnamese format
+ * @param {Date|string} date - The date to format
+ * @returns {string} Formatted date time string (e.g., 09:30 27/01/2026)
+ */
+export const formatDateTime = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
+  return format(d, 'HH:mm dd/MM/yyyy');
+};
+
+/**
  * Format date to ISO string for input[type="date"]
  * @param {Date|string} date - The date to format
  * @returns {string} ISO date string (e.g., 2026-01-27)
@@ -71,6 +83,27 @@ export const formatDateISO = (date) => {
   const d = new Date(date);
   if (isNaN(d.getTime())) return '';
   return d.toISOString().split('T')[0];
+};
+
+/**
+ * Format date time to ISO string for input[type="datetime-local"]
+ * @param {Date|string} date - The date to format
+ * @returns {string} ISO datetime-local string (e.g., 2026-01-27T09:30)
+ */
+export const formatDateTimeISO = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
+
+  // Get offset in minutes and convert to +/-HH:mm manually or use local time
+  // datetime-local expects local time string without offset
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
 /**

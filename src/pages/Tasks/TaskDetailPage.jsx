@@ -3,7 +3,7 @@ import { ArrowLeft, Edit, Trash2, Calendar, User, Briefcase, FileText, CheckCirc
 import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation, useRequestReworkMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetMeQuery } from '../../api/auth';
-import { formatDate } from '../../utils/format';
+import { formatDate, formatDateTime } from '../../utils/format';
 import { toast } from 'react-toastify';
 import { useState, useRef } from 'react';
 import { JOB_PERFORMER_TYPE } from '../../utils/enums';
@@ -619,7 +619,7 @@ export const TaskDetailPage = () => {
                         {task.job && (
                             <div className="space-y-6">
                                 <div>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 text-[10px]">Tên công việc</p>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Tên công việc</p>
                                     <p className="text-sm font-bold text-gray-700">{task.job.name}</p>
                                 </div>
 
@@ -638,11 +638,11 @@ export const TaskDetailPage = () => {
                             <div className="space-y-4 grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Ngày bắt đầu</p>
-                                    <p className="text-lg font-bold text-gray-700">{formatDate(task.plannedStartDate)}</p>
+                                    <p className="text-lg font-bold text-gray-700">{formatDateTime(task.plannedStartDate)}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Deadline</p>
-                                    <p className="text-lg font-bold text-gray-700">{formatDate(task.plannedEndDate)}</p>
+                                    <p className="text-lg font-bold text-gray-700">{formatDateTime(task.plannedEndDate)}</p>
                                 </div>
                             </div>
                         </div>
