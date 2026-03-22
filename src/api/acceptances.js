@@ -4,7 +4,7 @@ export const acceptancesApi = api.injectEndpoints({
     endpoints: (builder) => ({
         getAcceptanceRequests: builder.query({
             query: (params) => ({
-                url: '/acceptance/',
+                url: '/acceptance',
                 params,
             }),
             providesTags: (result) =>

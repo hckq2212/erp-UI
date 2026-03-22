@@ -4,8 +4,10 @@ import { CheckCircle2, XCircle, Clock, Search, Filter, Eye, FileText, ChevronRig
 import { AcceptanceReviewModal } from './AcceptanceReviewModal';
 import { formatDate } from '../../utils/format';
 import { ACCEPTANCE_STATUS_LABELS, ACCEPTANCE_STATUS_COLORS } from '../../utils/enums';
+import { useGetMeQuery } from '../../api/auth';
 
 export const AcceptanceInboxPage = () => {
+    const { data: currentUser } = useGetMeQuery();
     const [filters, setFilters] = useState({});
     const { data: requestsResult = [], isLoading } = useGetAcceptanceRequestsQuery(filters);
     const requests = Array.isArray(requestsResult) ? requestsResult : (requestsResult?.data || []);
