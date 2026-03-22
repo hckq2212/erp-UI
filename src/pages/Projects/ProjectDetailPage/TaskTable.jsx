@@ -219,7 +219,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                     Phân công
                                                 </button>
                                             )}
-                                            {isProjectInProgress && task.status === 'DOING' && !task.isSupportRequested && (
+                                            {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING') && !task.isSupportRequested && (
                                                 <button
                                                     onClick={() => setAssigningTask(task)}
                                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"

@@ -3,13 +3,13 @@ export const CONTRACT_STATUS_LABELS = {
   DRAFT: 'Mới',
   PENDING: 'Chờ duyệt',
   APPROVED: 'Đã duyệt',
-  PROPOSAL_APPROVED: 'Đã duyệt proposal',
+  PROPOSAL_APPROVED: 'Đã duyệt hợp đồng',
   ACTIVE: 'Đang thực hiện',
   COMPLETED: 'Hoàn thành',
   CANCELLED: 'Đã hủy',
   SIGNED: 'Đã ký',
-  PROPOSAL_UPLOADED: 'Đã tải lên proposal',
-  PROPOSAL_REJECTED: 'Bị từ chối proposal',
+  PROPOSAL_UPLOADED: 'Đã tải lên hợp đồng',
+  PROPOSAL_REJECTED: 'Bị từ chối hợp đồng',
 };
 
 export const CONTRACT_STATUS_COLORS = {
@@ -124,6 +124,8 @@ export const TASK_STATUS_LABELS = {
   OVERDUE: 'Quá hạn',
   AWAITING_SUPPORT: 'Đã nhờ hỗ trợ',
   COMPLETED: "Hoàn thành",
+  REWORKING: "Đang làm lại"
+
 };
 
 export const TASK_STATUS_COLORS = {
