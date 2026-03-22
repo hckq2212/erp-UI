@@ -323,16 +323,23 @@ export const ServicePackageDetailPage = () => {
                                                 <td className="px-8 py-5">
                                                     <div className="flex justify-center">
                                                         {isEditing ? (
-                                                            <input
-                                                                type="number"
-                                                                min="1"
-                                                                className="w-20 px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-bold text-center"
-                                                                value={item.defaultQuantity}
-                                                                onChange={(e) => handleItemChange(index, 'defaultQuantity', e.target.value)}
-                                                            />
+                                                            <div className="relative">
+                                                                <input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    className="w-24 px-4 py-3 pr-10 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-bold text-center"
+                                                                    value={item.defaultQuantity}
+                                                                    onChange={(e) => handleItemChange(index, 'defaultQuantity', e.target.value)}
+                                                                />
+                                                                {serviceInfo?.unit && (
+                                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 pointer-events-none uppercase">
+                                                                        {serviceInfo.unit}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         ) : (
                                                             <span className="px-4 py-1.5 bg-gray-100 text-gray-600 rounded-xl font-black text-sm">
-                                                                {item.defaultQuantity}
+                                                                {item.defaultQuantity} {item.service?.unit || serviceInfo?.unit}
                                                             </span>
                                                         )}
                                                     </div>

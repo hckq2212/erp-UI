@@ -31,7 +31,7 @@ export const OpportunityServicesInfo = ({ opportunity }) => {
                                         <p className="text-sm font-medium text-gray-900">{s.service?.name}</p>
                                         <p className="text-xs text-gray-500">Số lượng: {((s.quantity || 1) / (pkg.quantity || 1)) % 1 === 0
                                             ? (s.quantity || 1) / (pkg.quantity || 1)
-                                            : Number((s.quantity || 1) / (pkg.quantity || 1)).toFixed(2).replace(/\.?0+$/, '')} / Gói</p>
+                                            : Number((s.quantity || 1) / (pkg.quantity || 1)).toFixed(2).replace(/\.?0+$/, '')} {s.service?.unit || s.unit} / Gói</p>
                                     </div>
                                     <p className="text-sm font-semibold text-blue-700">{formatNumber(s.sellingPrice)} VNĐ</p>
                                 </div>
@@ -49,7 +49,7 @@ export const OpportunityServicesInfo = ({ opportunity }) => {
                                 <div key={s.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
                                     <div>
                                         <p className="text-sm font-medium text-gray-900">{s.service?.name}</p>
-                                        <p className="text-xs text-gray-500">Số lượng: {s.quantity}</p>
+                                        <p className="text-xs text-gray-500">Số lượng: {s.quantity} {s.service?.unit || s.unit}</p>
                                     </div>
                                     <p className="text-sm font-semibold text-gray-700">{formatNumber(s.sellingPrice)} VNĐ</p>
                                 </div>

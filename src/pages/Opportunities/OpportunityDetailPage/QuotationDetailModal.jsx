@@ -232,7 +232,7 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                                 <td className="px-4 py-2 text-center">
                                   <div className="flex flex-col items-center">
                                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">SL</span>
-                                    <span className="text-xs font-bold text-gray-500">{Number(item.norm) % 1 === 0 ? item.norm : Number(item.norm).toFixed(2).replace(/\.?0+$/, '')} / Gói</span>
+                                    <span className="text-xs font-bold text-gray-500">{Number(item.norm) % 1 === 0 ? item.norm : Number(item.norm).toFixed(2).replace(/\.?0+$/, '')} {item.service?.unit || item.unit} / Gói</span>
                                   </div>
                                 </td>
                                 <td className="px-4 py-2 text-right text-xs text-gray-400 font-medium italic">
@@ -267,7 +267,7 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                                   {item.name || item.service?.name || 'N/A'}
                                 </td>
                                 <td className="px-4 py-3 text-center">
-                                  <span className="text-sm font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded-md">{item.quantity}</span>
+                                  <span className="text-sm font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded-md">{item.quantity} {item.service?.unit || item.unit}</span>
                                 </td>
                                 <td className="px-4 py-3 text-right text-sm text-gray-700">
                                   {formatNumber(item.sellingPrice)}

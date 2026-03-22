@@ -10,14 +10,14 @@ import { formatCurrency } from '../../utils/format';
 
 export const CreateServicePackageModal = ({ isOpen, onClose }) => {
     const [createPackage, { isLoading }] = useCreateServicePackageMutation();
-    
+
     // Lazy fetching state
     const [page, setPage] = useState(1);
     const [allServices, setAllServices] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
-    
-    const { data: servicesResponse, isFetching } = useGetServicesQuery({ 
-        page, 
+
+    const { data: servicesResponse, isFetching } = useGetServicesQuery({
+        page,
         limit: 20,
         name: searchTerm || undefined
     }, { skip: !isOpen });
@@ -100,14 +100,14 @@ export const CreateServicePackageModal = ({ isOpen, onClose }) => {
     };
 
     // Filtered options for each row
-    const selectedIds = useMemo(() => 
+    const selectedIds = useMemo(() =>
         selectedItems.map(item => item.serviceId).filter(Boolean),
-    [selectedItems]);
+        [selectedItems]);
 
     const getOptions = (currentIndex) => {
         const currentId = selectedItems[currentIndex].serviceId;
         const otherSelectedIds = selectedIds.filter(id => id !== currentId);
-            
+
         return allServices
             .filter(s => !otherSelectedIds.includes(s.id))
             .map(s => ({
@@ -207,7 +207,7 @@ export const CreateServicePackageModal = ({ isOpen, onClose }) => {
                             {selectedItems.map((item, index) => {
                                 const options = getOptions(index);
                                 const selectedOption = options.find(opt => opt.value === item.serviceId);
-                                
+
                                 return (
                                     <div key={index} className="flex gap-3 items-end group">
                                         <div className="flex-1">
@@ -231,16 +231,23 @@ export const CreateServicePackageModal = ({ isOpen, onClose }) => {
                                                 {selectedOption ? formatCurrency(selectedOption.price) : '-'}
                                             </div>
                                         </div>
-                                        <div className="w-24">
+                                        <div className="w-24 relative">
                                             {index === 0 && <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1 text-center">Số lượng</label>}
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm text-center h-[46px]"
-                                                value={item.defaultQuantity}
-                                                onChange={(e) => handleItemChange(index, 'defaultQuantity', e.target.value)}
-                                                required
-                                            />
+                                            <div className="relative">
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    className="w-full pl-3 pr-8 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm text-center h-[46px]"
+                                                    value={item.defaultQuantity}
+                                                    onChange={(e) => handleItemChange(index, 'defaultQuantity', e.target.value)}
+                                                    required
+                                                />
+                                                {selectedOption?.service?.unit && (
+                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 pointer-events-none uppercase">
+                                                        {selectedOption.service.unit}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="w-40">
                                             {index === 0 && <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1 text-right">Thành tiền</label>}
