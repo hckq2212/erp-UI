@@ -58,7 +58,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
           packageName: detail.packageName || 'STANDALONE',
           packageQuantity: detail.packageQuantity || 1,
           norm: detail.quantity / (detail.packageQuantity || 1),
-          servicePackageId: detail.servicePackageId
+          servicePackageId: detail.servicePackageId,
+          unit: detail.service?.unit || detail.unit || ''
         };
       }) || [];
       setItems(loadedItems);
@@ -87,7 +88,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             customPrice: recommendedPrice,
             selectedPrice: recommendedPrice,
             profitMargin: calculateProfitMargin(recommendedPrice, costPrice),
-            packageName: 'STANDALONE'
+            packageName: 'STANDALONE',
+            unit: service.service?.unit || service.unit || ''
           };
         });
 
@@ -111,7 +113,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             packageName: pkg.name,
             packageQuantity: pkg.quantity || 1,
             norm: ps.quantity / (pkg.quantity || 1),
-            servicePackageId: pkg.servicePackageId
+            servicePackageId: pkg.servicePackageId,
+            unit: ps.service?.unit || ps.unit || ''
           };
         })
       );
@@ -226,7 +229,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
       profitMargin: calculateProfitMargin(
         priceType === 'minimum' ? minPrice : priceType === 'recommended' ? recommendedPrice : recommendedPrice,
         costPrice
-      )
+      ),
+      unit: service.unit || ''
     };
 
     setItems([...items, { ...newItem, packageName: 'STANDALONE' }]);
@@ -267,7 +271,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
         packageName: template.name,
         packageQuantity: 1,
         norm: ps.defaultQuantity || 1,
-        servicePackageId: template.id
+        servicePackageId: template.id,
+        unit: ps.service?.unit || ps.unit || ''
       };
     });
 
@@ -489,7 +494,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                             • {item.serviceName}
                           </td>
                           <td className="px-4 py-2 text-center text-[10px] text-gray-400 font-bold uppercase">
-                            Số lượng: {Number(item.norm) % 1 === 0 ? item.norm : Number(item.norm).toFixed(2).replace(/\.?0+$/, '')} / gói
+                            Số lượng: {Number(item.norm) % 1 === 0 ? item.norm : Number(item.norm).toFixed(2).replace(/\.?0+$/, '')} {item.unit} / gói
                           </td>
                           <td className="px-4 py-2 text-right text-xs text-gray-400">
                             {formatNumber(item.costPrice)}
@@ -524,6 +529,9 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                               onChange={(e) => handleStandaloneQuantityChange(item.originalIndex, e.target.value)}
                               className="w-20 mx-auto px-2 py-1 text-center border border-gray-300 rounded text-sm block"
                             />
+                            {item.unit && (
+                              <span className="text-[10px] text-gray-400 font-bold uppercase block mt-1">{item.unit}</span>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-right text-sm text-gray-900">
                             {formatNumber(item.costPrice)}

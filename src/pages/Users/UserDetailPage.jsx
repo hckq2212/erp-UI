@@ -164,7 +164,7 @@ export const UserDetailPage = () => {
                                     </div>
                                     <div className="flex items-center gap-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-2xl">
                                         <User className="w-4 h-4 text-blue-500" />
-                                        <span>Username: <span className="font-bold text-gray-900">@{user.account?.username}</span></span>
+                                        <span>Username: <span className="font-bold text-gray-900">{user.account?.username}</span></span>
                                     </div>
                                 </div>
                             </div>

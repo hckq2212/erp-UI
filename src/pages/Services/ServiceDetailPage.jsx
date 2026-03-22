@@ -14,6 +14,8 @@ export const ServiceDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [isAddJobModalOpen, setIsAddJobModalOpen] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({ name: '', unit: '', description: '' });
 
     const { data: service, isLoading, error } = useGetServiceQuery(id);
     const [addJob] = useAddJobMutation();
@@ -58,15 +60,24 @@ export const ServiceDetailPage = () => {
         }
     };
 
-    const handleEditName = async () => {
-        const newName = window.prompt('Nhập tên dịch vụ mới:', service.name);
-        if (newName && newName !== service.name) {
-            try {
-                await updateService({ id, name: newName }).unwrap();
-                toast.success('Cập nhật tên dịch vụ thành công');
-            } catch (err) {
-                toast.error(err?.data?.message || 'Có lỗi xảy ra khi cập nhật tên');
-            }
+    const handleToggleEdit = () => {
+        if (!isEditing) {
+            setEditForm({
+                name: service.name,
+                unit: service.unit || '',
+                description: service.description || ''
+            });
+        }
+        setIsEditing(!isEditing);
+    };
+
+    const handleSaveUpdate = async () => {
+        try {
+            await updateService({ id, ...editForm }).unwrap();
+            toast.success('Cập nhật thông tin thành công');
+            setIsEditing(false);
+        } catch (err) {
+            toast.error(err?.data?.message || 'Có lỗi xảy ra khi cập nhật dịch vụ');
         }
     };
 
@@ -121,22 +132,43 @@ export const ServiceDetailPage = () => {
 
                 {isAdminOrBOD && (
                     <div className="flex gap-2">
-                        <Button
-                            variant="secondary"
-                            onClick={handleEditName}
-                            className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
-                        >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Sửa tên
-                        </Button>
-                        <Button
-                            variant="danger"
-                            onClick={handleDeleteService}
-                            className="bg-red-50 text-red-600 border-red-100 hover:bg-red-100 shadow-sm"
-                        >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Xóa dịch vụ
-                        </Button>
+                        {isEditing ? (
+                            <>
+                                <Button
+                                    variant="primary"
+                                    onClick={handleSaveUpdate}
+                                    className="shadow-sm"
+                                >
+                                    Lưu thay đổi
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleToggleEdit}
+                                    className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
+                                >
+                                    Hủy
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <Button
+                                    variant="secondary"
+                                    onClick={handleToggleEdit}
+                                    className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
+                                >
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Chỉnh sửa
+                                </Button>
+                                <Button
+                                    variant="danger"
+                                    onClick={handleDeleteService}
+                                    className="bg-red-50 text-red-600 border-red-100 hover:bg-red-100 shadow-sm"
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Xóa dịch vụ
+                                </Button>
+                            </>
+                        )}
                     </div>
                 )}
             </div>
@@ -152,18 +184,49 @@ export const ServiceDetailPage = () => {
                         <div className="space-y-4">
                             <div>
                                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Tên dịch vụ</label>
-                                <p className="text-lg font-bold text-blue-600">{service.name}</p>
+                                {isEditing ? (
+                                    <input
+                                        type="text"
+                                        value={editForm.name}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                                        className="w-full mt-1 px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/10 text-lg font-bold text-blue-900"
+                                    />
+                                ) : (
+                                    <p className="text-lg font-bold text-blue-600">{service.name}</p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Đơn vị tính</label>
+                                {isEditing ? (
+                                    <input
+                                        type="text"
+                                        value={editForm.unit}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, unit: e.target.value }))}
+                                        className="w-full mt-1 px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/10 text-md font-bold text-blue-900"
+                                        placeholder="Ví dụ: Ngày, Gói..."
+                                    />
+                                ) : (
+                                    <p className="text-md font-bold text-blue-600">{service.unit || '---'}</p>
+                                )}
                             </div>
                             <div>
                                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Giá vốn</label>
                                 <p className="text-md font-bold text-blue-600">{formatCurrency(service.costPrice)}</p>
                             </div>
-                            {service.description && (
-                                <div>
-                                    <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Mô tả</label>
-                                    <p className="text-md font-bold text-blue-600">{service.description}</p>
-                                </div>
-                            )}
+                            <div>
+                                <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Mô tả</label>
+                                {isEditing ? (
+                                    <textarea
+                                        value={editForm.description}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                                        rows={4}
+                                        className="w-full mt-1 px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/10 text-md font-bold text-blue-900"
+                                        placeholder="Nhập mô tả..."
+                                    />
+                                ) : (
+                                    <p className="text-md font-bold text-blue-600">{service.description || 'Không có mô tả'}</p>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

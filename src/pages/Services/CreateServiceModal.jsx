@@ -13,6 +13,7 @@ import { toast } from 'react-toastify';
 const serviceSchema = z.object({
     name: z.string().min(1, 'Tên dịch vụ là bắt buộc'),
     description: z.string().optional(),
+    unit: z.string().min(1, 'Đơn vị tính là bắt buộc'),
     // outputJobId: z.string().min(1, 'Vui lòng chọn công việc đầu ra'),
     jobIds: z.array(z.string()).optional().default([]),
 });
@@ -38,6 +39,7 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
         defaultValues: {
             name: '',
             description: '',
+            unit: '',
             outputJobId: '',
             jobIds: [],
         },
@@ -110,29 +112,14 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
                     placeholder="Ví dụ: Quay phim, Thiết kế..."
                 />
 
-                {/* <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Công việc đầu ra *</label>
-                    <Controller
-                        name="outputJobId"
-                        control={control}
-                        render={({ field }) => (
-                            <Select
-                                {...field}
-                                options={jobOptions}
-                                placeholder="-- Tìm và chọn công việc --"
-                                isClearable
-                                isSearchable
-                                value={jobOptions.find(opt => opt.value === field.value) || null}
-                                onChange={(val) => field.onChange(val ? val.value : '')}
-                                classNamePrefix="react-select"
-                                styles={selectStyles(errors.outputJobId)}
-                            />
-                        )}
-                    />
-                    {errors.outputJobId && (
-                        <p className="mt-1 text-sm text-red-600 font-medium">{errors.outputJobId.message}</p>
-                    )}
-                </div> */}
+
+
+                <Input
+                    label="Đơn vị tính *"
+                    {...register('unit')}
+                    error={errors.unit?.message}
+                    placeholder="Ví dụ: Ngày, Gói, Item, Giờ..."
+                />
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Các hạng mục thực hiện</label>
@@ -157,6 +144,7 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
                         <p className="mt-1 text-sm text-red-600 font-medium">{errors.jobIds.message}</p>
                     )}
                 </div>
+
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>

@@ -92,6 +92,7 @@ export const ServicesPage = () => {
                                 <thead>
                                     <tr className="bg-gray-50/50 border-b border-gray-100">
                                         {renderSortableHeader('Tên Dịch Vụ', 'name')}
+                                        {renderSortableHeader('Đơn vị', 'unit')}
                                         {renderSortableHeader('Giá vốn', 'costPrice')}
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Xem chi tiết</th>
                                     </tr>
@@ -100,6 +101,7 @@ export const ServicesPage = () => {
                                     {paginatedServices.map((service) => (
                                         <tr key={service.id} className="hover:bg-gray-50/50 transition-colors">
                                             <td className="px-6 py-4 text-sm text-gray-900 font-medium uppercase">{service.name}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-500 italic lowercase">{service.unit || '---'}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-bold">{formatCurrency(service.costPrice)}</td>
                                             <td className="px-6 py-4 text-sm text-right">
                                                 <button
