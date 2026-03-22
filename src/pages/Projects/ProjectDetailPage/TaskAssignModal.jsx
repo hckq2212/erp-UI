@@ -257,7 +257,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                     <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">
                                         {formData.isTeamAssignment ? 'Team hỗ trợ' : (formData.performerType === 'INTERNAL' ? 'Người thực hiện' : 'Đối tác Vendor')}
                                     </label>
-                                    {(isSupportMode || (task?.status === 'DOING' && !task?.isSupportRequested)) && (
+                                    {(isSupportMode || (task?.status === 'DOING' || task?.status === 'REWORKING') && !task?.isSupportRequested) && (
                                         <label className="flex items-center gap-2 cursor-pointer group/check">
                                             <div className="relative flex items-center justify-center">
                                                 <input
