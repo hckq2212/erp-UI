@@ -211,7 +211,7 @@ export const TaskTable = ({ tasks = [], project }) => {
 
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex justify-center gap-2">
-                                            {isProjectInProgress && (task.status === 'PENDING') && (
+                                            {isProjectInProgress && (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
                                                 <button
                                                     onClick={() => setAssigningTask(task)}
                                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
