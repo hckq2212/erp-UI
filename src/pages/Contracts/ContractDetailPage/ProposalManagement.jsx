@@ -12,7 +12,8 @@ export const ProposalManagement = ({
   isUploadingSigned,
   isApprovingProposal,
   isRejectingProposal,
-  uploadProgress = 0
+  uploadProgress = 0,
+  currentUser
 }) => {
   const [isRejecting, setIsRejecting] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -69,7 +70,7 @@ export const ProposalManagement = ({
                       Xem
                     </a>
                   )}
-                  {contract.status === 'PROPOSAL_UPLOADED' && !isRejecting && (
+                  {contract.status === 'PROPOSAL_UPLOADED' && !isRejecting && (currentUser.role === 'ADMIN' || currentUser.role === 'BOD') && (
                     <div className="flex gap-2">
                       <button
                         onClick={onApproveProposal}

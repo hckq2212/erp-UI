@@ -25,7 +25,7 @@ import { ContractAddendums } from './ContractAddendums';
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS } from '../../../utils/enums';
 import { cn } from '../../../utils/cn';
 import { AttachmentsList } from '../../Opportunities/OpportunityDetailPage/AttachmentsList';
-
+import { useGetMeQuery } from '../../../api/auth';
 
 export const ContractDetailPage = () => {
   const { id } = useParams();
@@ -47,6 +47,7 @@ export const ContractDetailPage = () => {
   const [addMilestone] = useAddMilestoneMutation();
   const [updateMilestone] = useUpdateMilestoneMutation();
   const [deleteMilestone] = useDeleteMilestoneMutation();
+  const { data: currentUser } = useGetMeQuery();
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Chưa xác định';
@@ -270,6 +271,7 @@ export const ContractDetailPage = () => {
               isApprovingProposal={isApprovingProposal}
               isRejectingProposal={isRejectingProposal}
               uploadProgress={uploadProgress}
+              currentUser={currentUser}
             />
             <FinancialInfo contract={contract} />
             <ContractAddendums addendums={contract.addendums} />
