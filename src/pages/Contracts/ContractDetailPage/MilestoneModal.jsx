@@ -5,7 +5,7 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { useBulkSavePaymentMilestonesMutation } from '../../../api/paymentMilestones';
 import { toast } from 'react-toastify';
-import { formatNumber, parseNumber } from '../../../utils/format';
+import { formatCurrency, formatNumber, parseNumber } from '../../../utils/format';
 
 export const MilestoneModal = ({ isOpen, onClose, milestones, contractId, sellingPrice }) => {
     const [localMilestones, setLocalMilestones] = useState([]);
@@ -152,10 +152,11 @@ export const MilestoneModal = ({ isOpen, onClose, milestones, contractId, sellin
                                 <div className="relative">
                                     <Input
                                         type="number"
-                                        value={formatNumber(m.amount)}
+                                        // value={formatCurrency(m.amount)}
+                                        value={m.amount}
                                         onChange={(e) => handleChange(idx, 'amount', e.target.value)}
                                         className="h-9 text-sm pr-6"
-                                        required
+                                    // required
                                     />
 
                                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">VNĐ</span>
