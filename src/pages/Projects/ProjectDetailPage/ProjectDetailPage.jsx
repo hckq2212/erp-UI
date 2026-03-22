@@ -9,6 +9,8 @@ import { ProjectInfo } from './ProjectInfo';
 import { ContractInfo } from './ContractInfo';
 import { TeamInfo } from './TeamInfo';
 import { toast } from 'react-toastify';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../../../store/authSlice';
 
 export const ProjectDetailPage = () => {
   const { id } = useParams();
@@ -18,6 +20,11 @@ export const ProjectDetailPage = () => {
   const [updateProject, { isLoading: isUpdating }] = useUpdateProjectMutation();
   const [confirmProject, { isLoading: isConfirming }] = useConfirmProjectMutation();
   const [showEditModal, setShowEditModal] = useState(false);
+  const user = useSelector(selectCurrentUser);
+
+  const isCoreMember = project?.team?.teamLead?.id === user?.id ||
+    project?.team?.members?.some(m => m.user?.id === user?.id) ||
+    ['ADMIN', 'BOD'].includes(user?.role);
 
 
   const handleConfirm = async () => {
@@ -114,7 +121,9 @@ export const ProjectDetailPage = () => {
         <TaskTable tasks={project.tasks} project={project} />
 
 
-        <ContractInfo contract={project.contract} projectId={project.id} />
+        {isCoreMember && (
+          <ContractInfo contract={project.contract} projectId={project.id} />
+        )}
       </div>
     </div >
   );
