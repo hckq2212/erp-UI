@@ -378,8 +378,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 min-w-[1800px]">
-      <div className="bg-white rounded-2xl shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl max-w-[95vw] w-full max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" />
@@ -406,33 +406,33 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             </div>
           </div>
         ) : (
-          <div className="p-6">
+          <div className="p-6 overflow-y-auto">
 
             {/* Items Table */}
-            <div className="overflow-x-auto mb-6">
-              <table className="w-full border-collapse">
+            <div className="overflow-x-auto mb-6 border border-gray-100 rounded-xl shadow-sm">
+              <table className="w-full border-collapse min-w-[1400px]">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Hạng mục</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Số lượng</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá vốn</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá bán tối thiểu</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá bán đề xuất</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 w-[250px] sticky left-0 bg-gray-50 z-10 border-r border-gray-100 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">Hạng mục</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 w-[100px]">Số lượng</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-[120px]">Giá vốn</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-[150px]">Giá bán tối thiểu</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-[150px]">Giá bán đề xuất</th>
                     {priceType === 'custom' && (
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá bán tùy chỉnh</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-[150px]">Giá bán tùy chỉnh</th>
                     )}
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Tỉ suất lợi nhuận</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">VAT (8%)</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Thành tiền</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Hành động</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-[150px]">Tỉ suất lợi nhuận</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-[120px]">VAT (8%)</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-[150px]">Thành tiền</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 w-[100px]">Hành động</th>
                   </tr>
                 </thead>
                 <tbody>
                   {/* Render Packages */}
                   {displayGroups.packages.map((pkg, pIdx) => (
                     <Fragment key={`pkg-${pIdx}`}>
-                      <tr className="bg-blue-50/50 border-b border-blue-100">
-                        <td className="px-4 py-2 text-sm font-bold text-blue-900">
+                      <tr className="bg-blue-50/50 border-b border-blue-100 group">
+                        <td className="px-4 py-2 text-sm font-bold text-blue-900 sticky left-0 bg-blue-50/50 group-hover:bg-blue-100 z-10 border-r border-blue-100 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                           <div className="flex items-center gap-2">
                             <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded uppercase">Gói</span>
                             {pkg.name}
@@ -484,8 +484,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                       </tr>
                       {/* Sub-items in package */}
                       {pkg.items.map((item, iIdx) => (
-                        <tr key={`pkg-${pIdx}-item-${iIdx}`} className="border-b border-gray-50 bg-blue-50/10">
-                          <td className="px-4 py-2 text-sm text-gray-600 pl-10 italic">
+                        <tr key={`pkg-${pIdx}-item-${iIdx}`} className="border-b border-gray-50 bg-blue-50/10 group">
+                          <td className="px-4 py-2 text-sm text-gray-600 pl-10 italic sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r border-blue-50">
                             • {item.serviceName}
                           </td>
                           <td className="px-4 py-2 text-center text-[10px] text-gray-400 font-bold uppercase">
@@ -507,13 +507,13 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                   {displayGroups.standalone.length > 0 && (
                     <>
                       <tr className="bg-gray-100 border-b border-gray-200">
-                        <td colSpan={priceType === 'custom' ? 10 : 9} className="px-4 py-2 text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                        <td colSpan={priceType === 'custom' ? 10 : 9} className="px-4 py-2 text-[10px] font-black text-gray-500 uppercase tracking-widest sticky left-0 z-10 border-r border-gray-200">
                           Dịch vụ lẻ
                         </td>
                       </tr>
                       {displayGroups.standalone.map((item, idx) => (
-                        <tr key={`standalone-${idx}`} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm text-gray-900">
+                        <tr key={`standalone-${idx}`} className="border-b border-gray-100 hover:bg-gray-50 group">
+                          <td className="px-4 py-3 text-sm text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10 border-r border-gray-100 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                             {item.serviceName}
                           </td>
                           <td className="px-4 py-3">
@@ -710,7 +710,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <p className="text-sm text-blue-700 mb-1">Tổng doanh thu:</p>
+                  <p className="text-sm text-blue-700 mb-1">Tổng lợi nhuận:</p>
                   <p className="text-xl font-bold text-blue-900">{formatNumber(totals.revenue)}</p>
                 </div>
                 <div>

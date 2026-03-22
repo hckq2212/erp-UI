@@ -62,6 +62,28 @@ export const formatDate = (date) => {
 };
 
 /**
+ * Parse date string from Vietnamese format (dd/mm/yyyy)
+ * @param {string} value - The date string to parse
+ * @returns {string} ISO date string (yyyy-mm-dd) or empty string
+ */
+export const parseDate = (value) => {
+  if (!value) return '';
+  const parts = value.split('/');
+  if (parts.length !== 3) return '';
+
+  const day = parts[0].padStart(2, '0');
+  const month = parts[1].padStart(2, '0');
+  const year = parts[2];
+
+  if (year.length !== 4) return '';
+
+  const d = new Date(`${year}-${month}-${day}`);
+  if (isNaN(d.getTime())) return '';
+
+  return `${year}-${month}-${day}`;
+};
+
+/**
  * Format date time to Vietnamese format
  * @param {Date|string} date - The date to format
  * @returns {string} Formatted date time string (e.g., 09:30 27/01/2026)

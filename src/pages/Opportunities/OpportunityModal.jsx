@@ -6,7 +6,7 @@ import { useGetServicePackagesQuery } from '../../api/servicePackages';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import Select from 'react-select';
 import { VIETNAM_PROVINCES } from '../../utils/provinces';
-import { formatNumber, parseNumber, formatDate } from '../../utils/format';
+import { formatNumber, parseNumber, formatDate, parseDate } from '../../utils/format';
 import { useNavigate } from 'react-router-dom';
 
 const FIELDS = [
@@ -213,6 +213,16 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     durationMonths: 1,
     customerRequirements: '',
   });
+
+  const [dateDisplay, setDateDisplay] = useState({
+    startDate: '',
+    endDate: ''
+  });
+
+  useEffect(() => {
+    if (formData.startDate) setDateDisplay(prev => ({ ...prev, startDate: formatDate(formData.startDate) }));
+    if (formData.endDate) setDateDisplay(prev => ({ ...prev, endDate: formatDate(formData.endDate) }));
+  }, [formData.startDate, formData.endDate]);
 
   const [selectedServices, setSelectedServices] = useState([
     { serviceId: '', quantity: 1 }
@@ -716,27 +726,73 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến bắt đầu</label>
-                    <input
-                      ref={setFieldRef('startDate')}
-                      type="date"
-                      name="startDate"
-                      value={formData.startDate}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all ${errors.startDate ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến bắt đầu (dd/mm/yyyy)</label>
+                    <div className="relative group">
+                      <input
+                        ref={setFieldRef('startDate')}
+                        type="text"
+                        name="startDate"
+                        value={dateDisplay.startDate}
+                        placeholder="dd/mm/yyyy"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setDateDisplay(prev => ({ ...prev, startDate: val }));
+                          const parsed = parseDate(val);
+                          if (parsed) {
+                            setFormData(prev => ({ ...prev, startDate: parsed }));
+                            setErrors(prev => ({ ...prev, startDate: null }));
+                          }
+                        }}
+                        className={`w-full pl-4 pr-11 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all ${errors.startDate ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                      />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-focus-within:text-blue-500">
+                        <Calendar className="w-5 h-5" />
+                      </div>
+                      <input
+                        type="date"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData(prev => ({ ...prev, startDate: val }));
+                          setDateDisplay(prev => ({ ...prev, startDate: formatDate(val) }));
+                        }}
+                      />
+                    </div>
                     {errors.startDate && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.startDate}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến kết thúc</label>
-                    <input
-                      ref={setFieldRef('endDate')}
-                      type="date"
-                      name="endDate"
-                      value={formData.endDate}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all ${errors.endDate ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến kết thúc (dd/mm/yyyy)</label>
+                    <div className="relative group">
+                      <input
+                        ref={setFieldRef('endDate')}
+                        type="text"
+                        name="endDate"
+                        value={dateDisplay.endDate}
+                        placeholder="dd/mm/yyyy"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setDateDisplay(prev => ({ ...prev, endDate: val }));
+                          const parsed = parseDate(val);
+                          if (parsed) {
+                            setFormData(prev => ({ ...prev, endDate: parsed }));
+                            setErrors(prev => ({ ...prev, endDate: null }));
+                          }
+                        }}
+                        className={`w-full pl-4 pr-11 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all ${errors.endDate ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
+                      />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-focus-within:text-blue-500">
+                        <Calendar className="w-5 h-5" />
+                      </div>
+                      <input
+                        type="date"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData(prev => ({ ...prev, endDate: val }));
+                          setDateDisplay(prev => ({ ...prev, endDate: formatDate(val) }));
+                        }}
+                      />
+                    </div>
                     {errors.endDate && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.endDate}</p>}
                   </div>
                   <div>
