@@ -325,7 +325,7 @@ export const OpportunityDetailPage = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-6 ">
           <CustomerInfo opportunity={opportunity} onAddCustomer={handleOpenContactModal} />
           <AdditionalInfo opportunity={opportunity} formatDate={formatDate} />
         </div>

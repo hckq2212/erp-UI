@@ -71,7 +71,7 @@ export const QuotationsListModal = ({
                         </span>
                       </div>
                       <h4 className="font-medium text-gray-900"> Báo giá lần {quotation.version} </h4>
-                      {quotation.description && (
+                      {quotation.description && (quotation.status === 'REJECTED') && (
                         <div className="pt-3 border-t border-gray-100">
                           <div className="flex flex-col gap-2 text-sm text-red-600 font-medium">
                             <span>Lý do từ chối:</span>

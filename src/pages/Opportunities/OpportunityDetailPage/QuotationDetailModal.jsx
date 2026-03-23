@@ -411,6 +411,15 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
         </div>
 
         <div className="flex gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+          {quotation && quotation.status === 'REJECTED' && (
+            <button
+              onClick={() => onEdit(quotation)}
+              className="flex-1 px-4 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-100 active:scale-95"
+            >
+              <Edit className="w-5 h-5" />
+              Sửa báo giá
+            </button>
+          )}
           {quotation && quotation.status === 'DRAFT' && (opportunity?.status === 'PENDING_QUOTE_APPROVAL' || opportunity?.status === 'QUOTATION_DRAFTING' || quotation.type === 'ADDENDUM') && (currentUser.role === 'BOD' || currentUser.role === 'ADMIN') && (
             <>
               {!isRejectingMode && (

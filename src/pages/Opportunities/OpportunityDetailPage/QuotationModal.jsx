@@ -374,6 +374,11 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     };
 
     if (isEditMode) {
+      // If editing a rejected quotation, reset status to DRAFT and clear the rejection reason (description)
+      if (editQuotation?.status === 'REJECTED') {
+        submitData.status = 'DRAFT';
+        submitData.description = '';
+      }
       onSubmit(submitData, editQuotation.id);
     } else {
       onSubmit(submitData);
