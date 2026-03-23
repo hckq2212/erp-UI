@@ -31,6 +31,8 @@ export const TaskTable = ({ tasks = [], project }) => {
         const label = TASK_STATUS_LABELS[status] || status;
         switch (status) {
             case 'DONE':
+            case 'COMPLETED':
+            case 'ACCEPTED':
                 return <span className="flex items-center gap-1.5 text-md font-medium text-green-600"> {label}</span>;
             case 'DOING':
                 return <span className="flex items-center gap-1.5 text-md font-medium text-amber-600"> {label}</span>;
@@ -53,6 +55,35 @@ export const TaskTable = ({ tasks = [], project }) => {
             default:
                 return <span className="flex items-center gap-1.5 text-md font-medium text-gray-500"> {label}</span>;
         }
+    };
+
+    const getRemainingTime = (endDate, status) => {
+        if (!endDate) return { text: '---', color: 'text-gray-400' };
+        
+        // Green if completed/accepted/done
+        if (status === 'COMPLETED' || status === 'ACCEPTED' || status === 'DONE') {
+            return { text: 'Đã hoàn thành', color: 'text-green-600 font-bold' };
+        }
+
+        const now = new Date();
+        const end = new Date(endDate);
+        const diffTime = end - now;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        let color = 'text-red-500 font-bold';
+        if (diffDays >= 6) color = 'text-green-600 font-bold';
+        else if (diffDays >= 2) color = 'text-amber-500 font-bold';
+
+        if (diffDays < 0) {
+            return { text: `Quá hạn ${Math.abs(diffDays)} ngày`, color: 'text-red-600 font-bold' };
+        }
+
+        if (diffTime < 24 * 60 * 60 * 1000) { // Less than 24 hours
+            const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
+            return { text: `Còn ${diffHours} giờ`, color: color };
+        }
+
+        return { text: `Còn ${diffDays} ngày`, color: color };
     };
 
     const filteredTasks = useMemo(() => {
@@ -159,7 +190,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                             <th className="px-6 py-4 font-medium">STT</th>
                             {renderSortableHeader('Mã Công việc', 'code')}
                             {renderSortableHeader('Tên công việc', 'name')}
-                            {renderSortableHeader('Thời gian', 'plannedEndDate')}
+                            {renderSortableHeader('Thời hạn', 'plannedEndDate')}
                             {renderSortableHeader('Bên thực hiện', 'performerType')}
                             {renderSortableHeader('Người thực hiện', 'assignee.fullName', 'center')}
                             {renderSortableHeader('Trạng thái', 'status', 'center')}
@@ -192,9 +223,9 @@ export const TaskTable = ({ tasks = [], project }) => {
                                         </div>
                                     </td>
 
-                                    <td className="px-6 py-4 text-gray-600">
-                                        <div className="flex items-center gap-1 whitespace-nowrap">
-                                            {formatDateTime(task.plannedStartDate) || '---'} <span className="text-gray-400">→</span> {formatDateTime(task.plannedEndDate) || '---'}
+                                    <td className="px-6 py-4">
+                                        <div className={cn("text-xs uppercase", getRemainingTime(task.plannedEndDate, task.status).color)}>
+                                            {getRemainingTime(task.plannedEndDate, task.status).text}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-gray-600">

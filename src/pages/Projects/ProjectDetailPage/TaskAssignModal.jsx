@@ -34,7 +34,6 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
         selectedTeamId: '',
         isTeamAssignment: false
     });
-    const [plannedStartDate, setPlannedStartDate] = useState(formatDateTimeISO(task?.plannedStartDate) || formatDateTimeISO(new Date()));
     const [plannedEndDate, setPlannedEndDate] = useState(formatDateTimeISO(task?.plannedEndDate) || '');
 
     const jobId = task?.jobId || task?.job?.id;
@@ -151,7 +150,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                     assigneeId: formData.assigneeId,
                     performerType: formData.performerType,
                     plannedEndDate: plannedEndDate || undefined,
-                    plannedStartDate: plannedStartDate || undefined,
+                    plannedStartDate: formatDateTimeISO(new Date()),
                     description: formData.description || undefined,
                     attachments,
                     projectId: project.id
@@ -163,7 +162,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi phân công');
         }
-    }, [formData, files, task.id, project.id, assignTask, assignSupportTeam, onClose, plannedStartDate, plannedEndDate, requestSupport, task.status, task.isSupportRequested]);
+    }, [formData, files, task.id, project.id, assignTask, assignSupportTeam, onClose, plannedEndDate, requestSupport, task.status, task.isSupportRequested]);
 
     return (
         <AnimatePresence>
@@ -343,30 +342,16 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                             </div>
 
                             {/* Dates Grid */}
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="space-y-3">
-                                    <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">Ngày bắt đầu</label>
-                                    <div className="relative group">
-                                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                                        <input
-                                            type="datetime-local"
-                                            className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all text-slate-700 font-medium"
-                                            value={plannedStartDate}
-                                            onChange={(e) => setPlannedStartDate(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">Deadline</label>
-                                    <div className="relative group">
-                                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                                        <input
-                                            type="datetime-local"
-                                            className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all text-slate-700 font-medium"
-                                            value={plannedEndDate}
-                                            onChange={(e) => setPlannedEndDate(e.target.value)}
-                                        />
-                                    </div>
+                            <div className="space-y-3">
+                                <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">Deadline</label>
+                                <div className="relative group">
+                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                                    <input
+                                        type="datetime-local"
+                                        className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all text-slate-700 font-medium"
+                                        value={plannedEndDate}
+                                        onChange={(e) => setPlannedEndDate(e.target.value)}
+                                    />
                                 </div>
                             </div>
 

@@ -214,15 +214,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     customerRequirements: '',
   });
 
-  const [dateDisplay, setDateDisplay] = useState({
-    startDate: '',
-    endDate: ''
-  });
 
-  useEffect(() => {
-    if (formData.startDate) setDateDisplay(prev => ({ ...prev, startDate: formatDate(formData.startDate) }));
-    if (formData.endDate) setDateDisplay(prev => ({ ...prev, endDate: formatDate(formData.endDate) }));
-  }, [formData.startDate, formData.endDate]);
 
   const [selectedServices, setSelectedServices] = useState([
     { serviceId: '', quantity: 1 }
@@ -732,27 +724,9 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                         ref={setFieldRef('startDate')}
                         type="date"
                         name="startDate"
-                        value={dateDisplay.startDate}
-                        placeholder="dd/mm/yyyy"
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setDateDisplay(prev => ({ ...prev, startDate: val }));
-                          const parsed = parseDate(val);
-                          if (parsed) {
-                            setFormData(prev => ({ ...prev, startDate: parsed }));
-                            setErrors(prev => ({ ...prev, startDate: null }));
-                          }
-                        }}
-                        className={`w-full pl-4 pr-11 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all ${errors.startDate ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
-                      />
-                      <input
-                        type="date"
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setFormData(prev => ({ ...prev, startDate: val }));
-                          setDateDisplay(prev => ({ ...prev, startDate: formatDate(val) }));
-                        }}
+                        value={formData.startDate}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.startDate ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}
                       />
                     </div>
                     {errors.startDate && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.startDate}</p>}
@@ -764,27 +738,9 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                         ref={setFieldRef('endDate')}
                         type="date"
                         name="endDate"
-                        value={dateDisplay.endDate}
-                        placeholder="dd/mm/yyyy"
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setDateDisplay(prev => ({ ...prev, endDate: val }));
-                          const parsed = parseDate(val);
-                          if (parsed) {
-                            setFormData(prev => ({ ...prev, endDate: parsed }));
-                            setErrors(prev => ({ ...prev, endDate: null }));
-                          }
-                        }}
-                        className={`w-full pl-4 pr-11 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all ${errors.endDate ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
-                      />
-                      <input
-                        type="date"
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setFormData(prev => ({ ...prev, endDate: val }));
-                          setDateDisplay(prev => ({ ...prev, endDate: formatDate(val) }));
-                        }}
+                        value={formData.endDate}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.endDate ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}
                       />
                     </div>
                     {errors.endDate && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.endDate}</p>}
