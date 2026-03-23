@@ -23,6 +23,8 @@ export const CustomerInfo = ({ opportunity, onAddCustomer }) => {
   const hasData = !!(opportunity.customer || opportunity.leadName);
   const isLead = !opportunity.customer && !!opportunity.leadName;
 
+  const [isFetchingTax, setIsFetchingTax] = useState(false);
+
   useEffect(() => {
     if (opportunity.customer) {
       setEditData({
@@ -42,6 +44,35 @@ export const CustomerInfo = ({ opportunity, onAddCustomer }) => {
       });
     }
   }, [opportunity, isEditing]);
+
+  // Tax ID Auto-fill logic
+  useEffect(() => {
+    const fetchInfo = async () => {
+      const cleanTaxId = editData.taxId?.replace(/[\s-]/g, '');
+      if (isEditing && (cleanTaxId?.length === 10 || cleanTaxId?.length === 13)) {
+        setIsFetchingTax(true);
+        try {
+          const { fetchTaxInfo } = await import('../../../utils/tax');
+          const data = await fetchTaxInfo(cleanTaxId);
+          if (data) {
+            setEditData(prev => ({
+              ...prev,
+              name: data.name || prev.name,
+              address: data.address || prev.address
+            }));
+            toast.info('Đã tự động điền thông tin doanh nghiệp');
+          }
+        } catch (err) {
+          console.error('Tax fetch failed:', err);
+        } finally {
+          setIsFetchingTax(false);
+        }
+      }
+    };
+
+    const timer = setTimeout(fetchInfo, 500);
+    return () => clearTimeout(timer);
+  }, [editData.taxId, isEditing]);
 
   const handleSave = async () => {
     const nameRegex = /^[a-zA-ZÀ-ỹ0-9\s]+$/;

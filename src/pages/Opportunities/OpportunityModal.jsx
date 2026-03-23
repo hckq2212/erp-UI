@@ -730,7 +730,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                     <div className="relative group">
                       <input
                         ref={setFieldRef('startDate')}
-                        type="text"
+                        type="date"
                         name="startDate"
                         value={dateDisplay.startDate}
                         placeholder="dd/mm/yyyy"
@@ -765,7 +765,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                     <div className="relative group">
                       <input
                         ref={setFieldRef('endDate')}
-                        type="text"
+                        type="date"
                         name="endDate"
                         value={dateDisplay.endDate}
                         placeholder="dd/mm/yyyy"

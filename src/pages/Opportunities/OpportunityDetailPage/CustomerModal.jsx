@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -19,6 +20,37 @@ export const CustomerModal = ({
   onSave,
   isUpdating
 }) => {
+  const [isFetchingTax, setIsFetchingTax] = useState(false);
+
+  // Tax ID Auto-fill logic
+  useEffect(() => {
+    const fetchInfo = async () => {
+      const cleanTaxId = leadInfo.leadTaxId?.replace(/[\s-]/g, '');
+      if (isOpen && customerStatus === 'POTENTIAL' && (cleanTaxId?.length === 10 || cleanTaxId?.length === 13)) {
+        setIsFetchingTax(true);
+        try {
+          const { fetchTaxInfo } = await import('../../../utils/tax');
+          const data = await fetchTaxInfo(cleanTaxId);
+          if (data) {
+            setLeadInfo(prev => ({
+              ...prev,
+              leadName: data.name || prev.leadName,
+              leadAddress: data.address || prev.leadAddress
+            }));
+            toast.info('Đã tự động điền thông tin doanh nghiệp');
+          }
+        } catch (err) {
+          console.error('Tax fetch failed:', err);
+        } finally {
+          setIsFetchingTax(false);
+        }
+      }
+    };
+
+    const timer = setTimeout(fetchInfo, 500);
+    return () => clearTimeout(timer);
+  }, [leadInfo.leadTaxId, isOpen, customerStatus]);
+
   const handleSave = () => {
     if (customerStatus === 'POTENTIAL') {
       const nameRegex = /^[a-zA-ZÀ-ỹ0-9\s]+$/;

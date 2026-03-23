@@ -21,6 +21,8 @@ export const CustomerModal = ({ isOpen, onClose, customer, onSubmit, isSubmittin
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(customerSchema),
@@ -33,6 +35,30 @@ export const CustomerModal = ({ isOpen, onClose, customer, onSubmit, isSubmittin
       source: 'INTERNAL',
     },
   });
+
+  const watchedTaxId = watch('taxId');
+
+  useEffect(() => {
+    const fetchInfo = async () => {
+      const cleanTaxId = watchedTaxId?.replace(/[\s-]/g, '');
+      if (isOpen && (cleanTaxId?.length === 10 || cleanTaxId?.length === 13)) {
+        try {
+          const { fetchTaxInfo } = await import('../../utils/tax');
+          const data = await fetchTaxInfo(cleanTaxId);
+          if (data) {
+            if (data.name) setValue('name', data.name);
+            if (data.address) setValue('address', data.address);
+            import('react-toastify').then(({ toast }) => toast.info('Đã tự động điền thông tin doanh nghiệp'));
+          }
+        } catch (err) {
+          console.error('Tax fetch failed:', err);
+        }
+      }
+    };
+
+    const timer = setTimeout(fetchInfo, 500);
+    return () => clearTimeout(timer);
+  }, [watchedTaxId, isOpen, setValue]);
 
   useEffect(() => {
     if (customer) {
