@@ -184,6 +184,17 @@ export const tasksApi = api.injectEndpoints({
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
+    approveByCustomer: builder.mutation({
+      query: (id) => ({
+        url: `/tasks/${id}/customer-approve`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
+    }),
   }),
 });
 
@@ -205,4 +216,5 @@ export const {
   useRequestSupportMutation,
   useAssignSupportTeamMutation,
   useRequestReworkMutation,
+  useApproveByCustomerMutation,
 } = tasksApi;

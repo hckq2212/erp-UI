@@ -745,9 +745,6 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                         }}
                         className={`w-full pl-4 pr-11 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all ${errors.startDate ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                       />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-focus-within:text-blue-500">
-                        <Calendar className="w-5 h-5" />
-                      </div>
                       <input
                         type="date"
                         className="absolute inset-0 opacity-0 cursor-pointer"
@@ -780,9 +777,6 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                         }}
                         className={`w-full pl-4 pr-11 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all ${errors.endDate ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                       />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-focus-within:text-blue-500">
-                        <Calendar className="w-5 h-5" />
-                      </div>
                       <input
                         type="date"
                         className="absolute inset-0 opacity-0 cursor-pointer"

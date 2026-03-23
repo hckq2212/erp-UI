@@ -144,11 +144,11 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh]">
-                <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-3xl text-theme-900	">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+            <div className="bg-white rounded-xl w-full max-w-4xl shadow-lg border border-gray-200 flex flex-col max-h-[90vh]">
+                <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-white rounded-t-xl text-theme-900	">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
+                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white">
                             <Eye className="w-6 h-6" />
                         </div>
                         <div>
@@ -156,14 +156,14 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                             <p className="text-sm text-gray-500 font-mono">{request.project?.name} - {request.name}</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/50 rounded-full transition-colors text-gray-500">
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-500">
                         <X className="w-6 h-6" />
                     </button>
                 </div>
 
                 <div className="p-6 space-y-6 overflow-y-auto">
                     {/* Basic Info */}
-                    <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                    <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Người yêu cầu</p>
                             <p className="text-sm font-bold text-gray-900">{request.requester?.fullName || 'Team Lead'}</p>
@@ -174,7 +174,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                         </div>
                         <div className="col-span-2 text-theme-900	">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Ghi chú từ Team Lead</p>
-                            <p className="text-sm text-gray-700 italic px-3 py-2 bg-white rounded-xl border border-gray-100">{request.note || 'Không có ghi chú'}</p>
+                            <p className="text-sm text-gray-700 italic px-3 py-2 bg-white rounded-lg border border-gray-100">{request.note || 'Không có ghi chú'}</p>
                         </div>
                     </div>
 
@@ -186,7 +186,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                         </div>
                         <div className="space-y-4">
                             {request.services?.map((service) => (
-                                <div key={service.id} className="p-5 bg-white border border-gray-100 rounded-3xl shadow-sm space-y-4 transition-all hover:border-blue-100">
+                                <div key={service.id} className="p-5 bg-white border border-gray-200 rounded-xl space-y-4">
                                     <div className="flex items-center justify-between gap-4">
                                         <div className="flex items-center gap-3">
                                             <button
@@ -218,11 +218,11 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-2xl border border-gray-100">
+                                        <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-100">
                                             <button
                                                 onClick={() => handleServiceDecision(service.id, 'APPROVED')}
-                                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold transition-all ${decisions[service.id]?.status === 'APPROVED'
-                                                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-100'
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-bold ${decisions[service.id]?.status === 'APPROVED'
+                                                    ? 'bg-emerald-600 text-white'
                                                     : 'text-gray-500 hover:bg-emerald-50 hover:text-emerald-600'
                                                     }`}
                                             >
@@ -231,8 +231,8 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                                             </button>
                                             <button
                                                 onClick={() => handleServiceDecision(service.id, 'REJECTED')}
-                                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold transition-all ${decisions[service.id]?.status === 'REJECTED'
-                                                    ? 'bg-red-600 text-white shadow-md shadow-red-100'
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-bold ${decisions[service.id]?.status === 'REJECTED'
+                                                    ? 'bg-red-600 text-white'
                                                     : 'text-gray-500 hover:bg-red-50 hover:text-red-600'
                                                     }`}
                                             >
@@ -243,7 +243,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                                     </div>
 
                                     {/* Granular Results List */}
-                                    <div className={`space-y-4 pl-8 border-l-2 border-gray-50 transition-all ${expandedServices[service.id] ? 'block' : 'hidden md:block'}`}>
+                                    <div className={`space-y-4 pl-8 border-l-2 border-gray-50 ${expandedServices[service.id] ? 'block' : 'hidden md:block'}`}>
                                             {(() => {
                                                 const pendingResults = processedServicesData[service.id]?.pending || [];
 
@@ -258,7 +258,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                                                 return pendingResults.map((res, idx) => {
                                                 const decision = decisions[service.id]?.resultDecisions?.find(rd => rd.taskId === res.taskId);
                                                 return (
-                                                <div key={res.taskId} className="bg-gray-50/50 p-4 rounded-2xl border border-gray-50 space-y-3">
+                                                <div key={res.taskId} className="bg-gray-50/50 p-4 rounded-lg border border-gray-50 space-y-3">
                                                     <div className="flex items-start justify-between gap-4">
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-center gap-2">
@@ -270,7 +270,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                                                                     href={getFilePreviewUrl(res.url, res.type)}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    className="inline-flex items-center gap-2 px-2.5 py-1 bg-white text-blue-600 border border-blue-100 rounded-lg text-[10px] font-bold hover:bg-blue-50 transition-all"
+                                                                    className="inline-flex items-center gap-2 px-2.5 py-1 bg-white text-blue-600 border border-blue-100 rounded-lg text-[10px] font-bold hover:bg-blue-50"
                                                                 >
                                                                     <FileText className="w-3 h-3" />
                                                                     Xem kết quả
@@ -279,10 +279,10 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                                                             </div>
                                                         </div>
 
-                                                        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-gray-100">
+                                                        <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-gray-100">
                                                             <button
                                                                 onClick={() => handleResultDecision(service.id, res.taskId, 'APPROVED')}
-                                                                className={`p-1.5 rounded-lg transition-all ${decision?.status === 'APPROVED'
+                                                                className={`p-1.5 rounded-lg ${decision?.status === 'APPROVED'
                                                                     ? 'bg-emerald-50 text-emerald-600'
                                                                     : 'text-gray-300 hover:text-emerald-400'
                                                                     }`}
@@ -291,7 +291,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                                                             </button>
                                                             <button
                                                                 onClick={() => handleResultDecision(service.id, res.taskId, 'REJECTED')}
-                                                                className={`p-1.5 rounded-lg transition-all ${decision?.status === 'REJECTED'
+                                                                className={`p-1.5 rounded-lg ${decision?.status === 'REJECTED'
                                                                     ? 'bg-red-50 text-red-600'
                                                                     : 'text-gray-300 hover:text-red-400'
                                                                     }`}
@@ -302,11 +302,11 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                                                     </div>
 
                                                     {decision?.status === 'REJECTED' && (
-                                                        <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                                                        <div className="mt-2">
                                                             <div className="flex gap-2">
                                                                 <MessageSquare className="w-3.5 h-3.5 text-red-400 mt-1 flex-shrink-0" />
                                                                 <textarea
-                                                                    className="w-full px-3 py-1.5 bg-white border border-red-100 rounded-xl focus:ring-1 focus:ring-red-500 outline-none transition-all resize-none text-[10px] text-red-900 placeholder-red-300"
+                                                                    className="w-full px-3 py-1.5 bg-white border border-red-100 rounded-lg focus:ring-1 focus:ring-red-500 outline-none resize-none text-[10px] text-red-900 placeholder-red-300"
                                                                     rows="1"
                                                                     value={decision.feedback}
                                                                     onChange={(e) => handleResultFeedback(service.id, res.taskId, e.target.value)}
@@ -326,17 +326,17 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                     </div>
                 </div>
 
-                <div className="p-6 border-t border-gray-100 flex gap-3 bg-gray-50/30 rounded-b-3xl">
+                <div className="p-5 border-t border-gray-100 flex gap-3 bg-gray-50/30 rounded-b-xl">
                     <button
                         onClick={onClose}
-                        className="flex-1 px-4 py-3 bg-white text-gray-600 font-bold rounded-2xl border border-gray-200 hover:bg-gray-50 transition-all active:scale-95"
+                        className="flex-1 px-4 py-2.5 bg-white text-gray-600 font-bold rounded-lg border border-gray-200 hover:bg-gray-50"
                     >
                         Hủy bỏ
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={isSubmitting || request.status !== 'PENDING'}
-                        className="flex-[2] px-4 py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all active:scale-95 disabled:bg-blue-300 disabled:shadow-none flex items-center justify-center gap-2"
+                        className="flex-[2] px-4 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:bg-blue-300 flex items-center justify-center gap-2"
                     >
                         {isSubmitting ? (
                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

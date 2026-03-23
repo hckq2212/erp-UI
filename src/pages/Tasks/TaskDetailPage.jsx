@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Trash2, Calendar, User, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks } from 'lucide-react';
-import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation, useRequestReworkMutation } from '../../api/tasks';
+import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation, useRequestReworkMutation, useApproveByCustomerMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetMeQuery } from '../../api/auth';
 import { formatDate, formatDateTime } from '../../utils/format';
@@ -23,6 +23,7 @@ export const TaskDetailPage = () => {
     const [updateStatus, { isLoading: isUpdatingStatus }] = useUpdateTaskStatusMutation();
     const [submitResult, { isLoading: isSubmittingResult }] = useSubmitTaskResultMutation();
     const [requestRework, { isLoading: isRequestingRework }] = useRequestReworkMutation();
+    const [approveByCustomer, { isLoading: isApprovingByCustomer }] = useApproveByCustomerMutation();
 
     const isLoading = isTaskLoading || !user;
 
@@ -40,6 +41,10 @@ export const TaskDetailPage = () => {
         switch (status) {
             case 'COMPLETED':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase"><CheckCircle2 className="w-3 h-3" /> Hoàn thành</span>;
+            case 'INTERNAL_COMPLETED':
+                return <span className="flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold uppercase"><CheckCircle2 className="w-3 h-3" /> Hoàn thành nội bộ</span>;
+            case 'ACCEPTED':
+                return <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold uppercase"><CheckCircle2 className="w-3 h-3" /> Đã nghiệm thu</span>;
             case 'DOING':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase"><Clock className="w-3 h-3" /> Đang thực hiện</span>;
             case 'AWAITING_REVIEW':
@@ -107,6 +112,16 @@ export const TaskDetailPage = () => {
     };
 
 
+    const handleCustomerApprove = async () => {
+        try {
+            await approveByCustomer(id).unwrap();
+            toast.success('Khách hàng đã duyệt công việc!');
+        } catch (err) {
+            toast.error(err.data?.message || 'Lỗi khi duyệt công việc');
+        }
+    };
+
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-screen bg-gray-50/50">
@@ -160,7 +175,7 @@ export const TaskDetailPage = () => {
 
                 <div className="flex flex-wrap gap-3">
                     {task.status === 'AWAITING_REVIEW' &&
-                        (user?.id === task.assignerId || user?.id === task.project?.team?.teamLead?.id) && (
+                        (user?.id === task.project?.team?.teamLead?.id) && (
                             <div className="flex gap-3">
                                 <Button
                                     variant="outline"
@@ -179,8 +194,18 @@ export const TaskDetailPage = () => {
                                 </Button>
                             </div>
                         )}
-                    {(task.status === 'DONE' || task.status === 'COMPLETED') &&
-                        (user?.id === task.assignerId || user?.id === task.project?.team?.teamLead?.id) && (
+                    {task.status === 'INTERNAL_COMPLETED' && (user?.id === task.assignerId || user?.role === 'BOD' || user?.role === 'ADMIN_SALE' || user?.role === 'ADMIN') && (
+                        <Button
+                            onClick={handleCustomerApprove}
+                            isLoading={isApprovingByCustomer}
+                            className="rounded-2xl py-3 px-6 shadow-lg shadow-emerald-100 bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2"
+                        >
+                            <CheckCircle2 className="w-5 h-5" />
+                            Khách hàng duyệt
+                        </Button>
+                    )}
+                    {(task.status === 'DONE' || task.status === 'COMPLETED' || task.status === 'INTERNAL_COMPLETED') &&
+                        (user?.id === task.project?.team?.teamLead?.id) && (
                             <Button
                                 variant="outline"
                                 onClick={() => setIsReworkModalOpen(true)}

@@ -31,17 +31,22 @@ export const TaskReviewPage = () => {
     const isLead = user?.id === task?.project?.team?.teamLead?.id;
     const isAssigner = user?.id === task?.assignerId;
 
-    // Dual review happens if there's a lead AND an assigner, and they are DIFFERENT
-    const hasLead = !!task?.project?.team?.teamLead?.id;
-    const hasAssigner = !!task?.assignerId;
-    const isDualReview = hasLead && hasAssigner && task?.project?.team?.teamLead?.id !== task?.assignerId;
+    const leadReviews = reviews?.filter(r => r.reviewerType === 'TEAM_LEAD') || [];
+    const assignerReviews = reviews?.filter(r => r.reviewerType === 'ASSIGNER') || [];
+
+    const isLeadPassed = leadReviews.length === 0 || leadReviews.every(r => passedIds.includes(r.id));
+    const isAssignerPassed = assignerReviews.length === 0 || assignerReviews.every(r => passedIds.includes(r.id));
+
+    const isAllPassed = isLeadPassed && isAssignerPassed;
+
+    // Dual review happens if there's a lead AND an assigner, and they both have reviews to do
+    const isDualReview = leadReviews.length > 0 && assignerReviews.length > 0;
 
     useEffect(() => {
         if (!activeTab && user && task) {
             if (isLead) setActiveTab('TEAM_LEAD');
-            else if (isAssigner) setActiveTab('ASSIGNER');
+            else if (isAssigner && !isDualReview) setActiveTab('ASSIGNER');
             else if (isDualReview) setActiveTab('TEAM_LEAD');
-            else setActiveTab('ASSIGNER');
         }
     }, [user, task, isLead, isAssigner, isDualReview, activeTab]);
 
@@ -50,14 +55,6 @@ export const TaskReviewPage = () => {
             setPassedIds(reviews.filter(r => r.isPassed).map(r => r.id));
         }
     }, [reviews]);
-
-    const leadReviews = reviews?.filter(r => r.reviewerType === 'TEAM_LEAD') || [];
-    const assignerReviews = reviews?.filter(r => r.reviewerType === 'ASSIGNER') || [];
-
-    const isLeadPassed = leadReviews.length === 0 || leadReviews.every(r => passedIds.includes(r.id));
-    const isAssignerPassed = assignerReviews.length === 0 || assignerReviews.every(r => passedIds.includes(r.id));
-
-    const isAllPassed = isLeadPassed && isAssignerPassed;
 
     const handleToggle = (review) => {
         // Permission check: 

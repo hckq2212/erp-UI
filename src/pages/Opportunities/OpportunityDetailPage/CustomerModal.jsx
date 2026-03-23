@@ -177,14 +177,27 @@ export const CustomerModal = ({
             <div className="space-y-4 pt-2">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mã số thuế:
+                </label>
+                <input
+                  type="text"
+                  value={leadInfo.leadTaxId}
+                  onChange={(e) => setLeadInfo({ ...leadInfo, leadTaxId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Nhập mã số thuế"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tên khách hàng:
                 </label>
                 <input
                   type="text"
                   value={leadInfo.leadName}
                   onChange={(e) => setLeadInfo({ ...leadInfo, leadName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Nhập tên khách hàng"
+                  className="w-full bg-gray-100 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={isFetchingTax ? "Đang tải tên doanh nghiệp..." : "Nhập tên khách hàng"}
                 />
               </div>
 
@@ -214,18 +227,7 @@ export const CustomerModal = ({
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mã số thuế:
-                </label>
-                <input
-                  type="text"
-                  value={leadInfo.leadTaxId}
-                  onChange={(e) => setLeadInfo({ ...leadInfo, leadTaxId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Nhập mã số thuế"
-                />
-              </div>
+
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -235,7 +237,7 @@ export const CustomerModal = ({
                   value={leadInfo.leadAddress}
                   onChange={(e) => setLeadInfo({ ...leadInfo, leadAddress: e.target.value })}
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Nhập địa chỉ"
                 />
               </div>
