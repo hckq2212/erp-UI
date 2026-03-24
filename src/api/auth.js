@@ -25,8 +25,16 @@ export const authApi = api.injectEndpoints({
       invalidatesTags: ['Auth'],
     }),
     getMe: builder.query({
-      query: () => '/auth/me',
+      query: () => '/me',
       providesTags: ['Auth'],
+    }),
+    updateMe: builder.mutation({
+      query: (profileData) => ({
+        url: '/me',
+        method: 'PATCH',
+        body: profileData,
+      }),
+      invalidatesTags: ['Auth'],
     }),
   }),
 });
@@ -36,4 +44,5 @@ export const {
   useRegisterMutation,
   useLogoutMutation,
   useGetMeQuery,
+  useUpdateMeMutation,
 } = authApi;

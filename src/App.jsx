@@ -33,6 +33,7 @@ import { UserDetailPage } from './pages/Users/UserDetailPage';
 import { AcceptanceInboxPage } from './pages/Acceptance/AcceptanceInboxPage';
 import { ServicePackageListPage } from './pages/ServicePackages/ServicePackageListPage';
 import { ServicePackageDetailPage } from './pages/ServicePackages/ServicePackageDetailPage';
+import { MePage } from './pages/Me/MePage';
 import Chatbot from './components/Chatbot';
 
 function App() {
@@ -316,6 +317,16 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <UserDetailPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/me'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <MePage />
               </Layout>
             </ProtectedRoute>
           }

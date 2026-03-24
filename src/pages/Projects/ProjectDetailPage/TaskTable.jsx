@@ -134,7 +134,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     const isProjectInProgress = project?.status === 'IN_PROGRESS' || project?.status === 'CONFIRMED';
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-w-[1800px]">
             {/* Filters */}
             <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3 items-center">
                 <div className="relative flex-1 min-w-[200px]">
@@ -241,7 +241,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                     Phân công
                                                 </button>
                                             )}
-                                            
+
                                             {/* Original Team Lead Actions */}
                                             {task.isSupportRequested && !task.supportTeamId && task.project?.team?.teamLead?.id === user?.id && (
                                                 <div className="flex items-center gap-2">
