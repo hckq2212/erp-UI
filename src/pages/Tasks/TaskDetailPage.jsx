@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Trash2, Calendar, User, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks } from 'lucide-react';
-import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation, useRequestReworkMutation, useApproveByCustomerMutation } from '../../api/tasks';
+import { ArrowLeft, Edit, Trash2, Calendar, User, Users, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks } from 'lucide-react';
+import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetMeQuery } from '../../api/auth';
 import { formatDate, formatDateTime } from '../../utils/format';
@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/Button';
 import { cn } from '../../utils/cn';
 import { uploadToCloudinary, getFilePreviewUrl } from '../../utils/cloudinary';
 import { ReworkTaskModal } from '../../components/tasks/ReworkTaskModal';
+import { TaskAssignModal } from '../Projects/ProjectDetailPage/TaskAssignModal';
 import { History, MessageSquare, Paperclip } from 'lucide-react';
 
 export const TaskDetailPage = () => {
@@ -28,6 +29,10 @@ export const TaskDetailPage = () => {
     const isLoading = isTaskLoading || !user;
 
     const [isReworkModalOpen, setIsReworkModalOpen] = useState(false);
+    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [requestSupport] = useRequestSupportMutation();
+    const [respondToSupport] = useRespondToSupportMutation();
+    const [returnSupport] = useReturnSupportMutation();
 
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);
     const [submissionType, setSubmissionType] = useState('file'); // 'file' or 'link'
@@ -55,6 +60,10 @@ export const TaskDetailPage = () => {
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase">Đã từ chối</span>;
             case 'REWORKING':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold uppercase"><Clock className="w-3 h-3" /> Làm lại</span>;
+            case 'SUPPORT_PENDING':
+                return <span className="flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold uppercase"><AlertCircle className="w-3 h-3" /> Chờ xác nhận hỗ trợ</span>;
+            case 'AWAITING_SUPPORT':
+                return <span className="flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase"><AlertCircle className="w-3 h-3" /> Đã nhờ hỗ trợ</span>;
             case 'TODO':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold uppercase">Chưa bắt đầu</span>;
             default:
@@ -118,6 +127,34 @@ export const TaskDetailPage = () => {
             toast.success('Khách hàng đã duyệt công việc!');
         } catch (err) {
             toast.error(err.data?.message || 'Lỗi khi duyệt công việc');
+        }
+    };
+
+    const handleRequestSupport = async () => {
+        try {
+            await requestSupport({ id, note: "Yêu cầu hỗ trợ từ thành viên", projectId: task.project?.id }).unwrap();
+            toast.success('Đã gửi yêu cầu hỗ trợ!');
+        } catch (err) {
+            toast.error(err.data?.message || 'Lỗi khi gửi yêu cầu');
+        }
+    };
+
+    const handleRespondSupport = async (action) => {
+        try {
+            await respondToSupport({ id, action, projectId: task.project?.id }).unwrap();
+            toast.success(action === 'ACCEPT' ? 'Đã chấp nhận hỗ trợ' : 'Đã từ chối hỗ trợ');
+        } catch (err) {
+            toast.error(err.data?.message || 'Có lỗi xảy ra');
+        }
+    };
+
+    const handleReturnSupport = async () => {
+        try {
+            await returnSupport(id).unwrap();
+            toast.success('Đã trả lại task cho team gốc');
+            navigate(-1);
+        } catch (err) {
+            toast.error(err.data?.message || 'Lỗi khi trả lại task');
         }
     };
 
@@ -215,6 +252,81 @@ export const TaskDetailPage = () => {
                                 Yêu cầu làm lại
                             </Button>
                         )}
+                    {(task.status === 'DOING' || task.status === 'REWORKING') && (user?.id === task.assigneeId || user?.id === task.helperId) && !task.isSupportRequested && (
+                        <Button
+                            variant="outline"
+                            onClick={() => handleRequestSupport()}
+                            className="rounded-2xl py-3 px-6 border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        >
+                            <AlertCircle className="w-5 h-5" />
+                            Nhờ hỗ trợ
+                        </Button>
+                    )}
+                    {task.status === 'SUPPORT_PENDING' && task.supportLeadId === user?.id && (
+                        <div className="flex gap-3">
+                            <Button
+                                onClick={() => handleRespondSupport('ACCEPT')}
+                                className="rounded-2xl py-3 px-6 shadow-lg shadow-green-100 bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+                            >
+                                <CheckCircle2 className="w-5 h-5" />
+                                Đồng ý hỗ trợ
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => handleRespondSupport('REJECT')}
+                                className="rounded-2xl py-3 px-6 shadow-sm border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-2"
+                            >
+                                <X className="w-5 h-5" />
+                                Từ chối
+                            </Button>
+                        </div>
+                    )}
+                    {task.isSupportRequested && task.isSupportAccepted && task.supportLeadId === user?.id && task.status !== 'COMPLETED' && task.status !== 'INTERNAL_COMPLETED' && (
+                        <div className="flex gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setIsAssignModalOpen(true);
+                                }}
+                                className="rounded-2xl py-3 px-6 shadow-sm border-amber-200 text-amber-600 hover:bg-amber-50 flex items-center gap-2"
+                            >
+                                <User className="w-5 h-5" />
+                                Đổi người
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => handleReturnSupport()}
+                                className="rounded-2xl py-3 px-6 border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-2"
+                            >
+                                <ArrowLeft className="w-5 h-5" />
+                                Trả lại task
+                            </Button>
+                        </div>
+                    )}
+                    {task.isSupportRequested && !task.supportTeamId && task.project?.team?.teamLead?.id === user?.id && (
+                        <div className="flex gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setIsAssignModalOpen(true);
+                                }}
+                                className="rounded-2xl py-3 px-6 shadow-sm border-amber-200 text-amber-600 hover:bg-amber-50 flex items-center gap-2"
+                            >
+                                <User className="w-5 h-5" />
+                                Đổi người
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setIsAssignModalOpen(true);
+                                }}
+                                className="rounded-2xl py-3 px-6 shadow-sm border-blue-200 text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                            >
+                                <Users className="w-5 h-5" />
+                                Phân công lại
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -353,6 +465,11 @@ export const TaskDetailPage = () => {
                                     </div>
                                     <div className="min-w-0 overflow-hidden">
                                         <p className="text-sm font-bold text-gray-900">{task.result.name}</p>
+                                        {task.lastSubmittedBy && (
+                                            <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">
+                                                Người làm: {task.lastSubmittedBy.fullName}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                                 <a
@@ -394,6 +511,11 @@ export const TaskDetailPage = () => {
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs font-bold text-purple-600 uppercase tracking-widest bg-purple-50 px-2 py-1 rounded-lg">Đợt {iteration.version}</span>
                                                     <span className="text-[10px] font-bold text-gray-400">{formatDate(iteration.createdAt)}</span>
+                                                    {iteration.submittedBy && (
+                                                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg uppercase tracking-wider">
+                                                            Người làm: {iteration.submittedBy.fullName}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {iteration.deadlineAt && (
                                                     <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-lg">Deadline mới: {formatDate(iteration.deadlineAt)}</span>

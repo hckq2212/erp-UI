@@ -123,6 +123,7 @@ export const TASK_STATUS_LABELS = {
   AWAITING_REVIEW: 'Đang chờ duyệt',
   OVERDUE: 'Quá hạn',
   AWAITING_SUPPORT: 'Đã nhờ hỗ trợ',
+  SUPPORT_PENDING: 'Chờ xác nhận hỗ trợ',
   COMPLETED: "Hoàn thành",
   REWORKING: "Đang làm lại",
   INTERNAL_COMPLETED: "Hoàn thành nội bộ",
@@ -132,12 +133,18 @@ export const TASK_STATUS_LABELS = {
 export const TASK_STATUS_COLORS = {
   PENDING: 'bg-yellow-100 text-yellow-800',
   DOING: 'bg-blue-100 text-blue-800',
-  DONE: 'bg-green-100 text-green-800',
   CANCELLED: 'bg-red-100 text-red-800',
   AWAITING_PRICING: 'bg-orange-100 text-orange-800',
   REJECTED: 'bg-red-100 text-red-800',
   INTERNAL_COMPLETED: 'bg-purple-100 text-purple-800',
-  ACCEPTED: 'bg-emerald-100 text-emerald-800'
+  ACCEPTED: 'bg-emerald-100 text-emerald-800',
+  AWAITING_SUPPORT: 'bg-red-100 text-red-800',
+  SUPPORT_PENDING: 'bg-orange-100 text-orange-800',
+  COMPLETED: 'bg-green-100 text-green-800',
+  REWORKING: 'bg-yellow-100 text-yellow-800',
+  AWAITING_ACCEPTANCE: 'bg-yellow-100 text-yellow-800',
+  AWAITING_REVIEW: 'bg-yellow-100 text-yellow-800',
+  OVERDUE: 'bg-red-100 text-red-800',
 };
 
 // Priority
@@ -183,6 +190,7 @@ export const TASK_STATUS = {
   CANCELLED: "Đã hủy",
   OVERDUE: "Quá hạn",
   AWAITING_SUPPORT: "Đã nhờ hỗ trợ",
+  SUPPORT_PENDING: "Chờ xác nhận hỗ trợ",
   INTERNAL_COMPLETED: "INTERNAL_COMPLETED",
   ACCEPTED: "ACCEPTED"
 };

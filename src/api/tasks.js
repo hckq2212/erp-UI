@@ -151,7 +151,7 @@ export const tasksApi = api.injectEndpoints({
     requestSupport: builder.mutation({
       query: ({ id, note }) => ({
         url: `/tasks/${id}/request-support`,
-        method: 'PATCH',
+        method: 'POST',
         body: { note },
       }),
       invalidatesTags: (result, error, { id, projectId }) => [
@@ -163,8 +163,31 @@ export const tasksApi = api.injectEndpoints({
     assignSupportTeam: builder.mutation({
       query: ({ id, teamId }) => ({
         url: `/tasks/${id}/assign-support-team`,
-        method: 'PUT',
+        method: 'POST',
         body: { teamId },
+      }),
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
+    }),
+    respondToSupport: builder.mutation({
+      query: ({ id, action }) => ({
+        url: `/tasks/${id}/respond-support`,
+        method: 'POST',
+        body: { action },
+      }),
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
+    }),
+    returnSupport: builder.mutation({
+      query: (id) => ({
+        url: `/tasks/${id}/return-support`,
+        method: 'POST',
       }),
       invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },
@@ -215,6 +238,8 @@ export const {
   useCreateInternalTaskMutation,
   useRequestSupportMutation,
   useAssignSupportTeamMutation,
+  useRespondToSupportMutation,
+  useReturnSupportMutation,
   useRequestReworkMutation,
   useApproveByCustomerMutation,
 } = tasksApi;
