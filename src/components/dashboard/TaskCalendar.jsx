@@ -24,7 +24,7 @@ export const TaskCalendar = ({ tasks = [] }) => {
     const tasksByDay = useMemo(() => {
         const map = {};
         tasks.forEach(task => {
-            const date = task.end || task.start;
+            const date = task.end;
             if (date) {
                 const dayKey = format(new Date(date), 'yyyy-MM-dd');
                 if (!map[dayKey]) map[dayKey] = [];
@@ -64,7 +64,7 @@ export const TaskCalendar = ({ tasks = [] }) => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-2 mb-4">
+            <div className="grid grid-cols-7 gap-1 mb-4">
                 {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(day => (
                     <div key={day} className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">{day}</div>
                 ))}

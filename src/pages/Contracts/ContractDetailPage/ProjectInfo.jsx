@@ -1,14 +1,18 @@
 import { Briefcase, ExternalLink, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../../utils/enums';
+import { useGetMeQuery } from '../../../api/auth';
 import { useGetTeamsQuery } from '../../../api/teams';
 import { useAssignProjectMutation } from '../../../api/projects';
 import { toast } from 'react-toastify';
 
 export const ProjectInfo = ({ project, formatDate, navigate, contractId }) => {
+  const { data: user } = useGetMeQuery();
   const { data: teams = [] } = useGetTeamsQuery();
   const [assignProject, { isLoading }] = useAssignProjectMutation();
   const [selectedTeamId, setSelectedTeamId] = useState(project?.team?.id || '');
+
+  const isAdminOrBOD = user?.role === 'ADMIN' || user?.role === 'BOD';
 
   if (!project) return null;
 
@@ -60,27 +64,33 @@ export const ProjectInfo = ({ project, formatDate, navigate, contractId }) => {
           </div>
           <div>
             <label className="text-sm font-medium text-gray-500">Đội ngũ</label>
-            <div className="flex gap-2 mt-1">
-              <select
-                value={selectedTeamId}
-                onChange={handleTeamChange}
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Chưa phân công</option>
-                {teams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={handleAssign}
-                disabled={!hasChanged || isLoading}
-                className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
-              >
-                <UserPlus className="w-4 h-4" />
-                Phân công
-              </button>
+            <div className="mt-1">
+              {isAdminOrBOD ? (
+                <div className="flex gap-2">
+                  <select
+                    value={selectedTeamId}
+                    onChange={handleTeamChange}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Chưa phân công</option>
+                    {teams.map((team) => (
+                      <option key={team.id} value={team.id}>
+                        {team.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleAssign}
+                    disabled={!hasChanged || isLoading}
+                    className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Phân công
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm font-semibold text-gray-700">{project.team?.name || 'Chưa phân công'}</p>
+              )}
             </div>
           </div>
         </div>

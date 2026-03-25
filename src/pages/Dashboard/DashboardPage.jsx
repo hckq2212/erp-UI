@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     DollarSign, Briefcase, Rocket, AlertCircle,
     Users, TrendingUp, CheckCircle2, Clock,
@@ -10,18 +10,29 @@ import { useNavigate } from 'react-router-dom';
 import { useGetMeQuery } from '../../api/auth';
 import { useGetDashboardDataQuery } from '../../api/dashboard';
 import { useGetTasksQuery } from '../../api/tasks';
+import { useGetTeamsQuery, useGetTeamMembersQuery } from '../../api/teams';
 import { getRemainingTime, formatCurrency } from '../../utils/format';
 import { OPPORTUNITY_STATUS_LABELS, PROJECT_STATUS_LABELS, TASK_STATUS_LABELS } from '../../utils/enums';
 import { VinicoinStatCard } from '../../components/dashboard/VinicoinStatCard';
 import { TaskCalendar } from '../../components/dashboard/TaskCalendar';
+import { MemberSelector } from '../../components/dashboard/MemberSelector';
 import { WorkloadChart } from '../../components/dashboard/WorkloadChart';
 import { MemberProjectList } from '../../components/dashboard/MemberProjectList';
 
 export const DashboardPage = () => {
     const navigate = useNavigate();
     const { data: user } = useGetMeQuery();
-    const { data: dashboard, isLoading: isDashboardLoading } = useGetDashboardDataQuery();
+    const [selectedMemberId, setSelectedMemberId] = useState(null);
+    const { data: dashboard, isLoading: isDashboardLoading } = useGetDashboardDataQuery(selectedMemberId);
     const { data: awaitingReviewTasks, isLoading: isTasksLoading } = useGetTasksQuery({ status: 'AWAITING_REVIEW' });
+
+    // Identify if the user is a lead of any team
+    const { data: teams } = useGetTeamsQuery();
+    const myTeam = teams?.find(t => t.teamLeadId === user?.id || t.teamLead?.id === user?.id);
+    const { data: teamMembers = [] } = useGetTeamMembersQuery(myTeam?.id, { skip: !myTeam?.id });
+
+    const isViewingMember = !!selectedMemberId;
+    const isTeamLead = !!myTeam;
 
     const isLoading = isDashboardLoading || isTasksLoading;
 
@@ -105,14 +116,14 @@ export const DashboardPage = () => {
                         <div className="flex justify-between items-center">
                             <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100">
                                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                <span className="text-sm font-bold text-gray-600">{project.completedTaskCount}/{project.taskCount} <span className="text-[10px] font-black uppercase opacity-60">Tasks</span></span>
+                                <span className="text-sm font-bold text-gray-600">Đã nghiệm thu {project.completedServiceCount}/{project.serviceCount}</span>
                             </div>
                             <motion.button
                                 whileHover={{ x: 3 }}
                                 className="text-indigo-600 font-black text-[11px] uppercase tracking-[0.1em] flex items-center gap-2 hover:text-indigo-700 transition-colors"
                                 onClick={() => navigate(`/projects/${project.id}`)}
                             >
-                                Quản lý <ArrowUpRight className="w-4 h-4" />
+                                Xem
                             </motion.button>
                         </div>
                     </div>
@@ -122,22 +133,58 @@ export const DashboardPage = () => {
     );
 
     // --- Sale Dashboard Section ---
-    const SaleView = () => (
-        <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-emerald-100 relative overflow-hidden group">
-                    {/* <Target className="absolute -right-4 -bottom-4 w-40 h-40 opacity-10 group-hover:scale-110 transition-transform duration-700" /> */}
-                    <p className="text-emerald-100 font-black uppercase tracking-widest text-xs mb-2">Doanh thu dự kiến</p>
-                    <h3 className="text-4xl font-black mb-6">{formatCurrency(dashboard.sale?.totalExpectedRevenue)}</h3>
-                    <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md w-fit px-4 py-2 rounded-2xl border border-white/10">
-                        <TrendingUp className="w-4 h-4" />
-                        <span className="">{dashboard.sale?.totalOpportunities} Cơ hội</span>
+    const BDView = () => (
+        <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard
+                    title="Khách hàng của tôi"
+                    value={dashboard.sale?.totalCustomers}
+                    icon={Users}
+                    color="purple"
+                />
+
+                <div className="lg:col-span-3 bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col relative overflow-hidden group">
+                    <div className="absolute -right-8 -top-8 w-32 h-32 bg-rose-50 rounded-full opacity-50 group-hover:scale-110 transition-transform" />
+
+                    <div className="relative flex-1">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center">
+                                    <AlertCircle className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Công nợ khách hàng</h3>
+                                    <p className="text-rose-600 font-black text-lg">{formatCurrency(dashboard.sale?.totalDebt)}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {dashboard.sale?.upcomingDebts?.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {dashboard.sale.upcomingDebts.map(debt => (
+                                    <div key={debt.id} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-[1.5rem] border border-gray-100/50 hover:bg-white hover:shadow-sm transition-all group/item">
+                                        <div className="min-w-0">
+                                            <p className="text-gray-900 font-black text-xs truncate mb-0.5">{debt.name}</p>
+                                            <p className="text-[9px] text-gray-400 font-black uppercase tracking-tighter truncate">{debt.customerName}</p>
+                                        </div>
+                                        <div className="text-right shrink-0 ml-4">
+                                            <p className="text-xs font-black text-gray-900">{formatCurrency(debt.remaining)}</p>
+                                            <p className="text-[8px] font-bold text-rose-600 uppercase tracking-tighter italic">Hạn: {new Date(debt.dueDate).toLocaleDateString('vi-VN')}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="h-full flex items-center justify-center text-gray-300 italic text-xs py-10">Không có công nợ nào cần xử lý</div>
+                        )}
                     </div>
                 </div>
+            </div>
 
-                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-center">
-                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6">Trạng thái cơ hội</h3>
-                    <div className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-1 bg-white p-8 rounded-[2.5rem] justify-start border border-gray-100 shadow-sm flex flex-col justify-center">
+                    <h3 className="text-sm font-black  text-gray-400 uppercase tracking-widest mb-6 px-1">Trạng thái cơ hội</h3>
+                    <div className="space-y-4 px-1">
                         {Object.entries(dashboard.sale?.statusCounts || {}).map(([status, count]) => (
                             <div key={status} className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -151,21 +198,41 @@ export const DashboardPage = () => {
                         ))}
                     </div>
                 </div>
+
+                <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-center">
+                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6 px-1">Dự án liên quan</h3>
+                    {dashboard.sale?.projects?.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-1">
+                            {dashboard.sale.projects.map(project => (
+                                <div key={project.id} className="flex items-center justify-between p-5 bg-gray-50 rounded-[2rem] border border-transparent hover:border-gray-200 transition-all group">
+                                    <div className="min-w-0">
+                                        <h4 className="text-gray-900 font-black truncate text-sm mb-1">{project.name}</h4>
+                                        <p className="text-[10px] text-gray-400 uppercase font-black tracking-tighter">Khách: {project.customerName || 'N/A'}</p>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => navigate(`/projects/${project.id}`)}
+                                            className="w-10 h-10 rounded-2xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-emerald-600 hover:border-emerald-100 transition-all shadow-sm group-hover:shadow-md"
+                                        >
+                                            <ArrowUpRight className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-12 bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
+                            <Briefcase className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+                            <p className="text-gray-400 italic text-xs font-medium">Chưa có dự án nào liên quan</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
 
     const MemberView = () => (
         <div className="space-y-10 pb-12">
-            {/* Top Row: Quick Stats & Vinicoin */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="grid grid-cols-1 lg:grid-cols-12 gap-8"
-            >
-            </motion.div>
-
             {/* Middle Row: Calendar & Deadlines */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -175,7 +242,7 @@ export const DashboardPage = () => {
                 className="grid grid-cols-1 lg:grid-cols-12 gap-8"
             >
                 <div className="lg:col-span-8">
-                    <div className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm h-full">
+                    <div className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm h-fit">
                         <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center shadow-sm">
@@ -334,10 +401,26 @@ export const DashboardPage = () => {
                             </p>
                         </motion.div>
                         <h1 className="text-4xl font-black text-gray-900 tracking-tight leading-tight">
-                            Chào buổi chiều, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 font-black">{user?.fullName?.split(' ').pop() || 'bạn'}</span> 👋
+                            {isViewingMember ? (
+                                <>Dashboard của <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 font-black">{teamMembers.find(m => m.user.id === selectedMemberId)?.user?.fullName}</span></>
+                            ) : (
+                                <>Chào buổi chiều, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 font-black">{user?.fullName?.split(' ').pop() || 'bạn'}</span> 👋</>
+                            )}
                         </h1>
-                        <p className="text-gray-500 font-medium mt-1">Chúc bạn một ngày làm việc hiệu quả và năng động!</p>
+                        <p className="text-gray-500 font-medium mt-1">
+                            {isViewingMember ? 'Bạn đang xem tiến độ và công việc của thành viên này.' : 'Chúc bạn một ngày làm việc hiệu quả và năng động!'}
+                        </p>
                     </div>
+
+                    {isTeamLead && (
+                        <div className="flex items-center gap-4">
+                            <MemberSelector
+                                members={teamMembers}
+                                selectedId={selectedMemberId}
+                                onSelect={setSelectedMemberId}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -349,39 +432,41 @@ export const DashboardPage = () => {
                         transition={{ delay: 0.4 }}
                         className="space-y-12 pb-12"
                     >
-                        <ReviewQueueView />
+                        {!isViewingMember && <ReviewQueueView />}
 
-                        {dashboard.admin && (
+                        {dashboard.admin && !isViewingMember && (
                             <div className="space-y-6">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-                                        <TrendingUp className="w-5 h-5" />
-                                    </div>
                                     <h2 className="text-2xl font-black text-gray-900 tracking-tight italic">Hệ thống & Tài chính</h2>
                                 </div>
                                 <AdminView />
                             </div>
                         )}
 
-                        {dashboard.teamLead && (
+                        {(user?.role === 'BD' || user?.role === 'SALE' || dashboard.sale) && !isViewingMember && (
                             <div className="space-y-6">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-                                        <Rocket className="w-5 h-5" />
-                                    </div>
+                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight italic">Kinh doanh</h2>
+                                </div>
+                                <BDView />
+                            </div>
+                        )}
+
+                        {dashboard.teamLead && !isViewingMember && (
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-3">
                                     <h2 className="text-2xl font-black text-gray-900 tracking-tight italic">Dự án</h2>
                                 </div>
                                 <TeamLeadView />
                             </div>
                         )}
 
-                        {dashboard.member && (
+                        {(dashboard.member || isViewingMember) && user?.role !== 'BD' && user?.role !== 'SALE' && (
                             <div className="space-y-6">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
-                                        <Activity className="w-5 h-5" />
-                                    </div>
-                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight italic">Công việc </h2>
+                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight italic">
+                                        {isViewingMember ? `Dashboard của ${teamMembers.find(m => m.user.id === selectedMemberId)?.user?.fullName}` : 'Công việc'}
+                                    </h2>
                                 </div>
                                 <MemberView />
                             </div>
