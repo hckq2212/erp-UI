@@ -185,7 +185,7 @@ export const tasksApi = api.injectEndpoints({
       ].filter(Boolean),
     }),
     returnSupport: builder.mutation({
-      query: (id) => ({
+      query: ({ id }) => ({
         url: `/tasks/${id}/return-support`,
         method: 'POST',
       }),
@@ -208,14 +208,14 @@ export const tasksApi = api.injectEndpoints({
       ].filter(Boolean),
     }),
     approveByCustomer: builder.mutation({
-      query: (id) => ({
+      query: ({ id }) => ({
         url: `/tasks/${id}/customer-approve`,
         method: 'PATCH',
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
-        { type: 'Projects', id: 'LIST' }
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
   }),

@@ -28,13 +28,11 @@ export const ProjectDetailPage = () => {
 
 
   const handleConfirm = async () => {
-    if (window.confirm('Bạn có chắc chắn muốn chấp nhận dự án này?')) {
-      try {
-        await confirmProject(id).unwrap();
-        toast.success('Chấp nhận dự án thành công');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Có lỗi xảy ra khi chấp nhận dự án');
-      }
+    try {
+      await confirmProject(id).unwrap();
+      toast.success('Chấp nhận dự án thành công');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Có lỗi xảy ra khi chấp nhận dự án');
     }
   };
 
@@ -118,7 +116,8 @@ export const ProjectDetailPage = () => {
             <TeamInfo team={project.team} />
           </div>
         </div>
-        <TaskTable tasks={project.tasks} project={project} />
+
+        <TaskTable tasks={project.tasks} project={project} className="min-w-[2000px]" />
 
 
         {isCoreMember && (

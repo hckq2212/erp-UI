@@ -123,7 +123,7 @@ export const TaskDetailPage = () => {
 
     const handleCustomerApprove = async () => {
         try {
-            await approveByCustomer(id).unwrap();
+            await approveByCustomer({ id, projectId: task.project?.id }).unwrap();
             toast.success('Khách hàng đã duyệt công việc!');
         } catch (err) {
             toast.error(err.data?.message || 'Lỗi khi duyệt công việc');
@@ -150,7 +150,7 @@ export const TaskDetailPage = () => {
 
     const handleReturnSupport = async () => {
         try {
-            await returnSupport(id).unwrap();
+            await returnSupport({ id, projectId: task.project?.id }).unwrap();
             toast.success('Đã trả lại task cho team gốc');
             navigate(-1);
         } catch (err) {

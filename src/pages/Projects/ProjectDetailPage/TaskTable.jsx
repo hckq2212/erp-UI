@@ -32,7 +32,7 @@ export const TaskTable = ({ tasks = [], project }) => {
 
     const handleRespondSupport = async (taskId, response) => {
         try {
-            await respondToSupport({ id: taskId, action: response }).unwrap();
+            await respondToSupport({ id: taskId, action: response, projectId: project.id }).unwrap();
             toast.success(response === 'ACCEPT' ? 'Đã đồng ý hỗ trợ' : 'Đã từ chối hỗ trợ');
         } catch (error) {
             toast.error('Có lỗi xảy ra khi phản hồi yêu cầu');
@@ -42,7 +42,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     const handleReturnSupport = async (taskId) => {
         if (!window.confirm('Bạn có chắc chắn muốn trả lại task này cho team chính?')) return;
         try {
-            await returnSupport(taskId).unwrap();
+            await returnSupport({ id: taskId, projectId: project.id }).unwrap();
             toast.success('Đã trả lại task thành công');
         } catch (error) {
             toast.error('Có lỗi xảy ra khi trả lại task');
@@ -113,7 +113,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     const isProjectInProgress = project?.status === 'IN_PROGRESS' || project?.status === 'CONFIRMED';
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-w-[1800px]">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ">
             {/* Filters */}
             <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3 items-center">
                 <div className="relative flex-1 min-w-[200px]">
@@ -280,7 +280,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 <button
                                                     onClick={async () => {
                                                         try {
-                                                            await requestSupport({ id: task.id }).unwrap();
+                                                            await requestSupport({ id: task.id, projectId: project.id }).unwrap();
                                                             toast.success('Đã gửi yêu cầu hỗ trợ');
                                                         } catch (err) {
                                                             toast.error('Không thể gửi yêu cầu hỗ trợ');
