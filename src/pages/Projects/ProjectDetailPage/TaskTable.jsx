@@ -10,7 +10,7 @@ import { Pagination } from '../../../components/ui/Pagination';
 import { cn } from '../../../utils/cn';
 import { TASK_STATUS_LABELS } from '../../../utils/enums';
 import { toast } from 'react-toastify';
-import { formatDateTime } from '../../../utils/format';
+import { formatDateTime, getRemainingTime } from '../../../utils/format';
 import { useGetMeQuery } from '../../../api/auth';
 
 export const TaskTable = ({ tasks = [], project }) => {
@@ -67,27 +67,6 @@ export const TaskTable = ({ tasks = [], project }) => {
         }
     };
 
-    const getRemainingTime = (endDate, status) => {
-        if (!endDate) return { text: '---', color: 'text-gray-400' };
-        if (status === 'COMPLETED' || status === 'ACCEPTED' || status === 'DONE') {
-            return { text: 'Đã hoàn thành', color: 'text-green-600 font-bold' };
-        }
-        const now = new Date();
-        const end = new Date(endDate);
-        const diffTime = end - now;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        let color = 'text-red-500 font-bold';
-        if (diffDays >= 6) color = 'text-green-600 font-bold';
-        else if (diffDays >= 2) color = 'text-amber-500 font-bold';
-
-        if (diffDays < 0) return { text: `Quá hạn ${Math.abs(diffDays)} ngày`, color: 'text-red-600 font-bold' };
-        if (diffTime < 24 * 60 * 60 * 1000) {
-            const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
-            return { text: `Còn ${diffHours} giờ`, color: color };
-        }
-        return { text: `Còn ${diffDays} ngày`, color: color };
-    };
 
     const filteredTasks = useMemo(() => {
         return tasks.filter(task => {

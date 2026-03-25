@@ -137,3 +137,41 @@ export const formatPercent = (value) => {
   if (value === null || value === undefined) return '';
   return `${value}%`;
 };
+
+/**
+ * Calculate remaining or overdue time
+ * @param {Date|string} endDate - The deadline
+ * @param {string} status - Current status of the task
+ * @returns {object} Object containing text and color
+ */
+export const getRemainingTime = (endDate, status) => {
+    if (!endDate) return { text: '---', color: 'text-gray-400' };
+    if (['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED'].includes(status)) {
+        return { text: 'Đã hoàn thành', color: 'text-green-600 font-bold' };
+    }
+    const now = new Date();
+    const end = new Date(endDate);
+    const diffTime = end - now;
+
+    if (diffTime < 0) {
+        const absDiffTime = Math.abs(diffTime);
+        if (absDiffTime < 24 * 60 * 60 * 1000) {
+            const diffHours = Math.ceil(absDiffTime / (1000 * 60 * 60));
+            return { text: `Quá hạn ${diffHours} tiếng`, color: 'text-red-600 font-bold' };
+        } else {
+            const diffDays = Math.floor(absDiffTime / (1000 * 60 * 60 * 24));
+            return { text: `Quá hạn ${diffDays} ngày`, color: 'text-red-600 font-bold' };
+        }
+    }
+
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    let color = 'text-red-500 font-bold';
+    if (diffDays >= 6) color = 'text-green-600 font-bold';
+    else if (diffDays >= 2) color = 'text-amber-500 font-bold';
+
+    if (diffTime < 24 * 60 * 60 * 1000) {
+        const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
+        return { text: `Còn ${diffHours} giờ`, color: color };
+    }
+    return { text: `Còn ${diffDays} ngày`, color: color };
+};

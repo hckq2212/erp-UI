@@ -7,8 +7,11 @@ import {
 import { vi } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Clock, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { TASK_STATUS_LABELS } from '../../utils/enums';
 
 export const TaskCalendar = ({ tasks = [] }) => {
+    const navigate = useNavigate();
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -99,21 +102,24 @@ export const TaskCalendar = ({ tasks = [] }) => {
                 <div className="space-y-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
                     <AnimatePresence mode="popLayout">
                         {selectedTasks.length > 0 ? selectedTasks.map(task => (
-                            <motion.div
+                            <motion.button
+                                whileHover={{ x: 5 }}
+                                whileTap={{ scale: 0.98 }}
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 key={task.id}
-                                className="p-3 bg-gray-50 rounded-xl border border-transparent hover:border-gray-100 transition-all flex items-center gap-3 group"
+                                onClick={() => navigate(`/tasks/${task.id}`)}
+                                className="w-full text-left p-3 bg-gray-50 rounded-xl border border-transparent hover:border-gray-100 transition-all flex items-center gap-3 group"
                             >
                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${task.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : 'bg-white text-gray-400 group-hover:text-blue-600 shadow-sm'}`}>
                                     <Clock className="w-4 h-4" />
                                 </div>
                                 <div className="min-w-0">
                                     <p className="text-xs font-bold text-gray-900 truncate">{task.name}</p>
-                                    <p className="text-[10px] text-gray-400 font-medium uppercase">{task.status}</p>
+                                    <p className="text-[10px] text-gray-400 font-medium uppercase">{TASK_STATUS_LABELS[task.status]}</p>
                                 </div>
-                            </motion.div>
+                            </motion.button>
                         )) : (
                             <div className="text-center py-6 text-gray-400 italic text-xs">Không có công việc nào</div>
                         )}

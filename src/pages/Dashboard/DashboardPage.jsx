@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGetMeQuery } from '../../api/auth';
 import { useGetDashboardDataQuery } from '../../api/dashboard';
 import { useGetTasksQuery } from '../../api/tasks';
+import { getRemainingTime, formatCurrency } from '../../utils/format';
 import { OPPORTUNITY_STATUS_LABELS, PROJECT_STATUS_LABELS, TASK_STATUS_LABELS } from '../../utils/enums';
 import { VinicoinStatCard } from '../../components/dashboard/VinicoinStatCard';
 import { TaskCalendar } from '../../components/dashboard/TaskCalendar';
@@ -34,9 +35,6 @@ export const DashboardPage = () => {
 
     if (!dashboard) return null;
 
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-    };
 
     const AdminView = () => (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -166,29 +164,6 @@ export const DashboardPage = () => {
                 viewport={{ once: true }}
                 className="grid grid-cols-1 lg:grid-cols-12 gap-8"
             >
-                <div className="lg:col-span-4 h-full">
-                    {/* <VinicoinStatCard
-                        amount={dashboard.member?.vinicoin}
-                        completedCount={dashboard.member?.completedCount}
-                    /> */}
-                </div>
-                {/* <div className="lg:col-span-8">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 h-full">
-                        <motion.div
-                            whileHover={{ y: -5 }}
-                            className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-center items-center text-center group transition-all hover:shadow-xl hover:shadow-gray-100"
-                        >
-                            <div className="w-12 h-12 bg-gray-900 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-gray-200 group-hover:scale-110 transition-transform">
-                                <Briefcase className="w-6 h-6" />
-                            </div>
-                            <h4 className="text-3xl font-black text-gray-900 tracking-tight leading-none mb-1">{dashboard.member?.totalTasks}</h4>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest opacity-60">Tổng công việc</p>
-                        </motion.div>
-                        <StatusSummaryCard label="Đang thực hiện" count={dashboard.member?.doingCount} color="blue" icon={Activity} />
-                        <StatusSummaryCard label="Chờ xử lý" count={dashboard.member?.pendingCount} color="amber" icon={Clock} />
-                        <StatusSummaryCard label="Hoàn thành" count={dashboard.member?.completedCount} color="green" icon={CheckCircle2} />
-                    </div>
-                </div> */}
             </motion.div>
 
             {/* Middle Row: Calendar & Deadlines */}
@@ -199,10 +174,7 @@ export const DashboardPage = () => {
                 transition={{ delay: 0.2 }}
                 className="grid grid-cols-1 lg:grid-cols-12 gap-8"
             >
-                <div className="lg:col-span-5">
-                    <TaskCalendar tasks={dashboard.member?.calendarTasks} />
-                </div>
-                <div className="lg:col-span-7">
+                <div className="lg:col-span-8">
                     <div className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm h-full">
                         <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-3">
@@ -210,8 +182,7 @@ export const DashboardPage = () => {
                                     <AlertCircle className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-black text-gray-900">Deadline quan trọng</h3>
-                                    <p className="text-xs text-gray-400 font-medium">10 công việc sát ngày bàn giao nhất</p>
+                                    <h3 className="text-xl font-black text-gray-900">Deadline sắp tới</h3>
                                 </div>
                             </div>
                         </div>
@@ -223,18 +194,17 @@ export const DashboardPage = () => {
                                     className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 hover:bg-white transition-all group w-full"
                                 >
                                     <div className="flex items-center gap-4 min-w-0">
-                                        <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-gray-400 group-hover:text-rose-500 transition-colors shrink-0">
-                                            <Clock className="w-5 h-5" />
-                                        </div>
                                         <div className="text-left min-w-0">
                                             <h4 className="text-gray-900 font-bold truncate">{task.name}</h4>
-                                            <p className="text-[10px] text-gray-400 uppercase font-black tracking-tighter truncate">
-                                                Dự án: <span className="text-gray-600">{task.projectName || 'N/A'}</span>
+                                            <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-tighter truncate">
+                                                Dự án: <span className="text-gray-600">{task.projectName || 'Công việc nội bộ'}</span>
                                             </p>
                                         </div>
                                     </div>
                                     <div className="text-right shrink-0 ml-4">
-                                        <p className="text-xs text-rose-500 font-black uppercase">{new Date(task.deadline).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}</p>
+                                        <p className={`text-[10px] font-black uppercase leading-tight ${getRemainingTime(task.deadline, task.status).color}`}>
+                                            {getRemainingTime(task.deadline, task.status).text}
+                                        </p>
                                         <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-lg border mt-1 inline-block ${task.status === 'DOING' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-gray-50 text-gray-700 border-gray-100'
                                             }`}>
                                             {TASK_STATUS_LABELS[task.status]}
@@ -246,6 +216,9 @@ export const DashboardPage = () => {
                             )}
                         </div>
                     </div>
+                </div>
+                <div className="lg:col-span-4">
+                    <TaskCalendar tasks={dashboard.member?.calendarTasks} />
                 </div>
             </motion.div>
 
@@ -355,10 +328,7 @@ export const DashboardPage = () => {
                             transition={{ delay: 0.2 }}
                             className="flex items-center gap-3 mb-2"
                         >
-                            <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-100">
-                                Dashboard {user?.role}
-                            </span>
-                            <div className="h-px w-12 bg-gray-200" />
+
                             <p className="text-gray-400 font-bold text-[11px] uppercase tracking-widest leading-none">
                                 {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                             </p>
@@ -367,25 +337,6 @@ export const DashboardPage = () => {
                             Chào buổi chiều, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 font-black">{user?.fullName?.split(' ').pop() || 'bạn'}</span> 👋
                         </h1>
                         <p className="text-gray-500 font-medium mt-1">Chúc bạn một ngày làm việc hiệu quả và năng động!</p>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="px-6 py-3 bg-white border border-gray-100 shadow-sm rounded-2xl text-gray-700 font-bold text-sm flex items-center gap-3 hover:shadow-md transition-all active:bg-gray-50"
-                        >
-                            <Calendar className="w-5 h-5 text-blue-600" />
-                            Xem lịch trình
-                        </motion.button>
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => navigate('/me')}
-                            className="w-12 h-12 bg-gray-900 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-gray-200 hover:bg-black transition-all"
-                        >
-                            <Settings className="w-6 h-6" />
-                        </motion.button>
                     </div>
                 </div>
 
@@ -418,7 +369,7 @@ export const DashboardPage = () => {
                                     <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
                                         <Rocket className="w-5 h-5" />
                                     </div>
-                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight italic">Dự án đang điều hành</h2>
+                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight italic">Dự án</h2>
                                 </div>
                                 <TeamLeadView />
                             </div>
