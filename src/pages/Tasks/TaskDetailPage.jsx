@@ -281,52 +281,6 @@ export const TaskDetailPage = () => {
                             </Button>
                         </div>
                     )}
-                    {task.isSupportRequested && task.isSupportAccepted && task.supportLeadId === user?.id && task.status !== 'COMPLETED' && task.status !== 'INTERNAL_COMPLETED' && (
-                        <div className="flex gap-3">
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    setIsAssignModalOpen(true);
-                                }}
-                                className="rounded-2xl py-3 px-6 shadow-sm border-amber-200 text-amber-600 hover:bg-amber-50 flex items-center gap-2"
-                            >
-                                <User className="w-5 h-5" />
-                                Đổi người
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => handleReturnSupport()}
-                                className="rounded-2xl py-3 px-6 border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-2"
-                            >
-                                <ArrowLeft className="w-5 h-5" />
-                                Trả lại task
-                            </Button>
-                        </div>
-                    )}
-                    {task.isSupportRequested && !task.supportTeamId && task.project?.team?.teamLead?.id === user?.id && (
-                        <div className="flex gap-3">
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    setIsAssignModalOpen(true);
-                                }}
-                                className="rounded-2xl py-3 px-6 shadow-sm border-amber-200 text-amber-600 hover:bg-amber-50 flex items-center gap-2"
-                            >
-                                <User className="w-5 h-5" />
-                                Đổi người
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    setIsAssignModalOpen(true);
-                                }}
-                                className="rounded-2xl py-3 px-6 shadow-sm border-blue-200 text-blue-600 hover:bg-blue-50 flex items-center gap-2"
-                            >
-                                <Users className="w-5 h-5" />
-                                Phân công lại
-                            </Button>
-                        </div>
-                    )}
                 </div>
             </div>
 
