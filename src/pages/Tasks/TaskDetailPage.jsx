@@ -243,7 +243,7 @@ export const TaskDetailPage = () => {
                                 </Button>
                             </div>
                         )}
-                    {task.status === 'INTERNAL_COMPLETED' && (user?.id === task.assignerId || user?.role === 'BOD' || user?.role === 'ADMIN_SALE' || user?.role === 'ADMIN') && (
+                    {task.status === 'INTERNAL_COMPLETED' && (user?.id === task.project.team.teamLead.id || user?.role === 'BOD' || user?.role === 'ADMIN') && (
                         <Button
                             onClick={handleCustomerApprove}
                             isLoading={isApprovingByCustomer}
@@ -264,7 +264,7 @@ export const TaskDetailPage = () => {
                                 Yêu cầu làm lại
                             </Button>
                         )}
-                    {(task.status === 'DOING' || task.status === 'REWORKING') && (user?.id === task.assigneeId || user?.id === task.helperId) && !task.isSupportRequested && (
+                    {(task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && (user?.id === task.assigneeId || user?.id === task.helperId) && !task.isSupportRequested && (
                         <Button
                             variant="outline"
                             onClick={() => handleRequestSupport()}
@@ -295,7 +295,7 @@ export const TaskDetailPage = () => {
                     )}
 
                     {/* Helper Action */}
-                    {(task.status === 'DOING' || task.status === 'REWORKING') && user?.id === task.helperId && (
+                    {(task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && user?.id === task.helperId && (
                         <Button
                             variant="outline"
                             onClick={() => handleRequestReturnSupport()}
@@ -401,34 +401,27 @@ export const TaskDetailPage = () => {
 
 
                                 <div className="space-y-6">
-                                    {isDualReview ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            {/* Column 1: Team Lead */}
-                                            <div className="space-y-4">
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Team Lead đánh giá</p>
-                                                {reviews.filter(r => r.reviewerType === 'TEAM_LEAD').length > 0 ? (
-                                                    reviews.filter(r => r.reviewerType === 'TEAM_LEAD').map(renderReviewItem)
-                                                ) : (
-                                                    <p className="text-xs text-gray-400 italic ml-1">Chưa có đánh giá từ Team Lead</p>
-                                                )}
-                                            </div>
-
-                                            {/* Column 2: Assigner */}
-                                            <div className="space-y-4">
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Người giao việc đánh giá</p>
-                                                {reviews.filter(r => r.reviewerType === 'ASSIGNER').length > 0 ? (
-                                                    reviews.filter(r => r.reviewerType === 'ASSIGNER').map(renderReviewItem)
-                                                ) : (
-                                                    <p className="text-xs text-gray-400 italic ml-1">Chưa có đánh giá từ Người giao việc</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* Column 1: Team Lead */}
                                         <div className="space-y-4">
-                                            {reviews.map(renderReviewItem)}
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Team Lead đánh giá</p>
+                                            {reviews.filter(r => r.reviewerType === 'TEAM_LEAD').length > 0 ? (
+                                                reviews.filter(r => r.reviewerType === 'TEAM_LEAD').map(renderReviewItem)
+                                            ) : (
+                                                <p className="text-xs text-gray-400 italic ml-1">Chưa có đánh giá từ Team Lead</p>
+                                            )}
                                         </div>
-                                    )}
 
+                                        {/* Column 2: Assigner */}
+                                        <div className="space-y-4">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Người giao việc đánh giá</p>
+                                            {reviews.filter(r => r.reviewerType === 'ASSIGNER').length > 0 ? (
+                                                reviews.filter(r => r.reviewerType === 'ASSIGNER').map(renderReviewItem)
+                                            ) : (
+                                                <p className="text-xs text-gray-400 italic ml-1">Chưa có đánh giá từ Người giao việc</p>
+                                            )}
+                                        </div>
+                                    </div>
                                     {task.reviewNote && (
                                         <p className="text-md pl-2 text-gray-500 mt-1 italic border-t border-gray-50 pt-4">
                                             Ghi chú: {task.reviewNote}

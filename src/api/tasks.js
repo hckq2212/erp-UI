@@ -230,6 +230,17 @@ export const tasksApi = api.injectEndpoints({
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
+    bulkAssignTasks: builder.mutation({
+      query: (data) => ({
+        url: '/tasks/bulk-assign',
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: 'Tasks', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
+    }),
   }),
 });
 
@@ -255,4 +266,5 @@ export const {
   useRequestReturnSupportMutation,
   useRequestReworkMutation,
   useApproveByCustomerMutation,
+  useBulkAssignTasksMutation,
 } = tasksApi;

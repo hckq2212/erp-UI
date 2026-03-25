@@ -2,14 +2,18 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { X, Upload, Link as LinkIcon, Calendar, User, Users, FileText, Trash2, Plus, Info, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGetTeamMembersQuery, useGetTeamsQuery, useLazyGetTeamsQuery, useLazyGetTeamMembersQuery } from '../../../api/teams';
-import { useAssignTaskMutation, useAssignSupportTeamMutation, useRequestSupportMutation } from '../../../api/tasks';
+import { useAssignTaskMutation, useAssignSupportTeamMutation, useRequestSupportMutation, useBulkAssignTasksMutation } from '../../../api/tasks';
 import { formatDate, formatDateTimeISO } from '../../../utils/format';
 import { useGetVendorsByJobQuery } from '../../../api/vendors';
 import { uploadToCloudinary } from '../../../utils/cloudinary';
 import { toast } from 'react-toastify';
 
 export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
-    const isSupportMode = task?.isSupportRequested;
+    const isBulk = Array.isArray(task);
+    const tasks = isBulk ? task : [task];
+    const representativeTask = tasks[0];
+    
+    const isSupportMode = !isBulk && task?.isSupportRequested;
     const teamId = project?.team?.id;
     const fileInputRef = useRef(null);
 
@@ -22,23 +26,26 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     // Lazy fetch for support members
     const [fetchSupportMembers, { data: supportMembers = [], isLoading: isLoadingSupportMembers }] = useLazyGetTeamMembersQuery();
 
-    const [assignTask, { isLoading: isAssigning }] = useAssignTaskMutation();
+    const [assignTask, { isLoading: isAssigningSingle }] = useAssignTaskMutation();
     const [assignSupportTeam, { isLoading: isAssigningSupport }] = useAssignSupportTeamMutation();
     const [requestSupport] = useRequestSupportMutation();
+    const [bulkAssignTasks, { isLoading: isAssigningBulk }] = useBulkAssignTasksMutation();
+
+    const isAssigning = isAssigningSingle || isAssigningBulk || isAssigningSupport;
 
     const [formData, setFormData] = useState({
         assigneeId: '',
         performerType: 'INTERNAL',
-        description: task?.description || '',
+        description: representativeTask?.description || '',
         links: [''],
         selectedTeamId: '',
         isTeamAssignment: false
     });
-    const [plannedEndDate, setPlannedEndDate] = useState(formatDateTimeISO(task?.plannedEndDate) || '');
+    const [plannedEndDate, setPlannedEndDate] = useState(formatDateTimeISO(representativeTask?.plannedEndDate) || '');
 
-    const jobId = task?.jobId || task?.job?.id;
+    const jobId = representativeTask?.jobId || representativeTask?.job?.id;
     const { data: vendorsResult, isLoading: isLoadingVendors } = useGetVendorsByJobQuery(jobId, {
-        skip: formData.performerType !== 'VENDOR' || !jobId
+        skip: formData.performerType !== 'VENDOR' || !jobId || isBulk // Simplify bulk vendor assignment logic if needed, but for now allow if all tasks share same jobId?
     });
     const vendors = Array.isArray(vendorsResult) ? vendorsResult : (vendorsResult?.data || []);
     const [files, setFiles] = useState([]);
@@ -46,10 +53,10 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
-        if (isSupportMode && task?.supportTeamId) {
-            fetchSupportMembers(task.supportTeamId);
+        if (isSupportMode && representativeTask?.supportTeamId) {
+            fetchSupportMembers(representativeTask.supportTeamId);
         }
-    }, [isSupportMode, task?.supportTeamId, fetchSupportMembers]);
+    }, [isSupportMode, representativeTask?.supportTeamId, fetchSupportMembers]);
 
     const handleAddLink = useCallback(() => {
         setFormData(prev => ({ ...prev, links: [...prev.links, ''] }));
@@ -129,32 +136,47 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
             }
 
             if (formData.isTeamAssignment) {
-                // If it's a new support request from DOING task
-                if (task.status === 'DOING' && !task.isSupportRequested) {
-                    await requestSupport({
+                // Bulk support team assignment not fully handled here yet, restricting to single for now based on UI
+                if (!isBulk) {
+                    if (task.status === 'DOING' && !task.isSupportRequested) {
+                        await requestSupport({
+                            id: task.id,
+                            note: formData.description || "Cần hỗ trợ thực hiện công việc này",
+                            projectId: project.id
+                        }).unwrap();
+                    }
+
+                    await assignSupportTeam({
                         id: task.id,
-                        note: formData.description || "Cần hỗ trợ thực hiện công việc này",
+                        teamId: formData.selectedTeamId,
                         projectId: project.id
                     }).unwrap();
                 }
-
-                await assignSupportTeam({
-                    id: task.id,
-                    teamId: formData.selectedTeamId,
-                    projectId: project.id
-                }).unwrap();
                 toast.success('Giao hỗ trợ team thành công');
             } else {
-                await assignTask({
-                    id: task.id,
-                    assigneeId: formData.assigneeId,
-                    performerType: formData.performerType,
-                    plannedEndDate: plannedEndDate || undefined,
-                    plannedStartDate: formatDateTimeISO(new Date()),
-                    description: formData.description || undefined,
-                    attachments,
-                    projectId: project.id
-                }).unwrap();
+                if (isBulk) {
+                    await bulkAssignTasks({
+                        taskIds: tasks.map(t => t.id),
+                        assigneeId: formData.assigneeId,
+                        performerType: formData.performerType,
+                        plannedEndDate: plannedEndDate || undefined,
+                        plannedStartDate: formatDateTimeISO(new Date()),
+                        description: formData.description || undefined,
+                        attachments,
+                        projectId: project.id
+                    }).unwrap();
+                } else {
+                    await assignTask({
+                        id: task.id,
+                        assigneeId: formData.assigneeId,
+                        performerType: formData.performerType,
+                        plannedEndDate: plannedEndDate || undefined,
+                        plannedStartDate: formatDateTimeISO(new Date()),
+                        description: formData.description || undefined,
+                        attachments,
+                        projectId: project.id
+                    }).unwrap();
+                }
                 toast.success('Phân công công việc thành công');
             }
             onClose();
@@ -162,7 +184,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi phân công');
         }
-    }, [formData, files, task.id, project.id, assignTask, assignSupportTeam, onClose, plannedEndDate, requestSupport, task.status, task.isSupportRequested]);
+    }, [formData, files, isBulk, tasks, task, project.id, bulkAssignTasks, assignTask, assignSupportTeam, onClose, plannedEndDate, requestSupport]);
 
     return (
         <AnimatePresence>
@@ -193,13 +215,23 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-                                    <User className="w-7 h-7" />
+                                    <Users className="w-7 h-7" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-slate-800 tracking-tight">Phân công công việc</h3>
+                                    <h3 className="text-xl font-bold text-slate-800 tracking-tight">
+                                        {isBulk ? `Phân công (${tasks.length}) công việc` : 'Phân công công việc'}
+                                    </h3>
                                     <div className="flex items-center gap-2 mt-0.5">
-                                        <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[11px] font-bold tracking-wider">{task.code}</span>
-                                        <span className="text-[11px] text-slate-400 font-medium truncate max-w-[200px]">{task.name}</span>
+                                        {isBulk ? (
+                                            <span className="text-[11px] text-slate-400 font-medium italic">
+                                                Đang thực hiện gán hàng loạt cho các công việc đã chọn
+                                            </span>
+                                        ) : (
+                                            <>
+                                                <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[11px] font-bold tracking-wider">{representativeTask.code}</span>
+                                                <span className="text-[11px] text-slate-400 font-medium truncate max-w-[200px]">{representativeTask.name}</span>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -256,7 +288,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                     <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">
                                         {formData.isTeamAssignment ? 'Team hỗ trợ' : (formData.performerType === 'INTERNAL' ? 'Người thực hiện' : 'Đối tác Vendor')}
                                     </label>
-                                    {( (isSupportMode || (task?.status === 'DOING' || task?.status === 'REWORKING') && !task?.isSupportRequested) && !task?.supportTeamId ) && (
+                                    {!isBulk && ((isSupportMode || (representativeTask?.status === 'DOING' || representativeTask?.status === 'REWORKING') && !representativeTask?.isSupportRequested) && !representativeTask?.supportTeamId) && (
                                         <label className="flex items-center gap-2 cursor-pointer group/check">
                                             <div className="relative flex items-center justify-center">
                                                 <input
@@ -318,7 +350,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                             ))
                                         ) : (
                                             formData.performerType === 'INTERNAL' ? (
-                                                (isSupportMode && task.supportTeamId ? supportMembers : members).map(m => (
+                                                (isSupportMode && representativeTask.supportTeamId ? supportMembers : members).map(m => (
                                                     <option key={m.user.id} value={m.user.id}>{m.user.fullName}</option>
                                                 ))
                                             ) : (

@@ -30,6 +30,27 @@ export const TaskTable = ({ tasks = [], project }) => {
     });
     const [assigningTask, setAssigningTask] = useState(null);
     const [showAddExtraModal, setShowAddExtraModal] = useState(false);
+    const [selectedTasks, setSelectedTasks] = useState([]);
+
+    const isTaskAssignable = (task) => {
+        if (!isProjectInProgress) return false;
+
+        // Standard Assign: Project Lead logic
+        const canProjectLeadAssign = task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT';
+
+        // Support Lead Reassign logic
+        const canSupportLeadAssign = task.isSupportAccepted &&
+            task.supportLeadId === user?.id &&
+            task.isSupportReturnRequested &&
+            (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'SUPPORT_AWAITING_RETURN');
+
+        // Original Team Lead Reassign logic (when support requested but not assigned yet)
+        const canOriginalLeadReassign = task.isSupportRequested &&
+            !task.supportTeamId &&
+            task.project?.team?.teamLead?.id === user?.id;
+
+        return canProjectLeadAssign || canSupportLeadAssign || canOriginalLeadReassign;
+    };
 
     const handleRespondSupport = async (taskId, response) => {
         try {
@@ -175,6 +196,24 @@ export const TaskTable = ({ tasks = [], project }) => {
                 <table className="w-full text-sm text-left min-w-[1200px]">
                     <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100">
                         <tr>
+                            <th className="px-6 py-4 text-center">
+                                <input
+                                    type="checkbox"
+                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                                    checked={paginatedTasks.length > 0 && paginatedTasks.every(t => !isTaskAssignable(t) || selectedTasks.includes(t.id))}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            const assignableIds = paginatedTasks
+                                                .filter(isTaskAssignable)
+                                                .map(t => t.id);
+                                            setSelectedTasks(prev => [...new Set([...prev, ...assignableIds])]);
+                                        } else {
+                                            const pageIds = paginatedTasks.map(t => t.id);
+                                            setSelectedTasks(prev => prev.filter(id => !pageIds.includes(id)));
+                                        }
+                                    }}
+                                />
+                            </th>
                             <th className="px-6 py-4 font-medium">STT</th>
                             {renderSortableHeader('Mã', 'code')}
                             {renderSortableHeader('Tên công việc', 'name')}
@@ -185,6 +224,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                             {isProjectInProgress && (
                                 <th className="px-6 py-4 font-medium text-center">Hành động</th>
                             )}
+
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -197,6 +237,21 @@ export const TaskTable = ({ tasks = [], project }) => {
                                         task.isSupportRequested ? "bg-red-50/50 hover:bg-red-50 border-l-4 border-l-red-500" : "hover:bg-gray-50/50"
                                     )}
                                 >
+                                    <td className="px-6 py-4 text-center">
+                                        <input
+                                            type="checkbox"
+                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                            disabled={!isTaskAssignable(task)}
+                                            checked={selectedTasks.includes(task.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setSelectedTasks(prev => [...prev, task.id]);
+                                                } else {
+                                                    setSelectedTasks(prev => prev.filter(id => id !== task.id));
+                                                }
+                                            }}
+                                        />
+                                    </td>
                                     <td className="px-6 py-4 text-gray-500">{(currentPage - 1) * 10 + index + 1}</td>
                                     <td className="px-6 py-4">
                                         <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
@@ -289,7 +344,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 )}
 
                                             {/* Original Team Member Request Support */}
-                                            {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING') && user?.id === task.assigneeId && !task.isSupportRequested && (
+                                            {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && user?.id === task.assigneeId && !task.isSupportRequested && (
                                                 <button
                                                     onClick={async (e) => {
                                                         e.stopPropagation();
@@ -304,10 +359,10 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 >
                                                     Hỗ trợ
                                                 </button>
-                                            )}
+                                            )} */}
 
                                             {/* Helper Request Return Support */}
-                                            {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING') && user?.id === task.helperId && (
+                                            {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING') && user?.id === task.helperId && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -317,7 +372,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 >
                                                     Hỗ trợ
                                                 </button>
-                                            )}
+                                            )} */}
 
                                             <button
                                                 onClick={(e) => {
@@ -330,6 +385,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                             </button>
                                         </div>
                                     </td>
+
                                 </tr>
                             ))
                         ) : (
@@ -365,6 +421,38 @@ export const TaskTable = ({ tasks = [], project }) => {
                     onClose={() => setShowAddExtraModal(false)}
                     project={project}
                 />
+            )}
+
+            {/* Batch Action Bar */}
+            {selectedTasks.length > 0 && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 z-50 ">
+                    <div className="flex items-center gap-2 border-r border-gray-700 pr-6">
+                        <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                            Đã chọn {selectedTasks.length} công việc
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => {
+                                // Filter selected tasks that are actually in this page's task list (or pass all IDs if the modal can handle it)
+                                const tasksToAssign = tasks.filter(t => selectedTasks.includes(t.id));
+                                setAssigningTask(tasksToAssign);
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                        >
+                            <Users className="w-3.5 h-3.5" />
+                            Phân công
+                        </button>
+
+                        <button
+                            onClick={() => setSelectedTasks([])}
+                            className="text-red-400 hover:text-white px-3 py-2 rounded-xl text-xs font-bold uppercase transition-colors"
+                        >
+                            Hủy chọn
+                        </button>
+                    </div>
+                </div>
             )}
         </div>
     );
