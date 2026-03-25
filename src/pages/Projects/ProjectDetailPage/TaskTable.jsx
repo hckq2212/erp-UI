@@ -4,7 +4,7 @@ import { TaskAssignModal } from './TaskAssignModal';
 import { AddExtraTaskModal } from './AddExtraTaskModal';
 import { useNavigate } from 'react-router-dom';
 import { useGetTeamMembersQuery } from '../../../api/teams';
-import { useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation } from '../../../api/tasks';
+import { useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation } from '../../../api/tasks';
 import { useTableFeatures } from '../../../hooks/useTableFeatures';
 import { Pagination } from '../../../components/ui/Pagination';
 import { cn } from '../../../utils/cn';
@@ -21,6 +21,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [requestSupport] = useRequestSupportMutation();
     const [respondToSupport] = useRespondToSupportMutation();
     const [returnSupport] = useReturnSupportMutation();
+    const [requestReturnSupport] = useRequestReturnSupportMutation();
 
     const [filter, setFilter] = useState({
         status: 'ALL',
@@ -45,7 +46,16 @@ export const TaskTable = ({ tasks = [], project }) => {
             await returnSupport({ id: taskId, projectId: project.id }).unwrap();
             toast.success('Đã trả lại task thành công');
         } catch (error) {
-            toast.error('Có lỗi xảy ra khi trả lại task');
+            toast.error(error.data?.message || 'Có lỗi xảy ra khi trả lại task');
+        }
+    };
+
+    const handleRequestReturnSupport = async (taskId) => {
+        try {
+            await requestReturnSupport({ id: taskId, note: "Yêu cầu trả lại task", projectId: project.id }).unwrap();
+            toast.success('Đã gửi yêu cầu hỗ trợ hoàn thành');
+        } catch (error) {
+            toast.error(error.data?.message || 'Có lỗi xảy ra khi yêu cầu');
         }
     };
 
@@ -62,6 +72,8 @@ export const TaskTable = ({ tasks = [], project }) => {
                 return <span className="flex items-center gap-1.5 text-md font-medium text-blue-600"> {label}</span>;
             case 'OVERDUE':
                 return <span className="flex items-center gap-1.5 text-md font-medium text-red-600"> {label}</span>;
+            case 'SUPPORT_AWAITING_RETURN':
+                return <span className="flex items-center gap-1.5 text-md font-medium text-indigo-600"> {label}</span>;
             default:
                 return <span className="flex items-center gap-1.5 text-md font-medium text-gray-500"> {label}</span>;
         }
@@ -257,30 +269,32 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 </div>
                                             )}
 
-                                            {/* Support Team Lead Actions (Accepted & help requested) */}
-                                            {task.isSupportRequested && task.isSupportAccepted && task.supportLeadId === user?.id && task.status !== 'COMPLETED' && task.status !== 'INTERNAL_COMPLETED' && (
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={() => setAssigningTask(task)}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
-                                                    >
-                                                        Đổi người
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleReturnSupport(task.id)}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
-                                                    >
-                                                        Trả lại
-                                                    </button>
-                                                </div>
-                                            )}
+                                            {/* Support Team Lead Actions (Accepted) */}
+                                            {task.isSupportAccepted && task.supportLeadId === user?.id && task.isSupportReturnRequested &&
+                                                (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'SUPPORT_AWAITING_RETURN') && (
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={() => setAssigningTask(task)}
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                        >
+                                                            Phân công lại
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleReturnSupport(task.id)}
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                        >
+                                                            Trả lại
+                                                        </button>
+                                                    </div>
+                                                )}
 
-                                            {/* Member Help Request */}
-                                            {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING') && (user?.id === task.assigneeId || user?.id === task.helperId) && !task.isSupportRequested && (
+                                            {/* Original Team Member Request Support */}
+                                            {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING') && user?.id === task.assigneeId && !task.isSupportRequested && (
                                                 <button
-                                                    onClick={async () => {
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
                                                         try {
-                                                            await requestSupport({ id: task.id, projectId: project.id }).unwrap();
+                                                            await requestSupport({ id: task.id, projectId: project.id, note: "Yêu cầu hỗ trợ" }).unwrap();
                                                             toast.success('Đã gửi yêu cầu hỗ trợ');
                                                         } catch (err) {
                                                             toast.error('Không thể gửi yêu cầu hỗ trợ');
@@ -292,8 +306,24 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 </button>
                                             )}
 
+                                            {/* Helper Request Return Support */}
+                                            {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING') && user?.id === task.helperId && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleRequestReturnSupport(task.id);
+                                                    }}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                >
+                                                    Hỗ trợ
+                                                </button>
+                                            )}
+
                                             <button
-                                                onClick={() => navigate(`/tasks/${task.id}`)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    navigate(`/tasks/${task.id}`);
+                                                }}
                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-200 transition-all active:scale-95 text-xs font-bold uppercase"
                                             >
                                                 Xem chi tiết

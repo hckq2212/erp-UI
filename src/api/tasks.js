@@ -195,6 +195,18 @@ export const tasksApi = api.injectEndpoints({
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
+    requestReturnSupport: builder.mutation({
+      query: ({ id, note }) => ({
+        url: `/tasks/${id}/request-return-support`,
+        method: 'POST',
+        body: { note },
+      }),
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
+    }),
     requestRework: builder.mutation({
       query: ({ id, ...data }) => ({
         url: `/tasks/${id}/rework`,
@@ -240,6 +252,7 @@ export const {
   useAssignSupportTeamMutation,
   useRespondToSupportMutation,
   useReturnSupportMutation,
+  useRequestReturnSupportMutation,
   useRequestReworkMutation,
   useApproveByCustomerMutation,
 } = tasksApi;

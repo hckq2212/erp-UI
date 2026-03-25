@@ -127,7 +127,8 @@ export const TASK_STATUS_LABELS = {
   COMPLETED: "Hoàn thành",
   REWORKING: "Đang làm lại",
   INTERNAL_COMPLETED: "Hoàn thành nội bộ",
-  ACCEPTED: "Đã được nghiệm thu"
+  ACCEPTED: "Đã được nghiệm thu",
+  SUPPORT_AWAITING_RETURN: "Chờ xác nhận hoàn thành"
 };
 
 export const TASK_STATUS_COLORS = {
@@ -145,6 +146,7 @@ export const TASK_STATUS_COLORS = {
   AWAITING_ACCEPTANCE: 'bg-yellow-100 text-yellow-800',
   AWAITING_REVIEW: 'bg-yellow-100 text-yellow-800',
   OVERDUE: 'bg-red-100 text-red-800',
+  SUPPORT_AWAITING_RETURN: 'bg-indigo-100 text-indigo-800',
 };
 
 // Priority
@@ -192,7 +194,8 @@ export const TASK_STATUS = {
   AWAITING_SUPPORT: "Đã nhờ hỗ trợ",
   SUPPORT_PENDING: "Chờ xác nhận hỗ trợ",
   INTERNAL_COMPLETED: "INTERNAL_COMPLETED",
-  ACCEPTED: "ACCEPTED"
+  ACCEPTED: "ACCEPTED",
+  SUPPORT_AWAITING_RETURN: "SUPPORT_AWAITING_RETURN"
 };
 
 export const PARTNER_TYPE_LABELS = {

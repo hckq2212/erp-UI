@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Trash2, Calendar, User, Users, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks } from 'lucide-react';
-import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation } from '../../api/tasks';
+import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetMeQuery } from '../../api/auth';
 import { formatDate, formatDateTime } from '../../utils/format';
@@ -33,6 +33,7 @@ export const TaskDetailPage = () => {
     const [requestSupport] = useRequestSupportMutation();
     const [respondToSupport] = useRespondToSupportMutation();
     const [returnSupport] = useReturnSupportMutation();
+    const [requestReturnSupport] = useRequestReturnSupportMutation();
 
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);
     const [submissionType, setSubmissionType] = useState('file'); // 'file' or 'link'
@@ -64,6 +65,8 @@ export const TaskDetailPage = () => {
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold uppercase"><AlertCircle className="w-3 h-3" /> Chờ xác nhận hỗ trợ</span>;
             case 'AWAITING_SUPPORT':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase"><AlertCircle className="w-3 h-3" /> Đã nhờ hỗ trợ</span>;
+            case 'SUPPORT_AWAITING_RETURN':
+                return <span className="flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase"><Clock className="w-3 h-3" /> Chờ xác nhận hoàn thành</span>;
             case 'TODO':
                 return <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold uppercase">Chưa bắt đầu</span>;
             default:
@@ -155,6 +158,15 @@ export const TaskDetailPage = () => {
             navigate(-1);
         } catch (err) {
             toast.error(err.data?.message || 'Lỗi khi trả lại task');
+        }
+    };
+
+    const handleRequestReturnSupport = async () => {
+        try {
+            await requestReturnSupport({ id, note: "Yêu cầu trả lại task", projectId: task.project?.id }).unwrap();
+            toast.success('Đã gửi yêu cầu hỗ trợ task!');
+        } catch (err) {
+            toast.error(err.data?.message || 'Lỗi khi gửi yêu cầu');
         }
     };
 
@@ -281,6 +293,40 @@ export const TaskDetailPage = () => {
                             </Button>
                         </div>
                     )}
+
+                    {/* Helper Action */}
+                    {(task.status === 'DOING' || task.status === 'REWORKING') && user?.id === task.helperId && (
+                        <Button
+                            variant="outline"
+                            onClick={() => handleRequestReturnSupport()}
+                            className="rounded-2xl py-3 px-6 border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        >
+                            <AlertCircle className="w-5 h-5" />
+                            Hỗ trợ
+                        </Button>
+                    )}
+
+                    {/* Support Lead Actions (Accepted) */}
+                    {task.isSupportAccepted && task.supportLeadId === user?.id && task.isSupportReturnRequested &&
+                        (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'SUPPORT_AWAITING_RETURN') && (
+                            <div className="flex gap-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsAssignModalOpen(true)}
+                                    className="rounded-2xl py-3 px-6 border-amber-200 text-amber-600 hover:bg-amber-50 flex items-center gap-2"
+                                >
+                                    <Users className="w-5 h-5" />
+                                    Phân công lại
+                                </Button>
+                                <Button
+                                    onClick={handleReturnSupport}
+                                    className="rounded-2xl py-3 px-6 shadow-lg shadow-red-100 bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
+                                >
+                                    <ArrowLeft className="w-5 h-5" />
+                                    Trả lại
+                                </Button>
+                            </div>
+                        )}
                 </div>
             </div>
 
@@ -691,6 +737,12 @@ export const TaskDetailPage = () => {
                             toast.error(err.data?.message || 'Lỗi khi gửi yêu cầu làm lại');
                         }
                     }}
+                />
+                <TaskAssignModal
+                    isOpen={isAssignModalOpen}
+                    onClose={() => setIsAssignModalOpen(false)}
+                    task={task}
+                    project={task.project}
                 />
                 {/* Sidebar */}
                 <div className="space-y-8 ">
