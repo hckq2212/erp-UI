@@ -36,7 +36,7 @@ export const TeamsPage = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Đội Dự Án</h1>
-                    <p className="text-gray-500 text-sm mt-1">Quản lý các đội ngũ triển khai dự án</p>
+                    <p className="text-gray-500 text-sm mt-1">Quản lý các đội dự án</p>
                 </div>
                 <Button onClick={() => setIsModalOpen(true)} className="w-full md:w-auto shadow-lg shadow-blue-500/20">
                     <Plus className="w-5 h-5 mr-2" />

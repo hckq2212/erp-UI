@@ -59,7 +59,7 @@ export const AddUserModal = ({ isOpen, onClose }) => {
                         </div>
                         <div>
                             <h2 className="text-xl font-black text-gray-900 leading-none">Thêm nhân sự</h2>
-                            <p className="text-xs text-gray-500 mt-1">Tạo tài khoản mới cho đội ngũ</p>
+                            <p className="text-xs text-gray-500 mt-1">Tạo tài khoản mới cho đội dự án</p>
                         </div>
                     </div>
                     <button

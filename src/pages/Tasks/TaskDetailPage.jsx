@@ -736,14 +736,10 @@ export const TaskDetailPage = () => {
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kế hoạch</h2>
                             </div>
-                            <div className="space-y-4 grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Ngày bắt đầu</p>
-                                    <p className="text-lg font-bold text-gray-700">{formatDateTime(task.plannedStartDate)}</p>
-                                </div>
+                            <div className="space-y-4 grid gap-4">
                                 <div>
                                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Deadline</p>
-                                    <p className="text-lg font-bold text-gray-700">{formatDateTime(task.plannedEndDate)}</p>
+                                    <p className="text-md font-bold text-gray-700">{formatDateTime(task.plannedEndDate)}</p>
                                 </div>
                             </div>
                         </div>
