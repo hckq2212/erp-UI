@@ -151,12 +151,11 @@ export const MilestoneModal = ({ isOpen, onClose, milestones, contractId, sellin
                                 <label className="block text-[10px] uppercase font-bold text-gray-400 mb-1">Số tiền (VNĐ)</label>
                                 <div className="relative">
                                     <Input
-                                        type="number"
-                                        // value={formatCurrency(m.amount)}
-                                        value={m.amount}
+                                        type="text"
+                                        value={formatNumber(m.amount)}
                                         onChange={(e) => handleChange(idx, 'amount', e.target.value)}
-                                        className="h-9 text-sm pr-6"
-                                    // required
+                                        className="h-9 text-sm pr-12"
+                                        required
                                     />
 
                                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">VNĐ</span>

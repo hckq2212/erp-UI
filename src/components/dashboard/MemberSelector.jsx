@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export const MemberSelector = ({ members = [], selectedId, onSelect }) => {
     const [isOpen, setIsOpen] = useState(false);
-    
+
     // Find the member object from the user list
     const selectedMember = members.find(m => m.user.id === selectedId);
 
@@ -46,7 +46,7 @@ export const MemberSelector = ({ members = [], selectedId, onSelect }) => {
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${!selectedId ? 'bg-white shadow-sm' : 'bg-gray-100'}`}>
                                         <Users className="w-4 h-4" />
                                     </div>
-                                    <span className="text-sm font-bold">Quay lại Dashboard của tôi</span>
+                                    <span className="text-sm font-bold text-left">Quay lại Dashboard của tôi</span>
                                 </div>
                                 {!selectedId && <Check className="w-4 h-4" />}
                             </button>
@@ -54,7 +54,7 @@ export const MemberSelector = ({ members = [], selectedId, onSelect }) => {
                             <div className="h-px bg-gray-50 my-2 mx-2" />
 
                             <p className="px-3 py-2 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Thành viên trong team</p>
-                            
+
                             <div className="max-h-[300px] overflow-y-auto pr-1 custom-scrollbar space-y-1">
                                 {members.length > 0 ? members.map((member) => (
                                     <button
