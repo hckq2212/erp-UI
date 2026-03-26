@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Trash2, Calendar, User, Users, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks } from 'lucide-react';
-import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation } from '../../api/tasks';
+import { ArrowLeft, Edit, Trash2, Calendar, User, Users, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell } from 'lucide-react';
+import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetMeQuery } from '../../api/auth';
 import { formatDate, formatDateTime } from '../../utils/format';
@@ -25,6 +25,7 @@ export const TaskDetailPage = () => {
     const [submitResult, { isLoading: isSubmittingResult }] = useSubmitTaskResultMutation();
     const [requestRework, { isLoading: isRequestingRework }] = useRequestReworkMutation();
     const [approveByCustomer, { isLoading: isApprovingByCustomer }] = useApproveByCustomerMutation();
+    const [sendReminder, { isLoading: isSendingReminder }] = useSendTaskReminderMutation();
 
     const isLoading = isTaskLoading || !user;
 
@@ -167,6 +168,15 @@ export const TaskDetailPage = () => {
             toast.success('Đã gửi yêu cầu hỗ trợ task!');
         } catch (err) {
             toast.error(err.data?.message || 'Lỗi khi gửi yêu cầu');
+        }
+    };
+
+    const handleSendReminder = async () => {
+        try {
+            await sendReminder(id).unwrap();
+            toast.success('Đã gửi nhắc nhở thành công!');
+        } catch (err) {
+            toast.error(err.data?.message || 'Lỗi khi gửi nhắc nhở');
         }
     };
 
@@ -327,6 +337,18 @@ export const TaskDetailPage = () => {
                                 </Button>
                             </div>
                         )}
+
+                    {/* Reminder Action */}
+                    {(user?.role === 'ADMIN' || user?.role === 'BOD' || user?.id === task.project?.team?.teamLead?.id) && (task.assigneeId || task.helperId) && (
+                        <Button
+                            onClick={handleSendReminder}
+                            isLoading={isSendingReminder}
+                            className="rounded-2xl py-3 px-6 shadow-lg shadow-blue-100 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                        >
+                            <Bell className="w-5 h-5" />
+                            Nhắc việc
+                        </Button>
+                    )}
                 </div>
             </div>
 

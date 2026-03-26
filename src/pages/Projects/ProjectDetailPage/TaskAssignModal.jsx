@@ -12,7 +12,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     const isBulk = Array.isArray(task);
     const tasks = isBulk ? task : [task];
     const representativeTask = tasks[0];
-    
+
     const isSupportMode = !isBulk && task?.isSupportRequested;
     const teamId = project?.team?.id;
     const fileInputRef = useRef(null);
@@ -551,4 +551,3 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
         </AnimatePresence >
     );
 };
-

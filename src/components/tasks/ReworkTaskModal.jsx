@@ -98,15 +98,19 @@ export const ReworkTaskModal = ({ isOpen, onClose, onSubmit, isLoading, taskName
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-red-500">Hạn chót mới (Deadline)</label>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-red-500">Deadline mới</label>
                     <div className="relative">
                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
-                            type="date"
+                            type="datetime-local"
                             className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium"
                             value={deadlineAt}
                             onChange={(e) => setDeadlineAt(e.target.value)}
-                            min={new Date().toISOString().split('T')[0]}
+                            min={(() => {
+                                const now = new Date();
+                                const offset = now.getTimezoneOffset() * 60000;
+                                return new Date(now - offset).toISOString().slice(0, 16);
+                            })()}
                         />
                     </div>
                 </div>

@@ -196,7 +196,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                 <table className="w-full text-sm text-left min-w-[1200px]">
                     <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100">
                         <tr>
-                            <th className="px-6 py-4 text-center">
+                            {/* <th className="px-6 py-4 text-center">
                                 <input
                                     type="checkbox"
                                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
@@ -213,7 +213,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                         }
                                     }}
                                 />
-                            </th>
+                            </th> */}
                             <th className="px-6 py-4 font-medium">STT</th>
                             {renderSortableHeader('Mã', 'code')}
                             {renderSortableHeader('Tên công việc', 'name')}
@@ -237,7 +237,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                         task.isSupportRequested ? "bg-red-50/50 hover:bg-red-50 border-l-4 border-l-red-500" : "hover:bg-gray-50/50"
                                     )}
                                 >
-                                    <td className="px-6 py-4 text-center">
+                                    {/* <td className="px-6 py-4 text-center">
                                         <input
                                             type="checkbox"
                                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
@@ -251,7 +251,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 }
                                             }}
                                         />
-                                    </td>
+                                    </td> */}
                                     <td className="px-6 py-4 text-gray-500">{(currentPage - 1) * 10 + index + 1}</td>
                                     <td className="px-6 py-4">
                                         <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">

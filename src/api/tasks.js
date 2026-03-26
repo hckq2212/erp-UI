@@ -241,6 +241,12 @@ export const tasksApi = api.injectEndpoints({
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
+    sendTaskReminder: builder.mutation({
+      query: (id) => ({
+        url: `/tasks/${id}/remind`,
+        method: 'POST',
+      }),
+    }),
   }),
 });
 
@@ -267,4 +273,5 @@ export const {
   useRequestReworkMutation,
   useApproveByCustomerMutation,
   useBulkAssignTasksMutation,
+  useSendTaskReminderMutation,
 } = tasksApi;

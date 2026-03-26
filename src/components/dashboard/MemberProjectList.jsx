@@ -1,56 +1,74 @@
 import React from 'react';
-import { Briefcase, ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import { Briefcase, ArrowUpRight, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PROJECT_STATUS_LABELS } from '../../utils/enums';
+import { motion } from 'framer-motion';
 
 export const MemberProjectList = ({ projects = [] }) => {
     const navigate = useNavigate();
 
+    const getStatusTheme = (status) => {
+        if (['IN_PROGRESS', 'CONFIRMED'].includes(status)) {
+            return { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', accent: 'bg-blue-600' };
+        }
+        return { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', accent: 'bg-slate-400' };
+    };
+
     return (
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm h-full flex flex-col">
-            <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-                    <Briefcase className="w-5 h-5" />
+        <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm h-full flex flex-col overflow-hidden relative">
+            {/* Decorative Element */}
+            <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-bl-[3rem] -mr-12 -mt-12 pointer-events-none opacity-50" />
+
+            <div className="flex items-center justify-between mb-8 relative z-10">
+                <div>
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase">Dự án tham gia</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Dự án đang triển khai</p>
                 </div>
-                <h3 className="text-xl font-black text-gray-900 leading-tight">Dự án đang tham gia</h3>
             </div>
 
-            <div className="space-y-4 flex-1">
-                {projects.length > 0 ? projects.map(project => (
-                    <div
-                        key={project.id}
-                        onClick={() => navigate(`/projects/${project.id}`)}
-                        className="p-5 bg-gray-50 rounded-[2rem] border border-transparent hover:border-gray-100 hover:bg-white transition-all cursor-pointer group"
-                    >
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-black text-gray-900 group-hover:text-emerald-600 transition-colors truncate">
+            <div className="space-y-4 flex-1 relative z-10">
+                {projects.length > 0 ? projects.map((project, index) => {
+                    const theme = getStatusTheme(project.status);
+                    return (
+                        <motion.div
+                            key={project.id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 * index }}
+                            onClick={() => navigate(`/projects/${project.id}`)}
+                            className={`group relative flex  items-center justify-between p-4 rounded-2xl border-2 ${theme.border} ${theme.bg} hover:shadow-md hover:scale-[1.01] transition-all duration-300 cursor-pointer w-full text-left`}
+                        >
+                            <div className="flex-1 min-w-0 pr-2 grid grid-cols-2">
+                                <h4 className="text-blue-600 font-bold text-sm truncate  transition-colors uppercase tracking-tight">
                                     {project.name}
                                 </h4>
+                                <div className="shrink-0 flex justify-end">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-lg border shadow-sm ${project.status === 'IN_PROGRESS' || project.status === 'CONFIRMED'
+                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                                            }`}>
+                                            {PROJECT_STATUS_LABELS[project.status] || project.status}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2 mt-1">
-                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-lg border ${project.status === 'IN_PROGRESS' || project.status === 'CONFIRMED'
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                                    : 'bg-gray-100 text-gray-600 border-gray-200'
-                                    }`}>
-                                    {PROJECT_STATUS_LABELS[project.status] || project.status}
-                                </span>
-                            </div>
+
+                        </motion.div>
+                    );
+                }) : (
+                    <div className="flex flex-col items-center justify-center py-12 bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-100">
+                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-3">
+                            <Briefcase className="w-6 h-6 text-slate-200" />
                         </div>
-                    </div>
-                )) : (
-                    <div className="text-center py-12 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">
-                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
-                            <CheckCircle2 className="w-6 h-6 text-gray-200" />
-                        </div>
-                        <p className="text-gray-400 italic text-xs font-medium">Bạn chưa tham gia dự án nào</p>
+                        <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest italic text-center px-4">Bạn chưa tham gia dự án nào</p>
                     </div>
                 )}
             </div>
 
             {projects.length > 5 && (
-                <button className="w-full mt-6 py-3 text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:bg-emerald-50 rounded-xl transition-all border border-emerald-50">
-                    Xem tất cả ({projects.length})
+                <button className="w-full mt-6 py-3 text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:bg-emerald-600 hover:text-white rounded-xl transition-all border-2 border-emerald-100 shadow-sm relative z-10">
+                    Mở rộng danh sách ({projects.length})
                 </button>
             )}
         </div>
