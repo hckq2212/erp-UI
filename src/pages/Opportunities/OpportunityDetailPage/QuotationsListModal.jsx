@@ -63,7 +63,7 @@ export const QuotationsListModal = ({
                               quotation.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
                                 'bg-gray-100 text-gray-700'
                           }`}>
-                          {quotation.status === 'DRAFT' ? 'Nháp' :
+                          {quotation.status === 'DRAFT' ? 'Đang đợi duyệt' :
                             quotation.status === 'SENT' ? 'Đã gửi' :
                               quotation.status === 'APPROVED' ? 'Đã duyệt' :
                                 quotation.status === 'REJECTED' ? 'Từ chối' :

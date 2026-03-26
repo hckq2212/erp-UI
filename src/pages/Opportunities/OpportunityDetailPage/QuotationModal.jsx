@@ -283,7 +283,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
 
   // Get available services that are not already in the list
   const availableServices = allServices.filter(
-    service => !items.find(item => String(item.serviceId) === String(service.id))
+    service => !items.find(item => item.packageName === 'STANDALONE' && String(item.serviceId) === String(service.id))
   );
 
   const totals = items.reduce((acc, item) => {
@@ -353,7 +353,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
         ...pkg,
         profitMargin: calculateProfitMargin(pkg.selectedPrice, pkg.costPrice)
       })),
-      standalone: standalone.filter(s => !packageServiceIds.has(String(s.serviceId)))
+      standalone: standalone
     };
   }, [items]);
 

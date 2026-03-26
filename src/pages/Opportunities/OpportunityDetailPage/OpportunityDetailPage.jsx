@@ -164,15 +164,8 @@ export const OpportunityDetailPage = () => {
         }).unwrap();
         toast.success('Cập nhật báo giá thành công');
       } else {
-        // Create new quotation then update with details
-        const createResponse = await createQuotation({
-          opportunityId: id,
-          note: quotationData.note || ''
-        }).unwrap();
-
-        // Update with details immediately after creation
-        await updateQuotation({
-          id: createResponse.id,
+        // Create new quotation with full details in one call
+        await createQuotation({
           opportunityId: id,
           ...quotationData
         }).unwrap();
@@ -262,7 +255,7 @@ export const OpportunityDetailPage = () => {
                     >
                       Xem báo giá
                     </button>
-                    {(() => {
+                    {opportunity.status == 'PENDING_QUOTE_APPROVAL' && (() => {
                       const draftCount = quotations.filter(q => q.status === 'DRAFT').length;
                       return draftCount > 0 && (
                         <span className="absolute -top-2 -right-2 flex items-center justify-center h-5 w-5 text-[10px] font-black text-white bg-red-500 rounded-full ring-2 ring-white shadow-sm">
@@ -272,7 +265,7 @@ export const OpportunityDetailPage = () => {
                     })()}
                   </div>
                 )}
-                {(opportunity.status === 'QUOTATION_DRAFTING' || opportunity.status === 'PENDING_QUOTE_APPROVAL' || opportunity.status === 'OPP_APPROVED') && (
+                {(opportunity.status === 'QUOTATION_DRAFTING' || opportunity.status === 'PENDING_QUOTE_APPROVAL' || opportunity.status === 'OPP_APPROVED' && (currentUser.role == 'ADMIN' || currentUser.id == opportunity.createdBy.id)) && (
                   <button
                     onClick={() => setShowQuotationModal(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
