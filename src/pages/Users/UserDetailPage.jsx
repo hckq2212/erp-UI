@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGetUserQuery, useUpdateUserMutation } from '../../api/users';
-import { TASK_STATUS_LABELS } from '../../utils/enums';
+import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, USER_ROLE_COLORS, USER_ROLE } from '../../utils/enums';
 import { uploadToCloudinary, getFilePreviewUrl } from '../../utils/cloudinary';
 import { toast } from 'react-toastify';
 import { Modal } from '../../components/ui/Modal';
@@ -9,6 +9,7 @@ import {
     X, Plus, Trash2, Upload, FileText, Download, Eye, Loader2,
     ArrowLeft, CheckCircle, Activity, Clock, XCircle, Briefcase, Mail, Phone, User, Shield, MapPin, Calendar
 } from 'lucide-react';
+import { cn } from '../../utils/cn';
 export const UserDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -99,29 +100,20 @@ export const UserDetailPage = () => {
 
     const getStatusBadge = (status) => {
         const label = TASK_STATUS_LABELS[status] || status;
-        switch (status) {
-            case 'DONE':
-            case 'COMPLETED':
-                return <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-green-100 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {label}</span>;
-            case 'DOING':
-                return <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-blue-100 flex items-center gap-1"><Activity className="w-3 h-3" /> {label}</span>;
-            case 'PENDING':
-                return <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-amber-100 flex items-center gap-1"><Clock className="w-3 h-3" /> {label}</span>;
-            case 'REJECTED':
-                return <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-red-100 flex items-center gap-1"><XCircle className="w-3 h-3" /> {label}</span>;
-            case 'CANCELLED':
-                return <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-red-100 flex items-center gap-1"><XCircle className="w-3 h-3" /> {label}</span>;
-            case 'OVERDUE':
-                return <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-red-100 flex items-center gap-1"><XCircle className="w-3 h-3" /> {label}</span>;
-            case 'AWAITING_PRICING':
-                return <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-red-100 flex items-center gap-1"><XCircle className="w-3 h-3" /> {label}</span>;
-            case 'AWAITING_REVIEW':
-                return <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-red-100 flex items-center gap-1"><XCircle className="w-3 h-3" /> {label}</span>;
-            case 'AWAITING_ACCEPTANCE':
-                return <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-red-100 flex items-center gap-1"><XCircle className="w-3 h-3" /> {label}</span>;
-            default:
-                return <span className="bg-gray-50 text-gray-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border border-gray-100">{label}</span>;
-        }
+        const Icon = (() => {
+            if (['DONE', 'COMPLETED', 'ACCEPTED'].includes(status)) return CheckCircle;
+            if (['DOING', 'PENDING'].includes(status)) return status === 'DOING' ? Activity : Clock;
+            return XCircle;
+        })();
+
+        return (
+            <span className={cn(
+                "px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border flex items-center gap-1 shadow-sm",
+                TASK_STATUS_COLORS[status] || 'bg-gray-50 text-gray-700 border-gray-100'
+            )}>
+                <Icon className="w-3 h-3" /> {label}
+            </span>
+        );
     };
 
     return (
@@ -144,9 +136,12 @@ export const UserDetailPage = () => {
                                 {user.fullName?.[0]}
                             </div>
                             <h1 className="text-2xl font-black text-gray-900 leading-tight mb-1">{user.fullName}</h1>
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-700 border border-purple-100 rounded-full text-xs font-black uppercase">
+                            <div className={cn(
+                                "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase border shadow-sm",
+                                USER_ROLE_COLORS[user.account?.role] || 'bg-gray-50 text-gray-700 border-gray-100'
+                            )}>
                                 <Shield className="w-3.5 h-3.5" />
-                                {user.account?.role}
+                                {USER_ROLE[user.account?.role] || user.account?.role}
                             </div>
                         </div>
 

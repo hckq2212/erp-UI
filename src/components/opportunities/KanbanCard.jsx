@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Briefcase, DollarSign, User, Calendar } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { formatNumber } from '../../utils/format';
-
+import { PRIORITY_LABELS, PRIORITY_COLORS, PRIORITY_INDICATOR_COLORS } from '../../utils/enums';
 export const KanbanCard = ({ opportunity }) => {
   const navigate = useNavigate();
   const {
@@ -19,24 +19,6 @@ export const KanbanCard = ({ opportunity }) => {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-  };
-
-  const priorityColors = {
-    High: 'border-l-red-500',
-    Medium: 'border-l-yellow-500',
-    Low: 'border-l-green-500',
-  };
-
-  const badgeColors = {
-    High: 'bg-red-100 text-red-800',
-    Medium: 'bg-yellow-100 text-yellow-800',
-    Low: 'bg-green-100 text-green-800',
-  };
-
-  const priorityLabels = {
-    High: 'Cao',
-    Medium: 'Trung bình',
-    Low: 'Thấp',
   };
 
   const handleClick = (e) => {
@@ -54,14 +36,14 @@ export const KanbanCard = ({ opportunity }) => {
       onClick={handleClick}
       className={cn(
         "bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:shadow-md transition-all mb-3 border-l-4",
-        priorityColors[opportunity.priority] || 'border-l-gray-300',
+        PRIORITY_INDICATOR_COLORS[opportunity.priority] || 'border-l-gray-300',
         isDragging && "opacity-50 cursor-grabbing"
       )}
     >
       <div className="flex justify-between items-start mb-2">
         <span className="text-xs font-mono text-gray-500">{opportunity.opportunityCode}-{opportunity.name}</span>
-        <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", badgeColors[opportunity.priority] || 'bg-gray-100')}>
-            {priorityLabels[opportunity.priority] || opportunity.priority}
+        <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full border shadow-sm", PRIORITY_COLORS[opportunity.priority] || 'bg-gray-100')}>
+            {PRIORITY_LABELS[opportunity.priority] || opportunity.priority}
         </span>
       </div>
       

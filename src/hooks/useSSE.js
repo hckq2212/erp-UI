@@ -21,7 +21,6 @@ export const useSSE = () => {
     // so we rely on cookies (credentials: 'include' is default for most browsers 
     // if using withCredentials: true).
     const sseUrl = `${BASE_URL}/notifications/stream`;
-    console.log('[SSE] Connecting to:', sseUrl);
 
     const eventSource = new EventSource(sseUrl, {
       withCredentials: true,

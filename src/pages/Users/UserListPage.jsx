@@ -4,7 +4,7 @@ import { Users, Search, ChevronRight, Mail, Phone, Shield, Plus } from 'lucide-r
 import { useGetUsersQuery } from '../../api/users';
 import { useGetMeQuery } from '../../api/auth';
 import { AddUserModal } from './AddUserModal';
-import { USER_ROLE } from '../../utils/enums';
+import { USER_ROLE, USER_ROLE_COLORS } from '../../utils/enums';
 
 export const UserListPage = () => {
     const navigate = useNavigate();
@@ -29,15 +29,7 @@ export const UserListPage = () => {
     });
 
     const getRoleBadgeColor = (role) => {
-        switch (role) {
-            case 'ADMIN': return 'bg-red-50 text-red-700 border-red-100';
-            case 'BOD': return 'bg-amber-50 text-amber-700 border-amber-100';
-            case 'TL': return 'bg-purple-50 text-purple-700 border-purple-100';
-            case 'BD': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-            case 'MEMBER':
-            case 'ACCOUNTANT': return 'bg-blue-50 text-blue-700 border-blue-100';
-            default: return 'bg-gray-50 text-gray-700 border-gray-100';
-        }
+        return USER_ROLE_COLORS[role] || 'bg-gray-50 text-gray-700 border-gray-100';
     };
 
     if (isLoading) {

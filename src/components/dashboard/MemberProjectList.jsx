@@ -1,18 +1,11 @@
 import React from 'react';
 import { Briefcase, ArrowUpRight, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { PROJECT_STATUS_LABELS } from '../../utils/enums';
+import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS, PROJECT_CARD_THEMES } from '../../utils/enums';
 import { motion } from 'framer-motion';
 
 export const MemberProjectList = ({ projects = [] }) => {
     const navigate = useNavigate();
-
-    const getStatusTheme = (status) => {
-        if (['IN_PROGRESS', 'CONFIRMED'].includes(status)) {
-            return { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', accent: 'bg-blue-600' };
-        }
-        return { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', accent: 'bg-slate-400' };
-    };
 
     return (
         <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm h-full flex flex-col overflow-hidden relative">
@@ -28,7 +21,9 @@ export const MemberProjectList = ({ projects = [] }) => {
 
             <div className="space-y-4 flex-1 relative z-10">
                 {projects.length > 0 ? projects.map((project, index) => {
-                    const theme = getStatusTheme(project.status);
+                    const theme = (project.status === 'IN_PROGRESS' || project.status === 'CONFIRMED') 
+                        ? PROJECT_CARD_THEMES.ACTIVE 
+                        : PROJECT_CARD_THEMES.INACTIVE;
                     return (
                         <motion.div
                             key={project.id}
@@ -44,16 +39,12 @@ export const MemberProjectList = ({ projects = [] }) => {
                                 </h4>
                                 <div className="shrink-0 flex justify-end">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-lg border shadow-sm ${project.status === 'IN_PROGRESS' || project.status === 'CONFIRMED'
-                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                                            : 'bg-slate-100 text-slate-600 border-slate-200'
-                                            }`}>
+                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-lg border shadow-sm ${PROJECT_STATUS_COLORS[project.status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                                             {PROJECT_STATUS_LABELS[project.status] || project.status}
                                         </span>
                                     </div>
                                 </div>
                             </div>
-
                         </motion.div>
                     );
                 }) : (

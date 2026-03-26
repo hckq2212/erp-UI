@@ -8,7 +8,7 @@ import { useRequestSupportMutation, useRespondToSupportMutation, useReturnSuppor
 import { useTableFeatures } from '../../../hooks/useTableFeatures';
 import { Pagination } from '../../../components/ui/Pagination';
 import { cn } from '../../../utils/cn';
-import { TASK_STATUS_LABELS } from '../../../utils/enums';
+import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../../utils/enums';
 import { toast } from 'react-toastify';
 import { formatDateTime, getRemainingTime } from '../../../utils/format';
 import { useGetMeQuery } from '../../../api/auth';
@@ -82,22 +82,14 @@ export const TaskTable = ({ tasks = [], project }) => {
 
     const getStatusBadge = (status) => {
         const label = TASK_STATUS_LABELS[status] || status;
-        switch (status) {
-            case 'DONE':
-            case 'COMPLETED':
-            case 'ACCEPTED':
-                return <span className="flex items-center gap-1.5 text-md font-medium text-green-600"> {label}</span>;
-            case 'DOING':
-                return <span className="flex items-center gap-1.5 text-md font-medium text-amber-600"> {label}</span>;
-            case 'PENDING':
-                return <span className="flex items-center gap-1.5 text-md font-medium text-blue-600"> {label}</span>;
-            case 'OVERDUE':
-                return <span className="flex items-center gap-1.5 text-md font-medium text-red-600"> {label}</span>;
-            case 'SUPPORT_AWAITING_RETURN':
-                return <span className="flex items-center gap-1.5 text-md font-medium text-indigo-600"> {label}</span>;
-            default:
-                return <span className="flex items-center gap-1.5 text-md font-medium text-gray-500"> {label}</span>;
-        }
+        return (
+            <span className={cn(
+                "px-2 py-0.5 rounded-lg text-xs font-bold border",
+                TASK_STATUS_COLORS[status] || 'bg-gray-50 text-gray-500 border-gray-100'
+            )}>
+                {label}
+            </span>
+        );
     };
 
 
@@ -274,7 +266,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                     <td className="px-6 py-4 text-center">
                                         <span className="font-medium text-gray-700">{task.assignee?.fullName || task.vendorId || '---'}</span>
                                     </td>
-                                    <td className="px-6 py-4 text-center">
+                                    <td className="px-6 py-4 text-center w-fit">
                                         {getStatusBadge(task.status)}
                                     </td>
                                     <td className="px-6 py-4">

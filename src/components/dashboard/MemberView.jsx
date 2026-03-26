@@ -5,7 +5,7 @@ import { TaskCalendar } from './TaskCalendar';
 import { MemberProjectList } from './MemberProjectList';
 import { WorkloadChart } from './WorkloadChart';
 import { getRemainingTime } from '../../utils/format';
-import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
+import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, URGENCY_THEMES } from '../../utils/enums';
 
 export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMemberId, teamMembers }) => {
     // Helper to get urgency level for color coding
@@ -58,7 +58,7 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                                 <div className="grid gap-3">
                                     {dashboard.member.upcomingDeadlines.map((task, index) => {
                                         const urgency = getUrgencyLevel(task.deadline, task.status);
-                                        const theme = urgencyThemes[urgency];
+                                        const theme = URGENCY_THEMES[urgency];
                                         const remaining = getRemainingTime(task.deadline, task.status);
 
                                         return (

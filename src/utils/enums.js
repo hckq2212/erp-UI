@@ -71,12 +71,12 @@ export const PROJECT_STATUS_LABELS = {
 };
 
 export const PROJECT_STATUS_COLORS = {
-  PENDING_CONFIRMATION: 'bg-orange-100 text-orange-800',
-  CONFIRMED: 'bg-blue-100 text-blue-800',
-  IN_PROGRESS: 'bg-green-100 text-green-800',
-  ON_HOLD: 'bg-yellow-100 text-yellow-800',
-  COMPLETED: 'bg-purple-100 text-purple-800',
-  CANCELLED: 'bg-red-100 text-red-800'
+  PENDING_CONFIRMATION: 'bg-orange-50 text-orange-700 border-orange-100',
+  CONFIRMED: 'bg-blue-50 text-blue-700 border-blue-100',
+  IN_PROGRESS: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  ON_HOLD: 'bg-amber-50 text-amber-700 border-amber-100',
+  COMPLETED: 'bg-purple-50 text-purple-700 border-purple-100',
+  CANCELLED: 'bg-rose-50 text-rose-700 border-rose-100'
 };
 
 // Opportunity Status
@@ -111,55 +111,106 @@ export const OPPORTUNITY_STATUS_COLORS = {
   LOST: 'bg-red-100 text-red-800'
 };
 
-// Task Status
-export const TASK_STATUS_LABELS = {
-  PENDING: 'Chờ phân công',
-  DOING: 'Đang thực hiện',
-  DONE: 'Hoàn thành',
-  CANCELLED: 'Đã hủy',
-  AWAITING_PRICING: 'Chờ định giá',
-  REJECTED: 'Yêu cầu làm lại',
-  AWAITING_ACCEPTANCE: 'Đang chờ nghiệm thu',
-  AWAITING_REVIEW: 'Đang chờ duyệt',
-  OVERDUE: 'Quá hạn',
-  AWAITING_SUPPORT: 'Đã nhờ hỗ trợ',
-  SUPPORT_PENDING: 'Chờ xác nhận hỗ trợ',
-  COMPLETED: "Hoàn thành",
-  REWORKING: "Đang làm lại",
-  INTERNAL_COMPLETED: "Hoàn thành nội bộ",
-  ACCEPTED: "Đã được nghiệm thu",
-  SUPPORT_AWAITING_RETURN: "Chờ xác nhận hoàn thành"
+// Task Status Keys
+export const TASK_STATUS = {
+  PENDING: 'PENDING',
+  DOING: 'DOING',
+  DONE: 'DONE',
+  CANCELLED: 'CANCELLED',
+  AWAITING_PRICING: 'AWAITING_PRICING',
+  REJECTED: 'REJECTED',
+  AWAITING_ACCEPTANCE: 'AWAITING_ACCEPTANCE',
+  AWAITING_REVIEW: 'AWAITING_REVIEW',
+  OVERDUE: 'OVERDUE',
+  AWAITING_SUPPORT: 'AWAITING_SUPPORT',
+  SUPPORT_PENDING: 'SUPPORT_PENDING',
+  COMPLETED: 'COMPLETED',
+  REWORKING: 'REWORKING',
+  INTERNAL_COMPLETED: 'INTERNAL_COMPLETED',
+  ACCEPTED: 'ACCEPTED',
+  SUPPORT_AWAITING_RETURN: 'SUPPORT_AWAITING_RETURN',
 };
 
+// Task Status Display Labels
+export const TASK_STATUS_LABELS = {
+  [TASK_STATUS.PENDING]: 'Chờ phân công',
+  [TASK_STATUS.DOING]: 'Đang thực hiện',
+  [TASK_STATUS.DONE]: 'Hoàn thành',
+  [TASK_STATUS.CANCELLED]: 'Đã hủy',
+  [TASK_STATUS.AWAITING_PRICING]: 'Chờ định giá',
+  [TASK_STATUS.REJECTED]: 'Yêu cầu làm lại',
+  [TASK_STATUS.AWAITING_ACCEPTANCE]: 'Đang chờ nghiệm thu',
+  [TASK_STATUS.AWAITING_REVIEW]: 'Đang chờ duyệt',
+  [TASK_STATUS.OVERDUE]: 'Quá hạn',
+  [TASK_STATUS.AWAITING_SUPPORT]: 'Đã nhờ hỗ trợ',
+  [TASK_STATUS.SUPPORT_PENDING]: 'Chờ xác nhận hỗ trợ',
+  [TASK_STATUS.COMPLETED]: 'Hoàn thành',
+  [TASK_STATUS.REWORKING]: 'Đang làm lại',
+  [TASK_STATUS.INTERNAL_COMPLETED]: 'Hoàn thành nội bộ',
+  [TASK_STATUS.ACCEPTED]: 'Đã được nghiệm thu',
+  [TASK_STATUS.SUPPORT_AWAITING_RETURN]: 'Chờ xác nhận hoàn thành',
+};
+
+// Task Status Colors
 export const TASK_STATUS_COLORS = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  DOING: 'bg-blue-100 text-blue-800',
-  CANCELLED: 'bg-red-100 text-red-800',
-  AWAITING_PRICING: 'bg-orange-100 text-orange-800',
-  REJECTED: 'bg-red-100 text-red-800',
-  INTERNAL_COMPLETED: 'bg-purple-100 text-purple-800',
-  ACCEPTED: 'bg-emerald-100 text-emerald-800',
-  AWAITING_SUPPORT: 'bg-red-100 text-red-800',
-  SUPPORT_PENDING: 'bg-orange-100 text-orange-800',
-  COMPLETED: 'bg-green-100 text-green-800',
-  REWORKING: 'bg-yellow-100 text-yellow-800',
-  AWAITING_ACCEPTANCE: 'bg-yellow-100 text-yellow-800',
-  AWAITING_REVIEW: 'bg-yellow-100 text-yellow-800',
-  OVERDUE: 'bg-red-100 text-red-800',
-  SUPPORT_AWAITING_RETURN: 'bg-indigo-100 text-indigo-800',
+  [TASK_STATUS.PENDING]: 'bg-amber-50 text-amber-700 border-amber-100',
+  [TASK_STATUS.DOING]: 'bg-blue-50 text-blue-700 border-blue-100',
+  [TASK_STATUS.DONE]: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  [TASK_STATUS.CANCELLED]: 'bg-rose-50 text-rose-700 border-rose-100',
+  [TASK_STATUS.AWAITING_PRICING]: 'bg-orange-50 text-orange-700 border-orange-100',
+  [TASK_STATUS.REJECTED]: 'bg-rose-50 text-rose-700 border-rose-100',
+  [TASK_STATUS.INTERNAL_COMPLETED]: 'bg-purple-50 text-purple-700 border-purple-100',
+  [TASK_STATUS.ACCEPTED]: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  [TASK_STATUS.AWAITING_SUPPORT]: 'bg-rose-50 text-rose-700 border-rose-100',
+  [TASK_STATUS.SUPPORT_PENDING]: 'bg-orange-50 text-orange-700 border-orange-100',
+  [TASK_STATUS.COMPLETED]: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  [TASK_STATUS.REWORKING]: 'bg-amber-50 text-amber-700 border-amber-100',
+  [TASK_STATUS.AWAITING_ACCEPTANCE]: 'bg-amber-50 text-amber-700 border-amber-100',
+  [TASK_STATUS.AWAITING_REVIEW]: 'bg-amber-50 text-amber-700 border-amber-100',
+  [TASK_STATUS.OVERDUE]: 'bg-rose-50 text-rose-700 border-rose-100',
+  [TASK_STATUS.SUPPORT_AWAITING_RETURN]: 'bg-blue-50 text-blue-700 border-blue-100',
+};
+
+// Dashboard Urgency Themes
+export const URGENCY_THEMES = {
+  overdue: { bg: 'bg-rose-50', border: 'border-rose-200', accent: 'bg-rose-600', text: 'text-rose-700', icon: 'text-rose-500' },
+  today: { bg: 'bg-orange-50', border: 'border-orange-200', accent: 'bg-orange-600', text: 'text-orange-700', icon: 'text-orange-500' },
+  soon: { bg: 'bg-amber-50', border: 'border-amber-200', accent: 'bg-amber-600', text: 'text-amber-700', icon: 'text-amber-500' },
+  safe: { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'bg-emerald-400', text: 'text-emerald-700', icon: 'text-emerald-400' },
+  completed: { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'bg-emerald-600', text: 'text-emerald-700', icon: 'text-emerald-500' }
+};
+
+// Dashboard Project Themes
+export const PROJECT_CARD_THEMES = {
+  ACTIVE: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', accent: 'bg-blue-600' },
+  INACTIVE: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', accent: 'bg-slate-400' }
 };
 
 // Priority
 export const PRIORITY_LABELS = {
-  Low: 'Thấp',
+  High: 'Cao',
   Medium: 'Trung bình',
-  High: 'Cao'
+  Low: 'Thấp'
 };
 
 export const PRIORITY_COLORS = {
-  Low: 'bg-green-100 text-green-800 border-green-200',
-  Medium: 'bg-orange-100 text-orange-800 border-orange-200',
-  High: 'bg-red-100 text-red-800 border-red-200'
+  High: 'bg-rose-50 text-rose-700 border-rose-100',
+  Medium: 'bg-amber-50 text-amber-700 border-amber-100',
+  Low: 'bg-emerald-50 text-emerald-700 border-emerald-100'
+};
+
+export const PRIORITY_INDICATOR_COLORS = {
+  High: 'border-l-rose-500',
+  Medium: 'border-l-amber-500',
+  Low: 'border-l-emerald-500'
+};
+
+export const QUOTATION_STATUS_COLORS = {
+  Draft: 'bg-slate-50 text-slate-700 border-slate-100',
+  Sent: 'bg-blue-50 text-blue-700 border-blue-100',
+  Approved: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  Rejected: 'bg-rose-50 text-rose-700 border-rose-100',
+  Expired: 'bg-amber-50 text-amber-700 border-amber-100'
 };
 
 // Field
@@ -182,21 +233,6 @@ export const JOB_PERFORMER_TYPE = {
   VENDOR: "Vendor"
 };
 
-export const TASK_STATUS = {
-  PENDING: "Chờ xử lý",
-  DOING: "Đang thực hiện",
-  DONE: "Hoàn thành",
-  AWAITING_ACCEPTANCE: "Đang chờ nghiệm thu",
-  AWAITING_REVIEW: "Đang chờ duyệt",
-  AWAITING_PRICING: "Chờ định giá",
-  CANCELLED: "Đã hủy",
-  OVERDUE: "Quá hạn",
-  AWAITING_SUPPORT: "Đã nhờ hỗ trợ",
-  SUPPORT_PENDING: "Chờ xác nhận hỗ trợ",
-  INTERNAL_COMPLETED: "INTERNAL_COMPLETED",
-  ACCEPTED: "ACCEPTED",
-  SUPPORT_AWAITING_RETURN: "SUPPORT_AWAITING_RETURN"
-};
 
 export const PARTNER_TYPE_LABELS = {
   BUSINESS: 'Doanh nghiệp',
@@ -224,6 +260,17 @@ export const USER_ROLE = {
   ADMIN_SALE: "ADMIN kinh doanh",
   BD: "BD",
   HR: "HR",
+};
+
+export const USER_ROLE_COLORS = {
+  ADMIN: 'bg-rose-50 text-rose-700 border-rose-100',
+  BOD: 'bg-amber-50 text-amber-700 border-amber-100',
+  TL: 'bg-purple-50 text-purple-700 border-purple-100',
+  BD: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  MEMBER: 'bg-blue-50 text-blue-700 border-blue-100',
+  ACCOUNTANT: 'bg-blue-50 text-blue-700 border-blue-100',
+  SALE: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  HR: 'bg-teal-50 text-teal-700 border-teal-100'
 };
 
 export const TEAM_MEMBER_ROLE_LABELS = {

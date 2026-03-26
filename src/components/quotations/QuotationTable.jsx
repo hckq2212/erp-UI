@@ -3,6 +3,7 @@ import { Button } from '../ui/Button';
 import { cn } from '../../utils/cn';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../ui/Pagination';
+import { QUOTATION_STATUS_COLORS } from '../../utils/enums';
 
 export const QuotationTable = ({ quotations = [], onEdit, onDelete, onView }) => {
     const {
@@ -16,13 +17,7 @@ export const QuotationTable = ({ quotations = [], onEdit, onDelete, onView }) =>
     } = useTableFeatures(quotations, { initialSort: { key: 'code', direction: 'ascending' } });
 
     const getStatusColor = (status) => {
-        switch (status) {
-            case 'Draft': return 'bg-gray-100 text-gray-800';
-            case 'Sent': return 'bg-blue-100 text-blue-800';
-            case 'Approved': return 'bg-green-100 text-green-800';
-            case 'Rejected': return 'bg-red-100 text-red-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
+        return QUOTATION_STATUS_COLORS[status] || 'bg-slate-50 text-slate-700 border-slate-100';
     };
 
     const getSortIcon = (key) => {

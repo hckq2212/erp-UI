@@ -6,7 +6,7 @@ import { useGetMeQuery } from '../../api/auth';
 import { formatDate, formatDateTime } from '../../utils/format';
 import { toast } from 'react-toastify';
 import { useState, useRef } from 'react';
-import { JOB_PERFORMER_TYPE } from '../../utils/enums';
+import { JOB_PERFORMER_TYPE, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../utils/cn';
@@ -45,34 +45,22 @@ export const TaskDetailPage = () => {
     const fileInputRef = useRef(null);
 
     const getStatusBadge = (status) => {
-        switch (status) {
-            case 'COMPLETED':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase"><CheckCircle2 className="w-3 h-3" /> Hoàn thành</span>;
-            case 'INTERNAL_COMPLETED':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold uppercase"><CheckCircle2 className="w-3 h-3" /> Hoàn thành nội bộ</span>;
-            case 'ACCEPTED':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold uppercase"><CheckCircle2 className="w-3 h-3" /> Đã nghiệm thu</span>;
-            case 'DOING':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase"><Clock className="w-3 h-3" /> Đang thực hiện</span>;
-            case 'AWAITING_REVIEW':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase"><AlertCircle className="w-3 h-3" /> Chờ duyệt</span>;
-            case 'OVERDUE':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase"><AlertCircle className="w-3 h-3" /> Quá hạn</span>;
-            case 'REJECTED':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase">Đã từ chối</span>;
-            case 'REWORKING':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold uppercase"><Clock className="w-3 h-3" /> Làm lại</span>;
-            case 'SUPPORT_PENDING':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold uppercase"><AlertCircle className="w-3 h-3" /> Chờ xác nhận hỗ trợ</span>;
-            case 'AWAITING_SUPPORT':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase"><AlertCircle className="w-3 h-3" /> Đã nhờ hỗ trợ</span>;
-            case 'SUPPORT_AWAITING_RETURN':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase"><Clock className="w-3 h-3" /> Chờ xác nhận hoàn thành</span>;
-            case 'TODO':
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold uppercase">Chưa bắt đầu</span>;
-            default:
-                return <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold uppercase">{status}</span>;
-        }
+        const label = TASK_STATUS_LABELS[status] || status;
+        const icon = (status) => {
+            if (['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED'].includes(status)) return <CheckCircle2 className="w-3 h-3" />;
+            if (['DOING', 'REWORKING', 'SUPPORT_AWAITING_RETURN'].includes(status)) return <Clock className="w-3 h-3" />;
+            return <AlertCircle className="w-3 h-3" />;
+        };
+
+        return (
+            <span className={cn(
+                "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase border shadow-sm",
+                TASK_STATUS_COLORS[status] || 'bg-gray-100 text-gray-700 border-gray-200'
+            )}>
+                {icon(status)}
+                {label}
+            </span>
+        );
     };
 
     const handleFileChange = (e) => {
