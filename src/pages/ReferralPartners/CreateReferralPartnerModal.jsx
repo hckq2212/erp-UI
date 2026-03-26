@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -7,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { useCreateReferralPartnerMutation } from '../../api/referralPartners';
 import { toast } from 'react-toastify';
 import { PARTNER_TYPE_LABELS } from '../../utils/enums';
+import { fetchTaxInfo } from '../../utils/tax';
 
 const partnerSchema = z.object({
     name: z.string().min(1, 'Tên đối tác là bắt buộc').regex(/^[a-zA-ZÀ-ỹ0-9\s]+$/, 'Tên không được chứa ký tự đặc biệt'),
@@ -44,6 +46,8 @@ export const CreateReferralPartnerModal = ({ isOpen, onClose }) => {
         register,
         handleSubmit,
         reset,
+        watch,
+        setValue,
         formState: { errors },
     } = useForm({
         resolver: zodResolver(partnerSchema),
@@ -56,6 +60,35 @@ export const CreateReferralPartnerModal = ({ isOpen, onClose }) => {
             type: 'BUSINESS',
         },
     });
+
+    const taxId = watch('taxId');
+    const type = watch('type');
+    const [isFetchingTax, setIsFetchingTax] = useState(false);
+
+    useEffect(() => {
+        const fetchInfo = async () => {
+            const cleanTaxId = taxId?.replace(/[\s-]/g, '');
+            // Chỉ auto-fill cho BUSINESS và theo MST (10 hoặc 13 số)
+            if (isOpen && type === 'BUSINESS' && (cleanTaxId?.length === 10 || cleanTaxId?.length === 13)) {
+                setIsFetchingTax(true);
+                try {
+                    const data = await fetchTaxInfo(cleanTaxId);
+                    if (data) {
+                        setValue('name', data.name, { shouldValidate: true });
+                        setValue('address', data.address || '', { shouldValidate: true });
+                        toast.info('Đã tự động điền thông tin doanh nghiệp');
+                    }
+                } catch (err) {
+                    console.error('Tax fetch failed:', err);
+                } finally {
+                    setIsFetchingTax(false);
+                }
+            }
+        };
+
+        const timer = setTimeout(fetchInfo, 500);
+        return () => clearTimeout(timer);
+    }, [taxId, type, isOpen, setValue]);
 
     const onSubmit = async (data) => {
         try {
@@ -77,7 +110,7 @@ export const CreateReferralPartnerModal = ({ isOpen, onClose }) => {
                             label="Tên đối tác *"
                             {...register('name')}
                             error={errors.name?.message}
-                            placeholder="Nhập tên đối tác..."
+                            placeholder={isFetchingTax ? "Đang tải tên doanh nghiệp..." : "Nhập tên đối tác..."}
                         />
                     </div>
                     <Input
@@ -93,10 +126,10 @@ export const CreateReferralPartnerModal = ({ isOpen, onClose }) => {
                         placeholder="Nhập số điện thoại..."
                     />
                     <Input
-                        label="Mã số thuế"
+                        label={type === 'BUSINESS' ? 'Mã số thuế' : 'Căn cước công dân'}
                         {...register('taxId')}
                         error={errors.taxId?.message}
-                        placeholder="Nhập MST..."
+                        placeholder={type === 'BUSINESS' ? 'Nhập MST...' : 'Nhập CMND/CCCD...'}
                     />
                     <div className="w-full">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Loại hình</label>

@@ -95,58 +95,7 @@ export const PartnerDetailPage = () => {
                 </div>
             </div>
 
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-6 rounded-[2rem] shadow-xl shadow-blue-100 text-white relative overflow-hidden group">
-                    <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
-                        <Wallet size={140} />
-                    </div>
-                    <div className="relative z-10">
-                        <p className="text-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2 opacity-80">Tổng hoa hồng kỳ vọng</p>
-                        <div className="text-3xl font-black mb-6">{formatCurrency(stats?.totalCommission || 0)}</div>
-                        <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-white/20 rounded-lg">
-                                <TrendingUp className="w-4 h-4" />
-                            </div>
-                            <span className="text-xs font-bold text-blue-50">Tỉ lệ chuyển đổi tích cực</span>
-                        </div>
-                    </div>
-                </div>
 
-                <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col justify-between group hover:border-emerald-200 transition-all hover:shadow-lg hover:shadow-emerald-50">
-                    <div>
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:scale-110 transition-transform duration-500">
-                                <CheckCircle2 size={24} />
-                            </div>
-                            <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase tracking-wider rounded-full">Đã quyết toán</span>
-                        </div>
-                        <p className="text-gray-400 text-[10px] font-black uppercase tracking-wider mb-1">Hoa hồng đã trả</p>
-                        <div className="text-2xl font-black text-emerald-600">{formatCurrency(stats?.paidCommission || 0)}</div>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
-                        <span className="text-[10px] text-gray-400 font-bold italic">Thanh toán lần cuối: 15/01/2026</span>
-                        <ArrowRight className="w-4 h-4 text-emerald-400 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col justify-between group hover:border-orange-200 transition-all hover:shadow-lg hover:shadow-orange-50">
-                    <div>
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="p-3 bg-orange-50 text-orange-600 rounded-2xl group-hover:scale-110 transition-transform duration-500">
-                                <AlertCircle size={24} />
-                            </div>
-                            <span className="px-3 py-1 bg-orange-50 text-orange-600 text-[9px] font-black uppercase tracking-wider rounded-full">Chờ xử lý</span>
-                        </div>
-                        <p className="text-gray-400 text-[10px] font-black uppercase tracking-wider mb-1">Hoa hồng chờ duyệt</p>
-                        <div className="text-2xl font-black text-orange-600">{formatCurrency(stats?.pendingCommission || 0)}</div>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
-                        <span className="text-[10px] text-gray-400 font-bold italic">Cập nhật lúc: 11:30 hôm nay</span>
-                        <ArrowRight className="w-4 h-4 text-orange-400 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                </div>
-            </div>
 
             {/* Content Section: Info & Tabs */}
             <div className="grid grid-cols-1 lg:grid-cols-8 gap-8">

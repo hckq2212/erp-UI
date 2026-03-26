@@ -8,6 +8,7 @@ import Select from 'react-select';
 import { VIETNAM_PROVINCES } from '../../utils/provinces';
 import { formatNumber, parseNumber, formatDate, parseDate } from '../../utils/format';
 import { useNavigate } from 'react-router-dom';
+import DateInput from '../../components/ui/DateInput';
 
 const FIELDS = [
   { value: '', label: '-- Chọn lĩnh vực --' },
@@ -718,31 +719,25 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến bắt đầu (dd/mm/yyyy)</label>
-                    <div className="relative group">
-                      <input
-                        ref={setFieldRef('startDate')}
-                        type="date"
-                        name="startDate"
-                        value={formData.startDate}
-                        onChange={handleChange}
-                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.startDate ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}
-                      />
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến bắt đầu</label>
+                    <DateInput
+                      value={formData.startDate}
+                      onChange={handleChange}
+                      ref={setFieldRef('startDate')}
+                      name="startDate"
+                      error={!!errors.startDate}
+                    />
                     {errors.startDate && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.startDate}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến kết thúc (dd/mm/yyyy)</label>
-                    <div className="relative group">
-                      <input
-                        ref={setFieldRef('endDate')}
-                        type="date"
-                        name="endDate"
-                        value={formData.endDate}
-                        onChange={handleChange}
-                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.endDate ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}
-                      />
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Dự kiến kết thúc</label>
+                    <DateInput
+                      value={formData.endDate}
+                      onChange={handleChange}
+                      ref={setFieldRef('endDate')}
+                      name="endDate"
+                      error={!!errors.endDate}
+                    />
                     {errors.endDate && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.endDate}</p>}
                   </div>
                   <div>
@@ -894,14 +889,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                       <Plus className="w-4 h-4" />
                       Gói dịch vụ
                     </button>
-                    <button
-                      type="button"
-                      onClick={addService}
-                      className="text-indigo-600 hover:text-indigo-700 text-sm font-medium flex items-center gap-1 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-all"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Dịch vụ lẻ
-                    </button>
+
                   </div>
                 </div>
 
@@ -956,7 +944,18 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                 </div>
 
                 <div className="pt-2">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Dịch vụ lẻ</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Dịch vụ lẻ</p>
+                    <button
+                      type="button"
+                      onClick={addService}
+                      className="text-indigo-600 hover:text-indigo-700 text-sm font-medium flex items-center gap-1 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-all"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Dịch vụ lẻ
+                    </button>
+                  </div>
+
                   <div className="space-y-3">
                     {selectedServices.map((item, index) => {
                       // Filter out already selected services (except current selection)
