@@ -18,6 +18,16 @@ export const StatusSummaryCard = ({ label, count, color, icon: Icon }) => {
             light: 'bg-emerald-50/50 text-emerald-700 border-emerald-100',
             icon: 'text-emerald-600 shadow-emerald-100'
         },
+        rose: {
+            bg: 'bg-rose-600',
+            light: 'bg-rose-50/50 text-rose-700 border-rose-100',
+            icon: 'text-rose-600 shadow-rose-100'
+        },
+        purple: {
+            bg: 'bg-purple-600',
+            light: 'bg-purple-50/50 text-purple-700 border-purple-100',
+            icon: 'text-purple-600 shadow-purple-100'
+        },
     };
 
     const style = colorStyles[color] || colorStyles.blue;

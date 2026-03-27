@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { AlertCircle, Clock, Briefcase, Hash, ChevronRight } from 'lucide-react';
+import { AlertCircle, Clock, Briefcase, Hash, ChevronRight, CheckCircle2, TrendingUp, FileCheck } from 'lucide-react';
 import { TaskCalendar } from './TaskCalendar';
 import { MemberProjectList } from './MemberProjectList';
 import { WorkloadChart } from './WorkloadChart';
+import { StatusSummaryCard } from './StatusSummaryCard';
 import { getRemainingTime } from '../../utils/format';
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, URGENCY_THEMES } from '../../utils/enums';
 
@@ -30,8 +31,53 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
         completed: { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'bg-emerald-600', text: 'text-emerald-700', icon: 'text-emerald-500' }
     };
 
+    const statusCounts = dashboard.member?.statusCounts || {};
+
+    const statusGroups = [
+        {
+            label: 'Đang thực hiện',
+            count: (statusCounts.DOING || 0) + (statusCounts.REWORKING || 0),
+            color: 'blue',
+            icon: TrendingUp
+        },
+        {
+            label: 'Đợi phê duyệt',
+            count: (statusCounts.AWAITING_ACCEPTANCE || 0) + (statusCounts.INTERNAL_COMPLETED || 0) + (statusCounts.AWAITING_REVIEW || 0),
+            color: 'purple',
+            icon: FileCheck
+        },
+        {
+            label: 'Đã hoàn thành',
+            count: (statusCounts.COMPLETED || 0) + (statusCounts.ACCEPTED || 0) + (statusCounts.DONE || 0),
+            color: 'green',
+            icon: CheckCircle2
+        },
+        {
+            label: 'Vấn đề',
+            count: (statusCounts.REJECTED || 0) + (statusCounts.OVERDUE || 0),
+            color: 'rose',
+            icon: AlertCircle
+        }
+    ];
+
     return (
         <div className="space-y-10 pb-12">
+            {/* Task Status Summary */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"
+            >
+                {statusGroups.map((group, idx) => (
+                    <StatusSummaryCard
+                        key={idx}
+                        label={group.label}
+                        count={group.count}
+                        color={group.color}
+                        icon={group.icon}
+                    />
+                ))}
+            </motion.div>
             {/* Middle Row: Calendar & Deadlines */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}

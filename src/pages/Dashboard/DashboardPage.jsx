@@ -10,6 +10,7 @@ import { useGetTeamsQuery, useGetTeamMembersQuery } from '../../api/teams';
 
 // Components
 import { MemberSelector } from '../../components/dashboard/MemberSelector';
+import { MonthSelector } from '../../components/dashboard/MonthSelector';
 import { AdminView } from '../../components/dashboard/AdminView';
 import { TeamLeadView } from '../../components/dashboard/TeamLeadView';
 import { BDView } from '../../components/dashboard/BDView';
@@ -20,7 +21,15 @@ export const DashboardPage = () => {
     const navigate = useNavigate();
     const { data: user } = useGetMeQuery();
     const [selectedMemberId, setSelectedMemberId] = useState(null);
-    const { data: dashboard, isLoading: isDashboardLoading } = useGetDashboardDataQuery(selectedMemberId);
+    const [selectedDate, setSelectedDate] = useState({
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear()
+    });
+    const { data: dashboard, isLoading: isDashboardLoading } = useGetDashboardDataQuery({
+        userId: selectedMemberId,
+        month: selectedDate.month,
+        year: selectedDate.year
+    });
     const { data: awaitingReviewTasks, isLoading: isTasksLoading } = useGetTasksQuery({ status: 'AWAITING_REVIEW' });
 
     // Identify if the user is a lead of any team
@@ -85,10 +94,23 @@ export const DashboardPage = () => {
 
                     {isTeamLead && (
                         <div className="flex items-center gap-4">
+                            <MonthSelector
+                                selectedDate={selectedDate}
+                                onChange={setSelectedDate}
+                            />
                             <MemberSelector
                                 members={teamMembers.filter(m => m.user.id !== user?.id)}
                                 selectedId={selectedMemberId}
                                 onSelect={setSelectedMemberId}
+                            />
+                        </div>
+                    )}
+
+                    {!isTeamLead && (
+                        <div className="flex items-center gap-4">
+                            <MonthSelector
+                                selectedDate={selectedDate}
+                                onChange={setSelectedDate}
                             />
                         </div>
                     )}
@@ -111,15 +133,15 @@ export const DashboardPage = () => {
                             />
                         )}
 
-                        {dashboard.admin && !isViewingMember && (
+                        {/* {dashboard.admin && !isViewingMember && (
                             <div className="space-y-6">
                                 <div className="flex items-center gap-3">
                                     <h2 className="text-2xl font-black text-gray-900 tracking-tight italic">Hệ thống & Tài chính</h2>
                                 </div>
                                 <AdminView dashboard={dashboard} />
                             </div>
-                        )}
-
+                        )} */}
+                        {/* 
                         {(['BD', 'SALE', 'ADMIN', 'BOD'].includes(user?.role)) && !isViewingMember && (
                             <div className="space-y-6">
                                 <div className="flex items-center gap-3">
@@ -127,7 +149,7 @@ export const DashboardPage = () => {
                                 </div>
                                 <BDView dashboard={dashboard} navigate={navigate} />
                             </div>
-                        )}
+                        )} */}
 
                         {dashboard.teamLead && !isViewingMember && (
                             <div className="space-y-6">

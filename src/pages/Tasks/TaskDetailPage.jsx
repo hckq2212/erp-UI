@@ -327,16 +327,18 @@ export const TaskDetailPage = () => {
                         )}
 
                     {/* Reminder Action */}
-                    {(user?.role === 'ADMIN' || user?.role === 'BOD' || user?.id === task.project?.team?.teamLead?.id) && (task.assigneeId || task.helperId) && (
-                        <Button
-                            onClick={handleSendReminder}
-                            isLoading={isSendingReminder}
-                            className="rounded-2xl py-3 px-6 shadow-lg shadow-blue-100 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
-                        >
-                            <Bell className="w-5 h-5" />
-                            Nhắc việc
-                        </Button>
-                    )}
+                    {(user?.role === 'ADMIN' || user?.role === 'BOD' || user?.id === task.project?.team?.teamLead?.id)
+                        && (task.assigneeId || task.helperId)
+                        && (task.status !== 'COMPLETED' && task.status !== 'ACCEPTED' && task.status !== 'DONE' && task.status !== 'INTERNAL_COMPLETED') && (
+                            <Button
+                                onClick={handleSendReminder}
+                                isLoading={isSendingReminder}
+                                className="rounded-2xl py-3 px-6 shadow-lg shadow-blue-100 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                            >
+                                <Bell className="w-5 h-5" />
+                                Nhắc việc
+                            </Button>
+                        )}
                 </div>
             </div>
 

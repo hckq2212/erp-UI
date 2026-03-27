@@ -8,7 +8,7 @@ import { vi } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Clock, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { TASK_STATUS_LABELS } from '../../utils/enums';
+import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
 
 export const TaskCalendar = ({ tasks = [] }) => {
     const navigate = useNavigate();
@@ -88,7 +88,15 @@ export const TaskCalendar = ({ tasks = [] }) => {
                         >
                             {format(day, 'd')}
                             {dayTasks.length > 0 && !isSelected && (
-                                <span className={`absolute bottom-2 w-1 h-1 rounded-full ${dayTasks.some(t => t.status !== 'COMPLETED') ? 'bg-rose-500' : 'bg-green-500'}`} />
+                                <div className="absolute bottom-1.5 flex gap-0.5">
+                                    {dayTasks.slice(0, 3).map((t, i) => (
+                                        <span key={i} className={`w-1 h-1 rounded-full ${
+                                            ['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED'].includes(t.status) ? 'bg-emerald-500' : 
+                                            ['OVERDUE', 'REJECTED'].includes(t.status) ? 'bg-rose-500' : 'bg-blue-500'
+                                        }`} />
+                                    ))}
+                                    {dayTasks.length > 3 && <span className="w-1 h-1 rounded-full bg-gray-300" />}
+                                </div>
                             )}
                         </button>
                     );
@@ -110,11 +118,9 @@ export const TaskCalendar = ({ tasks = [] }) => {
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 key={task.id}
                                 onClick={() => navigate(`/tasks/${task.id}`)}
-                                className="w-full text-left p-3 bg-gray-50 rounded-xl border border-transparent hover:border-gray-100 transition-all flex items-center gap-3 group"
+                                className={`w-full text-left p-3 rounded-xl border shadow-sm transition-all flex items-center gap-3 group ${TASK_STATUS_COLORS[task.status] || 'bg-gray-50 border-gray-100 text-gray-700'}`}
                             >
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${task.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : 'bg-white text-gray-400 group-hover:text-blue-600 shadow-sm'}`}>
-                                    <Clock className="w-4 h-4" />
-                                </div>
+                                <div className="w-1.5 h-8 rounded-full bg-current opacity-20 shrink-0" />
                                 <div className="min-w-0">
                                     <p className="text-xs font-bold text-gray-900 truncate">{task.name}</p>
                                     <p className="text-[10px] text-gray-400 font-medium uppercase">{TASK_STATUS_LABELS[task.status]}</p>
