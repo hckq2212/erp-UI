@@ -81,43 +81,29 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                     />
                 ))}
                 <motion.div
-                    whileHover={{ y: -5, shadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)' }}
-                    className="p-6 rounded-[2.5rem] border shadow-sm flex flex-col justify-between transition-all bg-rose-50 border-rose-200 relative overflow-hidden h-full"
+                    whileHover={{ y: -5, shadow: '0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05)' }}
+                    className="p-4 rounded-[2rem] border shadow-sm flex items-center gap-4 transition-all duration-300 bg-rose-50 border-rose-200/60 relative overflow-hidden"
                 >
-                    {/* Decorative background element */}
-                    <div className="absolute -top-6 -right-6 w-24 h-24 bg-rose-100/50 rounded-full blur-2xl pointer-events-none" />
-
-                    <div className="flex items-center gap-3 mb-6 relative z-10">
-                        <div className="w-10 h-10 rounded-xl bg-rose-600 flex items-center justify-center shadow-lg shadow-rose-200/50">
-                            <AlertCircle className="w-5 h-5 text-white" />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-950 mt-0.5">
-                                Sai phạm
-                            </span>
-                        </div>
+                    <div className="absolute -top-6 -right-6 w-24 h-24 bg-rose-100/40 rounded-full blur-2xl pointer-events-none" />
+                    
+                    <div className="w-12 h-12 rounded-2xl bg-rose-600 flex items-center justify-center shadow-lg shadow-rose-200/40 shrink-0 relative z-10">
+                        <AlertCircle className="w-6 h-6 text-white" />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 relative z-10">
+                    <div className="flex-1 grid grid-cols-2 gap-3 relative z-10 ml-1">
                         <div className="flex flex-col">
-                            <div className="flex items-baseline gap-1">
-                                <span className="text-3xl font-black text-rose-950 leading-none">
-                                    {lateCount}
-                                </span>
-                                <Clock className="w-3 h-3 text-rose-400" />
-                            </div>
-                            <span className="text-[9px] font-black uppercase tracking-widest text-rose-600/60 mt-2">
+                            <h4 className="text-2xl font-extrabold text-rose-950 leading-none mb-1.5 tracking-tight">
+                                {lateCount}
+                            </h4>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600/60">
                                 Trễ hạn
                             </span>
                         </div>
-                        <div className="flex flex-col border-l border-rose-200/80 pl-4">
-                            <div className="flex items-baseline gap-1">
-                                <span className="text-3xl font-black text-rose-950 leading-none">
-                                    {reworkCount}
-                                </span>
-                                <AlertCircle className="w-3 h-3 text-rose-400" />
-                            </div>
-                            <span className="text-[9px] font-black uppercase tracking-widest text-rose-600/60 mt-2">
+                        <div className="flex flex-col border-l border-rose-200/60 pl-3">
+                            <h4 className="text-2xl font-extrabold text-rose-950 leading-none mb-1.5 tracking-tight">
+                                {reworkCount}
+                            </h4>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600/60">
                                 Làm lại
                             </span>
                         </div>
@@ -139,8 +125,8 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                         <div className="flex items-center justify-between mb-8 relative z-10">
                             <div className="flex items-center gap-4">
                                 <div>
-                                    <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase">Deadline sắp tới</h3>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">10 task gần deadline nhất</p>
+                                    <h3 className="text-xl font-extrabold text-slate-800 tracking-tight uppercase">Deadline sắp tới</h3>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">10 task gần deadline nhất</p>
                                 </div>
                             </div>
                         </div>
@@ -162,11 +148,9 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                                                 onClick={() => navigate(`/tasks/${task.id}`)}
                                                 className={`group relative flex items-center gap-4 p-4 rounded-2xl border-2 ${theme.border} ${theme.bg} hover:shadow-md hover:scale-[1.01] transition-all duration-300 w-full text-left`}
                                             >
-                                                {/* Left Urgency Accent */}
-
                                                 <div className="flex-1 min-w-0 ml-1">
                                                     <div className="flex items-center gap-2 mb-1.5">
-                                                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border shadow-sm ${TASK_STATUS_COLORS[task.status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border shadow-sm ${TASK_STATUS_COLORS[task.status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                                                             {TASK_STATUS_LABELS[task.status]}
                                                         </span>
                                                     </div>
@@ -179,7 +163,7 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                                                         <div className="flex items-center gap-1.5 min-w-0">
                                                             <Briefcase className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                                             <p className="text-[10px] font-bold text-slate-500 truncate uppercase tracking-tighter">
-                                                                {task.projectName || 'Công việc nội bộ'}
+                                                                 {task.projectName || 'Công việc nội bộ'}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -188,7 +172,7 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                                                 <div className="flex flex-col items-end gap-2 shrink-0 pr-2">
                                                     <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 border ${theme.border} shadow-sm`}>
                                                         <Clock className={`w-3.5 h-3.5 ${theme.icon}`} />
-                                                        <span className={`text-[11px] font-black uppercase tracking-tight ${theme.text}`}>
+                                                        <span className={`text-[11px] font-bold uppercase tracking-tight ${theme.text}`}>
                                                             {remaining.text}
                                                         </span>
                                                     </div>

@@ -91,7 +91,7 @@ export const MePage = () => {
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
                                 <div className="w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center shadow-sm">
-                                    <Star className="w-3 h-3 text-white fill-current" />
+                                    <p className="text-xs font-bold m-0 text-white fill-current flex items-center justify-center" >V</p>
                                 </div>
                                 <span className="text-sm font-black text-amber-600">
                                     {user.vinicoin?.toLocaleString() || 0} Vinicoin

@@ -453,7 +453,7 @@ export const TaskDetailPage = () => {
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kết quả</h2>
                             </div>
-                            {(task.status == "DOING" || task.status == "REJECTED" || task.status == "REWORKING") && task.assigneeId !== null && (
+                            {(task.status == "DOING" || task.status == "REJECTED" || task.status == "REWORKING" || task.status == "OVERDUE") && task.assigneeId !== null && (
                                 <button
                                     onClick={() => setIsResultModalOpen(true)}
                                     className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors"

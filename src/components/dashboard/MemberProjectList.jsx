@@ -14,7 +14,7 @@ export const MemberProjectList = ({ projects = [] }) => {
 
             <div className="flex items-center justify-between mb-8 relative z-10">
                 <div>
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase">Dự án tham gia</h3>
+                    <h3 className="text-xl font-extrabold text-slate-800 tracking-tight uppercase">Dự án tham gia</h3>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Dự án đang triển khai</p>
                 </div>
             </div>
@@ -39,7 +39,7 @@ export const MemberProjectList = ({ projects = [] }) => {
                                 </h4>
                                 <div className="shrink-0 flex justify-end">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-lg border shadow-sm ${PROJECT_STATUS_COLORS[project.status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                        <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-lg border shadow-sm ${PROJECT_STATUS_COLORS[project.status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
                                             {PROJECT_STATUS_LABELS[project.status] || project.status}
                                         </span>
                                     </div>
@@ -58,7 +58,7 @@ export const MemberProjectList = ({ projects = [] }) => {
             </div>
 
             {projects.length > 5 && (
-                <button className="w-full mt-6 py-3 text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:bg-emerald-600 hover:text-white rounded-xl transition-all border-2 border-emerald-100 shadow-sm relative z-10">
+                <button className="w-full mt-6 py-3 text-[10px] font-bold text-emerald-600 uppercase tracking-widest hover:bg-emerald-600 hover:text-white rounded-xl transition-all border-2 border-emerald-100 shadow-sm relative z-10">
                     Mở rộng danh sách ({projects.length})
                 </button>
             )}

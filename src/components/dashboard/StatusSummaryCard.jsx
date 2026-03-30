@@ -34,14 +34,16 @@ export const StatusSummaryCard = ({ label, count, color, icon: Icon }) => {
 
     return (
         <motion.div
-            whileHover={{ y: -5, shadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)' }}
-            className={`p-6 rounded-[2.5rem] border shadow-sm flex flex-col justify-center items-center text-center transition-all ${style.light}`}
+            whileHover={{ y: -5, shadow: '0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05)' }}
+            className={`p-4 rounded-[2rem] border shadow-sm flex items-center gap-4 transition-all duration-300 ${style.light}`}
         >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-white/80 backdrop-blur-sm shadow-sm ${style.icon}`}>
-                {Icon && <Icon className="w-5 h-5" />}
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-white/80 backdrop-blur-sm shadow-sm ${style.icon} shrink-0`}>
+                {Icon && <Icon className="w-6 h-6" />}
             </div>
-            <h4 className="text-3xl font-black tracking-tight leading-none mb-1">{count}</h4>
-            <p className="text-[10px] font-black uppercase tracking-[0.15em] opacity-60">{label}</p>
+            <div className="flex flex-col text-left">
+                <h4 className="text-2xl font-extrabold tracking-tight leading-none mb-1.5">{count}</h4>
+                <p className="text-[10px] font-bold uppercase tracking-wider opacity-60 leading-none">{label}</p>
+            </div>
         </motion.div>
     );
 };
