@@ -178,7 +178,10 @@ export const Header = () => {
                 <div className="w-3 h-3 bg-amber-400 rounded-full flex items-center justify-center">
                   <span className="text-[6px] font-black text-white">V</span>
                 </div>
-                <span className="text-[10px] font-black text-amber-600 leading-none">
+                <span 
+                  className="text-[10px] font-black text-amber-600 leading-none"
+                  title={`Tổng tích lũy: ${user?.vinicoinTotal?.toLocaleString() || 0} Vinicoin`}
+                >
                   {user?.vinicoin?.toLocaleString() || 0}
                 </span>
               </div>

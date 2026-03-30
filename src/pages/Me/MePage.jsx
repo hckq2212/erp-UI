@@ -83,21 +83,39 @@ export const MePage = () => {
                     </div>
                     <div>
                         <div className="flex items-center gap-3 mb-2">
-                            <h1 className="text-3xl font-black text-gray-900 tracking-tight">{user.fullName || 'Người dùng'}</h1>
+                            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{user.fullName || 'Người dùng'}</h1>
                             <div className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-[10px] font-black uppercase flex items-center gap-1">
-                                <Shield className="w-3 h-3" /> {user.role}
+                                {user.role}
                             </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center shadow-sm">
-                                    <p className="text-xs font-bold m-0 text-white fill-current flex items-center justify-center" >V</p>
+                        <div className="flex flex-wrap items-center gap-6">
+                            <div className="flex items-center gap-4 bg-amber-50/50 px-6 py-4 rounded-[1.5rem] border border-amber-100/50">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black text-amber-600/60 uppercase tracking-widest mb-1">Khả dụng</span>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-5 h-5 bg-amber-400 rounded-full flex items-center justify-center shadow-sm">
+                                            <p className="text-[10px] font-black text-white m-0">V</p>
+                                        </div>
+                                        <span className="text-xl font-black text-amber-600 leading-none">
+                                            {user.vinicoin?.toLocaleString() || 0}
+                                        </span>
+                                    </div>
                                 </div>
-                                <span className="text-sm font-black text-amber-600">
-                                    {user.vinicoin?.toLocaleString() || 0} Vinicoin
-                                </span>
+                                <div className="w-px h-8 bg-amber-200/30 mx-2" />
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black text-amber-600/60 uppercase tracking-widest mb-1">Tổng cộng</span>
+                                    <span className="text-xl font-black text-gray-800 leading-none">
+                                        {user.vinicoinTotal?.toLocaleString() || 0}
+                                    </span>
+                                </div>
+                                <div className="w-px h-8 bg-amber-200/30 mx-2" />
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black text-amber-600/60 uppercase tracking-widest mb-1">Đã rút</span>
+                                    <span className="text-xl font-black text-gray-400 leading-none">
+                                        {user.vinicoinWithdrawn?.toLocaleString() || 0}
+                                    </span>
+                                </div>
                             </div>
-                            <span className="text-sm text-gray-400 font-medium">@{user.username}</span>
                         </div>
                     </div>
                 </div>

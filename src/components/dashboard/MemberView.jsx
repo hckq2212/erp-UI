@@ -69,7 +69,7 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"
+                className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6"
             >
                 {statusGroups.map((group, idx) => (
                     <StatusSummaryCard
@@ -82,28 +82,67 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                 ))}
                 <motion.div
                     whileHover={{ y: -5, shadow: '0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05)' }}
-                    className="p-4 rounded-[2rem] border shadow-sm flex items-center gap-4 transition-all duration-300 bg-rose-50 border-rose-200/60 relative overflow-hidden"
+                    className="p-4 md:p-6 rounded-[2.5rem] border shadow-sm flex items-center gap-6 transition-all duration-300 bg-amber-50 border-amber-200/60 relative overflow-hidden group cursor-pointer col-span-2"
+                    onClick={() => navigate('/me')}
                 >
-                    <div className="absolute -top-6 -right-6 w-24 h-24 bg-rose-100/40 rounded-full blur-2xl pointer-events-none" />
-                    
-                    <div className="w-12 h-12 rounded-2xl bg-rose-600 flex items-center justify-center shadow-lg shadow-rose-200/40 shrink-0 relative z-10">
-                        <AlertCircle className="w-6 h-6 text-white" />
+                    <div className="absolute -top-12 -right-12 w-48 h-48 bg-amber-100/40 rounded-full blur-3xl pointer-events-none" />
+
+                    <div className="w-14 h-14 rounded-2xl bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-200/40 shrink-0 relative z-10 group-hover:scale-110 transition-transform">
+                        <p className="w-8 h-8 text-white font-bold text-2xl flex items-center justify-center" >V</p>
                     </div>
 
-                    <div className="flex-1 grid grid-cols-2 gap-3 relative z-10 ml-1">
+                    <div className="flex-1 grid grid-cols-3 gap-6 relative z-10 ml-2">
                         <div className="flex flex-col">
-                            <h4 className="text-2xl font-extrabold text-rose-950 leading-none mb-1.5 tracking-tight">
+                            <h4 className="text-3xl font-black text-amber-950 leading-none mb-2 tracking-tight">
+                                {dashboard.member?.vinicoin?.toLocaleString() || 0}
+                            </h4>
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-600/60">
+                                Khả dụng
+                            </span>
+                        </div>
+                        <div className="flex flex-col border-l border-amber-200/60 pl-6">
+                            <h4 className="text-3xl font-black text-amber-900 leading-none mb-2 tracking-tight">
+                                {dashboard.member?.vinicoinTotal?.toLocaleString() || 0}
+                            </h4>
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-600/60">
+                                Tổng cộng
+                            </span>
+                        </div>
+                        <div className="flex flex-col border-l border-amber-200/60 pl-6">
+                            <h4 className="text-3xl font-black text-gray-400 leading-none mb-2 tracking-tight">
+                                {dashboard.member?.vinicoinWithdrawn?.toLocaleString() || 0}
+                            </h4>
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-600/60">
+                                Đã rút
+                            </span>
+                        </div>
+                    </div>
+                </motion.div>
+
+                <motion.div
+                    whileHover={{ y: -5, shadow: '0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05)' }}
+                    className="p-4 md:p-6 rounded-[2.5rem] border shadow-sm flex items-center gap-6 transition-all duration-300 bg-rose-50 border-rose-200/60 relative overflow-hidden col-span-2"
+                >
+                    <div className="absolute -top-12 -right-12 w-48 h-48 bg-rose-100/40 rounded-full blur-3xl pointer-events-none" />
+
+                    <div className="w-14 h-14 rounded-2xl bg-rose-600 flex items-center justify-center shadow-lg shadow-rose-200/40 shrink-0 relative z-10">
+                        <AlertCircle className="w-8 h-8 text-white" />
+                    </div>
+
+                    <div className="flex-1 grid grid-cols-2 gap-8 relative z-10 ml-2">
+                        <div className="flex flex-col">
+                            <h4 className="text-3xl font-black text-rose-950 leading-none mb-2 tracking-tight">
                                 {lateCount}
                             </h4>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600/60">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-rose-600/60">
                                 Trễ hạn
                             </span>
                         </div>
-                        <div className="flex flex-col border-l border-rose-200/60 pl-3">
-                            <h4 className="text-2xl font-extrabold text-rose-950 leading-none mb-1.5 tracking-tight">
+                        <div className="flex flex-col border-l border-rose-200/60 pl-8">
+                            <h4 className="text-3xl font-black text-rose-950 leading-none mb-2 tracking-tight">
                                 {reworkCount}
                             </h4>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600/60">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-rose-600/60">
                                 Làm lại
                             </span>
                         </div>
@@ -163,7 +202,7 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                                                         <div className="flex items-center gap-1.5 min-w-0">
                                                             <Briefcase className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                                             <p className="text-[10px] font-bold text-slate-500 truncate uppercase tracking-tighter">
-                                                                 {task.projectName || 'Công việc nội bộ'}
+                                                                {task.projectName || 'Công việc nội bộ'}
                                                             </p>
                                                         </div>
                                                     </div>
