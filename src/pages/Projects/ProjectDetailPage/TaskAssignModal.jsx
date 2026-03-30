@@ -18,7 +18,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     const fileInputRef = useRef(null);
 
     // Normal members
-    const { data: members = [] } = useGetTeamMembersQuery(teamId, { skip: !teamId || isSupportMode });
+    const { data: members = [] } = useGetTeamMembersQuery(teamId, { skip: !teamId });
 
     // Lazy fetch for support teams
     const [fetchTeams, { data: allTeams = [], isLoading: isLoadingTeams }] = useLazyGetTeamsQuery();

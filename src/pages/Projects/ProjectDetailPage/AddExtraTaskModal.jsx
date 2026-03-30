@@ -45,7 +45,7 @@ export const AddExtraTaskModal = ({ isOpen, onClose, project }) => {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                     <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">
-                        Chọn công việc (Job)
+                        Chọn công việc
                     </label>
                     <div className="relative">
                         <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />

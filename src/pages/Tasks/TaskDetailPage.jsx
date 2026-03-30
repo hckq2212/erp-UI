@@ -329,7 +329,7 @@ export const TaskDetailPage = () => {
                     {/* Reminder Action */}
                     {(user?.role === 'ADMIN' || user?.role === 'BOD' || user?.id === task.project?.team?.teamLead?.id)
                         && (task.assigneeId || task.helperId)
-                        && (task.status !== 'COMPLETED' && task.status !== 'ACCEPTED' && task.status !== 'DONE' && task.status !== 'INTERNAL_COMPLETED') && (
+                        && (task.status !== 'COMPLETED' && task.status !== 'ACCEPTED' && task.status !== 'DONE' && task.status !== 'INTERNAL_COMPLETED' && task.status !== 'AWAITING_REVIEW') && (
                             <Button
                                 onClick={handleSendReminder}
                                 isLoading={isSendingReminder}
