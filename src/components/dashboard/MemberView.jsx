@@ -23,15 +23,18 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
         return 'safe';
     };
 
-    const urgencyThemes = {
-        overdue: { bg: 'bg-rose-50', border: 'border-rose-200', accent: 'bg-rose-600', text: 'text-rose-700', icon: 'text-rose-500' },
-        today: { bg: 'bg-orange-50', border: 'border-orange-200', accent: 'bg-orange-600', text: 'text-orange-700', icon: 'text-orange-500' },
-        soon: { bg: 'bg-amber-50', border: 'border-amber-200', accent: 'bg-amber-600', text: 'text-amber-700', icon: 'text-amber-500' },
-        safe: { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'bg-emerald-400', text: 'text-emerald-700', icon: 'text-emerald-400' },
-        completed: { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'bg-emerald-600', text: 'text-emerald-700', icon: 'text-emerald-500' }
-    };
+    // const urgencyThemes = {
+    //     overdue: { bg: 'bg-rose-50', border: 'border-rose-200', accent: 'bg-rose-600', text: 'text-rose-700', icon: 'text-rose-500' },
+    //     today: { bg: 'bg-orange-50', border: 'border-orange-200', accent: 'bg-orange-600', text: 'text-orange-700', icon: 'text-orange-500' },
+    //     soon: { bg: 'bg-amber-50', border: 'border-amber-200', accent: 'bg-amber-600', text: 'text-amber-700', icon: 'text-amber-500' },
+    //     safe: { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'bg-emerald-400', text: 'text-emerald-700', icon: 'text-emerald-400' },
+    //     completed: { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'bg-emerald-600', text: 'text-emerald-700', icon: 'text-emerald-500' }
+    // };
 
     const statusCounts = dashboard.member?.statusCounts || {};
+    const violationStats = dashboard.member?.violationStats || {};
+    const lateCount = (violationStats['LATE_UNFINISHED'] || 0) + (violationStats['LATE_SUBMISSION'] || 0);
+    const reworkCount = violationStats['EXCESSIVE_REWORK'] || 0;
 
     const statusGroups = [
         {
@@ -77,6 +80,49 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                         icon={group.icon}
                     />
                 ))}
+                <motion.div
+                    whileHover={{ y: -5, shadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)' }}
+                    className="p-6 rounded-[2.5rem] border shadow-sm flex flex-col justify-between transition-all bg-rose-50 border-rose-200 relative overflow-hidden h-full"
+                >
+                    {/* Decorative background element */}
+                    <div className="absolute -top-6 -right-6 w-24 h-24 bg-rose-100/50 rounded-full blur-2xl pointer-events-none" />
+
+                    <div className="flex items-center gap-3 mb-6 relative z-10">
+                        <div className="w-10 h-10 rounded-xl bg-rose-600 flex items-center justify-center shadow-lg shadow-rose-200/50">
+                            <AlertCircle className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-950 mt-0.5">
+                                Sai phạm
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 relative z-10">
+                        <div className="flex flex-col">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-3xl font-black text-rose-950 leading-none">
+                                    {lateCount}
+                                </span>
+                                <Clock className="w-3 h-3 text-rose-400" />
+                            </div>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-rose-600/60 mt-2">
+                                Trễ hạn
+                            </span>
+                        </div>
+                        <div className="flex flex-col border-l border-rose-200/80 pl-4">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-3xl font-black text-rose-950 leading-none">
+                                    {reworkCount}
+                                </span>
+                                <AlertCircle className="w-3 h-3 text-rose-400" />
+                            </div>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-rose-600/60 mt-2">
+                                Làm lại
+                            </span>
+                        </div>
+                    </div>
+                </motion.div>
             </motion.div>
             {/* Middle Row: Calendar & Deadlines */}
             <motion.div
