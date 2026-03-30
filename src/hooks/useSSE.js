@@ -55,10 +55,12 @@ export const useSSE = () => {
             'contract_created': ['Contracts', 'Opportunities'],
             'contract_updated': ['Contracts'],
             'contract_signed': ['Contracts', 'PaymentMilestones', 'Debts'],
+            'contract_rejected': ['Contracts', 'Opportunities'],
             'contract_deleted': ['Contracts'],
             'project_created': ['Projects', 'Contracts'],
             'project_updated': ['Projects'],
             'project_deleted': ['Projects'],
+            'task_review_updated': ['TaskReviews', 'Tasks'],
           };
 
           const tagsToInvalidate = eventToTags[payload.event] || [];
