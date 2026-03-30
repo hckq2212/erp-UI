@@ -173,14 +173,15 @@ export const TaskTable = ({ tasks = [], project }) => {
                         </option>
                     ))}
                 </select>
-
-                <button
-                    onClick={() => setShowAddExtraModal(true)}
-                    className="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm font-medium text-sm"
-                >
-                    <Plus className="w-4 h-4" />
-                    <span>Thêm công việc</span>
-                </button>
+                {(user?.role === 'ADMIN' || user?.role === 'BOD' || user?.id === project?.team?.teamLead?.id) && (
+                    <button
+                        onClick={() => setShowAddExtraModal(true)}
+                        className="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm font-medium text-sm"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Thêm công việc</span>
+                    </button>
+                )}
             </div>
 
             {/* Table */}
