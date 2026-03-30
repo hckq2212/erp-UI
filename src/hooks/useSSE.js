@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { BASE_URL } from '../store/api';
+import { BASE_URL, api } from '../store/api';
 import { selectIsAuthenticated } from '../store/authSlice';
 import { notificationsApi } from '../api/notifications';
 
@@ -31,24 +31,59 @@ export const useSSE = () => {
     };
 
     eventSource.onmessage = (event) => {
+      console.log('[SSE] Raw data received:', event.data);
       try {
-        const notification = JSON.parse(event.data);
-        console.log('[SSE] New notification received:', notification);
+        const payload = JSON.parse(event.data);
 
-        // 1. Show Toast
-        toast.info(notification.content || notification.title, {
-          title: notification.title,
+        // Handle Module Events (Transient UI updates)
+        if (payload.__isModuleEvent) {
+          console.log(`[SSE] Module Event: ${payload.event}`, payload.data);
+          
+          const eventToTags = {
+            'opportunity_created': ['Opportunities'],
+            'opportunity_updated': ['Opportunities'],
+            'opportunity_approved': ['Opportunities'],
+            'opportunity_deleted': ['Opportunities'],
+            'quotation_created': ['Quotations', 'Opportunities'],
+            'quotation_updated': ['Quotations', 'Opportunities'],
+            'quotation_approved': ['Quotations', 'Opportunities', 'Contracts'],
+            'quotation_rejected': ['Quotations', 'Opportunities'],
+            'task_created': ['Tasks', 'Projects'],
+            'task_updated': ['Tasks', 'Projects'],
+            'task_status_changed': ['Tasks', 'Projects', 'TaskReviews'],
+            'task_deleted': ['Tasks', 'Projects'],
+            'contract_created': ['Contracts', 'Opportunities'],
+            'contract_updated': ['Contracts'],
+            'contract_signed': ['Contracts', 'PaymentMilestones', 'Debts'],
+            'contract_deleted': ['Contracts'],
+            'project_created': ['Projects', 'Contracts'],
+            'project_updated': ['Projects'],
+            'project_deleted': ['Projects'],
+          };
+
+          const tagsToInvalidate = eventToTags[payload.event] || [];
+          if (tagsToInvalidate.length > 0) {
+            console.log('[SSE] Invalidating tags:', tagsToInvalidate);
+            dispatch(api.util.invalidateTags(tagsToInvalidate));
+          }
+          return;
+        }
+
+        // Handle Standard Notifications (Persistent)
+        console.log('[SSE] New notification received:', payload);
+        toast.info(payload.content || payload.title, {
+          title: payload.title,
           onClick: () => {
-            if (notification.link) {
-              window.location.href = notification.link;
+            if (payload.link) {
+              window.location.href = payload.link;
             }
           }
         });
 
-        // 2. Invalidate RTK Query cache to refresh notification count/list
+        // Invalidate RTK Query cache for notifications
         dispatch(notificationsApi.util.invalidateTags(['Notifications']));
       } catch (error) {
-        console.error('[SSE] Error parsing notification data:', error);
+        console.error('[SSE] Error parsing event data:', error);
       }
     };
 

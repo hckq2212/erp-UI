@@ -94,10 +94,10 @@ export const DashboardPage = () => {
 
                     {isTeamLead && (
                         <div className="flex items-center gap-4">
-                            <MonthSelector
+                            {/* <MonthSelector
                                 selectedDate={selectedDate}
                                 onChange={setSelectedDate}
-                            />
+                            /> */}
                             <MemberSelector
                                 members={teamMembers.filter(m => m.user.id !== user?.id)}
                                 selectedId={selectedMemberId}
@@ -106,14 +106,14 @@ export const DashboardPage = () => {
                         </div>
                     )}
 
-                    {!isTeamLead && (
+                    {/* {!isTeamLead && (
                         <div className="flex items-center gap-4">
                             <MonthSelector
                                 selectedDate={selectedDate}
                                 onChange={setSelectedDate}
                             />
                         </div>
-                    )}
+                    )} */}
                 </div>
 
                 <AnimatePresence mode="wait">

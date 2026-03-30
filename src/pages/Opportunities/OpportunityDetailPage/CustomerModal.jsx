@@ -53,12 +53,10 @@ export const CustomerModal = ({
 
   const handleSave = () => {
     if (customerStatus === 'POTENTIAL') {
-      const nameRegex = /^[a-zA-ZÀ-ỹ0-9\s]+$/;
       const phoneRegex = /^\+?[0-9]{10,15}$/;
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const taxIdRegex = /^\d{10}(\s?-\s?\d{3})?$/;
 
-      if (leadInfo.leadName && !nameRegex.test(leadInfo.leadName)) return toast.error('Tên khách hàng không được chứa ký tự đặc biệt');
       if (leadInfo.leadPhone && !phoneRegex.test(leadInfo.leadPhone)) return toast.error('Số điện thoại không hợp lệ');
       if (leadInfo.leadEmail && !emailRegex.test(leadInfo.leadEmail)) return toast.error('Email không hợp lệ');
       if (leadInfo.leadTaxId && !taxIdRegex.test(leadInfo.leadTaxId)) return toast.error('Mã số thuế không hợp lệ (Phải là 10 số hoặc 13 số định dạng XXXXXXXXXX-XXX)');
