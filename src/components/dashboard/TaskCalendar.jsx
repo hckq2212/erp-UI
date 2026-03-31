@@ -90,10 +90,9 @@ export const TaskCalendar = ({ tasks = [] }) => {
                             {dayTasks.length > 0 && !isSelected && (
                                 <div className="absolute bottom-1.5 flex gap-0.5">
                                     {dayTasks.slice(0, 3).map((t, i) => (
-                                        <span key={i} className={`w-1 h-1 rounded-full ${
-                                            ['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED'].includes(t.status) ? 'bg-emerald-500' : 
+                                        <span key={i} className={`w-1 h-1 rounded-full ${['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED'].includes(t.status) ? 'bg-emerald-500' :
                                             ['OVERDUE', 'REJECTED'].includes(t.status) ? 'bg-rose-500' : 'bg-blue-500'
-                                        }`} />
+                                            }`} />
                                     ))}
                                     {dayTasks.length > 3 && <span className="w-1 h-1 rounded-full bg-gray-300" />}
                                 </div>

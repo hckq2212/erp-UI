@@ -3,31 +3,31 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 export const WorkloadChart = ({ data = [] }) => {
     return (
-        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm h-full flex flex-col">
-            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-8 text-center">Năng suất làm việc tháng</h3>
+        <div className="h-full flex flex-col">
+            <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4 text-center">Năng suất tháng</h3>
 
-            <div className="flex-1 w-full min-h-[250px]">
+            <div className="flex-1 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                    <BarChart data={data} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis
                             dataKey="month"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
-                            tickFormatter={(val) => `TH ${val}`}
+                            tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
+                            tickFormatter={(val) => `T${val}`}
                         />
                         <YAxis
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
+                            tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
                         />
                         <Tooltip
                             cursor={{ fill: '#f8fafc' }}
                             content={({ active, payload }) => {
                                 if (active && payload && payload.length) {
                                     return (
-                                        <div className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-xl">
+                                        <div className="bg-slate-900 text-white px-2 py-1 rounded-md text-[9px] font-bold shadow-xl">
                                             {payload[0].value} task được nghiệm thu
                                         </div>
                                     );
@@ -37,8 +37,8 @@ export const WorkloadChart = ({ data = [] }) => {
                         />
                         <Bar
                             dataKey="count"
-                            radius={[6, 6, 6, 6]}
-                            barSize={32}
+                            radius={[4, 4, 4, 4]}
+                            barSize={20}
                         >
                             {data.map((entry, index) => (
                                 <Cell
@@ -50,11 +50,6 @@ export const WorkloadChart = ({ data = [] }) => {
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>
-            </div>
-
-            <div className="mt-6 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                <span>Năm {new Date().getFullYear()}</span>
-                <span>Tháng hiện tại: {new Date().getMonth() + 1}</span>
             </div>
         </div>
     );

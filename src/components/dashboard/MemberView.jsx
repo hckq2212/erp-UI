@@ -1,14 +1,13 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { AlertCircle, Clock, Briefcase, Hash, ChevronRight, CheckCircle2, TrendingUp, FileCheck } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { TaskCalendar } from './TaskCalendar';
 import { MemberProjectList } from './MemberProjectList';
-import { WorkloadChart } from './WorkloadChart';
-import { StatusSummaryCard } from './StatusSummaryCard';
 import { getRemainingTime } from '../../utils/format';
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, URGENCY_THEMES } from '../../utils/enums';
 
 export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMemberId, teamMembers }) => {
+    const [showProjects, setShowProjects] = React.useState(false);
+
     // Helper to get urgency level for color coding
     const getUrgencyLevel = (deadline, status) => {
         if (!deadline) return 'safe';
@@ -23,234 +22,140 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
         return 'safe';
     };
 
-    // const urgencyThemes = {
-    //     overdue: { bg: 'bg-rose-50', border: 'border-rose-200', accent: 'bg-rose-600', text: 'text-rose-700', icon: 'text-rose-500' },
-    //     today: { bg: 'bg-orange-50', border: 'border-orange-200', accent: 'bg-orange-600', text: 'text-orange-700', icon: 'text-orange-500' },
-    //     soon: { bg: 'bg-amber-50', border: 'border-amber-200', accent: 'bg-amber-600', text: 'text-amber-700', icon: 'text-amber-500' },
-    //     safe: { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'bg-emerald-400', text: 'text-emerald-700', icon: 'text-emerald-400' },
-    //     completed: { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'bg-emerald-600', text: 'text-emerald-700', icon: 'text-emerald-500' }
-    // };
-
     const statusCounts = dashboard.member?.statusCounts || {};
     const violationStats = dashboard.member?.violationStats || {};
     const lateCount = (violationStats['LATE_UNFINISHED'] || 0) + (violationStats['LATE_SUBMISSION'] || 0);
     const reworkCount = violationStats['EXCESSIVE_REWORK'] || 0;
 
-    const statusGroups = [
-        {
-            label: 'Đang thực hiện',
-            count: (statusCounts.DOING || 0) + (statusCounts.REWORKING || 0),
-            color: 'blue',
-            icon: TrendingUp
-        },
-        {
-            label: 'Đợi phê duyệt',
-            count: (statusCounts.AWAITING_ACCEPTANCE || 0) + (statusCounts.INTERNAL_COMPLETED || 0) + (statusCounts.AWAITING_REVIEW || 0),
-            color: 'purple',
-            icon: FileCheck
-        },
-        {
-            label: 'Đã hoàn thành',
-            count: (statusCounts.COMPLETED || 0) + (statusCounts.ACCEPTED || 0) + (statusCounts.DONE || 0),
-            color: 'green',
-            icon: CheckCircle2
-        },
-        {
-            label: 'Vấn đề',
-            count: (statusCounts.REJECTED || 0) + (statusCounts.OVERDUE || 0),
-            color: 'rose',
-            icon: AlertCircle
-        }
-    ];
-
     return (
-        <div className="space-y-10 pb-12">
-            {/* Task Status Summary */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6"
-            >
-                {statusGroups.map((group, idx) => (
-                    <StatusSummaryCard
-                        key={idx}
-                        label={group.label}
-                        count={group.count}
-                        color={group.color}
-                        icon={group.icon}
-                    />
-                ))}
-                <motion.div
-                    whileHover={{ y: -5, shadow: '0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05)' }}
-                    className="p-4 md:p-6 rounded-[2.5rem] border shadow-sm flex items-center gap-6 transition-all duration-300 bg-amber-50 border-amber-200/60 relative overflow-hidden group cursor-pointer col-span-2"
+        <div className="space-y-6 pb-12">
+            {/* Tầng 1: Hàng chỉ số chính (4 cột) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+                {/* 1. Đang thực hiện */}
+                <div className="p-6 rounded-[2.5rem] border border-slate-100 bg-blue-50/50 shadow-sm">
+                    <p className="text-[10px] font-black text-blue-600/60 uppercase tracking-[0.2em] mb-4">Đang thực hiện</p>
+                    <h4 className="text-4xl font-black text-slate-900 tracking-tighter">{(statusCounts.DOING || 0)}</h4>
+                </div>
+                {/* 2. Đã nghiệm thu */}
+                <div className="p-6 rounded-[2.5rem] border border-slate-100 bg-emerald-50/50 shadow-sm">
+                    <p className="text-[10px] font-black text-emerald-600/60 uppercase tracking-[0.2em] mb-4">Đã nghiệm thu</p>
+                    <h4 className="text-4xl font-black text-slate-900 tracking-tighter">
+                        {(statusCounts.COMPLETED || 0) + (statusCounts.ACCEPTED || 0) + (statusCounts.DONE || 0)}
+                    </h4>
+                </div>
+                {/* 3. Dự án tham gia */}
+                <div
+                    className={`p-6 rounded-[2.5rem] border transition-all duration-500 cursor-pointer group ${showProjects ? 'bg-white border-purple-200 shadow-xl shadow-purple-100' : 'bg-purple-50/50 border-slate-100 shadow-sm hover:bg-purple-100/50'
+                        }`}
+                    onClick={() => setShowProjects(!showProjects)}
+                >
+                    <div className="flex justify-between items-start mb-4">
+                        <p className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${showProjects ? 'text-purple-600' : 'text-purple-600/60'}`}>Dự án tham gia</p>
+                        <span className={`text-[9px] font-black uppercase tracking-widest transition-colors ${showProjects ? 'text-purple-400' : 'text-purple-400 group-hover:text-purple-600'}`}>
+                            {showProjects ? 'Thu gọn' : 'Chi tiết'}
+                        </span>
+                    </div>
+                    <h4 className={`text-4xl font-black tracking-tighter transition-colors ${showProjects ? 'text-purple-600' : 'text-slate-900'}`}>
+                        {dashboard.member?.participatingProjects?.length || 0}
+                    </h4>
+
+                    {showProjects && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="mt-6 pt-6 border-t border-purple-50 overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <p className="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-4">Danh sách dự án</p>
+                            <MemberProjectList projects={dashboard.member?.participatingProjects} />
+                        </motion.div>
+                    )}
+                </div>
+                {/* 4. ViniCoin */}
+                <div
+                    className="p-6 rounded-[2.5rem] border border-slate-100 bg-amber-50/50 shadow-sm cursor-pointer hover:bg-amber-100/50 transition-colors"
                     onClick={() => navigate('/me')}
                 >
-                    <div className="absolute -top-12 -right-12 w-48 h-48 bg-amber-100/40 rounded-full blur-3xl pointer-events-none" />
-
-                    <div className="w-14 h-14 rounded-2xl bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-200/40 shrink-0 relative z-10 group-hover:scale-110 transition-transform">
-                        <p className="w-8 h-8 text-white font-bold text-2xl flex items-center justify-center" >V</p>
-                    </div>
-
-                    <div className="flex-1 grid grid-cols-3 gap-6 relative z-10 ml-2">
+                    <p className="text-[10px] font-black text-amber-600/60 uppercase tracking-[0.2em] mb-6">ViniCoin</p>
+                    <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col">
-                            <h4 className="text-3xl font-black text-amber-950 leading-none mb-2 tracking-tight">
-                                {dashboard.member?.vinicoin?.toLocaleString() || 0}
-                            </h4>
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-600/60">
-                                Khả dụng
-                            </span>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tổng cộng</span>
+                            <span className="text-2xl font-black text-slate-900 tracking-tighter">+{dashboard.member?.vinicoinTotal?.toLocaleString() || 0}</span>
                         </div>
-                        <div className="flex flex-col border-l border-amber-200/60 pl-6">
-                            <h4 className="text-3xl font-black text-amber-900 leading-none mb-2 tracking-tight">
-                                {dashboard.member?.vinicoinTotal?.toLocaleString() || 0}
-                            </h4>
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-600/60">
-                                Tổng cộng
-                            </span>
-                        </div>
-                        <div className="flex flex-col border-l border-amber-200/60 pl-6">
-                            <h4 className="text-3xl font-black text-gray-400 leading-none mb-2 tracking-tight">
-                                {dashboard.member?.vinicoinWithdrawn?.toLocaleString() || 0}
-                            </h4>
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-600/60">
-                                Đã rút
-                            </span>
+                        <div className="flex flex-col border-l border-amber-200/30 pl-4">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Đã rút</span>
+                            <span className="text-2xl font-black text-rose-500 tracking-tighter">-{dashboard.member?.vinicoinWithdrawn?.toLocaleString() || 0}</span>
                         </div>
                     </div>
-                </motion.div>
+                </div>
+            </div>
 
-                <motion.div
-                    whileHover={{ y: -5, shadow: '0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05)' }}
-                    className="p-4 md:p-6 rounded-[2.5rem] border shadow-sm flex items-center gap-6 transition-all duration-300 bg-rose-50 border-rose-200/60 relative overflow-hidden col-span-2"
-                >
-                    <div className="absolute -top-12 -right-12 w-48 h-48 bg-rose-100/40 rounded-full blur-3xl pointer-events-none" />
+            {/* Tầng 2: Nội dung chi tiết (Cấu trúc 3 cột 12-grid) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                    <div className="w-14 h-14 rounded-2xl bg-rose-600 flex items-center justify-center shadow-lg shadow-rose-200/40 shrink-0 relative z-10">
-                        <AlertCircle className="w-8 h-8 text-white" />
-                    </div>
-
-                    <div className="flex-1 grid grid-cols-2 gap-8 relative z-10 ml-2">
-                        <div className="flex flex-col">
-                            <h4 className="text-3xl font-black text-rose-950 leading-none mb-2 tracking-tight">
-                                {lateCount}
-                            </h4>
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-rose-600/60">
-                                Trễ hạn
-                            </span>
+                {/* Cột 1: Cần làm lại & Vi phạm (3/12) */}
+                <div className="lg:col-span-3 space-y-6">
+                    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
+                        {/* Reworking */}
+                        <div>
+                            <p className="text-[9px] font-black text-rose-600/60 uppercase tracking-widest mb-1">Cần làm lại</p>
+                            <h4 className="text-3xl font-black text-rose-950 tracking-tighter">{statusCounts.REWORKING || 0}</h4>
                         </div>
-                        <div className="flex flex-col border-l border-rose-200/60 pl-8">
-                            <h4 className="text-3xl font-black text-rose-950 leading-none mb-2 tracking-tight">
-                                {reworkCount}
-                            </h4>
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-rose-600/60">
-                                Làm lại
-                            </span>
-                        </div>
-                    </div>
-                </motion.div>
-            </motion.div>
-            {/* Middle Row: Calendar & Deadlines */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="grid grid-cols-1 lg:grid-cols-12 gap-8"
-            >
-                <div className="lg:col-span-8">
-                    <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden relative">
-                        {/* Decorative Background Element */}
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-[4rem] -mr-16 -mt-16 pointer-events-none opacity-50" />
-
-                        <div className="flex items-center justify-between mb-8 relative z-10">
-                            <div className="flex items-center gap-4">
-                                <div>
-                                    <h3 className="text-xl font-extrabold text-slate-800 tracking-tight uppercase">Deadline sắp tới</h3>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">10 task gần deadline nhất</p>
+                        {/* Violations */}
+                        <div className="pt-4 border-t border-slate-50">
+                            <p className="text-[9px] font-black text-slate-400 tracking-widest uppercase mb-3">Lịch sử vi phạm</p>
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center text-[11px] font-bold">
+                                    <span className="text-slate-400 uppercase tracking-tighter">Trễ hạn</span>
+                                    <span className="text-rose-600">{lateCount}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[11px] font-bold">
+                                    <span className="text-slate-400 uppercase tracking-tighter">Làm lại nhiều lần</span>
+                                    <span className="text-rose-600">{reworkCount}</span>
                                 </div>
                             </div>
                         </div>
-
-                        <div className="space-y-4 relative z-10">
-                            {dashboard.member?.upcomingDeadlines?.length > 0 ? (
-                                <div className="grid gap-3">
-                                    {dashboard.member.upcomingDeadlines.map((task, index) => {
-                                        const urgency = getUrgencyLevel(task.deadline, task.status);
-                                        const theme = URGENCY_THEMES[urgency];
-                                        const remaining = getRemainingTime(task.deadline, task.status);
-
-                                        return (
-                                            <motion.button
-                                                key={task.id}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: 0.1 * index }}
-                                                onClick={() => navigate(`/tasks/${task.id}`)}
-                                                className={`group relative flex items-center gap-4 p-4 rounded-2xl border-2 ${theme.border} ${theme.bg} hover:shadow-md hover:scale-[1.01] transition-all duration-300 w-full text-left`}
-                                            >
-                                                <div className="flex-1 min-w-0 ml-1">
-                                                    <div className="flex items-center gap-2 mb-1.5">
-                                                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border shadow-sm ${TASK_STATUS_COLORS[task.status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                                                            {TASK_STATUS_LABELS[task.status]}
-                                                        </span>
-                                                    </div>
-
-                                                    <h4 className=" font-bold text-sm truncate text-blue-600 transition-colors uppercase tracking-tight">
-                                                        {task.name}
-                                                    </h4>
-
-                                                    <div className="flex items-center gap-4 mt-2">
-                                                        <div className="flex items-center gap-1.5 min-w-0">
-                                                            <Briefcase className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                                            <p className="text-[10px] font-bold text-slate-500 truncate uppercase tracking-tighter">
-                                                                {task.projectName || 'Công việc nội bộ'}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex flex-col items-end gap-2 shrink-0 pr-2">
-                                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 border ${theme.border} shadow-sm`}>
-                                                        <Clock className={`w-3.5 h-3.5 ${theme.icon}`} />
-                                                        <span className={`text-[11px] font-bold uppercase tracking-tight ${theme.text}`}>
-                                                            {remaining.text}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </motion.button>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-20 bg-slate-50 rounded-[1.5rem] border-2 border-dashed border-slate-100">
-                                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-4">
-                                        <AlertCircle className="w-8 h-8 text-slate-200" />
-                                    </div>
-                                    <p className="text-slate-400 font-bold text-xs uppercase tracking-widest italic">Chưa có deadline nào sắp tới</p>
-                                </div>
-                            )}
-                        </div>
                     </div>
                 </div>
-                <div className="lg:col-span-4">
-                    <TaskCalendar tasks={dashboard.member?.calendarTasks} />
-                </div>
-            </motion.div>
 
-            {/* Bottom Row: Projects & Productivity */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 }}
-                className="grid grid-cols-1 lg:grid-cols-12 gap-8"
-            >
-                <div className="lg:col-span-4">
-                    <MemberProjectList projects={dashboard.member?.participatingProjects} />
+                {/* Cột 2: Deadlines (5/12) */}
+                <div className="lg:col-span-5 bg-white p-6 rounded-[3.5rem] border border-slate-100 shadow-sm flex flex-col h-fit">
+                    <h3 className="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase mb-6 px-1">Deadline sắp tới</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 overflow-y-auto pr-2 custom-scrollbar content-start">
+                        {dashboard.member?.upcomingDeadlines?.length > 0 ? (
+                            dashboard.member.upcomingDeadlines.slice(0, 10).map((task) => {
+                                const urgency = getUrgencyLevel(task.deadline, task.status);
+                                const theme = URGENCY_THEMES[urgency];
+                                const remaining = getRemainingTime(task.deadline, task.status);
+                                return (
+                                    <button
+                                        key={task.id}
+                                        onClick={() => navigate(`/tasks/${task.id}`)}
+                                        className={`w-full group flex flex-col justify-center p-3 rounded-2xl border transition-all hover:shadow-md ${theme.border} ${theme.bg}`}
+                                    >
+                                        <div className="min-w-0 w-full text-left">
+                                            <h4 className="font-bold text-[11px] text-slate-900 uppercase tracking-tight truncate group-hover:text-blue-600 transition-colors">{task.name}</h4>
+                                            <div className="flex justify-between items-center mt-1">
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter truncate max-w-[60%]">{task.projectName || 'Công việc nội bộ'}</p>
+                                                <span className={`text-[9px] font-black truncate shrink-0 ${theme.text}`}>
+                                                    {remaining.text}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                );
+                            })
+                        ) : (
+                            <div className="col-span-full h-full flex items-center justify-center italic text-[9px] text-slate-300 uppercase tracking-widest">Không có dữ liệu</div>
+                        )}
+                    </div>
                 </div>
-                <div className="lg:col-span-8">
-                    <WorkloadChart data={dashboard.member?.completionStats} />
+
+                {/* Cột 3: Calendar (4/12) */}
+                <div className="lg:col-span-4 bg-white  rounded-[3.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[600px]">
+                    <TaskCalendar tasks={dashboard.member?.calendarTasks} compact={true} />
                 </div>
-            </motion.div>
+            </div>
         </div>
     );
 };

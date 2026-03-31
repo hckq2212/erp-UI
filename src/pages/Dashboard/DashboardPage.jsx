@@ -55,41 +55,20 @@ export const DashboardPage = () => {
     return (
         <div className="relative min-h-screen pb-20">
             {/* Background Decorative Elements */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-                <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-50/50 rounded-full blur-[120px]" />
-                <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-indigo-50/50 rounded-full blur-[100px]" />
-                <div className="absolute bottom-[10%] left-[20%] w-[25%] h-[25%] bg-purple-50/30 rounded-full blur-[80px]" />
-            </div>
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="space-y-10 max-w-[1600px] mx-auto pt-6 px-4 md:px-0"
+                className="space-y-6 max-w-[1600px] mx-auto pt-4 px-4 md:px-0"
             >
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
                         <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.2 }}
-                            className="flex items-center gap-3 mb-2"
+                            className="flex items-center gap-3 mb-1"
                         >
-                            <p className="text-gray-400 font-bold text-[11px] uppercase tracking-widest leading-none">
-                                {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                            </p>
                         </motion.div>
-                        <h1 className="text-4xl font-black text-gray-900 tracking-tight leading-tight">
-                            {isViewingMember ? (
-                                <>Dashboard của <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 font-black">{teamMembers.find(m => m.user.id === selectedMemberId)?.user?.fullName}</span></>
-                            ) : (
-                                <>Chào buổi chiều, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 font-black">{user?.fullName?.split(' ').pop() || 'bạn'}</span> 👋</>
-                            )}
-                        </h1>
-                        <p className="text-gray-500 font-medium mt-1">
-                            {isViewingMember ? 'Bạn đang xem tiến độ và công việc của thành viên này.' : 'Chúc bạn một ngày làm việc hiệu quả và năng động!'}
-                        </p>
                     </div>
 
                     {isTeamLead && (
@@ -123,7 +102,7 @@ export const DashboardPage = () => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ delay: 0.4 }}
-                        className="space-y-12 pb-12"
+                        className="space-y-6 pb-12"
                     >
                         {!isViewingMember && (
                             <ReviewQueueView
@@ -152,21 +131,16 @@ export const DashboardPage = () => {
                         )} */}
 
                         {dashboard.teamLead && !isViewingMember && (
-                            <div className="space-y-6">
+                            <div className="space-y-4">
                                 <div className="flex items-center gap-3">
-                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight italic">Dự án</h2>
+                                    <h2 className="text-xl font-black text-slate-900 tracking-tight italic uppercase">Dự án</h2>
                                 </div>
                                 <TeamLeadView dashboard={dashboard} navigate={navigate} />
                             </div>
                         )}
 
                         {(dashboard.member || isViewingMember) && user?.role !== 'BD' && user?.role !== 'SALE' && (
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight italic">
-                                        {isViewingMember ? `Dashboard của ${teamMembers.find(m => m.user.id === selectedMemberId)?.user?.fullName}` : 'Công việc'}
-                                    </h2>
-                                </div>
+                            <div className="">
                                 <MemberView
                                     dashboard={dashboard}
                                     navigate={navigate}
