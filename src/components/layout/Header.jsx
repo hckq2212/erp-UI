@@ -1,4 +1,4 @@
-import { Bell, Search, User, LogOut, Check, Clock, ChevronRight } from 'lucide-react';
+import { Bell, Search, User, LogOut, Check, Clock, ChevronRight, Menu } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { useState, useMemo } from 'react';
@@ -9,7 +9,7 @@ import { useLogoutMutation } from '../../api/auth';
 import { formatDate } from '../../utils/format';
 import logo from '../../assets/logo.png';
 
-export const Header = () => {
+export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
   const user = useSelector(selectCurrentUser);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -58,14 +58,21 @@ export const Header = () => {
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 flex items-center justify-between px-6">
-      <div className="flex items-center">
-        <Link to="/">
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="p-2.5 rounded-xl text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-transparent hover:border-indigo-100"
+          title={isSidebarCollapsed ? "Mở danh mục" : "Thu gọn danh mục"}
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+        {/* <Link to="/" className="flex items-center">
           <img
             alt="Office Logo"
-            className="h-12 w-auto object-contain cursor-pointer"
+            className="h-10 w-auto object-contain cursor-pointer"
             src={logo}
           />
-        </Link>
+        </Link> */}
       </div>
 
       <div className="flex items-center space-x-4">
@@ -178,7 +185,7 @@ export const Header = () => {
                 <div className="w-3 h-3 bg-amber-400 rounded-full flex items-center justify-center">
                   <span className="text-[6px] font-black text-white">V</span>
                 </div>
-                <span 
+                <span
                   className="text-[10px] font-black text-amber-600 leading-none"
                   title={`Tổng tích lũy: ${user?.vinicoinTotal?.toLocaleString() || 0} Vinicoin`}
                 >

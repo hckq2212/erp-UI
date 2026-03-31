@@ -132,9 +132,6 @@ export const DashboardPage = () => {
 
                         {dashboard.teamLead && !isViewingMember && (
                             <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <h2 className="text-xl font-black text-slate-900 tracking-tight italic uppercase">Dự án</h2>
-                                </div>
                                 <TeamLeadView dashboard={dashboard} navigate={navigate} />
                             </div>
                         )}

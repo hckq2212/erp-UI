@@ -33,25 +33,25 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
     return (
         <div className="space-y-6 pb-12">
             {/* Tầng 1: Hàng chỉ số chính (4 cột) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                 {/* 1. Đang thực hiện */}
-                <div className="p-6 rounded-[2.5rem] border border-slate-100 bg-blue-50/50 shadow-sm">
-                    <p className="text-[10px] font-black text-blue-600/60 uppercase tracking-[0.2em] mb-4">Đang thực hiện</p>
-                    <h4 className="text-4xl font-black text-slate-900 tracking-tighter">{dashboard.member?.doingCount}</h4>
+                <div className="p-5 rounded-[2rem] border border-slate-100 bg-blue-50/50 shadow-sm">
+                    <p className="text-[10px] font-black text-blue-600/60 uppercase tracking-[0.2em] mb-2">Đang thực hiện</p>
+                    <h4 className="text-2xl font-black text-slate-900 tracking-tighter">{dashboard.member?.doingCount}</h4>
                 </div>
                 {/* 2. Đã nghiệm thu */}
                 <div
-                    className={`p-6 rounded-[2.5rem] border transition-all duration-500 cursor-pointer group ${showWorkload ? 'bg-white border-emerald-200 shadow-xl shadow-emerald-100' : 'bg-emerald-50/50 border-slate-100 shadow-sm hover:bg-emerald-100/50'
+                    className={`p-5 rounded-[2rem] border transition-all duration-500 cursor-pointer group ${showWorkload ? 'bg-white border-emerald-200 shadow-xl shadow-emerald-100' : 'bg-emerald-50/50 border-slate-100 shadow-sm hover:bg-emerald-100/50'
                         }`}
                     onClick={() => setShowWorkload(!showWorkload)}
                 >
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start mb-2">
                         <p className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${showWorkload ? 'text-emerald-600' : 'text-emerald-600/60'}`}>Đã nghiệm thu</p>
-                        <span className={`text-[9px] font-black uppercase tracking-widest transition-colors ${showWorkload ? 'text-emerald-400' : 'text-emerald-400 group-hover:text-emerald-600'}`}>
+                        <span className={`text-[8px] font-black uppercase tracking-widest transition-colors ${showWorkload ? 'text-emerald-400' : 'text-emerald-400 group-hover:text-emerald-600'}`}>
                             {showWorkload ? 'Thu gọn' : 'Chi tiết'}
                         </span>
                     </div>
-                    <h4 className={`text-4xl font-black tracking-tighter transition-colors ${showWorkload ? 'text-emerald-600' : 'text-slate-900'}`}>
+                    <h4 className={`text-2xl font-black tracking-tighter transition-colors ${showWorkload ? 'text-emerald-600' : 'text-slate-900'}`}>
                         {(statusCounts.COMPLETED || 0) + (statusCounts.ACCEPTED || 0) + (statusCounts.DONE || 0)}
                     </h4>
 
@@ -59,26 +59,26 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 200 }}
-                            className="mt-6 pt-6 border-t border-emerald-50 overflow-hidden"
+                            className="mt-4 pt-4 border-t border-emerald-50 overflow-hidden"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <WorkloadChart data={dashboard.member?.completionStats || []} />
                         </motion.div>
                     )}
                 </div>
-                {/* 3. Dự án tham gia */}
+                {/* 3. Dự án đang tham gia */}
                 <div
-                    className={`p-6 rounded-[2.5rem] border transition-all duration-500 cursor-pointer group ${showProjects ? 'bg-white border-purple-200 shadow-xl shadow-purple-100' : 'bg-purple-50/50 border-slate-100 shadow-sm hover:bg-purple-100/50'
+                    className={`p-5 rounded-[2rem] border transition-all duration-500 cursor-pointer group ${showProjects ? 'bg-white border-purple-200 shadow-xl shadow-purple-100' : 'bg-purple-50/50 border-slate-100 shadow-sm hover:bg-purple-100/50'
                         }`}
                     onClick={() => setShowProjects(!showProjects)}
                 >
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start mb-2">
                         <p className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${showProjects ? 'text-purple-600' : 'text-purple-600/60'}`}>Dự án đang tham gia</p>
-                        <span className={`text-[9px] font-black uppercase tracking-widest transition-colors ${showProjects ? 'text-purple-400' : 'text-purple-400 group-hover:text-purple-600'}`}>
+                        <span className={`text-[8px] font-black uppercase tracking-widest transition-colors ${showProjects ? 'text-purple-400' : 'text-purple-400 group-hover:text-purple-600'}`}>
                             {showProjects ? 'Thu gọn' : 'Chi tiết'}
                         </span>
                     </div>
-                    <h4 className={`text-4xl font-black tracking-tighter transition-colors ${showProjects ? 'text-purple-600' : 'text-slate-900'}`}>
+                    <h4 className={`text-2xl font-black tracking-tighter transition-colors ${showProjects ? 'text-purple-600' : 'text-slate-900'}`}>
                         {dashboard.member?.participatingProjects?.length || 0}
                     </h4>
 
@@ -86,27 +86,27 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
-                            className="mt-6 pt-6 border-t border-purple-50 overflow-hidden"
+                            className="mt-4 pt-4 border-t border-purple-50 overflow-hidden"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <p className="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-4">Danh sách dự án</p>
+                            <p className="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-3">Danh sách dự án</p>
                             <MemberProjectList projects={dashboard.member?.participatingProjects} />
                         </motion.div>
                     )}
                 </div>
                 {/* 4. ViniCoin */}
                 <div
-                    className="p-6 rounded-[2.5rem] border border-slate-100 bg-amber-50/50 shadow-sm cursor-pointer hover:bg-amber-100/50 transition-colors"
+                    className="p-5 rounded-[2rem] border border-slate-100 bg-amber-50/50 shadow-sm cursor-pointer hover:bg-amber-100/50 transition-colors"
                 >
                     <p className="text-[10px] font-black text-amber-600/60 uppercase tracking-[0.2em] mb-2">ViniCoin</p>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                         <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tổng cộng</span>
-                            <span className="text-2xl font-black text-slate-900 tracking-tighter">{dashboard.member?.vinicoinTotal?.toLocaleString() || 0}</span>
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Tổng cộng</span>
+                            <span className="text-xl font-black text-slate-900 tracking-tighter">{dashboard.member?.vinicoinTotal?.toLocaleString() || 0}</span>
                         </div>
-                        <div className="flex flex-col border-l border-amber-200/30 pl-4">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Đã rút</span>
-                            <span className="text-2xl font-black text-rose-500 tracking-tighter">{dashboard.member?.vinicoinWithdrawn?.toLocaleString() || 0}</span>
+                        <div className="flex flex-col border-l border-amber-200/30 pl-3">
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Đã rút</span>
+                            <span className="text-xl font-black text-rose-500 tracking-tighter">{dashboard.member?.vinicoinWithdrawn?.toLocaleString() || 0}</span>
                         </div>
                     </div>
                 </div>
@@ -216,7 +216,7 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                 </div>
 
                 {/* Cột 3: Calendar (4/12) */}
-                <div className="lg:col-span-4 bg-white  rounded-[3.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[600px]">
+                <div className="lg:col-span-4 bg-white  rounded-[3.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col h-fit">
                     <TaskCalendar tasks={dashboard.member?.calendarTasks} compact={true} />
                 </div>
             </div>
