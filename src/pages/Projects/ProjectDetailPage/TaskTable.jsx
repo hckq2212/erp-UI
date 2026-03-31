@@ -23,6 +23,14 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [returnSupport] = useReturnSupportMutation();
     const [requestReturnSupport] = useRequestReturnSupportMutation();
 
+    const isAdminOrBOD = user?.role === 'ADMIN' || user?.role === 'BOD';
+    const isProjectLead = user?.id === project?.team?.teamLead?.id;
+    const isSupportLead = tasks.some(t => t.supportLeadId === user?.id);
+    const isHelper = tasks.some(t => t.helperId === user?.id);
+
+    const canSeeTable = isAdminOrBOD || isProjectLead || isSupportLead || isHelper;
+    const canAddTask = isAdminOrBOD || isProjectLead;
+
     const [filter, setFilter] = useState({
         status: 'ALL',
         search: '',
@@ -31,6 +39,8 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [assigningTask, setAssigningTask] = useState(null);
     const [showAddExtraModal, setShowAddExtraModal] = useState(false);
     const [selectedTasks, setSelectedTasks] = useState([]);
+
+    if (!canSeeTable) return null;
 
     const isTaskAssignable = (task) => {
         if (!isProjectInProgress) return false;
@@ -173,7 +183,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                         </option>
                     ))}
                 </select>
-                {(user?.role === 'ADMIN' || user?.role === 'BOD' || user?.id === project?.team?.teamLead?.id) && (
+                {canAddTask && (
                     <button
                         onClick={() => setShowAddExtraModal(true)}
                         className="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm font-medium text-sm"
