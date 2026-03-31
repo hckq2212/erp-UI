@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 export const WorkloadChart = ({ data = [] }) => {
     return (
         <div className="h-full flex flex-col">
-            <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4 text-center">Năng suất tháng</h3>
+            <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4 text-center">Số task được nghiệm thu theo tháng</h3>
 
             <div className="flex-1 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -14,8 +14,9 @@ export const WorkloadChart = ({ data = [] }) => {
                             dataKey="month"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
-                            tickFormatter={(val) => `T${val}`}
+                            tick={{ fontSize: 8, fontWeight: 700, fill: '#94a3b8' }}
+                            tickFormatter={(val) => val}
+                            interval={0}
                         />
                         <YAxis
                             axisLine={false}

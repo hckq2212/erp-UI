@@ -37,7 +37,7 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                 {/* 1. Đang thực hiện */}
                 <div className="p-6 rounded-[2.5rem] border border-slate-100 bg-blue-50/50 shadow-sm">
                     <p className="text-[10px] font-black text-blue-600/60 uppercase tracking-[0.2em] mb-4">Đang thực hiện</p>
-                    <h4 className="text-4xl font-black text-slate-900 tracking-tighter">{(statusCounts.DOING || 0)}</h4>
+                    <h4 className="text-4xl font-black text-slate-900 tracking-tighter">{dashboard.member?.doingCount}</h4>
                 </div>
                 {/* 2. Đã nghiệm thu */}
                 <div
@@ -73,7 +73,7 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                     onClick={() => setShowProjects(!showProjects)}
                 >
                     <div className="flex justify-between items-start mb-4">
-                        <p className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${showProjects ? 'text-purple-600' : 'text-purple-600/60'}`}>Dự án tham gia</p>
+                        <p className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${showProjects ? 'text-purple-600' : 'text-purple-600/60'}`}>Dự án đang tham gia</p>
                         <span className={`text-[9px] font-black uppercase tracking-widest transition-colors ${showProjects ? 'text-purple-400' : 'text-purple-400 group-hover:text-purple-600'}`}>
                             {showProjects ? 'Thu gọn' : 'Chi tiết'}
                         </span>
@@ -97,17 +97,16 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                 {/* 4. ViniCoin */}
                 <div
                     className="p-6 rounded-[2.5rem] border border-slate-100 bg-amber-50/50 shadow-sm cursor-pointer hover:bg-amber-100/50 transition-colors"
-                    onClick={() => navigate('/me')}
                 >
-                    <p className="text-[10px] font-black text-amber-600/60 uppercase tracking-[0.2em] mb-6">ViniCoin</p>
+                    <p className="text-[10px] font-black text-amber-600/60 uppercase tracking-[0.2em] mb-2">ViniCoin</p>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col">
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tổng cộng</span>
-                            <span className="text-2xl font-black text-slate-900 tracking-tighter">+{dashboard.member?.vinicoinTotal?.toLocaleString() || 0}</span>
+                            <span className="text-2xl font-black text-slate-900 tracking-tighter">{dashboard.member?.vinicoinTotal?.toLocaleString() || 0}</span>
                         </div>
                         <div className="flex flex-col border-l border-amber-200/30 pl-4">
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Đã rút</span>
-                            <span className="text-2xl font-black text-rose-500 tracking-tighter">-{dashboard.member?.vinicoinWithdrawn?.toLocaleString() || 0}</span>
+                            <span className="text-2xl font-black text-rose-500 tracking-tighter">{dashboard.member?.vinicoinWithdrawn?.toLocaleString() || 0}</span>
                         </div>
                     </div>
                 </div>

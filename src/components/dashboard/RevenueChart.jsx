@@ -1,14 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const data = [
-  { name: 'T1', revenue: 4000 },
-  { name: 'T2', revenue: 3000 },
-  { name: 'T3', revenue: 2000 },
-  { name: 'T4', revenue: 2780 },
-  { name: 'T5', revenue: 1890 },
-  { name: 'T6', revenue: 2390 },
-  { name: 'T7', revenue: 3490 },
-];
 
 export const RevenueChart = () => {
   return (
