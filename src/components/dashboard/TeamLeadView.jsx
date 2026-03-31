@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2 } from 'lucide-react';
-import { PROJECT_STATUS_LABELS } from '../../utils/enums';
+import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../utils/enums';
 import { MemberSelector } from './MemberSelector';
 
 export const TeamLeadView = ({
@@ -30,7 +30,8 @@ export const TeamLeadView = ({
                         <div className="relative">
                             <div className="flex justify-between items-start gap-3 mb-4">
                                 <h3 className="font-black text-slate-800 text-[13px] group-hover:text-indigo-600 transition-colors line-clamp-1 tracking-tight leading-tight">{project.name}</h3>
-                                <span className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-lg border tracking-[0.1em] shrink-0 ${project.status === 'IN_PROGRESS' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-500 border-slate-100'
+                                <span className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-lg border tracking-[0.1em] shrink-0 ${
+                                    PROJECT_STATUS_COLORS[project.status] || 'bg-gray-50 text-gray-500 border-gray-100'
                                     }`}>
                                     {PROJECT_STATUS_LABELS[project.status]}
                                 </span>
