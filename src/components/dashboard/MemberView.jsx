@@ -2,11 +2,14 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TaskCalendar } from './TaskCalendar';
 import { MemberProjectList } from './MemberProjectList';
+import { WorkloadChart } from './WorkloadChart';
 import { getRemainingTime } from '../../utils/format';
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, URGENCY_THEMES } from '../../utils/enums';
 
 export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMemberId, teamMembers }) => {
     const [showProjects, setShowProjects] = React.useState(false);
+    const [showWorkload, setShowWorkload] = React.useState(false);
+    const [showRework, setShowRework] = React.useState(false);
 
     // Helper to get urgency level for color coding
     const getUrgencyLevel = (deadline, status) => {
@@ -37,11 +40,31 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                     <h4 className="text-4xl font-black text-slate-900 tracking-tighter">{(statusCounts.DOING || 0)}</h4>
                 </div>
                 {/* 2. Đã nghiệm thu */}
-                <div className="p-6 rounded-[2.5rem] border border-slate-100 bg-emerald-50/50 shadow-sm">
-                    <p className="text-[10px] font-black text-emerald-600/60 uppercase tracking-[0.2em] mb-4">Đã nghiệm thu</p>
-                    <h4 className="text-4xl font-black text-slate-900 tracking-tighter">
+                <div
+                    className={`p-6 rounded-[2.5rem] border transition-all duration-500 cursor-pointer group ${showWorkload ? 'bg-white border-emerald-200 shadow-xl shadow-emerald-100' : 'bg-emerald-50/50 border-slate-100 shadow-sm hover:bg-emerald-100/50'
+                        }`}
+                    onClick={() => setShowWorkload(!showWorkload)}
+                >
+                    <div className="flex justify-between items-start mb-4">
+                        <p className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${showWorkload ? 'text-emerald-600' : 'text-emerald-600/60'}`}>Đã nghiệm thu</p>
+                        <span className={`text-[9px] font-black uppercase tracking-widest transition-colors ${showWorkload ? 'text-emerald-400' : 'text-emerald-400 group-hover:text-emerald-600'}`}>
+                            {showWorkload ? 'Thu gọn' : 'Chi tiết'}
+                        </span>
+                    </div>
+                    <h4 className={`text-4xl font-black tracking-tighter transition-colors ${showWorkload ? 'text-emerald-600' : 'text-slate-900'}`}>
                         {(statusCounts.COMPLETED || 0) + (statusCounts.ACCEPTED || 0) + (statusCounts.DONE || 0)}
                     </h4>
+
+                    {showWorkload && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 200 }}
+                            className="mt-6 pt-6 border-t border-emerald-50 overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <WorkloadChart data={dashboard.member?.completionStats || []} />
+                        </motion.div>
+                    )}
                 </div>
                 {/* 3. Dự án tham gia */}
                 <div
@@ -97,9 +120,51 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                 <div className="lg:col-span-3 space-y-6">
                     <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
                         {/* Reworking */}
-                        <div>
-                            <p className="text-[9px] font-black text-rose-600/60 uppercase tracking-widest mb-1">Cần làm lại</p>
-                            <h4 className="text-3xl font-black text-rose-950 tracking-tighter">{statusCounts.REWORKING || 0}</h4>
+                        <div
+                            className="cursor-pointer group"
+                            onClick={() => setShowRework(!showRework)}
+                        >
+                            <div className="flex justify-between items-start mb-1">
+                                <p className="text-[9px] font-black text-rose-600/60 uppercase tracking-widest">Cần làm lại</p>
+                                <span className={`text-[8px] font-black uppercase tracking-widest transition-colors ${showRework ? 'text-rose-400' : 'text-slate-300 group-hover:text-rose-400'}`}>
+                                    {showRework ? 'Thu gọn' : 'Chi tiết'}
+                                </span>
+                            </div>
+                            <h4 className={`text-3xl font-black tracking-tighter transition-colors ${showRework ? 'text-rose-600' : 'text-rose-950'}`}>
+                                {dashboard.member?.reworkCount}
+                            </h4>
+
+                            <AnimatePresence>
+                                {showRework && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="overflow-hidden"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <div className="mt-4 space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                                            {dashboard.member?.reworkTasks?.length > 0 ? (
+                                                dashboard.member.reworkTasks.map(task => (
+                                                    <div
+                                                        key={task.id}
+                                                        onClick={() => navigate(`/tasks/${task.id}`)}
+                                                        className="p-3 bg-rose-50/50 rounded-2xl border border-rose-100/50 hover:bg-white hover:shadow-md transition-all group/item cursor-pointer"
+                                                    >
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <h5 className="text-[11px] font-bold text-rose-900 group-hover/item:text-rose-600 truncate flex-1 mr-2">{task.name}</h5>
+                                                            {/* <span className="text-[8px] font-bold text-rose-400 whitespace-nowrap">{(task.code)}</span> */}
+                                                        </div>
+                                                        <p className="text-[9px] text-slate-400 font-bold uppercase truncate">{task.projectName || 'Dự án không tên'}</p>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-[10px] text-slate-400 italic py-2">Không có task cần làm lại</p>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                         {/* Violations */}
                         <div className="pt-4 border-t border-slate-50">

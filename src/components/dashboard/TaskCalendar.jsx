@@ -91,7 +91,7 @@ export const TaskCalendar = ({ tasks = [] }) => {
                                 <div className="absolute bottom-1.5 flex gap-0.5">
                                     {dayTasks.slice(0, 3).map((t, i) => (
                                         <span key={i} className={`w-1 h-1 rounded-full ${['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED'].includes(t.status) ? 'bg-emerald-500' :
-                                            ['OVERDUE', 'REJECTED'].includes(t.status) ? 'bg-rose-500' : 'bg-blue-500'
+                                            ['OVERDUE', 'REJECTED'].includes(t.status) ? 'bg-red-500' : 'bg-blue-500'
                                             }`} />
                                     ))}
                                     {dayTasks.length > 3 && <span className="w-1 h-1 rounded-full bg-gray-300" />}
@@ -121,9 +121,11 @@ export const TaskCalendar = ({ tasks = [] }) => {
                             >
                                 <div className="w-1.5 h-8 rounded-full bg-current opacity-20 shrink-0" />
                                 <div className="min-w-0">
-                                    <p className="text-xs font-bold text-gray-900 truncate">{task.name}</p>
-                                    <p className="text-[10px] text-gray-400 font-medium uppercase">{TASK_STATUS_LABELS[task.status]}</p>
+                                    <p className="text-xs font-bold text-blue-600 truncate">{task.name}</p>
+                                    <p className="text-[10px] text-gray-400 font-medium uppercase">{task?.project?.name}</p>
+                                    <p className="text-[10px] font-medium uppercase">{TASK_STATUS_LABELS[task.status]}</p>
                                 </div>
+
                             </motion.button>
                         )) : (
                             <div className="text-center py-6 text-gray-400 italic text-xs">Không có công việc nào</div>

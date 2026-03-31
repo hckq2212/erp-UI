@@ -21,6 +21,7 @@ export const WorkloadChart = ({ data = [] }) => {
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
+                            allowDecimals={false}
                         />
                         <Tooltip
                             cursor={{ fill: '#f8fafc' }}
