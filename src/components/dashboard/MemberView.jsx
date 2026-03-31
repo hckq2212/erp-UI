@@ -190,7 +190,7 @@ export const MemberView = ({
                 </div>
 
                 {/* Cột 2: Deadlines (5/12) */}
-                <div className="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col h-fit">
+                <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col h-fit">
                     <h3 className="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase mb-6 px-1">Deadline sắp tới</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 overflow-y-auto pr-2 custom-scrollbar content-start">
                         {dashboard.member?.upcomingDeadlines?.length > 0 ? (
@@ -223,7 +223,7 @@ export const MemberView = ({
                 </div>
 
                 {/* Cột 3: Calendar (4/12) */}
-                <div className="lg:col-span-4 bg-white  rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-fit">
+                <div className="lg:col-span-5 bg-white  rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-fit">
                     <TaskCalendar tasks={dashboard.member?.calendarTasks} compact={true} />
                 </div>
             </div>
