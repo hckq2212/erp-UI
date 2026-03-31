@@ -108,11 +108,11 @@ export const MemberView = ({
                     <p className="text-[10px] font-black text-amber-600/60 uppercase tracking-[0.2em] mb-2">ViniCoin</p>
                     <div className="grid grid-cols-2 gap-3">
                         <div className="flex flex-col">
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Tổng cộng</span>
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Tổng cộng</span>
                             <span className="text-xl font-black text-slate-900 tracking-tighter">{dashboard.member?.vinicoinTotal?.toLocaleString() || 0}</span>
                         </div>
                         <div className="flex flex-col border-l border-amber-200/30 pl-3">
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Đã rút</span>
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest ">Đã rút</span>
                             <span className="text-xl font-black text-rose-500 tracking-tighter">{dashboard.member?.vinicoinWithdrawn?.toLocaleString() || 0}</span>
                         </div>
                     </div>
