@@ -6,7 +6,13 @@ import { WorkloadChart } from './WorkloadChart';
 import { getRemainingTime } from '../../utils/format';
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, URGENCY_THEMES } from '../../utils/enums';
 
-export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMemberId, teamMembers }) => {
+export const MemberView = ({
+    dashboard,
+    navigate,
+    isViewingMember,
+    selectedMemberId,
+    teamMembers
+}) => {
     const [showProjects, setShowProjects] = React.useState(false);
     const [showWorkload, setShowWorkload] = React.useState(false);
     const [showRework, setShowRework] = React.useState(false);
@@ -35,13 +41,13 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
             {/* Tầng 1: Hàng chỉ số chính (4 cột) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                 {/* 1. Đang thực hiện */}
-                <div className="p-5 rounded-[2rem] border border-slate-100 bg-blue-50/50 shadow-sm">
+                <div className="p-5 rounded-3xl border border-slate-100 bg-blue-50/50 shadow-sm">
                     <p className="text-[10px] font-black text-blue-600/60 uppercase tracking-[0.2em] mb-2">Đang thực hiện</p>
                     <h4 className="text-2xl font-black text-slate-900 tracking-tighter">{dashboard.member?.doingCount}</h4>
                 </div>
                 {/* 2. Đã nghiệm thu */}
                 <div
-                    className={`p-5 rounded-[2rem] border transition-all duration-500 cursor-pointer group ${showWorkload ? 'bg-white border-emerald-200 shadow-xl shadow-emerald-100' : 'bg-emerald-50/50 border-slate-100 shadow-sm hover:bg-emerald-100/50'
+                    className={`p-5 rounded-3xl border transition-all duration-500 cursor-pointer group ${showWorkload ? 'bg-white border-emerald-200 shadow-xl shadow-emerald-100' : 'bg-emerald-50/50 border-slate-100 shadow-sm hover:bg-emerald-100/50'
                         }`}
                     onClick={() => setShowWorkload(!showWorkload)}
                 >
@@ -68,7 +74,7 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                 </div>
                 {/* 3. Dự án đang tham gia */}
                 <div
-                    className={`p-5 rounded-[2rem] border transition-all duration-500 cursor-pointer group ${showProjects ? 'bg-white border-purple-200 shadow-xl shadow-purple-100' : 'bg-purple-50/50 border-slate-100 shadow-sm hover:bg-purple-100/50'
+                    className={`p-5 rounded-3xl border transition-all duration-500 cursor-pointer group ${showProjects ? 'bg-white border-purple-200 shadow-xl shadow-purple-100' : 'bg-purple-50/50 border-slate-100 shadow-sm hover:bg-purple-100/50'
                         }`}
                     onClick={() => setShowProjects(!showProjects)}
                 >
@@ -94,9 +100,10 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                         </motion.div>
                     )}
                 </div>
+
                 {/* 4. ViniCoin */}
                 <div
-                    className="p-5 rounded-[2rem] border border-slate-100 bg-amber-50/50 shadow-sm cursor-pointer hover:bg-amber-100/50 transition-colors"
+                    className="p-5 rounded-3xl border border-slate-100 bg-amber-50/50 shadow-sm cursor-pointer hover:bg-amber-100/50 transition-colors"
                 >
                     <p className="text-[10px] font-black text-amber-600/60 uppercase tracking-[0.2em] mb-2">ViniCoin</p>
                     <div className="grid grid-cols-2 gap-3">
@@ -117,7 +124,7 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
 
                 {/* Cột 1: Cần làm lại & Vi phạm (3/12) */}
                 <div className="lg:col-span-3 space-y-6">
-                    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
+                    <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6">
                         {/* Reworking */}
                         <div
                             className="cursor-pointer group"
@@ -183,7 +190,7 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                 </div>
 
                 {/* Cột 2: Deadlines (5/12) */}
-                <div className="lg:col-span-5 bg-white p-6 rounded-[3.5rem] border border-slate-100 shadow-sm flex flex-col h-fit">
+                <div className="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col h-fit">
                     <h3 className="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase mb-6 px-1">Deadline sắp tới</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 overflow-y-auto pr-2 custom-scrollbar content-start">
                         {dashboard.member?.upcomingDeadlines?.length > 0 ? (
@@ -216,7 +223,7 @@ export const MemberView = ({ dashboard, navigate, isViewingMember, selectedMembe
                 </div>
 
                 {/* Cột 3: Calendar (4/12) */}
-                <div className="lg:col-span-4 bg-white  rounded-[3.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col h-fit">
+                <div className="lg:col-span-4 bg-white  rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-fit">
                     <TaskCalendar tasks={dashboard.member?.calendarTasks} compact={true} />
                 </div>
             </div>

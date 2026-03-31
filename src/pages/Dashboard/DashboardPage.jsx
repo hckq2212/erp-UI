@@ -60,7 +60,7 @@ export const DashboardPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="space-y-6 max-w-[1600px] mx-auto pt-4 px-4 md:px-0"
+                className="space-y-6 max-w-[1600px] mx-auto px-4 md:px-0"
             >
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -71,28 +71,7 @@ export const DashboardPage = () => {
                         </motion.div>
                     </div>
 
-                    {isTeamLead && (
-                        <div className="flex items-center gap-4">
-                            {/* <MonthSelector
-                                selectedDate={selectedDate}
-                                onChange={setSelectedDate}
-                            /> */}
-                            <MemberSelector
-                                members={teamMembers.filter(m => m.user.id !== user?.id)}
-                                selectedId={selectedMemberId}
-                                onSelect={setSelectedMemberId}
-                            />
-                        </div>
-                    )}
-
-                    {/* {!isTeamLead && (
-                        <div className="flex items-center gap-4">
-                            <MonthSelector
-                                selectedDate={selectedDate}
-                                onChange={setSelectedDate}
-                            />
-                        </div>
-                    )} */}
+                    {/* MemberSelector moved to MemberView */}
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -112,27 +91,16 @@ export const DashboardPage = () => {
                             />
                         )}
 
-                        {/* {dashboard.admin && !isViewingMember && (
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight italic">Hệ thống & Tài chính</h2>
-                                </div>
-                                <AdminView dashboard={dashboard} />
-                            </div>
-                        )} */}
-                        {/* 
-                        {(['BD', 'SALE', 'ADMIN', 'BOD'].includes(user?.role)) && !isViewingMember && (
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <h2 className="text-2xl font-black text-gray-900 tracking-tight italic">Kinh doanh</h2>
-                                </div>
-                                <BDView dashboard={dashboard} navigate={navigate} />
-                            </div>
-                        )} */}
-
                         {dashboard.teamLead && !isViewingMember && (
                             <div className="space-y-4">
-                                <TeamLeadView dashboard={dashboard} navigate={navigate} />
+                                <TeamLeadView 
+                                    dashboard={dashboard} 
+                                    navigate={navigate} 
+                                    teamMembers={teamMembers}
+                                    selectedMemberId={selectedMemberId}
+                                    onSelectMember={setSelectedMemberId}
+                                    currentUserId={user?.id}
+                                />
                             </div>
                         )}
 
@@ -144,6 +112,9 @@ export const DashboardPage = () => {
                                     isViewingMember={isViewingMember}
                                     selectedMemberId={selectedMemberId}
                                     teamMembers={teamMembers}
+                                    isTeamLead={isTeamLead}
+                                    onSelectMember={setSelectedMemberId}
+                                    currentUserId={user?.id}
                                 />
                             </div>
                         )}

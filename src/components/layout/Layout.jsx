@@ -12,7 +12,7 @@ export const Layout = ({ children }) => {
       <Header isSidebarCollapsed={isSidebarCollapsed} setIsSidebarCollapsed={setIsSidebarCollapsed} />
       <Sidebar isCollapsed={isSidebarCollapsed} />
       <div className={`${isSidebarCollapsed ? 'pl-20' : 'pl-64'} pt-16 transition-all duration-300 ease-in-out`}>
-        <main className="p-8">
+        <main className="p-8 pt-0">
           {children}
         </main>
       </div>
