@@ -16,8 +16,8 @@ export const TeamLeadView = ({
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-start">
-            {/* Tầng 1: Grid Projects (3/4 cột) */}
-            <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Tầng 1: Grid Projects  */}
+            <div className="lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {dashboard.teamLead?.map((project, idx) => (
                     <motion.div
                         key={project.id}
@@ -30,8 +30,7 @@ export const TeamLeadView = ({
                         <div className="relative">
                             <div className="flex justify-between items-start gap-3 mb-4">
                                 <h3 className="font-black text-slate-800 text-[13px] group-hover:text-indigo-600 transition-colors line-clamp-1 tracking-tight leading-tight">{project.name}</h3>
-                                <span className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-lg border tracking-[0.1em] shrink-0 ${
-                                    PROJECT_STATUS_COLORS[project.status] || 'bg-gray-50 text-gray-500 border-gray-100'
+                                <span className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-lg border tracking-[0.1em] shrink-0 ${PROJECT_STATUS_COLORS[project.status] || 'bg-gray-50 text-gray-500 border-gray-100'
                                     }`}>
                                     {PROJECT_STATUS_LABELS[project.status]}
                                 </span>
@@ -71,15 +70,7 @@ export const TeamLeadView = ({
                 ))}
             </div>
 
-            {/* Member Selector (1/4 cột cuối) */}
-            <div className="lg:col-span-1 h-full flex mt-0 ">
-                <MemberSelector
-                    members={teamMembers}
-                    selectedId={selectedMemberId}
-                    onSelect={onSelectMember}
-                    currentUserId={currentUserId}
-                />
-            </div>
+
         </div>
     );
 };

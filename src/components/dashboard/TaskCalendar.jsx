@@ -128,10 +128,10 @@ export const TaskCalendar = ({ tasks = [] }) => {
                                     <div className="w-1 h-6 rounded-full bg-current opacity-20 shrink-0" />
                                     <div className="min-w-0">
                                         <p className="text-[10px] font-bold text-gray-900 group-hover:text-blue-600 truncate transition-colors leading-tight">{task.name}</p>
-                                        <div className="flex gap-2 items-center mt-0.5">
-                                            <p className="text-[8px] text-gray-400 font-bold uppercase truncate max-w-[80px]">{task?.project?.name || 'Ngoài dự án'}</p>
-                                            <span className="text-[8px] font-black text-blue-600/60 uppercase">{TASK_STATUS_LABELS[task.status]}</span>
-                                        </div>
+                                        {/* <div className="flex gap-2 items-center mt-0.5"> */}
+                                        <p className="text-[8px] text-gray-400 font-bold uppercase truncate max-w-[80px]">{task?.project?.name || 'Ngoài dự án'}</p>
+                                        <p className="text-[8px] font-black text-blue-600/60 uppercase">{TASK_STATUS_LABELS[task.status]}</p>
+                                        {/* </div> */}
                                     </div>
                                 </motion.button>
                             )) : (

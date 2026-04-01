@@ -66,12 +66,34 @@ export const DashboardPage = () => {
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
                         <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
                             className="flex items-center gap-3 mb-1"
                         >
+                            <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
+                                Bảng điều khiển
+                            </h1>
                         </motion.div>
+                        <p className="text-sm text-gray-500 font-medium">
+                            Chào mừng trở lại, <span className="text-orange-600 font-bold">{user?.fullName || user?.username}</span>
+                        </p>
                     </div>
 
-                    {/* MemberSelector moved to MemberView */}
+                    <div className="flex items-center gap-3">
+                        <MonthSelector
+                            selectedDate={selectedDate}
+                            onChange={setSelectedDate}
+                        />
+                        {/* Member Selector (1/4 cột cuối) */}
+                        <div className=" h-full flex mt-0 ">
+                            <MemberSelector
+                                members={teamMembers}
+                                selectedId={selectedMemberId}
+                                onSelect={setSelectedMemberId}
+                                currentUserId={user?.id}
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -93,9 +115,9 @@ export const DashboardPage = () => {
 
                         {dashboard.teamLead && !isViewingMember && (
                             <div className="space-y-4">
-                                <TeamLeadView 
-                                    dashboard={dashboard} 
-                                    navigate={navigate} 
+                                <TeamLeadView
+                                    dashboard={dashboard}
+                                    navigate={navigate}
                                     teamMembers={teamMembers}
                                     selectedMemberId={selectedMemberId}
                                     onSelectMember={setSelectedMemberId}
