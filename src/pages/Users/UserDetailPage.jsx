@@ -164,7 +164,7 @@ export const UserDetailPage = () => {
                             </div>
 
                             {/* Labor Contract Section */}
-                            <div className="space-y-4 pt-4 border-t border-gray-50">
+                            {/* <div className="space-y-4 pt-4 border-t border-gray-50">
                                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center justify-between">
                                     Hợp đồng lao động
                                     {user.laborContract?.length > 0 && (
@@ -244,7 +244,7 @@ export const UserDetailPage = () => {
                                         </button>
                                     )}
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </div>
