@@ -31,14 +31,14 @@ export const useSSE = () => {
     };
 
     eventSource.onmessage = (event) => {
-      console.log('[SSE] Raw data received:', event.data);
+      // console.log('[SSE] Raw data received:', event.data);
       try {
         const payload = JSON.parse(event.data);
 
         // Handle Module Events (Transient UI updates)
         if (payload.__isModuleEvent) {
           console.log(`[SSE] Module Event: ${payload.event}`, payload.data);
-          
+
           const eventToTags = {
             'opportunity_created': ['Opportunities'],
             'opportunity_updated': ['Opportunities'],

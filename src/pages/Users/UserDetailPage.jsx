@@ -111,7 +111,7 @@ export const UserDetailPage = () => {
                 "px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border flex items-center gap-1 shadow-sm",
                 TASK_STATUS_COLORS[status] || 'bg-gray-50 text-gray-700 border-gray-100'
             )}>
-                <Icon className="w-3 h-3" /> {label}
+                {label}
             </span>
         );
     };
@@ -140,7 +140,6 @@ export const UserDetailPage = () => {
                                 "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase border shadow-sm",
                                 USER_ROLE_COLORS[user.account?.role] || 'bg-gray-50 text-gray-700 border-gray-100'
                             )}>
-                                <Shield className="w-3.5 h-3.5" />
                                 {USER_ROLE[user.account?.role] || user.account?.role}
                             </div>
                         </div>

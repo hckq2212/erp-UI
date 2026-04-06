@@ -1,5 +1,5 @@
 import { useSelector } from 'react-redux';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -45,6 +45,15 @@ export const OpportunityDetailPage = () => {
   const [updateQuotation, { isLoading: isUpdatingQuotation }] = useUpdateQuotationMutation();
   const [createContract, { isLoading: isCreatingContract }] = useCreateContractMutation();
   const [approveOpportunity, { isLoading: isApproving }] = useApproveOpportunityMutation();
+
+  const draftCount = useMemo(() =>
+    quotations.filter(q => q.status === 'DRAFT' || q.status === 'PENDING_APPROVAL').length,
+    [quotations]
+  );
+  console.log(draftCount);
+  console.log(opportunity?.status);
+
+  const showBadge = (opportunity?.status === 'PENDING_QUOTE_APPROVAL' || opportunity?.status === 'QUOTATION_DRAFTING') && draftCount > 0;
 
   // Modal state
   const [showContactModal, setShowContactModal] = useState(false);
@@ -255,14 +264,11 @@ export const OpportunityDetailPage = () => {
                     >
                       Xem báo giá
                     </button>
-                    {opportunity.status == 'PENDING_QUOTE_APPROVAL' && (() => {
-                      const draftCount = quotations.filter(q => q.status === 'DRAFT').length;
-                      return draftCount > 0 && (
-                        <span className="absolute -top-2 -right-2 flex items-center justify-center h-5 w-5 text-[10px] font-black text-white bg-red-500 rounded-full ring-2 ring-white shadow-sm">
-                          {draftCount > 9 ? '9+' : draftCount}
-                        </span>
-                      );
-                    })()}
+                    {showBadge && (
+                      <span className="absolute -top-2 -right-2 flex items-center justify-center h-5 w-5 text-[10px] font-black text-white bg-red-500 rounded-full ring-2 ring-white shadow-sm">
+                        {draftCount > 9 ? '9+' : draftCount}
+                      </span>
+                    )}
                   </div>
                 )}
                 {(opportunity.status === 'QUOTATION_DRAFTING' || opportunity.status === 'PENDING_QUOTE_APPROVAL' || opportunity.status === 'OPP_APPROVED' && (currentUser.role == 'ADMIN' || currentUser.id == opportunity.createdBy.id)) && (
