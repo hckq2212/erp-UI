@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Briefcase, FileText,
   FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store,
-  CheckCircle2, Package
+  CheckCircle2, Package, User, Handshake, FolderOpenDotIcon
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useGetMeQuery } from '../../api/auth';
@@ -12,17 +12,17 @@ const menuItems = [
   { path: '/opportunities', icon: Briefcase, label: 'Cơ Hội', roles: ['ADMIN', 'BOD', 'BD', 'ACCOUNTANT'] },
   { path: '/contracts', icon: FileSignature, label: 'Hợp Đồng', roles: ['ADMIN', 'BOD', 'BD', 'ACCOUNTANT'] },
   { path: '/customers', icon: Users, label: 'Khách Hàng', roles: ['ADMIN', 'BOD', 'BD'] },
-  { path: '/projects', icon: Rocket, label: 'Dự Án' },
+  { path: '/projects', icon: FolderOpenDotIcon, label: 'Dự Án' },
   { path: '/tasks', icon: CheckSquare, label: 'Công Việc' },
   { path: '/acceptance', icon: CheckCircle2, label: 'Nghiệm thu', roles: ['ADMIN', 'BOD'] },
   { path: '/finance', icon: DollarSign, label: 'Lộ trình thanh toán', roles: ['ADMIN', 'BOD', 'BD', 'ACCOUNTANT'] },
-  { path: '/services', icon: Briefcase, label: 'Dịch vụ', roles: ['ADMIN', 'BOD', 'BD'] },
   { path: '/service-packages', icon: Package, label: 'Gói dịch vụ', roles: ['ADMIN', 'BOD', 'BD'] },
+  { path: '/services', icon: Briefcase, label: 'Dịch vụ', roles: ['ADMIN', 'BOD', 'BD'] },
   { path: '/jobs', icon: CheckSquare, label: 'Hạng mục công việc', roles: ['ADMIN', 'BOD', 'BD'] },
   { path: '/teams', icon: Users, label: 'Đội dự án', roles: ['ADMIN', 'BOD', 'BD'] },
-  { path: '/users', icon: Users, label: 'Nhân sự', roles: ['ADMIN', 'BOD', 'ACCOUNTANT'] },
+  { path: '/users', icon: User, label: 'Nhân sự', roles: ['ADMIN', 'BOD', 'ACCOUNTANT'] },
   { path: '/vendors', icon: Store, label: 'Vendor', roles: ['ADMIN', 'BOD', 'ACCOUNTANT'] },
-  { path: '/referral-partners', icon: Users, label: 'Đối tác', roles: ['ADMIN', 'BOD', 'BD'] },
+  { path: '/referral-partners', icon: Handshake, label: 'Đối tác', roles: ['ADMIN', 'BOD', 'BD'] },
 
 ];
 
@@ -57,7 +57,7 @@ export const Sidebar = ({ isCollapsed }) => {
               title={isCollapsed ? item.label : ""}
             >
               <item.icon className={cn(
-                'h-5 w-5 transition-all shrink-0', 
+                'h-5 w-5 transition-all shrink-0',
                 isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500',
                 isCollapsed ? 'mr-0' : 'mr-3'
               )} />
