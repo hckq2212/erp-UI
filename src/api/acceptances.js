@@ -7,13 +7,13 @@ export const acceptancesApi = api.injectEndpoints({
                 url: '/acceptance',
                 params,
             }),
-            providesTags: (result) =>
-                result
-                    ? [
-                        ...result.map(({ id }) => ({ type: 'Acceptance', id })),
-                        { type: 'Acceptance', id: 'LIST' },
-                    ]
-                    : [{ type: 'Acceptance', id: 'LIST' }],
+            providesTags: (result) => {
+                const results = result?.data || (Array.isArray(result) ? result : []);
+                return [
+                    ...results.map(({ id }) => ({ type: 'Acceptance', id })),
+                    { type: 'Acceptance', id: 'LIST' },
+                ];
+            },
         }),
         getAcceptanceRequest: builder.query({
             query: (id) => `/acceptance/${id}`,

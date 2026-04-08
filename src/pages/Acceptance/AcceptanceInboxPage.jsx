@@ -8,7 +8,7 @@ import { useGetMeQuery } from '../../api/auth';
 
 export const AcceptanceInboxPage = () => {
     const { data: currentUser } = useGetMeQuery();
-    const [filters, setFilters] = useState({});
+    const [filters, setFilters] = useState({ search: '', status: 'ALL' });
     const { data: requestsResult = [], isLoading } = useGetAcceptanceRequestsQuery(filters);
     const requests = Array.isArray(requestsResult) ? requestsResult : (requestsResult?.data || []);
     const [selectedRequest, setSelectedRequest] = useState(null);
@@ -107,8 +107,10 @@ export const AcceptanceInboxPage = () => {
                                                 {req.services?.length || 0}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 flex justify-center mt-2">
-                                            {getStatusBadge(req.status)}
+                                        <td className="px-6 py-4">
+                                            <div className="flex justify-center">
+                                                {getStatusBadge(req.status)}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <p className="text-sm font-bold text-gray-700">
