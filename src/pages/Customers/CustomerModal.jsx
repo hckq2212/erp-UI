@@ -7,7 +7,7 @@ import { Input } from '../../components/ui/Input';
 import { useEffect } from 'react';
 
 const customerSchema = z.object({
-  name: z.string().min(1, 'Tên khách hàng là bắt buộc').regex(/^[a-zA-ZÀ-ỹ0-9\s]+$/, 'Tên không được chứa ký tự đặc biệt'),
+  name: z.string().min(1, 'Tên khách hàng là bắt buộc'),
   phone: z.string().min(10, 'Số điện thoại không hợp lệ').regex(/^\+?[0-9]{10,15}$/, 'Số điện thoại không hợp lệ'),
   email: z.string().email('Email không hợp lệ'),
   address: z.string().min(1, 'Địa chỉ là bắt buộc'),

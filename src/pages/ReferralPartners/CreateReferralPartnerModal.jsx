@@ -11,7 +11,7 @@ import { PARTNER_TYPE_LABELS } from '../../utils/enums';
 import { fetchTaxInfo } from '../../utils/tax';
 
 const partnerSchema = z.object({
-    name: z.string().min(1, 'Tên đối tác là bắt buộc').regex(/^[a-zA-ZÀ-ỹ0-9\s]+$/, 'Tên không được chứa ký tự đặc biệt'),
+    name: z.string().min(1, 'Tên đối tác là bắt buộc'),
     email: z.string().email('Email không hợp lệ').optional().or(z.literal('')),
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, 'Số điện thoại không hợp lệ').optional().or(z.literal('')),
     address: z.string().optional(),

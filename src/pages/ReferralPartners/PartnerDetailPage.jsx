@@ -17,16 +17,24 @@ import {
     CheckCircle2,
     AlertCircle,
     ArrowRight,
-    Search
+    Search,
+    Edit2,
+    Save,
+    RotateCcw
 } from 'lucide-react';
 import {
     useGetReferralPartnerQuery,
-    useGetReferralPartnerStatisticsQuery
+    useGetReferralPartnerStatisticsQuery,
+    useUpdateReferralPartnerMutation
 } from '../../api/referralPartners';
 import { formatCurrency, formatDate } from '../../utils/format';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../../store/authSlice';
 import { cn } from '../../utils/cn';
 import { PARTNER_TYPE_LABELS } from '../../utils/enums';
+import { Input } from '../../components/ui/Input';
+import { toast } from 'react-toastify';
 
 export const PartnerDetailPage = () => {
     const { id } = useParams();
@@ -35,6 +43,54 @@ export const PartnerDetailPage = () => {
 
     const { data: partner, isLoading: isPartnerLoading } = useGetReferralPartnerQuery(id);
     const { data: stats, isLoading: isStatsLoading } = useGetReferralPartnerStatisticsQuery(id);
+    const [updatePartner, { isLoading: isUpdating }] = useUpdateReferralPartnerMutation();
+    const currentUser = useSelector(selectCurrentUser);
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState({});
+
+    const canEdit = currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD';
+
+    useEffect(() => {
+        if (partner) {
+            setFormData({
+                name: partner.name || '',
+                email: partner.email || '',
+                phone: partner.phone || '',
+                address: partner.address || '',
+                taxId: partner.taxId || '',
+                type: partner.type || 'BUSINESS',
+            });
+        }
+    }, [partner]);
+
+    const handleEdit = () => setIsEditing(true);
+    const handleCancel = () => {
+        setIsEditing(false);
+        setFormData({
+            name: partner.name || '',
+            email: partner.email || '',
+            phone: partner.phone || '',
+            address: partner.address || '',
+            taxId: partner.taxId || '',
+            type: partner.type || 'BUSINESS',
+        });
+    };
+
+    const handleSave = async () => {
+        try {
+            await updatePartner({ id, ...formData }).unwrap();
+            toast.success('Cập nhật thông tin đối tác thành công');
+            setIsEditing(false);
+        } catch (err) {
+            toast.error(err?.data?.message || 'Có lỗi xảy ra khi cập nhật');
+        }
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
 
     if (isPartnerLoading || isStatsLoading) {
         return (
@@ -80,17 +136,6 @@ export const PartnerDetailPage = () => {
                                 {PARTNER_TYPE_LABELS[partner.type] || partner.type}
                             </span>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-500 font-medium">
-                            <span className="flex items-center gap-1.5 line-clamp-1">
-                                <Mail className="w-4 h-4 text-indigo-400" />
-                                {partner.email}
-                            </span>
-                            <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                            <span className="flex items-center gap-1.5">
-                                <Phone className="w-4 h-4 text-emerald-400" />
-                                {partner.phone}
-                            </span>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -101,54 +146,138 @@ export const PartnerDetailPage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-8 gap-8">
                 {/* Left Side: Partner Info Card */}
                 <div className="lg:col-span-3 space-y-6">
-                    <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-8 space-y-8">
+                    <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-8 space-y-8 relative overflow-hidden">
                         <div>
-                            <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6 pb-2 border-b-2 border-indigo-600 w-fit">Thông tin đối tác</h3>
+                            <div className="flex justify-between items-start mb-6 pb-2 border-b-2 border-indigo-600">
+                                <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest w-fit">Thông tin đối tác</h3>
+                                {canEdit && (
+                                    <div className="flex gap-2">
+                                        {isEditing ? (
+                                            <>
+                                                <button
+                                                    onClick={handleSave}
+                                                    disabled={isUpdating}
+                                                    className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white transition-all disabled:opacity-50"
+                                                    title="Lưu"
+                                                >
+                                                    <Save size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={handleCancel}
+                                                    className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all"
+                                                    title="Hủy"
+                                                >
+                                                    <RotateCcw size={16} />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <button
+                                                onClick={handleEdit}
+                                                className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all"
+                                                title="Sửa thông tin"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="space-y-6">
-                                <div className="flex items-start gap-4">
-                                    <div className="p-2.5 bg-gray-50 text-gray-400 rounded-xl">
-                                        <Building2 size={18} />
+                                {isEditing ? (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <Input
+                                            label="Tên đối tác"
+                                            name="name"
+                                            value={formData.name}
+                                            onChange={handleChange}
+                                        />
+                                        <div className="w-full">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Loại hình</label>
+                                            <select
+                                                name="type"
+                                                value={formData.type}
+                                                onChange={handleChange}
+                                                className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                                            >
+                                                {Object.entries(PARTNER_TYPE_LABELS).map(([value, label]) => (
+                                                    <option key={value} value={value}>{label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <Input
+                                            label={formData.type === 'BUSINESS' ? 'Mã số thuế' : 'CCCD'}
+                                            name="taxId"
+                                            value={formData.taxId}
+                                            onChange={handleChange}
+                                        />
+                                        <Input
+                                            label="Email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                        />
+                                        <Input
+                                            label="Số điện thoại"
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleChange}
+                                        />
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
+                                            <textarea
+                                                name="address"
+                                                value={formData.address}
+                                                onChange={handleChange}
+                                                className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm min-h-[80px]"
+                                            />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">MST / CCCD</p>
-                                        <p className="text-sm font-bold text-gray-700">{partner.taxId || 'Chưa cập nhật'}</p>
+                                ) : (
+                                    <div className="space-y-6">
+                                        <div className="flex items-start gap-4">
+                                            <div className="p-2.5 bg-gray-50 text-gray-400 rounded-xl">
+                                                <Building2 size={18} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">
+                                                    {partner.type === 'BUSINESS' ? 'Mã số thuế' : 'CCCD'}
+                                                </p>
+                                                <p className="text-sm font-bold text-gray-700">{partner.taxId || 'Chưa cập nhật'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-4">
+                                            <div className="p-2.5 bg-gray-50 text-gray-400 rounded-xl">
+                                                <Mail size={18} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">Email</p>
+                                                <p className="text-sm font-bold text-gray-700">{partner.email || 'Chưa cập nhật'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-4">
+                                            <div className="p-2.5 bg-gray-50 text-gray-400 rounded-xl">
+                                                <Phone size={18} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">Số điện thoại</p>
+                                                <p className="text-sm font-bold text-gray-700">{partner.phone || 'Chưa cập nhật'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-4">
+                                            <div className="p-2.5 bg-gray-50 text-gray-400 rounded-xl">
+                                                <MapPin size={18} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">Địa chỉ</p>
+                                                <p className="text-sm font-bold text-gray-700 leading-relaxed">{partner.address || 'Chưa cập nhật'}</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex items-start gap-4">
-                                    <div className="p-2.5 bg-gray-50 text-gray-400 rounded-xl">
-                                        <MapPin size={18} />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">Địa chỉ</p>
-                                        <p className="text-sm font-bold text-gray-700 leading-relaxed">{partner.address || 'Chưa cập nhật'}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-4">
-                                    <div className="p-2.5 bg-gray-50 text-gray-400 rounded-xl">
-                                        <Calendar size={18} />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">Ngày tham gia</p>
-                                        <p className="text-sm font-bold text-gray-700">{formatDate(partner.createdAt)}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-4">
-                                    <div className="p-2.5 bg-gray-50 text-gray-400 rounded-xl">
-                                        <Clock size={18} />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-gray-400 font-black uppercase mb-0.5">Cập nhật cuối</p>
-                                        <p className="text-sm font-bold text-gray-700">{formatDate(partner.updatedAt)}</p>
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         </div>
 
-                        <div className="pt-6 border-t border-gray-50">
-                            <button className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-800 transition-all shadow-lg shadow-gray-200">
-                                Chỉnh sửa thông tin
-                            </button>
-                        </div>
                     </div>
                 </div>
 
@@ -209,9 +338,8 @@ export const PartnerDetailPage = () => {
                                                 <div>
                                                     <h5 className="font-black text-gray-900 mb-0.5 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{opp.name}</h5>
                                                     <div className="flex items-center gap-4 text-[10px] text-gray-400 font-bold">
-                                                        <span className="flex items-center gap-1.5"><DollarSign size={12} className="text-gray-300" /> Doanh thu: {formatCurrency(opp.expectedRevenue)}</span>
+                                                        <span className="flex items-center gap-1.5">Doanh thu: {formatCurrency(opp.expectedRevenue)}</span>
                                                         <span className="w-1 h-1 bg-gray-200 rounded-full" />
-                                                        <span className="flex items-center gap-1.5"><Target size={12} className="text-gray-300" /> Thành công: {opp.successChance}%</span>
                                                     </div>
                                                 </div>
                                             </div>

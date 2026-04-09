@@ -10,9 +10,10 @@ import { uploadToCloudinary } from '../../utils/cloudinary';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { VIETNAM_BANKS } from '../../utils/enums';
+import { fetchTaxInfo } from '../../utils/tax';
 
 const vendorSchema = z.object({
-    name: z.string().min(1, 'Tên vendor là bắt buộc').regex(/^[a-zA-ZÀ-ỹ0-9\s]+$/, 'Tên không được chứa ký tự đặc biệt'),
+    name: z.string().min(1, 'Tên vendor là bắt buộc'),
     email: z.string().email('Email không hợp lệ').optional().or(z.literal('')),
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, 'Số điện thoại không hợp lệ').optional().or(z.literal('')),
     address: z.string().optional(),
@@ -53,6 +54,7 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
         handleSubmit,
         reset,
         watch,
+        setValue,
         formState: { errors },
     } = useForm({
         resolver: zodResolver(vendorSchema),
@@ -71,10 +73,37 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
     const vendorType = watch('type');
     const idCardFrontFile = watch('idCardFront');
     const idCardBackFile = watch('idCardBack');
+    const taxId = watch('taxId');
 
     const [previews, setPreviews] = useState({ front: null, back: null });
     const [uploadProgress, setUploadProgress] = useState({ front: 0, back: 0 });
     const [isUploading, setIsUploading] = useState(false);
+    const [isFetchingTax, setIsFetchingTax] = useState(false);
+
+    useEffect(() => {
+        const fetchInfo = async () => {
+            const cleanTaxId = taxId?.replace(/[\s-]/g, '');
+            // Only auto-fill for BUSINESS and valid MST (10 or 13 digits)
+            if (isOpen && vendorType === 'BUSINESS' && (cleanTaxId?.length === 10 || cleanTaxId?.length === 13)) {
+                setIsFetchingTax(true);
+                try {
+                    const data = await fetchTaxInfo(cleanTaxId);
+                    if (data) {
+                        setValue('name', data.name, { shouldValidate: true });
+                        setValue('address', data.address || '', { shouldValidate: true });
+                        toast.info('Đã tự động điền thông tin doanh nghiệp');
+                    }
+                } catch (err) {
+                    console.error('Tax fetch failed:', err);
+                } finally {
+                    setIsFetchingTax(false);
+                }
+            }
+        };
+
+        const timer = setTimeout(fetchInfo, 500);
+        return () => clearTimeout(timer);
+    }, [taxId, vendorType, isOpen, setValue]);
 
     useEffect(() => {
         if (idCardFrontFile && idCardFrontFile[0]) {
@@ -141,7 +170,7 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
                             label="Tên nhà cung cấp *"
                             {...register('name')}
                             error={errors.name?.message}
-                            placeholder="Nhập tên vendor..."
+                            placeholder={isFetchingTax ? "Đang tải tên doanh nghiệp..." : "Nhập tên vendor..."}
                         />
                     </div>
                     <Input
