@@ -20,7 +20,7 @@ import {
   useActivateDebtMutation
 } from '../../../api/debts';
 import { Button } from '../../../components/ui/Button';
-import { MilestoneModal } from './MilestoneModal';
+import { MilestoneModal } from '../../../components/finance/MilestoneModal';
 import { DebtDetailsModal } from '../../../components/finance/DebtDetailsModal';
 import { toast } from 'react-toastify';
 import { cn } from '../../../utils/cn';

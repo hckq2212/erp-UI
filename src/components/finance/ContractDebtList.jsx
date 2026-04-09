@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
     ChevronDown,
     ChevronRight,
@@ -11,24 +11,31 @@ import {
     Clock,
     TrendingUp,
     CreditCard,
+    Pencil,
     ArrowUp,
     ArrowDown,
     ArrowUpDown,
     Filter
 } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { useActivateDebtMutation } from '../../api/debts';
 import { formatCurrency } from '../../utils/format';
 import { cn } from '../../utils/cn';
 import { DebtDetailsModal } from './DebtDetailsModal';
+import { MilestoneModal } from './MilestoneModal';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../ui/Pagination';
-import { TableFilters } from '../ui/TableFilters';
 
 export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }) => {
     const [expandedContracts, setExpandedContracts] = useState(new Set());
     const [selectedDebt, setSelectedDebt] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [debtStatusFilter, setDebtStatusFilter] = useState('ALL');
+    const [activateDebt, { isLoading: activatingDebt }] = useActivateDebtMutation();
+    const [activatingMilestoneId, setActivatingMilestoneId] = useState(null);
+
+    const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+    const [planContract, setPlanContract] = useState(null);
+    const [focusMilestoneId, setFocusMilestoneId] = useState(null);
 
     // Group milestones by contractId and merge with debt/payment info
     const milestonesByContract = useMemo(() => {
@@ -71,27 +78,6 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
         return grouped;
     }, [milestones, debts]);
 
-    const filteredContracts = useMemo(() => {
-        if (!Array.isArray(contracts)) return [];
-        return contracts.filter(contract => {
-            const matchesSearch =
-                (contract.contractCode?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                (contract.customer?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-
-            if (!matchesSearch) return false;
-
-            if (debtStatusFilter === 'ALL') return true;
-
-            const contractMilestones = milestonesByContract[contract.id] || [];
-            const hasDebt = contractMilestones.some(m => m.status === 'ACTIVE' && m.remaining > 0);
-
-            if (debtStatusFilter === 'HAS_DEBT') return hasDebt;
-            if (debtStatusFilter === 'NO_DEBT') return !hasDebt;
-
-            return true;
-        });
-    }, [contracts, searchTerm, debtStatusFilter, milestonesByContract]);
-
     const {
         data: paginatedContracts,
         sortConfig,
@@ -100,7 +86,7 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
         setCurrentPage,
         totalPages,
         totalItems
-    } = useTableFeatures(filteredContracts, { initialSort: { key: 'contractCode', direction: 'ascending' } });
+    } = useTableFeatures(contracts, { initialSort: { key: 'contractCode', direction: 'ascending' } });
 
     const toggleContract = (contractId) => {
         const newExpanded = new Set(expandedContracts);
@@ -115,6 +101,25 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
     const openDebtDetails = (debt) => {
         setSelectedDebt(debt);
         setIsModalOpen(true);
+    };
+
+    const openPlanModal = (contract, milestoneId) => {
+        setPlanContract(contract);
+        setFocusMilestoneId(milestoneId || null);
+        setIsPlanModalOpen(true);
+    };
+
+    const handleActivateDebt = async (milestoneId) => {
+        if (!milestoneId) return;
+        try {
+            setActivatingMilestoneId(String(milestoneId));
+            await activateDebt({ milestoneId }).unwrap();
+            toast.success('Đã kích hoạt công nợ cho đợt thanh toán này');
+        } catch (err) {
+            toast.error(err?.data?.message || 'Không thể kích hoạt công nợ');
+        } finally {
+            setActivatingMilestoneId(null);
+        }
     };
 
     const getSortIcon = (key) => {
@@ -139,29 +144,8 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
         </button>
     );
 
-    const handleReset = () => {
-        setSearchTerm('');
-        setDebtStatusFilter('ALL');
-    };
-
-    const debtStatusOptions = [
-        { value: 'HAS_DEBT', label: 'Còn nợ cần thu' },
-        { value: 'NO_DEBT', label: 'Đã hoàn thành thu' },
-    ];
-
     return (
         <div className="space-y-6">
-            <TableFilters
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                filterValue={debtStatusFilter}
-                onFilterChange={setDebtStatusFilter}
-                filterOptions={debtStatusOptions}
-                filterPlaceholder="Lọc theo tình trạng nợ"
-                searchPlaceholder="Tìm mã hợp đồng, khách hàng..."
-                onReset={handleReset}
-            />
-
             {/* Sorting Toolbar */}
             <div className="flex flex-wrap items-center gap-2 p-2 bg-slate-50/50 rounded-2xl border border-slate-100 mb-2">
                 <div className="flex items-center gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-r border-slate-200">
@@ -247,18 +231,22 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
                             {/* Milestone List (Journey) */}
                             {isExpanded && (
                                 <div className="p-8 bg-white border-t border-slate-100">
-                                    <div className="relative space-y-8">
+                                    <div className="relative space-y-4">
                                         {/* Timeline Line */}
-                                        <div className="absolute left-[23px] top-2 bottom-2 w-0.5 bg-slate-100/50" />
+                                        <div className="absolute left-5 top-1 bottom-1 w-0.5 bg-slate-100/50" />
 
-                                        {contractMilestones.map((m, mIdx) => {
+                                        {contractMilestones.map((m) => {
                                             const overdue = m.status === 'ACTIVE' && m.dueDate && new Date(m.dueDate) < new Date();
+                                            const amount = Number(m.amount || 0);
+                                            const remaining = Number(m.remaining || 0);
+                                            const paid = Math.max(0, amount - remaining);
+                                            const progressPercent = amount > 0 ? Math.min(100, Math.round((paid / amount) * 100)) : 0;
 
                                             return (
-                                                <div key={m.id} className="relative flex gap-6 items-start group">
+                                                <div key={m.id} className="relative flex gap-4 items-start group">
                                                     {/* Node Icon */}
                                                     <div className={cn(
-                                                        "relative z-10 w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 border-2",
+                                                        "relative z-10 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 border-2 shrink-0",
                                                         m.status === 'COMPLETED' ? "bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-100/40" :
                                                             m.status === 'ACTIVE' ? "bg-white/90 backdrop-blur-sm border-indigo-500 text-indigo-600 shadow-lg shadow-indigo-100/40" :
                                                                 "bg-white/90 backdrop-blur-sm border-slate-100 text-slate-300"
@@ -270,54 +258,136 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
 
                                                     {/* Content */}
                                                     <div className={cn(
-                                                        "flex-1 p-5 rounded-2xl border transition-all duration-500",
-                                                        m.status !== 'PLANNED' ? "bg-slate-50/50 border-slate-100 group-hover:bg-indigo-50/30 group-hover:border-indigo-100/50" : "bg-white border-dashed border-slate-200 opacity-60"
+                                                        "flex-1 p-4 rounded-2xl border transition-all duration-500 min-w-0",
+                                                        m.status !== 'PLANNED'
+                                                            ? "bg-slate-50/50 border-slate-100 group-hover:bg-indigo-50/30 group-hover:border-indigo-100/50"
+                                                            : "bg-white border-dashed border-slate-200 opacity-60"
                                                     )}>
-                                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                                            <div>
-                                                                <div className="flex items-center gap-2 mb-1">
-                                                                    <h4 className="font-extrabold text-slate-800 uppercase text-xs tracking-tight">{m.name}</h4>
-                                                                    <span className="px-1.5 py-0.5 bg-slate-200/50 rounded text-[9px] font-bold text-slate-500">
-                                                                        {m.percentage}%
-                                                                    </span>
+                                                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                                                            <div className="min-w-0">
+                                                                <div className="flex items-center gap-2">
+                                                                    <h4 className="min-w-0 font-extrabold text-slate-800 uppercase text-xs tracking-tight truncate">
+                                                                        {m.name || 'Mốc thanh toán'}
+                                                                    </h4>
+                                                                    {typeof m.percentage !== 'undefined' && m.percentage !== null && (
+                                                                        <span className="px-1.5 py-0.5 bg-slate-200/50 rounded text-[9px] font-bold text-slate-500 whitespace-nowrap">
+                                                                            {m.percentage}%
+                                                                        </span>
+                                                                    )}
+                                                                    {m.status === 'PLANNED' && (
+                                                                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[8px] font-bold uppercase tracking-widest whitespace-nowrap">
+                                                                            Chưa kích hoạt
+                                                                        </span>
+                                                                    )}
+                                                                    {m.status === 'ACTIVE' && (
+                                                                        <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[8px] font-bold uppercase tracking-widest whitespace-nowrap">
+                                                                            Đang thu
+                                                                        </span>
+                                                                    )}
+                                                                    {m.status === 'COMPLETED' && (
+                                                                        <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[8px] font-bold uppercase tracking-widest whitespace-nowrap">
+                                                                            Đã thu
+                                                                        </span>
+                                                                    )}
                                                                     {overdue && (
-                                                                        <span className="px-1.5 py-0.5 bg-rose-100 text-rose-600 rounded text-[8px] font-bold uppercase tracking-widest">
+                                                                        <span className="px-1.5 py-0.5 bg-rose-100 text-rose-700 rounded text-[8px] font-bold uppercase tracking-widest whitespace-nowrap">
                                                                             Quá hạn
                                                                         </span>
                                                                     )}
                                                                 </div>
-                                                                <p className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5">
+                                                                <p className="mt-1 text-[10px] font-bold text-slate-400 flex items-center gap-1.5">
                                                                     <Calendar size={12} />
                                                                     Hạn: {m.dueDate ? new Date(m.dueDate).toLocaleDateString('vi-VN') : 'N/A'}
                                                                 </p>
                                                             </div>
 
-                                                            <div className="flex items-center gap-6 self-end sm:self-center">
+                                                            <div className="flex items-center gap-3 sm:gap-4 self-end sm:self-start shrink-0">
                                                                 <div className="text-right">
                                                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Giá trị</p>
-                                                                    <p className="text-sm font-extrabold text-slate-900">{formatCurrency(m.amount)}</p>
+                                                                    <p className="text-sm font-extrabold text-slate-900">{formatCurrency(amount)}</p>
                                                                 </div>
                                                                 <div className="text-right">
                                                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Còn nợ</p>
                                                                     <p className={cn(
                                                                         "text-sm font-extrabold",
-                                                                        m.remaining > 0 && m.status === 'ACTIVE' ? "text-rose-500" :
-                                                                            m.status === 'COMPLETED' ? "text-emerald-600" : "text-slate-400"
-                                                                    )}>{formatCurrency(m.remaining)}</p>
+                                                                        m.status === 'PLANNED'
+                                                                            ? "text-slate-400"
+                                                                            : remaining > 0 && m.status === 'ACTIVE'
+                                                                                ? "text-rose-600"
+                                                                                : m.status === 'COMPLETED'
+                                                                                    ? "text-emerald-700"
+                                                                                    : "text-slate-500"
+                                                                    )}>
+                                                                        {m.status === 'PLANNED' ? '—' : formatCurrency(remaining)}
+                                                                    </p>
+                                                                </div>
+
+                                                                <div className="flex items-center gap-2">
+                                                                    {m.status === 'PLANNED' && (
+                                                                        <button
+                                                                            type="button"
+                                                                            disabled={activatingDebt && activatingMilestoneId === String(m.id)}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleActivateDebt(m.id);
+                                                                            }}
+                                                                            className={cn(
+                                                                                "px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                                                                                activatingDebt && activatingMilestoneId === String(m.id)
+                                                                                    ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                                                                                    : "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
+                                                                            )}
+                                                                            title="Kích hoạt công nợ"
+                                                                        >
+                                                                            {activatingDebt && activatingMilestoneId === String(m.id) ? 'Đang kích hoạt…' : 'Kích hoạt'}
+                                                                        </button>
+                                                                    )}
+
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            openPlanModal(contract, m.id);
+                                                                        }}
+                                                                        className="p-2 bg-white text-slate-600 rounded-xl hover:bg-slate-900 hover:text-white transition-all shadow-sm border border-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                                                                        title="Chỉnh sửa lộ trình"
+                                                                    >
+                                                                        <Pencil size={16} />
+                                                                    </button>
                                                                 </div>
                                                                 {m.debt && (
                                                                     <button
+                                                                        type="button"
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             openDebtDetails(m.debt);
                                                                         }}
-                                                                        className="p-2 bg-white text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100"
+                                                                        className="p-2 bg-white text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+                                                                        title="Chi tiết"
                                                                     >
                                                                         <ArrowRight size={16} />
                                                                     </button>
                                                                 )}
                                                             </div>
                                                         </div>
+
+                                                        {m.status !== 'PLANNED' && (
+                                                            <div className="mt-3">
+                                                                <div className="flex items-center justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                                                    <span>Tiến độ</span>
+                                                                    <span>{progressPercent}%</span>
+                                                                </div>
+                                                                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                                    <div
+                                                                        className={cn(
+                                                                            "h-full transition-all duration-700",
+                                                                            m.status === 'COMPLETED' ? "bg-emerald-500" : "bg-indigo-500"
+                                                                        )}
+                                                                        style={{ width: `${progressPercent}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );
@@ -336,7 +406,7 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
                     );
                 })}
 
-                {filteredContracts.length === 0 && (
+                {contracts.length === 0 && (
                     <div className="py-24 flex flex-col items-center justify-center bg-white rounded-[2.5rem] border border-dashed border-gray-200">
                         <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-200 mb-4">
                             <FileText size={32} />
@@ -358,6 +428,18 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
                 onClose={() => setIsModalOpen(false)}
                 debt={selectedDebt}
                 allDebts={debts}
+            />
+
+            <MilestoneModal
+                isOpen={isPlanModalOpen}
+                onClose={() => {
+                    setIsPlanModalOpen(false);
+                    setPlanContract(null);
+                    setFocusMilestoneId(null);
+                }}
+                contractId={planContract?.id}
+                sellingPrice={Number(planContract?.sellingPrice || planContract?.selling_price || 0)}
+                initialFocusMilestoneId={focusMilestoneId}
             />
         </div>
     );

@@ -18,21 +18,27 @@ import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../../utils/format';
 import { DebtDetailsModal } from './DebtDetailsModal';
 
-export const FinanceSchedule = ({ contracts = [], debts = [], milestones = [] }) => {
+export const FinanceSchedule = ({ contracts = [], debts = [], milestones = [], rangeStart, rangeEnd, rangeCaption }) => {
     const navigate = useNavigate();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDebt, setSelectedDebt] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const scrollRef = useRef(null);
 
-    // Generate 4 weeks of days
+    const rangeStartDate = useMemo(() => (rangeStart ? startOfDay(parseISO(rangeStart)) : null), [rangeStart]);
+    const rangeEndDate = useMemo(() => (rangeEnd ? endOfDay(parseISO(rangeEnd)) : null), [rangeEnd]);
+
+    // Generate days (1 week) and clamp to range (if provided)
     const days = useMemo(() => {
-        const start = startOfWeek(currentDate, { weekStartsOn: 1 });
-        return eachDayOfInterval({
-            start,
-            end: addDays(start, 6) // 1 week
-        });
-    }, [currentDate]);
+        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+        const weekEnd = addDays(weekStart, 6);
+
+        const start = rangeStartDate ? (weekStart < rangeStartDate ? rangeStartDate : weekStart) : weekStart;
+        const end = rangeEndDate ? (weekEnd > rangeEndDate ? rangeEndDate : weekEnd) : weekEnd;
+
+        if (end < start) return [];
+        return eachDayOfInterval({ start, end });
+    }, [currentDate, rangeStartDate, rangeEndDate]);
 
     // Group milestones by contractId and merge with debt/payment info
     const contractsWithMilestones = useMemo(() => {
@@ -74,16 +80,37 @@ export const FinanceSchedule = ({ contracts = [], debts = [], milestones = [] })
     // Simplified scroll to today for better initial positioning if needed, 
     // but in 1-week view, today is usually already visible.
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollLeft = 0;
-        }
+        if (rangeStartDate && currentDate < rangeStartDate) setCurrentDate(rangeStartDate);
+        if (rangeEndDate && currentDate > rangeEndDate) setCurrentDate(rangeEndDate);
+        if (scrollRef.current) scrollRef.current.scrollLeft = 0;
     }, [days]);
 
-    const handlePrev = () => setCurrentDate(prev => addDays(prev, -7));
-    const handleNext = () => setCurrentDate(prev => addDays(prev, 7));
+    const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
+    const prevWeekStart = useMemo(() => addDays(weekStart, -7), [weekStart]);
+    const nextWeekStart = useMemo(() => addDays(weekStart, 7), [weekStart]);
+
+    const prevDisabled = useMemo(() => {
+        if (!rangeStartDate) return false;
+        const prevWeekEnd = addDays(prevWeekStart, 6);
+        return prevWeekEnd < rangeStartDate;
+    }, [rangeStartDate, prevWeekStart]);
+
+    const nextDisabled = useMemo(() => {
+        if (!rangeEndDate) return false;
+        return nextWeekStart > rangeEndDate;
+    }, [rangeEndDate, nextWeekStart]);
+
+    const handlePrev = () => {
+        if (prevDisabled) return;
+        setCurrentDate((prev) => addDays(prev, -7));
+    };
+    const handleNext = () => {
+        if (nextDisabled) return;
+        setCurrentDate((prev) => addDays(prev, 7));
+    };
 
     const getMilestonePosition = (milestone, daysInterval) => {
-        if (!milestone.dueDate) return null;
+        if (!milestone.dueDate || !Array.isArray(daysInterval) || daysInterval.length === 0) return null;
 
         const dueDate = parseISO(milestone.dueDate);
         const viewStart = startOfDay(daysInterval[0]);
@@ -113,21 +140,50 @@ export const FinanceSchedule = ({ contracts = [], debts = [], milestones = [] })
                         Lịch Thanh Toán Hợp Đồng
                     </h3>
                     <span className="text-sm text-gray-500 font-medium px-3 py-1 bg-gray-50 rounded-lg">
-                        {format(days[0], 'dd/MM')} - {format(days[days.length - 1], 'dd/MM/yyyy')}
+                        {days.length > 0
+                            ? `${format(days[0], 'dd/MM')} - ${format(days[days.length - 1], 'dd/MM/yyyy')}`
+                            : 'Không có dữ liệu'}
                     </span>
+                    {rangeCaption && (
+                        <span className="hidden xl:inline text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                            Lọc: {rangeCaption}
+                        </span>
+                    )}
                 </div>
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => setCurrentDate(new Date())}
-                        className="px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                        type="button"
+                        onClick={() => {
+                            let next = new Date();
+                            if (rangeStartDate && next < rangeStartDate) next = rangeStartDate;
+                            if (rangeEndDate && next > rangeEndDate) next = rangeEndDate;
+                            setCurrentDate(next);
+                        }}
+                        className="px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
                     >
                         Hôm nay
                     </button>
                     <div className="flex bg-gray-100 p-1 rounded-xl">
-                        <button onClick={handlePrev} className="p-1.5 hover:bg-white rounded-lg shadow-sm transition-all">
+                        <button
+                            type="button"
+                            onClick={handlePrev}
+                            disabled={prevDisabled}
+                            className={cn(
+                                "p-1.5 rounded-lg shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300",
+                                prevDisabled ? "text-gray-300 cursor-not-allowed" : "hover:bg-white"
+                            )}
+                        >
                             <ChevronLeft className="w-4 h-4 text-gray-600" />
                         </button>
-                        <button onClick={handleNext} className="p-1.5 hover:bg-white rounded-lg shadow-sm transition-all">
+                        <button
+                            type="button"
+                            onClick={handleNext}
+                            disabled={nextDisabled}
+                            className={cn(
+                                "p-1.5 rounded-lg shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300",
+                                nextDisabled ? "text-gray-300 cursor-not-allowed" : "hover:bg-white"
+                            )}
+                        >
                             <ChevronRight className="w-4 h-4 text-gray-600" />
                         </button>
                     </div>
