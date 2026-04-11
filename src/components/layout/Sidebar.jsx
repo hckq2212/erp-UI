@@ -54,20 +54,27 @@ export const Sidebar = ({ isCollapsed }) => {
                   : 'text-slate-600 hover:bg-slate-50 hover:text-indigo-600',
                 isCollapsed ? 'justify-center' : ''
               )}
-              title={isCollapsed ? item.label : ""}
             >
               <item.icon className={cn(
                 'h-5 w-5 transition-all shrink-0',
                 isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500',
-                isCollapsed ? 'mr-0' : 'mr-3'
+                isCollapsed ? 'mr-0' : 'mr-3',
               )} />
+              {isCollapsed && (
+                <div className="absolute left-full ml-3 px-3 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 translate-x-3 group-hover:translate-x-0 transition-all pointer-events-none whitespace-nowrap shadow-xl z-50">
+                  {item.label}
+                  <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45" />
+                </div>
+              )}
               {!isCollapsed && (
                 <span className="truncate transition-opacity duration-300 opacity-100">
                   {item.label}
                 </span>
               )}
               {isCollapsed && isActive && (
-                <div className="absolute left-0 w-1 h-6 bg-indigo-600 rounded-r-full" />
+                <div
+                  className="absolute left-0 w-1 h-6 bg-indigo-600 rounded-r-full"
+                />
               )}
             </Link>
           );
