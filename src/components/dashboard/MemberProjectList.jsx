@@ -21,22 +21,22 @@ export const MemberProjectList = ({ projects = [] }) => {
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.05 * index }}
                             onClick={() => navigate(`/projects/${project.id}`)}
-                            className={`group relative flex items-center gap-3 p-3 rounded-2xl border transition-all duration-300 cursor-pointer w-full bg-white hover:bg-slate-50 border-slate-100 hover:border-blue-100 hover:shadow-sm`}
+                            className={`group relative flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 cursor-pointer w-full bg-white hover:bg-slate-50 border-slate-100 hover:border-blue-100/50 hover:shadow-sm`}
                         >
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <div className={`w-1 h-9 rounded-full ${theme.accent} opacity-40 group-hover:opacity-100 transition-opacity`} />
+                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                                <div className={`w-1 h-10 rounded-full ${theme.accent} opacity-30 group-hover:opacity-100 transition-opacity`} />
                                 <div className="flex-1 min-w-0">
-                                    <h4 className="text-[12px] font-bold text-slate-800 truncate group-hover:text-blue-600 transition-colors uppercase tracking-tight">
+                                    <h4 className="text-[11px] font-black text-slate-800 truncate group-hover:text-blue-600 transition-colors uppercase tracking-tight">
                                         {project.name}
                                     </h4>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                        <span className={`text-[8px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-500 transition-colors`}>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className={`text-[8px] font-black uppercase tracking-[0.1em] text-slate-400 group-hover:text-slate-500 transition-colors`}>
                                             {PROJECT_STATUS_LABELS[project.status] || project.status}
                                         </span>
                                     </div>
                                 </div>
                             </div>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-200 group-hover:text-blue-500 transition-colors shrink-0" />
+                            <ChevronRight className="w-4 h-4 text-slate-200 group-hover:text-blue-500 transition-colors shrink-0" />
                         </motion.div>
                     );
                 }) : (

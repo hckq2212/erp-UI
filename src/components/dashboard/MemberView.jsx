@@ -5,6 +5,16 @@ import { MemberProjectList } from './MemberProjectList';
 import { WorkloadChart } from './WorkloadChart';
 import { getRemainingTime } from '../../utils/format';
 import { URGENCY_THEMES } from '../../utils/enums';
+import {
+    Clock,
+    CheckCircle2,
+    Layers,
+    Coins,
+    AlertTriangle,
+    History,
+    ChevronRight,
+    TrendingUp
+} from 'lucide-react';
 
 const COMPLETED_STATUSES = new Set([
     'COMPLETED',
@@ -17,6 +27,7 @@ const getUrgencyLevel = (deadline, status) => {
     if (!deadline) return 'safe';
     const normalizedStatus = typeof status === 'string' ? status.toUpperCase() : status;
     if (COMPLETED_STATUSES.has(normalizedStatus)) return 'completed';
+    if (normalizedStatus === 'CANCELLED') return 'cancelled';
 
     const deadlineDate = new Date(deadline);
     if (Number.isNaN(deadlineDate.getTime())) return 'safe';
@@ -25,9 +36,79 @@ const getUrgencyLevel = (deadline, status) => {
     const days = diff / (1000 * 60 * 60 * 24);
 
     if (diff < 0) return 'overdue';
-    if (days < 1) return 'today';
-    if (days < 3) return 'soon';
+    if (days <= 1) return 'today';
+    if (days <= 3) return 'soon';
     return 'safe';
+};
+
+const MetricCard = ({ title, value, icon: Icon, color, onClick, isExpanded, subValue, trend }) => {
+    const colorVariants = {
+        blue: {
+            gradient: 'from-blue-500/10 to-transparent',
+            bg: 'bg-blue-50',
+            text: 'text-blue-600',
+            fill: '#2563eb'
+        },
+        emerald: {
+            gradient: 'from-emerald-500/10 to-transparent',
+            bg: 'bg-emerald-50',
+            text: 'text-emerald-600',
+            fill: '#10b981'
+        },
+        purple: {
+            gradient: 'from-purple-500/10 to-transparent',
+            bg: 'bg-purple-50',
+            text: 'text-purple-600',
+            fill: '#9333ea'
+        },
+        amber: {
+            gradient: 'from-amber-500/10 to-transparent',
+            bg: 'bg-amber-50',
+            text: 'text-amber-600',
+            fill: '#f59e0b'
+        },
+    };
+
+    const variant = colorVariants[color] || colorVariants.blue;
+
+    return (
+        <motion.div
+            whileHover={{ y: -3, transition: { duration: 0.2 } }}
+            className={`relative overflow-hidden bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all ${onClick ? 'cursor-pointer hover:shadow-[0_12px_35px_rgb(0,0,0,0.05)]' : ''}`}
+            onClick={onClick}
+        >
+            <div className={`absolute -right-4 -top-4 w-24 h-24 bg-gradient-to-br ${variant.gradient} opacity-40 blur-xl rounded-full`} />
+
+            <div className="relative z-10">
+                <div className="flex justify-between items-start mb-4">
+                    <div className={`p-2.5 rounded-2xl ${variant.bg} ${variant.text}`}>
+                        <Icon size={20} strokeWidth={2.5} />
+                    </div>
+                    {/* {trend && (
+                        <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black">
+                            <TrendingUp size={12} />
+                            <span>{trend}%</span>
+                        </div>
+                    )} */}
+                </div>
+
+                <div className="space-y-0.5">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">{title}</p>
+                    <div className="flex items-baseline gap-1.5">
+                        <h4 className="text-2xl font-black text-slate-900 tracking-tighter">{value}</h4>
+                        {subValue && <span className="text-xl font-bold text-slate-400">{subValue}</span>}
+                    </div>
+                </div>
+
+                {onClick && (
+                    <div className="mt-3 pt-3 border-t border-slate-50 flex justify-between items-center text-[8px] font-black text-slate-400 uppercase tracking-widest group">
+                        <span>{isExpanded ? 'Thu gọn' : 'Chi tiết'}</span>
+                        <ChevronRight size={10} className={`transition-transform duration-300 ${isExpanded ? 'rotate-90' : 'group-hover:translate-x-1'}`} />
+                    </div>
+                )}
+            </div>
+        </motion.div>
+    );
 };
 
 export const MemberView = ({
@@ -40,232 +121,213 @@ export const MemberView = ({
 
     const projectsPanelId = React.useId();
     const workloadPanelId = React.useId();
-    const reworkPanelId = React.useId();
 
     const member = dashboard?.member;
     const statusCounts = member?.statusCounts || {};
     const violationStats = member?.violationStats || {};
     const lateCount = Number(violationStats['LATE_UNFINISHED'] || 0) + Number(violationStats['LATE_SUBMISSION'] || 0);
-    const reworkCount = Number(violationStats['EXCESSIVE_REWORK'] || 0);
+    const reworkCountValue = Number(violationStats['EXCESSIVE_REWORK'] || 0);
+    const totalViniCoin = member?.vinicoinTotal?.toLocaleString() || 0;
+    const withdrawnViniCoin = member?.vinicoinWithdrawn?.toLocaleString() || 0;
+
     const completedCount =
         Number(statusCounts.COMPLETED || 0) + Number(statusCounts.ACCEPTED || 0) + Number(statusCounts.DONE || 0);
 
     return (
-        <div className="space-y-6 pb-12">
+        <div className="space-y-6 pb-20">
             {/* Tầng 1: Hàng chỉ số chính (4 cột) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
-                {/* 1. Đang thực hiện */}
-                <div className="p-5 rounded-3xl border border-slate-100 bg-blue-50/50 shadow-sm">
-                    <p className="text-[10px] font-black text-blue-600/60 uppercase tracking-[0.2em] mb-2">Đang thực hiện</p>
-                    <h4 className="text-2xl font-black text-slate-900 tracking-tighter">{member?.doingCount ?? 0}</h4>
-                </div>
-                {/* 2. Đã nghiệm thu */}
-                <div
-                    className={`p-5 rounded-3xl border transition-all duration-500 group ${showWorkload ? 'bg-white border-emerald-200 shadow-xl shadow-emerald-100' : 'bg-emerald-50/50 border-slate-100 shadow-sm hover:bg-emerald-100/50'
-                        }`}
-                >
-                    <button
-                        type="button"
-                        className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white rounded-2xl"
-                        onClick={() => setShowWorkload((prev) => !prev)}
-                        aria-expanded={showWorkload}
-                        aria-controls={workloadPanelId}
-                    >
-                        <div className="flex justify-between items-start mb-2">
-                            <p className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${showWorkload ? 'text-emerald-600' : 'text-emerald-600/60'}`}>Đã nghiệm thu</p>
-                            <span className={`text-[8px] font-black uppercase tracking-widest transition-colors ${showWorkload ? 'text-emerald-400' : 'text-emerald-400 group-hover:text-emerald-600'}`}>
-                                {showWorkload ? 'Thu gọn' : 'Chi tiết'}
-                            </span>
-                        </div>
-                        <h4 className={`text-2xl font-black tracking-tighter transition-colors ${showWorkload ? 'text-emerald-600' : 'text-slate-900'}`}>
-                            {completedCount}
-                        </h4>
-                    </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <MetricCard
+                    title="Đang thực hiện"
+                    value={member?.doingCount ?? 0}
+                    icon={Clock}
+                    color="blue"
+                />
 
-                    <AnimatePresence initial={false}>
-                        {showWorkload && (
-                            <motion.div
-                                id={workloadPanelId}
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 200 }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="mt-4 pt-4 border-t border-emerald-50 overflow-hidden"
-                            >
-                                <WorkloadChart data={member?.completionStats || []} />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-                {/* 3. Dự án đang tham gia */}
-                <div
-                    className={`p-5 rounded-3xl border transition-all duration-500 group ${showProjects ? 'bg-white border-purple-200 shadow-xl shadow-purple-100' : 'bg-purple-50/50 border-slate-100 shadow-sm hover:bg-purple-100/50'
-                        }`}
-                >
-                    <button
-                        type="button"
-                        className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white rounded-2xl"
-                        onClick={() => setShowProjects((prev) => !prev)}
-                        aria-expanded={showProjects}
-                        aria-controls={projectsPanelId}
-                    >
-                        <div className="flex justify-between items-start mb-2">
-                            <p className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${showProjects ? 'text-purple-600' : 'text-purple-600/60'}`}>Dự án đang tham gia</p>
-                            <span className={`text-[8px] font-black uppercase tracking-widest transition-colors ${showProjects ? 'text-purple-400' : 'text-purple-400 group-hover:text-purple-600'}`}>
-                                {showProjects ? 'Thu gọn' : 'Chi tiết'}
-                            </span>
-                        </div>
-                        <h4 className={`text-2xl font-black tracking-tighter transition-colors ${showProjects ? 'text-purple-600' : 'text-slate-900'}`}>
-                            {member?.participatingProjects?.length || 0}
-                        </h4>
-                    </button>
+                <MetricCard
+                    title="Đã nghiệm thu"
+                    value={completedCount}
+                    icon={CheckCircle2}
+                    color="emerald"
+                    onClick={() => {
+                        setShowWorkload(!showWorkload);
+                        setShowProjects(false);
+                    }}
+                    isExpanded={showWorkload}
+                    trend={12}
+                />
 
-                    <AnimatePresence initial={false}>
-                        {showProjects && (
-                            <motion.div
-                                id={projectsPanelId}
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="mt-4 pt-4 border-t border-purple-50 overflow-hidden"
-                            >
-                                <p className="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-3">Danh sách dự án</p>
-                                <MemberProjectList projects={member?.participatingProjects} />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
+                <MetricCard
+                    title="Dự án tham gia"
+                    value={member?.participatingProjects?.length || 0}
+                    icon={Layers}
+                    color="purple"
+                    onClick={() => {
+                        setShowProjects(!showProjects);
+                        setShowWorkload(false);
+                    }}
+                    isExpanded={showProjects}
+                />
 
-                {/* 4. ViniCoin */}
-                <div
-                    className="p-5 rounded-3xl border border-slate-100 bg-amber-50/50 shadow-sm"
-                >
-                    <p className="text-[10px] font-black text-amber-600/60 uppercase tracking-[0.2em] mb-2">ViniCoin</p>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="flex flex-col">
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Tổng cộng</span>
-                            <span className="text-xl font-black text-slate-900 tracking-tighter">{member?.vinicoinTotal?.toLocaleString() || 0}</span>
-                        </div>
-                        <div className="flex flex-col border-l border-amber-200/30 pl-3">
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest ">Đã rút</span>
-                            <span className="text-xl font-black text-rose-500 tracking-tighter">{member?.vinicoinWithdrawn?.toLocaleString() || 0}</span>
-                        </div>
-                    </div>
-                </div>
+                <MetricCard
+                    title="ViniCoin"
+                    value={`Đã rút ${withdrawnViniCoin}`}
+                    subValue={`/${totalViniCoin}`}
+                    icon={Coins}
+                    color="amber"
+                />
             </div>
 
-            {/* Tầng 2: Nội dung chi tiết (Cấu trúc 3 cột 12-grid) */}
+            {/* Expandable Sections */}
+            <AnimatePresence mode="wait">
+                {(showWorkload || showProjects) && (
+                    <motion.div
+                        key={showWorkload ? 'workload' : 'projects'}
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="bg-white/80 backdrop-blur-xl border border-slate-100 rounded-[1.5rem] p-6 shadow-[0_15px_40px_rgb(0,0,0,0.03)]"
+                    >
+                        {showWorkload && (
+                            <div id={workloadPanelId} className="h-[220px]">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Hiệu suất nghiệm thu</h3>
+                                    <span className="text-[9px] font-bold text-slate-400">6 tháng gần nhất</span>
+                                </div>
+                                <WorkloadChart data={member?.completionStats || []} />
+                            </div>
+                        )}
+                        {showProjects && (
+                            <div id={projectsPanelId}>
+                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-6 px-1">Danh sách dự án đang thực hiện</h3>
+                                <MemberProjectList projects={member?.participatingProjects} />
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Tầng 2: Main Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                {/* Cột 1: Cần làm lại & Vi phạm (3/12) */}
+                {/* Column 1: Cần làm lại & Vi phạm (3/12) */}
                 <div className="lg:col-span-3 space-y-6">
-                    <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6">
-                        {/* Reworking */}
-                        <div className="group">
+                    <div className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm relative group overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <History size={80} className="text-rose-500" />
+                        </div>
+
+                        <div className="relative z-10">
                             <button
                                 type="button"
-                                className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white rounded-2xl"
+                                className="w-full text-left focus:outline-none mb-6"
                                 onClick={() => setShowRework((prev) => !prev)}
-                                aria-expanded={showRework}
-                                aria-controls={reworkPanelId}
                             >
-                                <div className="flex justify-between items-start mb-1">
-                                    <p className="text-[9px] font-black text-rose-600/60 uppercase tracking-widest">Cần làm lại</p>
-                                    <span className={`text-[8px] font-black uppercase tracking-widest transition-colors ${showRework ? 'text-rose-400' : 'text-slate-300 group-hover:text-rose-400'}`}>
-                                        {showRework ? 'Thu gọn' : 'Chi tiết'}
-                                    </span>
-                                </div>
-                                <h4 className={`text-3xl font-black tracking-tighter transition-colors ${showRework ? 'text-rose-600' : 'text-rose-950'}`}>
-                                    {member?.reworkCount ?? reworkCount ?? 0}
+                                <p className="text-[9px] font-black text-rose-500 uppercase tracking-[0.15em] mb-1 flex items-center gap-2">
+                                    <AlertTriangle size={12} className="animate-pulse" />
+                                    Cần làm lại
+                                </p>
+                                <h4 className="text-3xl font-black text-slate-900 tracking-tighter mb-3">
+                                    {member?.reworkCount ?? member?.reworkTasks?.length ?? 0}
                                 </h4>
+                                <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                    <span>{showRework ? 'Thu gọn' : 'Chi tiết'}</span>
+                                    <ChevronRight size={10} className={`transition-transform duration-300 ${showRework ? 'rotate-90' : ''}`} />
+                                </div>
                             </button>
 
-                            <AnimatePresence initial={false}>
+                            <AnimatePresence>
                                 {showRework && (
                                     <motion.div
-                                        id={reworkPanelId}
                                         initial={{ opacity: 0, height: 0 }}
                                         animate={{ opacity: 1, height: 'auto' }}
                                         exit={{ opacity: 0, height: 0 }}
                                         className="overflow-hidden"
                                     >
-                                        <div className="mt-4 space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                                        <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                                             {member?.reworkTasks?.length > 0 ? (
                                                 member.reworkTasks.map((task) => (
-                                                    <button
-                                                        type="button"
+                                                    <motion.div
+                                                        initial={{ opacity: 0, x: -10 }}
+                                                        animate={{ opacity: 1, x: 0 }}
                                                         key={task.id}
                                                         onClick={() => navigate(`/tasks/${task.id}`)}
-                                                        className="w-full text-left p-3 bg-rose-50/50 rounded-2xl border border-rose-100/50 hover:bg-white hover:shadow-md transition-all group/item focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                                                        className="p-4 bg-rose-50/40 hover:bg-white rounded-2xl border border-rose-100/30 transition-all cursor-pointer group/item hover:shadow-md"
                                                     >
-                                                        <div className="flex justify-between items-start mb-1">
-                                                            <h5 className="text-[11px] font-bold text-rose-900 group-hover/item:text-rose-600 truncate flex-1 mr-2">{task.name}</h5>
-                                                            {/* <span className="text-[8px] font-bold text-rose-400 whitespace-nowrap">{(task.code)}</span> */}
-                                                        </div>
-                                                        <p className="text-[9px] text-slate-400 font-bold uppercase truncate">{task.projectName || 'Dự án không tên'}</p>
-                                                    </button>
+                                                        <h5 className="text-[11px] font-black text-slate-900 group-hover/item:text-rose-600 transition-colors truncate">{task.name}</h5>
+                                                        <p className="text-[9px] text-slate-400 font-bold uppercase mt-1 truncate">{task.projectName || 'Dự án'}</p>
+                                                    </motion.div>
                                                 ))
                                             ) : (
-                                                <p className="text-[10px] text-slate-400 italic py-2">Không có task cần làm lại</p>
+                                                <p className="text-[10px] text-slate-300 italic py-4">Sạch bóng task làm lại!</p>
                                             )}
                                         </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
-                        </div>
-                        {/* Violations */}
-                        <div className="pt-4 border-t border-slate-50">
-                            <p className="text-[9px] font-black text-slate-400 tracking-widest uppercase mb-3">Lịch sử vi phạm</p>
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center text-[11px] font-bold">
+
+                            <div className="mt-6 pt-6 border-t border-slate-50 space-y-3">
+                                <p className="text-[8px] font-black text-slate-400 tracking-widest uppercase mb-0.5">Thống kê vi phạm</p>
+                                <div className="flex justify-between items-center text-[9px] font-black">
                                     <span className="text-slate-400 uppercase tracking-tighter">Trễ hạn</span>
-                                    <span className="text-rose-600">{lateCount}</span>
+                                    <span className={`px-2 py-0.5 rounded-full ${lateCount > 0 ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-300'}`}>{lateCount}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-[11px] font-bold">
-                                    <span className="text-slate-400 uppercase tracking-tighter">Làm lại nhiều lần</span>
-                                    <span className="text-rose-600">{reworkCount}</span>
+                                <div className="flex justify-between items-center text-[9px] font-black">
+                                    <span className="text-slate-400 uppercase tracking-tighter">Làm lại quá mức</span>
+                                    <span className={`px-2 py-0.5 rounded-full ${reworkCountValue > 0 ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-300'}`}>{reworkCountValue}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Cột 2: Deadlines (5/12) */}
-                <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col h-fit">
-                    <h3 className="text-[10px] font-black text-slate-400 tracking-[0.2em] uppercase mb-6 px-1">Deadline sắp tới</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 overflow-y-auto pr-2 custom-scrollbar content-start">
+                {/* Column 2: Deadlines (4/12) */}
+                <div className="lg:col-span-4 bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm h-fit flex flex-col">
+                    <div className="flex items-center justify-between mb-6 px-1">
+                        <h3 className="text-[10px] font-black text-slate-900 tracking-[0.1em] uppercase flex items-center gap-2">
+                            <Clock size={12} className="text-amber-500" />
+                            Tiến độ & Deadline
+                        </h3>
+                    </div>
+
+                    <div className="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
                         {member?.upcomingDeadlines?.length > 0 ? (
                             member.upcomingDeadlines.slice(0, 10).map((task) => {
                                 const urgency = getUrgencyLevel(task.deadline, task.status);
                                 const theme = URGENCY_THEMES[urgency] || URGENCY_THEMES.safe;
                                 const remaining = getRemainingTime(task.deadline, task.status);
                                 return (
-                                    <button
-                                        type="button"
+                                    <motion.div
                                         key={task.id}
+                                        whileHover={{ x: 5 }}
                                         onClick={() => navigate(`/tasks/${task.id}`)}
-                                        className={`w-full group flex flex-col justify-center p-3 rounded-2xl border transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${theme.border} ${theme.bg}`}
+                                        className="p-4 rounded-2xl border border-slate-50 bg-slate-50/30 hover:bg-white hover:border-blue-100 transition-all cursor-pointer group"
                                     >
-                                        <div className="min-w-0 w-full text-left">
-                                            <h4 className="font-bold text-[11px] text-slate-900 uppercase tracking-tight truncate group-hover:text-blue-600 transition-colors">{task.name}</h4>
-                                            <div className="flex justify-between items-center mt-1">
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter truncate max-w-[60%]">{task.projectName || 'Công việc nội bộ'}</p>
-                                                <span className={`text-[9px] font-black truncate shrink-0 ${theme.text}`}>
-                                                    {remaining?.text}
-                                                </span>
+                                        <div className="flex justify-between items-start gap-3">
+                                            <div className="min-w-0">
+                                                <h4 className="font-black text-[11px] text-slate-900 uppercase truncate transition-colors group-hover:text-blue-600">{task.name}</h4>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase mt-1 truncate">{task.projectName || 'Công việc nội bộ'}</p>
+                                            </div>
+                                            <div className={`px-2 py-1.5 rounded-xl text-[9px] font-black whitespace-nowrap shadow-sm border border-black/5 ${theme.bg} ${theme.text}`}>
+                                                {remaining?.text}
                                             </div>
                                         </div>
-                                    </button>
+                                    </motion.div>
                                 );
                             })
                         ) : (
-                            <div className="col-span-full h-full flex items-center justify-center italic text-[9px] text-slate-300 uppercase tracking-widest">Không có dữ liệu</div>
+                            <div className="h-full flex flex-col items-center justify-center italic text-xs text-slate-300 gap-2">
+                                <CheckCircle2 size={32} strokeWidth={1} className="text-slate-100" />
+                                <span>Chưa có deadline mới</span>
+                            </div>
                         )}
                     </div>
                 </div>
 
-                {/* Cột 3: Calendar (4/12) */}
-                <div className="lg:col-span-5 bg-white  rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-fit">
-                    <TaskCalendar tasks={member?.calendarTasks} compact={true} />
+                {/* Column 3: Calendar (5/12) */}
+                <div className="lg:col-span-5 bg-white rounded-[1.5rem] border border-slate-100 shadow-sm overflow-hidden h-fit">
+                    <TaskCalendar tasks={member?.calendarTasks} />
                 </div>
             </div>
         </div>

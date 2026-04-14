@@ -176,8 +176,9 @@ export const URGENCY_THEMES = {
   overdue: { bg: 'bg-red-50', border: 'border-red-200', accent: 'bg-red-600', text: 'text-red-700', icon: 'text-red-500' },
   today: { bg: 'bg-orange-50', border: 'border-orange-200', accent: 'bg-orange-600', text: 'text-orange-700', icon: 'text-orange-500' },
   soon: { bg: 'bg-amber-50', border: 'border-amber-200', accent: 'bg-amber-600', text: 'text-amber-700', icon: 'text-amber-500' },
-  safe: { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'bg-emerald-400', text: 'text-emerald-700', icon: 'text-emerald-400' },
-  completed: { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'bg-emerald-600', text: 'text-emerald-700', icon: 'text-emerald-500' }
+  safe: { bg: 'bg-blue-50', border: 'border-blue-200', accent: 'bg-blue-400', text: 'text-blue-700', icon: 'text-blue-400' },
+  completed: { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'bg-emerald-600', text: 'text-emerald-700', icon: 'text-emerald-500' },
+  cancelled: { bg: 'bg-rose-50', border: 'border-rose-200', accent: 'bg-rose-600', text: 'text-rose-700', icon: 'text-rose-500' }
 };
 
 // Dashboard Project Themes

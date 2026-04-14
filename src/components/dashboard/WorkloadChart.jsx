@@ -25,12 +25,13 @@ export const WorkloadChart = ({ data = [] }) => {
                             allowDecimals={false}
                         />
                         <Tooltip
-                            cursor={{ fill: '#f8fafc' }}
+                            cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
                             content={({ active, payload }) => {
                                 if (active && payload && payload.length) {
                                     return (
-                                        <div className="bg-slate-900 text-white px-2 py-1 rounded-md text-[9px] font-bold shadow-xl">
-                                            {payload[0].value} task được nghiệm thu
+                                        <div className="bg-white/90 backdrop-blur-md border border-slate-100 px-3 py-2 rounded-xl text-[10px] font-black shadow-xl ring-1 ring-black/5">
+                                            <span className="text-emerald-600">{payload[0].value}</span>
+                                            <span className="text-slate-400 ml-1 uppercase tracking-tighter">task được nghiệm thu</span>
                                         </div>
                                     );
                                 }
@@ -39,13 +40,13 @@ export const WorkloadChart = ({ data = [] }) => {
                         />
                         <Bar
                             dataKey="count"
-                            radius={[4, 4, 4, 4]}
-                            barSize={20}
+                            radius={[6, 6, 0, 0]}
+                            barSize={24}
                         >
                             {data.map((entry, index) => (
                                 <Cell
                                     key={`cell-${index}`}
-                                    fill={entry.count > 0 ? '#6366f1' : '#f1f5f9'}
+                                    fill={entry.count > 0 ? '#10b981' : '#f1f5f9'}
                                     className="transition-all hover:opacity-80"
                                 />
                             ))}

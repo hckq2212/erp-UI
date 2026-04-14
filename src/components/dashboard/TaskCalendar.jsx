@@ -37,7 +37,7 @@ export const TaskCalendar = ({ tasks = [] }) => {
     const selectedTasks = tasksByDay[format(selectedDate, 'yyyy-MM-dd')] || [];
 
     return (
-        <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex flex-col lg:flex-row gap-6 h-full min-h-[320px]">
+        <div className="bg-white p-6 rounded-[1.5rem] shadow-sm flex flex-col lg:flex-row gap-8 h-full h-fit">
             {/* Left: Calendar Section */}
             <div className="flex-1 flex flex-col min-w-[220px]">
                 <div className="flex items-center justify-between mb-4">
@@ -84,10 +84,10 @@ export const TaskCalendar = ({ tasks = [] }) => {
                                         setCurrentMonth(startOfMonth(day));
                                     }
                                 }}
-                                className={`w-7 h-7 mx-auto relative flex items-center justify-center rounded-lg transition-all text-[10px] font-bold
-                                    ${!isSameMonth(day, currentMonth) ? 'text-slate-300' : 'text-slate-900'}
-                                    ${isSelected ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100 z-10' : 'hover:bg-slate-50'}
-                                    ${isToday(day) && !isSelected ? 'text-indigo-600 ring-1 ring-indigo-100/50' : ''}
+                                className={`w-8 h-8 mx-auto relative flex items-center justify-center rounded-xl transition-all text-[11px] font-black
+                                    ${!isSameMonth(day, currentMonth) ? 'text-slate-200' : 'text-slate-900'}
+                                    ${isSelected ? 'bg-blue-600 text-white shadow-lg shadow-blue-100/50 z-10' : 'hover:bg-slate-50'}
+                                    ${isToday(day) && !isSelected ? 'text-blue-600 ring-2 ring-blue-50' : ''}
                                 `}
                             >
                                 {format(day, 'd')}
@@ -108,7 +108,7 @@ export const TaskCalendar = ({ tasks = [] }) => {
 
             {/* Right: Selected Day Tasks (Move to same row) */}
             <div className="lg:w-48 xl:w-56 overflow-hidden flex flex-col pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l border-gray-50 lg:pl-5">
-                <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
                     Ngày {format(selectedDate, 'dd/MM')}
                 </h4>
                 <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-[160px]">
@@ -123,15 +123,15 @@ export const TaskCalendar = ({ tasks = [] }) => {
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     key={task.id}
                                     onClick={() => navigate(`/tasks/${task.id}`)}
-                                    className={`w-full text-left p-2.5 rounded-xl border shadow-sm transition-all flex items-center gap-2 group ${TASK_STATUS_COLORS[task.status] || 'bg-gray-50 border-gray-100 text-gray-700'}`}
+                                    className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center gap-3 group ${TASK_STATUS_COLORS[task.status] || 'bg-slate-50 border-slate-100 text-slate-700'}`}
                                 >
-                                    <div className="w-1 h-6 rounded-full bg-current opacity-20 shrink-0" />
+                                    <div className="w-1 h-8 rounded-full bg-current opacity-20 shrink-0" />
                                     <div className="min-w-0">
-                                        <p className="text-[10px] font-bold text-gray-900 group-hover:text-blue-600 truncate transition-colors leading-tight">{task.name}</p>
-                                        {/* <div className="flex gap-2 items-center mt-0.5"> */}
-                                        <p className="text-[8px] text-gray-400 font-bold uppercase truncate max-w-[80px]">{task?.project?.name || 'Ngoài dự án'}</p>
-                                        <p className="text-[8px] font-black text-blue-600/60 uppercase">{TASK_STATUS_LABELS[task.status]}</p>
-                                        {/* </div> */}
+                                        <p className="text-[11px] font-black text-slate-900 group-hover:text-blue-600 truncate transition-colors leading-tight">{task.name}</p>
+                                        <div className="flex gap-2 items-center mt-1">
+                                            <p className="text-[9px] text-slate-400 font-bold uppercase truncate max-w-[80px]">{task?.project?.name || ' Ngoài dự án'}</p>
+                                            <span className="text-[8px] font-black text-blue-600/50 uppercase tracking-tighter">{TASK_STATUS_LABELS[task.status]}</span>
+                                        </div>
                                     </div>
                                 </motion.button>
                             )) : (
