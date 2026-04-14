@@ -424,15 +424,6 @@ export const TaskDetailPage = () => {
                                             )}
                                         </div>
 
-                                        {/* Column 2: Assigner */}
-                                        <div className="space-y-4">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Người giao việc đánh giá</p>
-                                            {reviews.filter(r => r.reviewerType === 'ASSIGNER').length > 0 ? (
-                                                reviews.filter(r => r.reviewerType === 'ASSIGNER').map(renderReviewItem)
-                                            ) : (
-                                                <p className="text-xs text-gray-400 italic ml-1">Chưa có đánh giá từ Người giao việc</p>
-                                            )}
-                                        </div>
                                     </div>
                                     {task.reviewNote && (
                                         <p className="text-md pl-2 text-gray-500 mt-1 italic border-t border-gray-50 pt-4">
