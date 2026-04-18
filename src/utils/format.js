@@ -145,48 +145,48 @@ export const formatPercent = (value) => {
  * @returns {object} Object containing text and color
  */
 export const getRemainingTime = (endDate, status) => {
-    if (!endDate) return { text: '---', color: 'text-gray-400' };
-    
-    if (['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED'].includes(status)) {
-        return { text: '● Hoàn thành', color: 'text-emerald-600 font-black' };
-    }
-    
-    if (status === 'CANCELLED') {
-        return { text: '■ Đã hủy', color: 'text-rose-600 font-black' };
-    }
+  if (!endDate) return { text: '---', color: 'text-gray-400' };
 
-    const now = new Date();
-    const end = new Date(endDate);
-    const diffTime = end - now;
+  if (['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED'].includes(status)) {
+    return { text: '●', color: 'text-emerald-600 font-black' };
+  }
 
-    if (diffTime < 0) {
-        const absDiffTime = Math.abs(diffTime);
-        let timeStr = '';
-        if (absDiffTime < 24 * 60 * 60 * 1000) {
-            const diffHours = Math.ceil(absDiffTime / (1000 * 60 * 60));
-            timeStr = `${diffHours} tiếng`;
-        } else {
-            const diffDays = Math.floor(absDiffTime / (1000 * 60 * 60 * 24));
-            timeStr = `${diffDays} ngày`;
-        }
-        return { text: `▼ ${timeStr}`, color: 'text-rose-600 font-black' };
+  if (status === 'CANCELLED') {
+    return { text: '■', color: 'text-rose-600 font-black' };
+  }
+
+  const now = new Date();
+  const end = new Date(endDate);
+  const diffTime = end - now;
+
+  if (diffTime < 0) {
+    const absDiffTime = Math.abs(diffTime);
+    let timeStr = '';
+    if (absDiffTime < 24 * 60 * 60 * 1000) {
+      const diffHours = Math.ceil(absDiffTime / (1000 * 60 * 60));
+      timeStr = `${diffHours} tiếng`;
+    } else {
+      const diffDays = Math.floor(absDiffTime / (1000 * 60 * 60 * 24));
+      timeStr = `${diffDays} ngày`;
     }
+    return { text: `▼ ${timeStr}`, color: 'text-rose-600 font-black' };
+  }
 
-    const diffDaysFloat = diffTime / (1000 * 60 * 60 * 24);
-    const diffDays = Math.ceil(diffDaysFloat);
-    
-    let color = 'text-blue-600 font-black'; // Default: Blue (> 3 days)
-    let symbol = '▲';
+  const diffDaysFloat = diffTime / (1000 * 60 * 60 * 24);
+  const diffDays = Math.ceil(diffDaysFloat);
 
-    if (diffDaysFloat <= 1) {
-        color = 'text-orange-600 font-black'; // Orange (<= 1 day)
-    } else if (diffDaysFloat <= 3) {
-        color = 'text-amber-500 font-black'; // Yellow (<= 3 days)
-    }
+  let color = 'text-blue-600 font-black'; // Default: Blue (> 3 days)
+  let symbol = '▲';
 
-    if (diffTime < 24 * 60 * 60 * 1000) {
-        const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
-        return { text: `${symbol} ${diffHours} giờ`, color: color };
-    }
-    return { text: `${symbol} ${diffDays} ngày`, color: color };
+  if (diffDaysFloat <= 1) {
+    color = 'text-orange-600 font-black'; // Orange (<= 1 day)
+  } else if (diffDaysFloat <= 3) {
+    color = 'text-amber-500 font-black'; // Yellow (<= 3 days)
+  }
+
+  if (diffTime < 24 * 60 * 60 * 1000) {
+    const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
+    return { text: `${symbol} ${diffHours} giờ`, color: color };
+  }
+  return { text: `${symbol} ${diffDays} ngày`, color: color };
 };
