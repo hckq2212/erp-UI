@@ -1,11 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGetVendorQuery, useGetVendorJobsQuery, useAddVendorJobMutation, useUpdateVendorJobMutation, useRemoveVendorJobMutation } from '../../api/vendors';
 import { formatCurrency, formatNumber } from '../../utils/format';
-import { ArrowLeft, Store, Mail, Phone, MapPin, FileText, List, Trash2, Plus, CreditCard, Edit2 } from 'lucide-react';
+import { ArrowLeft, Store, Mail, Phone, MapPin, FileText, List, Trash2, Plus, CreditCard, Edit2, Info } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { VendorJobModal } from './VendorJobModal';
+import { AdditionalInfo } from '../../components/shared/AdditionalInfo';
 
 export const VendorDetailPage = () => {
     const { id } = useParams();
@@ -203,6 +204,19 @@ export const VendorDetailPage = () => {
                                 )}
                             </button>
                         )}
+                        <button
+                            onClick={() => setActiveTab('additional')}
+                            className={`pb-4 text-sm font-semibold transition-colors relative ${activeTab === 'additional' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            <div className="flex items-center gap-2">
+                                <Info className="h-4 w-4" />
+                                Thông tin thêm
+                            </div>
+                            {activeTab === 'additional' && (
+                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+                            )}
+                        </button>
                     </div>
 
                     {activeTab === 'jobs' ? (
@@ -274,7 +288,7 @@ export const VendorDetailPage = () => {
                                 </table>
                             </div>
                         </div>
-                    ) : (
+                    ) : activeTab === 'idCard' ? (
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 ">
                             <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
                                 <FileText className="h-5 w-5 text-blue-600" />
@@ -319,6 +333,8 @@ export const VendorDetailPage = () => {
                                 </div>
                             </div>
                         </div>
+                    ) : (
+                        <AdditionalInfo data={vendor} />
                     )}
                 </div>
             </div>

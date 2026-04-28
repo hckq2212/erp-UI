@@ -148,11 +148,11 @@ export const getRemainingTime = (endDate, status) => {
   if (!endDate) return { text: '---', color: 'text-gray-400' };
 
   if (['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED'].includes(status)) {
-    return { text: '●', color: 'text-emerald-600 font-black' };
+    return { text: '●', color: 'text-emerald-600 font-black text-3xl' };
   }
 
   if (status === 'CANCELLED') {
-    return { text: '■', color: 'text-rose-600 font-black' };
+    return { text: '■', color: 'text-rose-600 font-black text-3xl' };
   }
 
   const now = new Date();

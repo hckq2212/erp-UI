@@ -20,8 +20,10 @@ import {
     Search,
     Edit2,
     Save,
-    RotateCcw
+    RotateCcw,
+    Info
 } from 'lucide-react';
+
 import {
     useGetReferralPartnerQuery,
     useGetReferralPartnerStatisticsQuery,
@@ -35,6 +37,8 @@ import { cn } from '../../utils/cn';
 import { PARTNER_TYPE_LABELS } from '../../utils/enums';
 import { Input } from '../../components/ui/Input';
 import { toast } from 'react-toastify';
+import { AdditionalInfo } from '../../components/shared/AdditionalInfo';
+
 
 export const PartnerDetailPage = () => {
     const { id } = useParams();
@@ -116,7 +120,9 @@ export const PartnerDetailPage = () => {
         { id: 'opportunities', label: 'Cơ hội', count: stats?.totalOpportunities || 0, icon: Briefcase },
         { id: 'contracts', label: 'Hợp đồng', count: stats?.totalContracts || 0, icon: FileText },
         { id: 'customers', label: 'Khách hàng', count: stats?.totalCustomers || 0, icon: Users },
+        { id: 'additional', label: 'Thông tin thêm', icon: Info },
     ];
+
 
     return (
         <div className="animate-in fade-in duration-700 space-y-8 max-w-7xl mx-auto pb-12">
@@ -301,13 +307,16 @@ export const PartnerDetailPage = () => {
                                 >
                                     <Icon size={18} />
                                     <span className="uppercase tracking-wider">{tab.label}</span>
-                                    <span className={cn(
-                                        "px-2 py-0.5 rounded-lg text-[10px] font-black transition-colors",
-                                        isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
-                                    )}>
-                                        {tab.count}
-                                    </span>
+                                    {tab.count !== undefined && (
+                                        <span className={cn(
+                                            "px-2 py-0.5 rounded-lg text-[10px] font-black transition-colors",
+                                            isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+                                        )}>
+                                            {tab.count}
+                                        </span>
+                                    )}
                                 </button>
+
                             );
                         })}
                     </div>
@@ -424,10 +433,17 @@ export const PartnerDetailPage = () => {
                                     </div>
                                 )
                             )}
+
+                            {activeTab === 'additional' && (
+                                <div className="p-6">
+                                    <AdditionalInfo data={partner} />
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
+
         </div>
     );
 };
