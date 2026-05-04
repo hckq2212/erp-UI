@@ -374,12 +374,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
   }, []);
 
   const removeService = useCallback((index) => {
-    setSelectedServices(prev => {
-      if (prev.length > 1) {
-        return prev.filter((_, i) => i !== index);
-      }
-      return prev;
-    });
+    setSelectedServices(prev => prev.filter((_, i) => i !== index));
   }, []);
 
   const handleLinkChange = useCallback((index, value) => {
@@ -469,10 +464,18 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       newErrors.startDate = 'Dự kiến bắt đầu phải sau ngày hiện tại';
     }
 
-    // Validate selected services - all services must be selected
-    const hasUnselectedService = selectedServices.some(s => !s.serviceId);
-    if (hasUnselectedService) {
-      newErrors.services = 'Vui lòng chọn dịch vụ đề xuất';
+    // Validate selected services & packages
+    const hasSelectedPackage = selectedPackages.some(pkg => !!pkg.servicePackageId);
+    const hasSelectedService = selectedServices.some(s => !!s.serviceId);
+    const hasIncompleteService = selectedServices.some(s => !s.serviceId);
+    const hasIncompletePackage = selectedPackages.some(pkg => !pkg.servicePackageId);
+
+    if (!hasSelectedPackage && !hasSelectedService) {
+      newErrors.services = 'Vui lòng chọn ít nhất một gói dịch vụ hoặc dịch vụ đề xuất';
+    } else if (hasIncompleteService) {
+      newErrors.services = 'Vui lòng hoàn tất thông tin dịch vụ hoặc xóa dòng trống';
+    } else if (hasIncompletePackage) {
+      newErrors.services = 'Vui lòng hoàn tất thông tin gói dịch vụ hoặc xóa dòng trống';
     }
 
     // if (Object.keys(newErrors).length > 0) {
@@ -977,6 +980,11 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                         />
                       );
                     })}
+                    {selectedServices.length === 0 && (
+                      <p className="text-sm text-gray-400 italic text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                        Chưa chọn dịch vụ lẻ nào
+                      </p>
+                    )}
                   </div>
                 </div>
 

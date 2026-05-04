@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { useGetServicesQuery } from '../../api/services';
+import { useGetServicesQuery, useDeleteServiceMutation, useCreateServiceMutation } from '../../api/services';
+import { useGetMeQuery } from '../../api/auth';
 import { formatCurrency } from '../../utils/format';
-import { Plus, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Plus, ArrowUp, ArrowDown, ArrowUpDown, Copy } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useState, useMemo } from 'react';
 import { CreateServiceModal } from './CreateServiceModal';
@@ -9,10 +10,13 @@ import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../../components/ui/Pagination';
 import { TableFilters } from '../../components/ui/TableFilters';
 import { cn as cnUtility } from '../../utils/cn';
+import { toast } from 'react-toastify';
 
 export const ServicesPage = () => {
     const navigate = useNavigate();
     const { data: servicesData = [], isLoading } = useGetServicesQuery();
+    const [createService] = useCreateServiceMutation();
+
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -22,6 +26,19 @@ export const ServicesPage = () => {
             (service.name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
         );
     }, [servicesData, searchTerm]);
+
+    const handleCopy = async (service) => {
+        try {
+            const { id, createdAt, updatedAt, ...copyData } = service;
+            await createService({
+                ...copyData,
+                name: `${service.name} (Copy)`
+            }).unwrap();
+            toast.success('Đã sao chép dịch vụ');
+        } catch (err) {
+            toast.error('Lỗi khi sao chép dịch vụ');
+        }
+    };
 
     const {
         data: paginatedServices,
@@ -94,7 +111,7 @@ export const ServicesPage = () => {
                                         {renderSortableHeader('Tên Dịch Vụ', 'name')}
                                         {renderSortableHeader('Đơn vị', 'unit')}
                                         {renderSortableHeader('Giá vốn', 'costPrice')}
-                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Xem chi tiết</th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -104,12 +121,21 @@ export const ServicesPage = () => {
                                             <td className="px-6 py-4 text-sm text-gray-500 italic lowercase">{service.unit || '---'}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-bold">{formatCurrency(service.costPrice)}</td>
                                             <td className="px-6 py-4 text-sm text-right">
-                                                <button
-                                                    onClick={() => navigate(`/services/${service.id}`)}
-                                                    className="text-white bg-blue-600 rounded-xl px-4 py-1.5 font-bold hover:bg-blue-700 transition-all shadow-sm"
-                                                >
-                                                    Xem chi tiết
-                                                </button>
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => handleCopy(service)}
+                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        title="Nhân bản dịch vụ"
+                                                    >
+                                                        <Copy className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => navigate(`/services/${service.id}`)}
+                                                        className="text-white bg-blue-600 rounded-xl px-4 py-1.5 font-bold hover:bg-blue-700 transition-all shadow-sm"
+                                                    >
+                                                        Xem chi tiết
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

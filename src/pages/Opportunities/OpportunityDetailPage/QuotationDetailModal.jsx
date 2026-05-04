@@ -15,6 +15,10 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
   const [isRejectingMode, setIsRejectingMode] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
 
+  const roundToTenThousands = (value) => {
+    return Math.ceil(value / 10000) * 10000;
+  };
+
   const aggregatedItems = useMemo(() => {
     if (!quotation?.details) return { packages: [], standalone: [] };
 
@@ -36,13 +40,20 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
             items: []
           };
         }
-        // These prices are per 1 unit of the service within the package
-        // We accumulate them to get the unit price of the WHOLE PACKAGE
-        packages[groupKey].sellingPrice += parseFloat(detail.sellingPrice || 0);
-        packages[groupKey].costAtSale += parseFloat(detail.costAtSale || 0);
-
         // Calculate norm: total quantity / package quantity
         const norm = detail.packageQuantity ? (detail.quantity / detail.packageQuantity) : detail.quantity;
+
+        // Accumulate prices based on norm (unit price of service * quantity in 1 package)
+        packages[groupKey].sellingPrice += parseFloat(detail.sellingPrice || 0) * norm;
+        packages[groupKey].costAtSale += parseFloat(detail.costAtSale || 0) * norm;
+
+        const itemRevenue = (parseFloat(detail.sellingPrice || 0) * detail.quantity);
+        const itemVat = Math.round(itemRevenue * 0.08);
+        const itemTotal = roundToTenThousands(itemRevenue + itemVat);
+
+        packages[groupKey].vat = (packages[groupKey].vat || 0) + itemVat;
+        packages[groupKey].totalWithVat = (packages[groupKey].totalWithVat || 0) + itemTotal;
+
         packages[groupKey].items.push({
           ...detail,
           norm: norm
@@ -60,10 +71,7 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
 
     return {
       packages: Object.values(packages),
-      standalone: standalone.filter(s => {
-        const sId = s.service?.id || s.serviceId;
-        return !packageServiceIds.has(String(sId));
-      })
+      standalone: standalone
     };
   }, [quotation?.details]);
 
@@ -105,9 +113,9 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-[95vw] w-full max-h-[95vh] overflow-hidden flex flex-col relative border border-white/20 animate-in zoom-in-95 duration-300">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
@@ -126,7 +134,7 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -178,8 +186,8 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                         <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Số lượng</th>
                         <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Đơn giá</th>
                         <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá vốn</th>
+                        <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">VAT (8%)</th>
                         <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Thành tiền</th>
-                        <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Lợi nhuận</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -188,7 +196,7 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                         const total = parseFloat(pkg.sellingPrice) * pkg.quantity;
                         const cost = parseFloat(pkg.costAtSale) * pkg.quantity;
                         const profit = total - cost;
-                        const profitMargin = total > 0 ? ((profit / total) * 100).toFixed(1) : 0;
+                        const profitMargin = cost > 0 ? ((profit / cost) * 100).toFixed(1) : 0;
 
                         return (
                           <Fragment key={`pkg-${pIdx}`}>
@@ -206,28 +214,30 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                                 </div>
                               </td>
                               <td className="px-4 py-3 text-right text-sm font-bold text-blue-900">
-                                {formatNumber(pkg.sellingPrice)}
+                                {formatNumber(Math.round(pkg.sellingPrice))}
                               </td>
                               <td className="px-4 py-3 text-right text-sm text-blue-700 italic">
-                                {formatNumber(pkg.costAtSale)}
+                                {formatNumber(Math.round(pkg.costAtSale))}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-bold text-blue-900">
+                                {formatNumber(pkg.vat)}
                               </td>
                               <td className="px-4 py-3 text-right text-sm font-black text-blue-900 italic">
-                                {formatNumber(total)}
-                              </td>
-                              <td className="px-4 py-3 text-right text-sm">
-                                <div className="flex flex-col items-end">
-                                  <span className="font-black text-blue-600 text-base">
-                                    {profitMargin}%
-                                  </span>
-                                  <span className="text-[10px] font-black text-blue-300 uppercase tracking-tighter">Lợi nhuận</span>
-                                </div>
+                                {formatNumber(pkg.totalWithVat)}
                               </td>
                             </tr>
                             {/* Package Items */}
                             {pkg.items.map((item, iIdx) => (
                               <tr key={`pkg-${pIdx}-item-${iIdx}`} className="border-b border-gray-50/50 bg-blue-50/5">
                                 <td className="px-4 py-2 text-sm text-gray-500 pl-10 italic">
-                                  • {item.name || item.service?.name || 'N/A'}
+                                  <div className="flex flex-col">
+                                    <span className="font-medium text-gray-600">• {item.name || item.service?.name || 'N/A'}</span>
+                                    {(item.service?.description || item.description) && (
+                                      <p className="text-[11px] text-gray-400 pl-3 mt-0.5 leading-relaxed">
+                                        {item.service?.description || item.description}
+                                      </p>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="px-4 py-2 text-center">
                                   <div className="flex flex-col items-center">
@@ -236,11 +246,11 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                                   </div>
                                 </td>
                                 <td className="px-4 py-2 text-right text-xs text-gray-400 font-medium italic">
-                                  {formatNumber(item.sellingPrice)}
+                                  {formatNumber(Math.round(item.sellingPrice))}
                                 </td>
-                                <td colSpan={3} className="px-4 py-2 text-right text-[10px] text-gray-300 font-bold uppercase tracking-tight italic">
-                                  Đơn giá: {formatNumber(item.sellingPrice)} | Vốn: {formatNumber(item.costAtSale)}
-                                </td>
+                                {/* <td colSpan={4} className="px-4 py-2 text-right text-[10px] text-gray-300 font-bold uppercase tracking-tight italic">
+                                  Đơn giá: {formatNumber(Math.round(item.sellingPrice))} | Vốn: {formatNumber(Math.round(item.costAtSale))}
+                                </td> */}
                               </tr>
                             ))}
                           </Fragment>
@@ -251,32 +261,42 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                       {aggregatedItems.standalone.length > 0 && (
                         <>
                           <tr className="bg-gray-50 border-b border-gray-100">
-                            <td colSpan={6} className="px-4 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50">
+                            <td colSpan={7} className="px-4 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50">
                               Dịch vụ lẻ
                             </td>
                           </tr>
                           {aggregatedItems.standalone.map((item, idx) => {
-                            const total = parseFloat(item.sellingPrice) * item.quantity;
-                            const cost = parseFloat(item.costAtSale) * item.quantity;
-                            const profit = total - cost;
-                            const profitMargin = total > 0 ? ((profit / total) * 100).toFixed(1) : 0;
+                            const revenue = (item.sellingPrice || 0) * (item.quantity || 0);
+                            const cost = (item.costAtSale || 0) * (item.quantity || 0);
+                            const profit = revenue - cost;
+                            const profitMargin = cost > 0 ? ((profit / cost) * 100).toFixed(1) : 0;
 
                             return (
                               <tr key={`standalone-${idx}`} className="border-b border-gray-100 hover:bg-gray-50 group">
                                 <td className="px-4 py-3 text-sm text-gray-900 font-medium italic group-hover:text-purple-700 transition-colors">
-                                  {item.name || item.service?.name || 'N/A'}
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-gray-900">{item.name || item.service?.name || 'N/A'}</span>
+                                    {(item.service?.description || item.description) && (
+                                      <p className="text-xs text-gray-500 mt-1 leading-relaxed font-normal not-italic">
+                                        {item.service?.description || item.description}
+                                      </p>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="px-4 py-3 text-center">
                                   <span className="text-sm font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded-md">{item.quantity} {item.service?.unit || item.unit}</span>
                                 </td>
                                 <td className="px-4 py-3 text-right text-sm text-gray-700">
-                                  {formatNumber(item.sellingPrice)}
+                                  {formatNumber(Math.round(item.sellingPrice))}
                                 </td>
                                 <td className="px-4 py-3 text-right text-sm text-gray-500 italic">
-                                  {formatNumber(item.costAtSale)}
+                                  {formatNumber(Math.round(item.costAtSale))}
+                                </td>
+                                <td className="px-4 py-3 text-right text-sm text-gray-900">
+                                  {formatNumber(Math.round(revenue * 0.08))}
                                 </td>
                                 <td className="px-4 py-3 text-right text-sm font-black text-gray-900 italic">
-                                  {formatNumber(total)}
+                                  {formatNumber(roundToTenThousands(revenue * 1.08))}
                                 </td>
                                 <td className="px-4 py-3 text-right text-sm">
                                   <div className="flex flex-col items-end">
@@ -294,24 +314,30 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                     </tbody>
                     <tfoot>
                       <tr className="bg-gray-50 font-semibold">
-                        <td colSpan="4" className="px-4 py-3 text-right text-sm text-gray-700">
-                          Tổng cộng:
+                        <td colSpan="5" className="px-4 py-3 text-right text-sm text-gray-700">
+                          Tổng cộng (có VAT):
                         </td>
-                        <td className="px-4 py-3 text-right text-sm text-gray-900">
-                          {formatNumber(quotation.totalAmount)} VNĐ
+                        <td className="px-4 py-3 text-right text-sm text-gray-900 font-black">
+                          {(() => {
+                            const totalWithVat = quotation.details?.reduce((sum, d) =>
+                              sum + roundToTenThousands(parseFloat(d.sellingPrice) * d.quantity * 1.08), 0) || 0;
+                            return formatNumber(totalWithVat);
+                          })()} VNĐ
                         </td>
                         <td className="px-4 py-3 text-right text-sm">
                           {(() => {
+                            const totalRevenue = quotation.details?.reduce((sum, d) =>
+                              sum + (parseFloat(d.sellingPrice) * d.quantity), 0) || 0;
                             const totalCost = quotation.details?.reduce((sum, d) =>
                               sum + (parseFloat(d.costAtSale) * d.quantity), 0) || 0;
-                            const totalProfit = parseFloat(quotation.totalAmount) - totalCost;
-                            const totalMargin = quotation.totalAmount > 0
-                              ? ((totalProfit / parseFloat(quotation.totalAmount)) * 100).toFixed(1)
+                            const totalProfit = totalRevenue - totalCost;
+                            const totalMargin = totalCost > 0
+                              ? Math.round((totalProfit / totalCost) * 100)
                               : 0;
                             return (
                               <div className="flex flex-col items-end">
                                 <span className="font-medium text-green-600">
-                                  {formatNumber(totalProfit)}
+                                  {formatNumber(Math.round(totalProfit))}
                                 </span>
                                 <span className="text-xs text-gray-500">
                                   ({totalMargin}%)
