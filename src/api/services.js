@@ -47,6 +47,14 @@ export const servicesApi = api.injectEndpoints({
       }),
       invalidatesTags: [{ type: 'Services', id: 'LIST' }],
     }),
+    bulkDeleteServices: builder.mutation({
+      query: (ids) => ({
+        url: '/services/bulk',
+        method: 'DELETE',
+        body: { ids },
+      }),
+      invalidatesTags: [{ type: 'Services', id: 'LIST' }],
+    }),
     addJob: builder.mutation({
       query: ({ id, jobId }) => ({
         url: `/services/${id}/jobs/${jobId}`,
@@ -76,6 +84,7 @@ export const {
   useCreateServiceMutation,
   useUpdateServiceMutation,
   useDeleteServiceMutation,
+  useBulkDeleteServicesMutation,
   useAddJobMutation,
   useRemoveJobMutation,
 } = servicesApi;

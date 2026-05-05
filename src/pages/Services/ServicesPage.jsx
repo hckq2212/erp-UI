@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { useGetServicesQuery, useDeleteServiceMutation, useCreateServiceMutation } from '../../api/services';
+import { useGetServicesQuery, useDeleteServiceMutation, useCreateServiceMutation, useBulkDeleteServicesMutation } from '../../api/services';
 import { useGetMeQuery } from '../../api/auth';
 import { formatCurrency } from '../../utils/format';
-import { Plus, ArrowUp, ArrowDown, ArrowUpDown, Copy } from 'lucide-react';
+import { Plus, ArrowUp, ArrowDown, ArrowUpDown, Copy, Trash2, X, CheckSquare, Square, Pencil } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useState, useMemo } from 'react';
 import { CreateServiceModal } from './CreateServiceModal';
+import { EditServiceModal } from './EditServiceModal';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../../components/ui/Pagination';
 import { TableFilters } from '../../components/ui/TableFilters';
@@ -15,10 +16,16 @@ import { toast } from 'react-toastify';
 export const ServicesPage = () => {
     const navigate = useNavigate();
     const { data: servicesData = [], isLoading } = useGetServicesQuery();
+    const { data: me } = useGetMeQuery();
     const [createService] = useCreateServiceMutation();
+    const [bulkDeleteServices, { isLoading: isDeleting }] = useBulkDeleteServicesMutation();
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedService, setSelectedService] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState([]);
 
     const services = useMemo(() => {
         const rawData = Array.isArray(servicesData) ? servicesData : (servicesData?.data || []);
@@ -40,6 +47,11 @@ export const ServicesPage = () => {
         }
     };
 
+    const handleEdit = (service) => {
+        setSelectedService(service);
+        setIsEditModalOpen(true);
+    };
+
     const {
         data: paginatedServices,
         sortConfig,
@@ -49,6 +61,39 @@ export const ServicesPage = () => {
         totalPages,
         totalItems
     } = useTableFeatures(services, { initialSort: { key: 'name', direction: 'ascending' } });
+
+    const handleToggleSelectionMode = () => {
+        setIsSelectionMode(!isSelectionMode);
+        setSelectedIds([]);
+    };
+
+    const handleSelectRow = (id) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const handleSelectAll = () => {
+        if (selectedIds.length === paginatedServices.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(paginatedServices.map(s => s.id));
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.length === 0) return;
+        if (!window.confirm(`Bạn có chắc chắn muốn xóa ${selectedIds.length} dịch vụ đã chọn?`)) return;
+
+        try {
+            await bulkDeleteServices(selectedIds).unwrap();
+            toast.success(`Đã xóa ${selectedIds.length} dịch vụ`);
+            setSelectedIds([]);
+            setIsSelectionMode(false);
+        } catch (err) {
+            toast.error(err?.data?.message || 'Lỗi khi xóa dịch vụ');
+        }
+    };
 
     const getSortIcon = (key) => {
         if (sortConfig?.key !== key) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-30" />;
@@ -79,10 +124,48 @@ export const ServicesPage = () => {
                     <h1 className='text-3xl font-bold text-gray-900 tracking-tight'>Quản Lý Dịch Vụ</h1>
                     <p className="text-gray-500 text-sm mt-1">Danh sách các dịch vụ cung cấp</p>
                 </div>
-                <Button onClick={() => setIsCreateModalOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Thêm Dịch Vụ
-                </Button>
+                <div className="flex items-center gap-3">
+                    {['ADMIN', 'BOD'].includes(me?.role) && !isSelectionMode && (
+                        <>
+                            <Button
+                                variant="outline"
+                                className="border-red-200 text-red-600 hover:bg-red-50"
+                                onClick={handleToggleSelectionMode}
+                            >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Xóa dịch vụ
+                            </Button>
+                            <Button onClick={() => setIsCreateModalOpen(true)}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Thêm Dịch Vụ
+                            </Button>
+                        </>
+                    )}
+                    {isSelectionMode && (
+                        <>
+                            <span className="text-sm font-medium text-gray-600 mr-2">
+                                Đã chọn <span className="text-blue-600 font-bold">{selectedIds.length}</span> dịch vụ
+                            </span>
+                            <Button
+                                variant="outline"
+                                onClick={handleToggleSelectionMode}
+                                className="border-gray-200"
+                            >
+                                <X className="h-4 w-4 mr-2" />
+                                Hủy
+                            </Button>
+                            <Button
+                                variant="danger"
+                                onClick={handleBulkDelete}
+                                disabled={selectedIds.length === 0 || isDeleting}
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                            >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                {isDeleting ? 'Đang xóa...' : 'Xác nhận xóa'}
+                            </Button>
+                        </>
+                    )}
+                </div>
             </div>
 
             <TableFilters
@@ -108,40 +191,91 @@ export const ServicesPage = () => {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50/50 border-b border-gray-100">
+                                        {isSelectionMode && (
+                                            <th className="px-6 py-4 w-10">
+                                                <button
+                                                    onClick={handleSelectAll}
+                                                    className="text-gray-400 hover:text-blue-600 transition-colors"
+                                                >
+                                                    {selectedIds.length === paginatedServices.length && paginatedServices.length > 0 ? (
+                                                        <CheckSquare className="w-5 h-5 text-blue-600" />
+                                                    ) : (
+                                                        <Square className="w-5 h-5" />
+                                                    )}
+                                                </button>
+                                            </th>
+                                        )}
                                         {renderSortableHeader('Tên Dịch Vụ', 'name')}
                                         {renderSortableHeader('Đơn vị', 'unit')}
                                         {renderSortableHeader('Giá vốn', 'costPrice')}
-                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Thao tác</th>
+                                        {!isSelectionMode && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Thao tác</th>}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {paginatedServices.map((service) => (
-                                        <tr key={service.id} className="hover:bg-gray-50/50 transition-colors">
+                                        <tr
+                                            key={service.id}
+                                            className={cnUtility(
+                                                "hover:bg-gray-50/50 transition-colors cursor-pointer",
+                                                selectedIds.includes(service.id) && "bg-blue-50/50 hover:bg-blue-50"
+                                            )}
+                                            onClick={() => isSelectionMode && handleSelectRow(service.id)}
+                                        >
+                                            {isSelectionMode && (
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center justify-center">
+                                                        {selectedIds.includes(service.id) ? (
+                                                            <CheckSquare className="w-5 h-5 text-blue-600" />
+                                                        ) : (
+                                                            <Square className="w-5 h-5 text-gray-300" />
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            )}
                                             <td className="px-6 py-4 text-sm text-gray-900 font-medium uppercase">{service.name}</td>
                                             <td className="px-6 py-4 text-sm text-gray-500 italic lowercase">{service.unit || '---'}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-bold">{formatCurrency(service.costPrice)}</td>
-                                            <td className="px-6 py-4 text-sm text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <button
-                                                        onClick={() => handleCopy(service)}
-                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                        title="Nhân bản dịch vụ"
-                                                    >
-                                                        <Copy className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => navigate(`/services/${service.id}`)}
-                                                        className="text-white bg-blue-600 rounded-xl px-4 py-1.5 font-bold hover:bg-blue-700 transition-all shadow-sm"
-                                                    >
-                                                        Xem chi tiết
-                                                    </button>
-                                                </div>
-                                            </td>
+                                            {!isSelectionMode && (
+                                                <td className="px-6 py-4 text-sm text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        {['ADMIN', 'BOD'].includes(me?.role) && (
+                                                            <>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleCopy(service);
+                                                                    }}
+                                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                    title="Nhân bản dịch vụ"
+                                                                >
+                                                                    <Copy className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleEdit(service);
+                                                                    }}
+                                                                    className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                                                    title="Sửa dịch vụ"
+                                                                >
+                                                                    <Pencil className="w-4 h-4" />
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                        <button
+                                                            onClick={() => navigate(`/services/${service.id}`)}
+                                                            className="text-white bg-blue-600 rounded-xl px-4 py-1.5 font-bold hover:bg-blue-700 transition-all shadow-sm"
+                                                        >
+                                                            Xem chi tiết
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            )}
                                         </tr>
                                     ))}
                                     {services.length === 0 && (
                                         <tr>
-                                            <td colSpan="3" className="px-6 py-16 text-center text-gray-400 italic">
+                                            <td colSpan={isSelectionMode ? 5 : 4} className="px-6 py-16 text-center text-gray-400 italic">
                                                 Không tìm thấy dịch vụ nào
                                             </td>
                                         </tr>
@@ -162,6 +296,15 @@ export const ServicesPage = () => {
             <CreateServiceModal
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
+            />
+
+            <EditServiceModal
+                isOpen={isEditModalOpen}
+                onClose={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedService(null);
+                }}
+                service={selectedService}
             />
         </div>
     );
