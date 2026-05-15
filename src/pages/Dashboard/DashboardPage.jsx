@@ -113,7 +113,7 @@ export const DashboardPage = () => {
                             />
                         )}
 
-                        {dashboard.teamLead && !isViewingMember && (
+                        {/* {dashboard.teamLead && !isViewingMember && (
                             <div className="space-y-4">
                                 <TeamLeadView
                                     dashboard={dashboard}
@@ -124,7 +124,7 @@ export const DashboardPage = () => {
                                     currentUserId={user?.id}
                                 />
                             </div>
-                        )}
+                        )} */}
 
                         {(dashboard.member || isViewingMember) && user?.role !== 'BD' && user?.role !== 'SALE' && (
                             <div className="">

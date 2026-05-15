@@ -2,13 +2,13 @@ import React, { useState, useMemo } from 'react';
 import {
     format, addMonths, subMonths, startOfMonth, endOfMonth,
     startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth,
-    isSameDay, isToday, addDays
+    isSameDay, isToday
 } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Clock, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
+import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, TASK_STATUS } from '../../utils/enums';
 
 export const TaskCalendar = ({ tasks = [] }) => {
     const navigate = useNavigate();
@@ -24,7 +24,7 @@ export const TaskCalendar = ({ tasks = [] }) => {
     const tasksByDay = useMemo(() => {
         const map = {};
         tasks.forEach(task => {
-            const date = task.end;
+            const date = task.deadline || task.end;
             if (date) {
                 const dayKey = format(new Date(date), 'yyyy-MM-dd');
                 if (!map[dayKey]) map[dayKey] = [];
@@ -94,8 +94,8 @@ export const TaskCalendar = ({ tasks = [] }) => {
                                 {dayTasks.length > 0 && !isSelected && (
                                     <div className="absolute bottom-0.5 flex gap-px">
                                         {dayTasks.slice(0, 3).map((t, i) => (
-                                            <span key={i} className={`w-0.5 h-0.5 rounded-full ${['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED'].includes(t.status) ? 'bg-emerald-500' :
-                                                ['OVERDUE', 'REJECTED'].includes(t.status) ? 'bg-red-500' : 'bg-blue-500'
+                                            <span key={i} className={`w-0.5 h-0.5 rounded-full ${[TASK_STATUS.COMPLETED, TASK_STATUS.ACCEPTED, TASK_STATUS.DONE, TASK_STATUS.INTERNAL_COMPLETED].includes(t.status) ? 'bg-emerald-500' :
+                                                [TASK_STATUS.OVERDUE, TASK_STATUS.REJECTED].includes(t.status) ? 'bg-red-500' : 'bg-blue-500'
                                                 }`} />
                                         ))}
                                     </div>
@@ -106,40 +106,70 @@ export const TaskCalendar = ({ tasks = [] }) => {
                 </div>
             </div>
 
-            {/* Right: Selected Day Tasks (Move to same row) */}
-            <div className="lg:w-48 xl:w-56 overflow-hidden flex flex-col pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l border-gray-50 lg:pl-5">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+            {/* Right: Selected Day Tasks */}
+            <div className="lg:w-56 xl:w-64 overflow-hidden flex flex-col pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l border-gray-50 lg:pl-5">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">
                     Ngày {format(selectedDate, 'dd/MM')}
                 </h4>
-                <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-[160px]">
-                    <div className="space-y-1.5">
+                
+                <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-[200px]">
+                    <div className="relative space-y-6 before:absolute before:left-[47px] before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-100">
                         <AnimatePresence mode="popLayout">
-                            {selectedTasks.length > 0 ? selectedTasks.map(task => (
-                                <motion.button
-                                    whileHover={{ x: 3 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    initial={{ opacity: 0, x: -5 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    key={task.id}
-                                    onClick={() => navigate(`/tasks/${task.id}`)}
-                                    className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center gap-3 group ${TASK_STATUS_COLORS[task.status] || 'bg-slate-50 border-slate-100 text-slate-700'}`}
-                                >
-                                    <div className="w-1 h-8 rounded-full bg-current opacity-20 shrink-0" />
-                                    <div className="min-w-0">
-                                        <p className="text-[11px] font-black text-slate-900 group-hover:text-blue-600 truncate transition-colors leading-tight">{task.name}</p>
-                                        <div className="flex gap-2 items-center mt-1">
-                                            <p className="text-[9px] text-slate-400 font-bold uppercase truncate max-w-[80px]">{task?.project?.name || ' Ngoài dự án'}</p>
-                                            <span className="text-[8px] font-black text-blue-600/50 uppercase tracking-tighter">{TASK_STATUS_LABELS[task.status]}</span>
+                            {selectedTasks.length > 0 ? selectedTasks.map((task, index) => {
+                                const dateObj = new Date(task.deadline || task.end);
+                                const time = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                                
+                                // Map status to dot colors
+                                const getDotColor = (status) => {
+                                    if ([TASK_STATUS.COMPLETED, TASK_STATUS.ACCEPTED, TASK_STATUS.DONE, TASK_STATUS.INTERNAL_COMPLETED].includes(status)) return 'bg-emerald-500';
+                                    if ([TASK_STATUS.OVERDUE, TASK_STATUS.REJECTED].includes(status)) return 'bg-rose-500';
+                                    if ([TASK_STATUS.DOING, TASK_STATUS.REWORKING].includes(status)) return 'bg-blue-500';
+                                    return 'bg-amber-500';
+                                };
+
+                                return (
+                                    <motion.div
+                                        initial={{ opacity: 0, x: 10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ delay: index * 0.05 }}
+                                        key={task.id}
+                                        onClick={() => navigate(`/tasks/${task.id}`)}
+                                        className="flex items-start gap-4 group cursor-pointer relative"
+                                    >
+                                        <span className="text-[10px] font-black text-slate-400 min-w-[35px] pt-1">
+                                            {time === "Invalid Date" ? "09:00" : time}
+                                        </span>
+                                        
+                                        <div className="relative pt-1.5 z-10">
+                                            <div className={`w-2 h-2 rounded-full ${getDotColor(task.status)} ring-4 ring-white group-hover:scale-125 transition-transform`} />
                                         </div>
-                                    </div>
-                                </motion.button>
-                            )) : (
+
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex flex-col">
+                                                <div className="flex justify-between items-start gap-2">
+                                                    <h5 className="text-[11px] font-black text-slate-900 group-hover:text-blue-600 transition-colors leading-tight truncate">
+                                                        {task.name}
+                                                    </h5>
+                                                </div>
+                                                <div className="flex justify-between items-center mt-1">
+                                                    <p className="text-[8px] font-bold text-slate-400 uppercase truncate">
+                                                        {task?.project?.name || task?.projectName || 'Nhiệm vụ'}
+                                                    </p>
+                                                    <span className={`text-[7px] font-black px-1.5 py-0.5 rounded uppercase ${TASK_STATUS_COLORS[task.status] || 'bg-slate-50 text-slate-500'}`}>
+                                                        {TASK_STATUS_LABELS[task.status] || task.status}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                );
+                            }) : (
                                 <div className="text-center py-10 flex flex-col items-center justify-center gap-2">
                                     <div className="p-2.5 rounded-full bg-slate-50">
                                         <AlertCircle className="w-4 h-4 text-slate-300" />
                                     </div>
-                                    <p className="text-gray-300 italic text-[10px] font-bold uppercase tracking-widest">Không có Task</p>
+                                    <p className="text-gray-300 italic text-[10px] font-bold uppercase tracking-widest">Không có công việc</p>
                                 </div>
                             )}
                         </AnimatePresence>
