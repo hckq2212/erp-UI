@@ -415,13 +415,13 @@ export const FinancePage = () => {
                                     <FileText className="w-8 h-8" />
                                 </div>
                                 <p className="text-gray-500 font-black italic">Không có dữ liệu phù hợp trong khoảng đã chọn.</p>
-                                <button
+                                {/* <button
                                     type="button"
                                     onClick={handleReset}
                                     className="mt-4 px-5 py-2.5 rounded-2xl bg-blue-600 text-white font-black text-sm shadow-sm hover:bg-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                                 >
                                     Reset về Tháng này
-                                </button>
+                                </button> */}
                             </div>
                         ) : viewType === 'list' ? (
                             <ContractDebtList contracts={contractsFiltered} debts={debts} milestones={milestonesFiltered} />
@@ -431,13 +431,13 @@ export const FinancePage = () => {
                                     <CalendarIcon className="w-8 h-8" />
                                 </div>
                                 <p className="text-gray-500 font-black italic">Không có mốc thanh toán trong khoảng đã chọn.</p>
-                                <button
+                                {/* <button
                                     type="button"
                                     onClick={handleReset}
                                     className="mt-4 px-5 py-2.5 rounded-2xl bg-blue-600 text-white font-black text-sm shadow-sm hover:bg-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                                 >
                                     Reset về Tháng này
-                                </button>
+                                </button> */}
                             </div>
                         ) : (
                             <FinanceSchedule

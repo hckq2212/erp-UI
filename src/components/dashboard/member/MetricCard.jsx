@@ -1,12 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export const MetricCard = ({ 
-    title, 
-    value, 
-    subValue, 
-    icon: Icon, 
-    color = 'blue', 
+export const MetricCard = ({
+    title,
+    value,
+    subValue,
+    icon: Icon,
+    color = 'blue',
     sparklineData = [10, 40, 30, 50, 40, 70, 60], // Dummy path data
     trendColor = 'text-emerald-500'
 }) => {
@@ -50,18 +50,23 @@ export const MetricCard = ({
     };
 
     return (
-        <motion.div 
+        <motion.div
             whileHover={{ y: -5 }}
-            className="bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm overflow-hidden relative group"
+            className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm overflow-hidden relative group"
         >
-            <div className="flex justify-between items-start mb-4">
-                <div className={`p-3 rounded-2xl ${style.bg} ${style.icon}`}>
+            <div className="flex items-start mb-3 gap-3">
+                <div className={`p-3 rounded-2xl ${style.bg} ${style.icon} mr-4`}>
                     <Icon size={20} strokeWidth={2.5} />
+
+                </div>
+                <div className="flex flex-col text-left items-baseline gap-2">
+                    <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{value}</h3>
                 </div>
             </div>
 
-            <div className="space-y-1 relative z-10">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
+            {/* <div className="space-y-1 relative z-10">
+
                 <div className="flex items-baseline gap-2">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{value}</h3>
                 </div>
@@ -70,10 +75,10 @@ export const MetricCard = ({
                         {subValue}
                     </p>
                 )}
-            </div>
+            </div> */}
 
             {/* Sparkline */}
-            <div className="absolute bottom-0 left-0 right-0 h-10 opacity-30 group-hover:opacity-60 transition-opacity">
+            {/* <div className="absolute bottom-0 left-0 right-0 h-10 opacity-30 group-hover:opacity-60 transition-opacity">
                 <svg width="100%" height="100%" viewBox="0 0 100 30" preserveAspectRatio="none">
                     <path
                         d={generatePath(sparklineData)}
@@ -83,7 +88,7 @@ export const MetricCard = ({
                         strokeLinecap="round"
                     />
                 </svg>
-            </div>
+            </div> */}
         </motion.div>
     );
 };

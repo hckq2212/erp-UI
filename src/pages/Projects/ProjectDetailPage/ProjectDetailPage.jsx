@@ -85,7 +85,7 @@ export const ProjectDetailPage = () => {
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{project.name}</h1>
             {project.description && (
-              <p className="text-gray-600 mt-2 max-w-2xl">{project.description}</p>
+              <p className="text-gray-600 mt-2 max-w-2xl whitespace-pre-wrap">{project.description}</p>
             )}
           </div>
 

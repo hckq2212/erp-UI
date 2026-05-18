@@ -249,7 +249,7 @@ export const OpportunityDetailPage = () => {
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{opportunity.name}</h1>
             {opportunity.description && (
-              <p className="text-gray-600 mt-2 max-w-2xl">{opportunity.description}</p>
+              <p className="text-gray-600 mt-2 max-w-2xl whitespace-pre-wrap">{opportunity.description}</p>
             )}
           </div>
 

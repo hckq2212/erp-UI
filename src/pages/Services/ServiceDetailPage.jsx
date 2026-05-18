@@ -73,7 +73,11 @@ export const ServiceDetailPage = () => {
 
     const handleSaveUpdate = async () => {
         try {
-            await updateService({ id, ...editForm }).unwrap();
+            const cleanedForm = {
+                ...editForm,
+                description: editForm.description ? editForm.description.trim() : ''
+            };
+            await updateService({ id, ...cleanedForm }).unwrap();
             toast.success('Cập nhật thông tin thành công');
             setIsEditing(false);
         } catch (err) {
@@ -224,7 +228,7 @@ export const ServiceDetailPage = () => {
                                         placeholder="Nhập mô tả..."
                                     />
                                 ) : (
-                                    <p className="text-md font-bold text-blue-600">{service.description || 'Không có mô tả'}</p>
+                                    <p className="text-md font-bold text-blue-600 whitespace-pre-wrap">{service.description || 'Không có mô tả'}</p>
                                 )}
                             </div>
                         </div>

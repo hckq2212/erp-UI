@@ -233,7 +233,7 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                                   <div className="flex flex-col">
                                     <span className="font-medium text-gray-600">• {item.name || item.service?.name || 'N/A'}</span>
                                     {(item.service?.description || item.description) && (
-                                      <p className="text-[11px] text-gray-400 pl-3 mt-0.5 leading-relaxed">
+                                      <p className="text-[11px] text-gray-400 pl-3 mt-0.5 leading-relaxed whitespace-pre-wrap">
                                         {item.service?.description || item.description}
                                       </p>
                                     )}
@@ -270,7 +270,7 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
                                   <div className="flex flex-col">
                                     <span className="font-bold text-gray-900">{item.name || item.service?.name || 'N/A'}</span>
                                     {(item.service?.description || item.description) && (
-                                      <p className="text-xs text-gray-500 mt-1 leading-relaxed font-normal not-italic">
+                                      <p className="text-xs text-gray-500 mt-1 leading-relaxed font-normal not-italic whitespace-pre-wrap">
                                         {item.service?.description || item.description}
                                       </p>
                                     )}

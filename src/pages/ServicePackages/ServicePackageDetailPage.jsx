@@ -243,7 +243,7 @@ export const ServicePackageDetailPage = () => {
                                             <Info className="w-4 h-4" />
                                             <span className="text-[10px] font-black uppercase tracking-widest">Mô tả gói</span>
                                         </div>
-                                        <p className="text-gray-700 font-medium text-sm leading-relaxed">
+                                        <p className="text-gray-700 font-medium text-sm leading-relaxed whitespace-pre-wrap">
                                             {packageData.description || 'Không có mô tả cho gói dịch vụ này.'}
                                         </p>
                                     </div>

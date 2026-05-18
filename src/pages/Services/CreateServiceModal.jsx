@@ -47,7 +47,11 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
 
     const onSubmit = async (data) => {
         try {
-            const res = await createService(data).unwrap();
+            const cleanedData = {
+                ...data,
+                description: data.description ? data.description.trim() : ''
+            };
+            const res = await createService(cleanedData).unwrap();
             toast.success('Tạo dịch vụ thành công');
             reset();
             if (res?.id) navigate(`/services/${res.id}`);
