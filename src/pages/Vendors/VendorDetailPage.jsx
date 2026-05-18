@@ -109,7 +109,10 @@ export const VendorDetailPage = () => {
                                 <div>
                                     <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Loại hình</label>
                                     <p className="text-sm font-medium text-gray-900">
-                                        {vendor.type === 'BUSINESS' ? 'Doanh nghiệp' : 'Cá nhân'}
+                                        {vendor.type === 'BUSINESS' ? 'Doanh nghiệp' :
+                                         vendor.type === 'INDIVIDUAL' ? 'Cá nhân' :
+                                         vendor.type === 'KOL' ? 'KOL' :
+                                         vendor.type === 'KOC' ? 'KOC' : vendor.type}
                                     </p>
                                 </div>
                             </div>

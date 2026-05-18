@@ -18,14 +18,14 @@ const vendorSchema = z.object({
     phone: z.string().regex(/^\+?[0-9]{10,15}$/, 'Số điện thoại không hợp lệ').optional().or(z.literal('')),
     address: z.string().optional(),
     taxId: z.string().optional(),
-    type: z.enum(['BUSINESS', 'INDIVIDUAL']).default('BUSINESS'),
+    type: z.enum(['BUSINESS', 'INDIVIDUAL', 'KOL', 'KOC']).default('BUSINESS'),
     bankAccount: z.string().optional(),
     bankName: z.string().optional(),
     idCardFront: z.any().optional(),
     idCardBack: z.any().optional(),
 }).superRefine((data, ctx) => {
     if (data.taxId) {
-        if (data.type === 'INDIVIDUAL') {
+        if (['INDIVIDUAL', 'KOL', 'KOC'].includes(data.type)) {
             if (!/^(\d{9}|\d{12})$/.test(data.taxId)) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
@@ -186,10 +186,10 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
                         placeholder="Nhập số điện thoại..."
                     />
                     <Input
-                        label={vendorType === 'INDIVIDUAL' ? 'Căn cước công dân' : 'Mã số thuế'}
+                        label={['INDIVIDUAL', 'KOL', 'KOC'].includes(vendorType) ? 'Căn cước công dân' : 'Mã số thuế'}
                         {...register('taxId')}
                         error={errors.taxId?.message}
-                        placeholder={vendorType === 'INDIVIDUAL' ? 'Nhập số CCCD...' : 'Nhập MST...'}
+                        placeholder={['INDIVIDUAL', 'KOL', 'KOC'].includes(vendorType) ? 'Nhập số CCCD...' : 'Nhập MST...'}
                     />
                     <div className="w-full">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Loại hình</label>
@@ -199,6 +199,8 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
                         >
                             <option value="BUSINESS">Doanh nghiệp</option>
                             <option value="INDIVIDUAL">Cá nhân</option>
+                            <option value="KOL">KOL</option>
+                            <option value="KOC">KOC</option>
                         </select>
                     </div>
                     <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -227,7 +229,7 @@ export const CreateVendorModal = ({ isOpen, onClose }) => {
                         />
                     </div>
 
-                    {vendorType === 'INDIVIDUAL' && (
+                    {['INDIVIDUAL', 'KOL', 'KOC'].includes(vendorType) && (
                         <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Input
