@@ -130,8 +130,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
   };
 
   const calculateProfitMargin = (sellingPrice, costPrice) => {
-    if (costPrice === 0) return sellingPrice > 0 ? 100 : 0;
-    return ((sellingPrice - costPrice) / costPrice) * 100;
+    if (!sellingPrice || sellingPrice === 0) return 0;
+    return ((sellingPrice - costPrice) / sellingPrice) * 100;
   };
 
   const handlePriceTypeChange = (type) => {
@@ -339,8 +339,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     };
   }, { revenue: 0, cost: 0, vat: 0, totalWithVat: 0 });
 
-  const overallProfitMargin = totals.cost > 0
-    ? ((totals.revenue - totals.cost) / totals.cost) * 100
+  const overallProfitMargin = totals.revenue > 0
+    ? ((totals.revenue - totals.cost) / totals.revenue) * 100
     : 0;
 
   const displayGroups = useMemo(() => {
