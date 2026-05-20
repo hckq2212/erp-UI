@@ -4,10 +4,10 @@ import { AlertTriangle, ChevronRight } from 'lucide-react';
 
 export const ReworkZone = ({ tasks = [], navigate }) => {
     return (
-        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden h-full">
-            <div className="flex items-center justify-between mb-6">
+        <div className="bg-white p-4 rounded-[1rem] border border-slate-100 shadow-sm relative overflow-hidden h-full">
+            <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                    <div className="p-2 bg-rose-50 text-rose-500 rounded-xl relative">
+                    <div className="p-2 bg-rose-50 text-rose-500 rounded-lg relative">
                         <AlertTriangle size={18} />
                         {tasks.length > 0 && (
                             <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[8px] font-black flex items-center justify-center rounded-full animate-bounce">
@@ -34,7 +34,7 @@ export const ReworkZone = ({ tasks = [], navigate }) => {
                             transition={{ delay: index * 0.05 }}
                             key={task.id}
                             onClick={() => navigate(`/tasks/${task.id}`)}
-                            className="p-4 bg-rose-50/30 hover:bg-white hover:shadow-md border border-rose-100/20 hover:border-rose-100 rounded-2xl transition-all cursor-pointer group"
+                            className="p-4 bg-rose-50/30 hover:bg-white hover:shadow-md border border-rose-100/20 hover:border-rose-100 rounded-xl transition-all cursor-pointer group"
                         >
                             <div className="flex justify-between items-start mb-2">
                                 <h4 className="text-[11px] font-black text-slate-900 group-hover:text-rose-600 transition-colors truncate w-2/3">

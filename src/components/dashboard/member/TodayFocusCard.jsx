@@ -10,7 +10,7 @@ export const TodayFocusCard = ({
     onViewDetail
 }) => {
     return (
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#FFF6EF] via-[#FFEBE0] to-[#FFDBC4] rounded-[2.5rem] p-8 text-[#1A1A1A] shadow-xl shadow-orange-100/40 border border-[#FFE6D5] ">
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#FFF6EF] via-[#FFEBE0] to-[#FFDBC4] rounded-[1.25rem] p-5 text-[#1A1A1A] shadow-xl shadow-orange-100/40 border border-[#FFE6D5] ">
             {/* Background Decorative Waves */}
             <svg className="absolute bottom-0 right-0 w-[550px] h-[350px] pointer-events-none z-0 opacity-80" viewBox="0 0 500 300" fill="none">
                 <path d="M0 300C120 230 250 290 500 160V300H0Z" fill="url(#wave-grad)" />
@@ -37,8 +37,8 @@ export const TodayFocusCard = ({
                 <path d="M22 2 11 13" />
             </svg>
 
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                <div className="lg:col-span-8 space-y-6">
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+                <div className="lg:col-span-8 space-y-4">
                     <div>
                         <p className="text-[#FF6633] text-[10px] font-black uppercase tracking-[0.2em] mb-2">TODAY FOCUS</p>
                         <h2 className="text-2xl sm:text-3xl font-semibold leading-tight tracking-tight text-[#1A1A1A]">
@@ -46,9 +46,9 @@ export const TodayFocusCard = ({
                         </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {/* Overdue Card */}
-                        <div className="bg-white rounded-2xl p-4 flex items-center gap-3 shadow-md shadow-orange-100/40 border border-orange-50/50 hover:scale-[1.03] ">
+                        <div className="bg-white rounded-xl p-4 flex items-center gap-3 shadow-md shadow-orange-100/40 border border-orange-50/50 hover:scale-[1.03] ">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-red-50 text-red-500 shadow-inner flex-shrink-0">
                                 <AlertCircle size={18} />
                             </div>
@@ -60,7 +60,7 @@ export const TodayFocusCard = ({
                         </div>
 
                         {/* Today Deadlines Card */}
-                        <div className="bg-white rounded-2xl p-4 flex items-center gap-3 shadow-md shadow-orange-100/40 border border-orange-50/50 hover:scale-[1.03]">
+                        <div className="bg-white rounded-xl p-4 flex items-center gap-3 shadow-md shadow-orange-100/40 border border-orange-50/50 hover:scale-[1.03]">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center bg-orange-50 text-orange-500 shadow-inner flex-shrink-0">
                                 <Calendar size={18} />
                             </div>

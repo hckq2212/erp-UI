@@ -52,10 +52,10 @@ export const MetricCard = ({
     return (
         <motion.div
             whileHover={{ y: -5 }}
-            className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm overflow-hidden relative group"
+            className="bg-white p-4 rounded-[0.75rem] border border-slate-100 shadow-sm overflow-hidden relative group"
         >
             <div className="flex items-start mb-3 gap-3">
-                <div className={`p-3 rounded-2xl ${style.bg} ${style.icon} mr-4`}>
+                <div className={`p-3 rounded-lg ${style.bg} ${style.icon} mr-4`}>
                     <Icon size={20} strokeWidth={2.5} />
 
                 </div>

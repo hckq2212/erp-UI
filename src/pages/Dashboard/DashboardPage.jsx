@@ -63,12 +63,12 @@ export const DashboardPage = () => {
                 className="space-y-6 max-w-[1600px] mx-auto px-4 md:px-0"
             >
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-2">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-2 mb-2">
                     <div>
                         <motion.div
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className="flex items-center gap-3 mb-1"
+                            className="flex items-center gap-3 "
                         >
                             <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
                                 Bảng điều khiển

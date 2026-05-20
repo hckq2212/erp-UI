@@ -51,9 +51,9 @@ export const MemberView = ({
     const timelineTasks = (member?.upcomingDeadlines || []).slice(0, 10);
 
     return (
-        <div className="space-y-8 pb-20">
+        <div className="space-y-3 pb-20">
             {/* Top Section: Focus & Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-2">
                 <div className="lg:col-span-7">
                     <TodayFocusCard
                         overdueCount={stats.overdue}
@@ -72,7 +72,7 @@ export const MemberView = ({
             <MetricCardsGrid member={member} />
 
             {/* Bottom Section: Main Work Areas */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-stretch">
                 {/* Rework Zone (3/12) */}
                 <div className="lg:col-span-3">
                     <ReworkZone tasks={member?.reworkTasks} navigate={navigate} />

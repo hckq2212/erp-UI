@@ -8,7 +8,7 @@ export const MetricCardsGrid = ({ member }) => {
     const totalViniCoin = member?.vinicoinTotal?.toLocaleString() || 0;
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
             <MetricCard
                 title="Đang thực hiện"
                 value={member?.doingCount ?? 0}

@@ -11,10 +11,10 @@ export const HotProjectList = ({ projects = [], navigate }) => {
     };
 
     return (
-        <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm h-full">
-            <div className="flex items-center justify-between mb-8">
+        <div className="bg-white p-4 rounded-[1rem] border border-slate-100 shadow-sm h-full">
+            <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-rose-50 text-rose-500 rounded-xl">
+                    <div className="p-2 bg-rose-50 text-rose-500 rounded-lg">
                         <Flame size={18} />
                     </div>
                     <div>
@@ -43,7 +43,7 @@ export const HotProjectList = ({ projects = [], navigate }) => {
                             >
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-rose-50 group-hover:text-rose-500 transition-colors uppercase">
+                                        <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-rose-50 group-hover:text-rose-500 transition-colors uppercase">
                                             {getProjectAvatar(project.name)}
                                         </div>
                                         <div>

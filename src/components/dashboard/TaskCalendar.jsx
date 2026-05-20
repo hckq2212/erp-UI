@@ -37,7 +37,7 @@ export const TaskCalendar = ({ tasks = [] }) => {
     const selectedTasks = tasksByDay[format(selectedDate, 'yyyy-MM-dd')] || [];
 
     return (
-        <div className="bg-white p-6 rounded-[1.5rem] shadow-sm flex flex-col lg:flex-row gap-8 h-full h-fit">
+        <div className="bg-white p-4 rounded-[0.75rem] shadow-sm flex flex-col lg:flex-row gap-4 h-full h-fit">
             {/* Left: Calendar Section */}
             <div className="flex-1 flex flex-col min-w-[220px]">
                 <div className="flex items-center justify-between mb-4">
@@ -84,7 +84,7 @@ export const TaskCalendar = ({ tasks = [] }) => {
                                         setCurrentMonth(startOfMonth(day));
                                     }
                                 }}
-                                className={`w-8 h-8 mx-auto relative flex items-center justify-center rounded-xl transition-all text-[11px] font-black
+                                className={`w-8 h-8 mx-auto relative flex items-center justify-center rounded-md transition-all text-[11px] font-black
                                     ${!isSameMonth(day, currentMonth) ? 'text-slate-200' : 'text-slate-900'}
                                     ${isSelected ? 'bg-blue-600 text-white shadow-lg shadow-blue-100/50 z-10' : 'hover:bg-slate-50'}
                                     ${isToday(day) && !isSelected ? 'text-blue-600 ring-2 ring-blue-50' : ''}
