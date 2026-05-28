@@ -35,6 +35,8 @@ import { ServicePackageListPage } from './pages/ServicePackages/ServicePackageLi
 import { ServicePackageDetailPage } from './pages/ServicePackages/ServicePackageDetailPage';
 import { MePage } from './pages/Me/MePage';
 import Chatbot from './components/Chatbot';
+import { ChatPage } from './pages/ChatPage';
+import { ChatBubbleWidget } from './components/chat/ChatBubbleWidget';
 
 function App() {
   // Use the query to check if the user is logged in via cookies on startup
@@ -362,9 +364,20 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path='*' element={<Navigate to='/' replace />} />
+                <Route
+          path='/chat'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ChatPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+<Route path='*' element={<Navigate to='/' replace />} />
       </Routes>
       {/* {canChat && <Chatbot />} */}
+          <ChatBubbleWidget />
     </BrowserRouter>
   );
 }

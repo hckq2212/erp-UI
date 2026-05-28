@@ -2,7 +2,8 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Briefcase, FileText,
   FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store,
-  CheckCircle2, Package, User, Handshake, FolderOpenDotIcon
+  CheckCircle2, Package, User, Handshake, FolderOpenDotIcon,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useGetMeQuery } from '../../api/auth';
@@ -24,6 +25,7 @@ const menuItems = [
   { path: '/vendors', icon: Store, label: 'Vendor', roles: ['ADMIN', 'BOD', 'ACCOUNTANT'] },
   { path: '/referral-partners', icon: Handshake, label: 'Đối tác', roles: ['ADMIN', 'BOD', 'BD'] },
 
+  { path: '/chat', icon: MessageSquare, label: 'Tin nhắn' },
 ];
 
 export const Sidebar = ({ isCollapsed }) => {
