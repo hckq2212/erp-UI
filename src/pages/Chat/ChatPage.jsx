@@ -36,7 +36,12 @@ export function ChatPage() {
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
-        initSocket();
+        if (selfUserId) {
+            initSocket(null, selfUserId);
+        }
+    }, [selfUserId]);
+
+    useEffect(() => {
         fetchRooms();
         loadSystemUsers();
 

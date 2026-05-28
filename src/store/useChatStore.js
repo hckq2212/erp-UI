@@ -22,10 +22,18 @@ export const useChatStore = create((set, get) => ({
     loadingRooms: false,
     loadingMessages: false,
 
+    selfUserId: null,
+    unreadRooms: {}, // roomId -> boolean
+
     // Initialize Socket.io connection
-    initSocket: (token) => {
+    initSocket: (token, selfUserId) => {
         const { socket } = get();
-        if (socket) return;
+        if (socket) {
+            if (selfUserId) set({ selfUserId });
+            return;
+        }
+
+        set({ selfUserId });
 
         // Create socket connection with authentication credentials
         const newSocket = io(SOCKET_URL, {
@@ -45,16 +53,23 @@ export const useChatStore = create((set, get) => ({
 
         // Listen for new messages
         newSocket.on("receive_message", (message) => {
-            const { activeRoom, messages, rooms } = get();
+            const { activeRoom, messages, rooms, selfUserId: currentSelfUserId, unreadRooms } = get();
 
             // If the message is for the active room, append it to messages
-            if (activeRoom && activeRoom.id === message.roomId) {
+            if (activeRoom && String(activeRoom.id) === String(message.roomId)) {
                 set({ messages: [...messages, message] });
+            }
+
+            // If the room doesn't exist in our state yet (e.g. newly created DM from another user), re-fetch
+            const roomExists = rooms.some(room => String(room.id) === String(message.roomId));
+            if (!roomExists) {
+                get().fetchRooms();
+                return;
             }
 
             // Update the room's latest message in the sidebar
             const updatedRooms = rooms.map(room => {
-                if (room.id === message.roomId) {
+                if (String(room.id) === String(message.roomId)) {
                     return {
                         ...room,
                         latestMessage: message,
@@ -64,8 +79,23 @@ export const useChatStore = create((set, get) => ({
                 return room;
             });
 
-            // Sort rooms by latest update
-            set({ rooms: updatedRooms.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()) });
+            // Sort rooms by newest message or update first!
+            const getRoomTime = (room) => {
+                return room.latestMessage?.createdAt || room.updatedAt || room.createdAt || 0;
+            };
+            const sortedRooms = [...updatedRooms].sort((a, b) => new Date(getRoomTime(b)).getTime() - new Date(getRoomTime(a)).getTime());
+
+            // Track unread if the message is from someone else and it's NOT the active room
+            const isUnread = String(message.senderId) !== String(currentSelfUserId) && (!activeRoom || String(activeRoom.id) !== String(message.roomId));
+            const newUnread = { ...unreadRooms };
+            if (isUnread) {
+                newUnread[message.roomId] = true;
+            }
+
+            set({ 
+                rooms: sortedRooms,
+                unreadRooms: newUnread
+            });
         });
 
         // Listen for online users
@@ -114,7 +144,18 @@ export const useChatStore = create((set, get) => ({
         set({ loadingRooms: true });
         try {
             const response = await chatAxios.get("/chat-rooms");
-            set({ rooms: response.data, loadingRooms: false });
+            // Sort by newest updatedAt first
+            const sortedRooms = (response.data || []).sort(
+                (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            );
+
+            // Initialize unreadRooms state from backend database
+            const newUnread = {};
+            sortedRooms.forEach(room => {
+                newUnread[room.id] = !!room.unread;
+            });
+
+            set({ rooms: sortedRooms, unreadRooms: newUnread, loadingRooms: false });
         } catch (error) {
             console.error("Error fetching chat rooms:", error);
             set({ loadingRooms: false });
@@ -135,13 +176,23 @@ export const useChatStore = create((set, get) => ({
 
     // Select active room and join socket room
     selectRoom: (room) => {
-        const { socket, activeRoom } = get();
+        const { socket, activeRoom, unreadRooms } = get();
         
         if (activeRoom && socket) {
             socket.emit("leave_room", activeRoom.id);
         }
 
-        set({ activeRoom: room, messages: [] });
+        const newUnread = { ...unreadRooms };
+        if (room) {
+            newUnread[room.id] = false;
+            
+            // Call backend API to mark as read in database persistently
+            chatAxios.post(`/chat-rooms/${room.id}/read`).catch(err => {
+                console.error("Failed to mark room as read on server:", err);
+            });
+        }
+
+        set({ activeRoom: room, messages: [], unreadRooms: newUnread });
         
         if (room) {
             get().fetchMessages(room.id);

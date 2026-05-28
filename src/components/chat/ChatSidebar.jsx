@@ -14,7 +14,7 @@ export function ChatSidebar({
     getRoomName
 }) {
     const [searchTerm, setSearchTerm] = useState("");
-    const { createDM } = useChatStore();
+    const { createDM, unreadRooms } = useChatStore();
 
     // Fetch system users to initiate new DMs
     const { data: usersData } = useGetUsersQuery();
@@ -25,7 +25,7 @@ export function ChatSidebar({
 
     const handleUserClick = async (userId) => {
         // Double check if a DM room already exists with this user
-        const existingRoom = rooms.find(room => 
+        const existingRoom = rooms.find(room =>
             !room.isGroup && room.participants?.some(p => p.userId === userId)
         );
         if (existingRoom) {
@@ -37,26 +37,29 @@ export function ChatSidebar({
     };
 
     // 1. Gather all active conversation rooms
-    const activeRoomsList = rooms.map(room => {
-        const otherUser = getOtherParticipant(room);
-        return {
-            type: "room",
-            id: room.id,
-            room: room,
-            name: getRoomName(room),
-            latestMessage: room.latestMessage ? room.latestMessage.content : "Chưa có tin nhắn",
-            isGroup: room.isGroup,
-            online: !room.isGroup && onlineUsers.includes(otherUser?.id)
-        };
-    });
+    const activeRoomsList = rooms
+        .map(room => {
+            const otherUser = getOtherParticipant(room);
+            return {
+                type: "room",
+                id: room.id,
+                room: room,
+                name: getRoomName(room),
+                latestMessage: room.latestMessage ? room.latestMessage.content : "Chưa có tin nhắn",
+                latestMessageTime: room.latestMessage?.createdAt || room.updatedAt || room.createdAt || 0,
+                isGroup: room.isGroup,
+                online: !room.isGroup && onlineUsers.includes(otherUser?.id)
+            };
+        })
+        .sort((a, b) => new Date(b.latestMessageTime).getTime() - new Date(a.latestMessageTime).getTime());
 
     // 2. Gather other system users that we do NOT have active conversations with yet
     const allUsers = usersData?.data || usersData || [];
     const newContactsList = allUsers
         .filter(user => {
             if (user.id === selfUserId) return false;
-            
-            const hasExistingDM = rooms.some(room => 
+
+            const hasExistingDM = rooms.some(room =>
                 !room.isGroup && room.participants?.some(p => p.userId === user.id)
             );
             return !hasExistingDM;
@@ -66,7 +69,7 @@ export function ChatSidebar({
             id: user.id,
             user: user,
             name: user.fullName || "Thành viên",
-            latestMessage: "Thành viên hệ thống",
+            latestMessage: "Chưa có tin nhắn",
             isGroup: false,
             online: onlineUsers.includes(user.id)
         }))
@@ -121,33 +124,49 @@ export function ChatSidebar({
                             ? activeRoom?.id === item.room.id
                             : activeRoom?.participants?.some(p => p.userId === item.id) && !activeRoom.isGroup;
 
+                        const isUnread = item.type === "room" && unreadRooms[item.id];
+
                         return (
                             <button
                                 key={item.type + "-" + item.id}
                                 onClick={() => item.type === "room" ? selectRoom(item.room) : handleUserClick(item.id)}
-                                className={`w-full p-3 flex items-center gap-3 transition-colors text-left rounded-xl ${
-                                    isActive 
-                                        ? "bg-[#eaf4ff]/60" 
-                                        : "hover:bg-gray-100"
-                                }`}
+                                className={`w-full p-3 flex items-center gap-3 transition-colors text-left rounded-xl ${isActive
+                                    ? "bg-[#eaf4ff]/60"
+                                    : "hover:bg-gray-100"
+                                    }`}
                             >
                                 <div className="relative flex-shrink-0">
-                                    <div className={`w-12 h-12 rounded-full border border-gray-200/60 flex items-center justify-center font-bold text-base ${
-                                        isActive ? "bg-[#0084ff] text-white" : "bg-gray-150 text-[#0084ff]"
-                                    }`}>
+                                    <div className={`w-12 h-12 rounded-full border border-gray-200/60 flex items-center justify-center font-bold text-base ${isActive ? "bg-[#0084ff] text-white" : "bg-gray-150 text-[#0084ff]"
+                                        }`}>
                                         {item.isGroup ? <UsersIcon className="w-5 h-5" /> : item.name[0].toUpperCase()}
                                     </div>
                                     {item.online && (
                                         <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#31a24c] border-2 border-white rounded-full" />
                                     )}
                                 </div>
-                                <div className="flex-1 min-w-0 flex flex-col">
-                                    <span className={`text-[14px] font-semibold truncate ${isActive ? "text-[#0084ff]" : "text-[#050505]"}`}>
-                                        {item.name}
-                                    </span>
-                                    <span className="text-[12px] text-gray-550 truncate mt-0.5">
-                                        {item.latestMessage}
-                                    </span>
+                                <div className="flex-1 min-w-0 flex flex-row items-center justify-between gap-2">
+                                    <div className="flex-1 min-w-0 flex flex-col">
+                                        <span className={`text-[14px] truncate ${
+                                            isActive 
+                                                ? "text-[#0084ff] font-bold" 
+                                                : isUnread 
+                                                    ? "text-[#050505] font-black" 
+                                                    : "text-[#050505] font-semibold"
+                                        }`}>
+                                            {item.name}
+                                        </span>
+                                        <span className={`text-[12px] truncate mt-0.5 ${
+                                            isUnread 
+                                                ? "text-slate-950 font-bold" 
+                                                : "text-gray-550"
+                                        }`}>
+                                            {item.latestMessage}
+                                        </span>
+                                    </div>
+                                    
+                                    {isUnread && (
+                                        <span className="w-2.5 h-2.5 bg-[#0084ff] rounded-full flex-shrink-0" />
+                                    )}
                                 </div>
                             </button>
                         );
