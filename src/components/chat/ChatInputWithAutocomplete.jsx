@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { PlusCircle, Image, Smile, SendHorizontal } from "lucide-react";
 
 export function ChatInputWithAutocomplete({ onSendMessage, onTyping }) {
     const [text, setText] = useState("");
@@ -134,55 +135,73 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping }) {
     }, [activeSuggestionIndex, showSuggestions]);
 
     return (
-        <div className="relative w-full flex flex-col bg-white border-t border-gray-200 p-3">
+        <div className="relative w-full flex flex-col bg-white px-4 py-3 border-t border-gray-100">
             {/* Autocomplete suggestion dropup */}
             {showSuggestions && suggestions.length > 0 && (
                 <div 
                     ref={suggestionsRef}
-                    className="absolute left-4 bottom-full mb-2 w-72 max-h-48 overflow-y-auto bg-white border border-gray-200 shadow-2xl rounded-none z-50 divide-y divide-gray-100"
+                    className="absolute left-16 bottom-full mb-2 w-72 max-h-48 overflow-y-auto bg-white border border-gray-200 shadow-2xl rounded-2xl z-50 divide-y divide-gray-100"
                 >
                     {suggestions.map((task, idx) => (
                         <button
                             key={task.id}
                             type="button"
                             onClick={() => handleSelectSuggestion(task)}
-                            className={`w-full text-left px-3 py-2 text-xs flex flex-col transition-colors ${
+                            className={`w-full text-left px-4 py-2 text-xs flex flex-col transition-colors ${
                                 idx === activeSuggestionIndex 
                                     ? "bg-emerald-50 text-emerald-700" 
-                                    : "text-slate-650 hover:bg-gray-50 hover:text-slate-900"
+                                    : "text-slate-600 hover:bg-gray-50 hover:text-slate-900"
                             }`}
                         >
                             <span className="font-mono font-bold text-emerald-600">{task.code}</span>
-                            <span className="truncate mt-0.5 text-[10px] text-slate-500">{task.name}</span>
+                            <span className="truncate mt-0.5 text-[10px] text-gray-400">{task.name}</span>
                         </button>
                     ))}
                 </div>
             )}
 
-            {/* Input bar */}
-            <div className="flex items-end gap-2 bg-gray-50 border border-gray-200 px-3 py-2 focus-within:border-emerald-500/50 transition-colors">
-                <textarea
-                    ref={inputRef}
-                    rows={1}
-                    value={text}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Gõ tin nhắn, dùng @{mã công việc} để tag..."
-                    className="flex-1 bg-transparent border-0 outline-none text-slate-800 placeholder-slate-400 resize-none max-h-24 text-sm py-1 font-sans"
-                    style={{ minHeight: "24px" }}
-                />
-                
+            {/* Messenger Input Bar */}
+            <div className="flex items-center gap-2.5">
+                {/* Left Tool Icons */}
+                <button type="button" className="text-[#0084ff] hover:text-[#0073de] transition-colors p-1 flex-shrink-0">
+                    <PlusCircle className="w-[21px] h-[21px]" />
+                </button>
+                <button type="button" className="text-[#0084ff] hover:text-[#0073de] transition-colors p-1 flex-shrink-0">
+                    <Image className="w-[21px] h-[21px]" />
+                </button>
+                <button type="button" className="text-[#0084ff] hover:text-[#0073de] transition-colors p-1 flex-shrink-0">
+                    <Smile className="w-[21px] h-[21px]" />
+                </button>
+                <button type="button" className="text-[#0084ff] hover:text-[#0073de] transition-colors p-1 flex-shrink-0 font-bold text-xs">
+                    GIF
+                </button>
+
+                {/* Text Area Input */}
+                <div className="flex-1 bg-[#f0f2f5] rounded-full px-4 py-1.5 flex items-center">
+                    <textarea
+                        ref={inputRef}
+                        rows={1}
+                        value={text}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Aa"
+                        className="flex-1 bg-transparent border-0 outline-none text-slate-800 placeholder-slate-400 resize-none max-h-24 text-sm py-1 font-sans"
+                        style={{ minHeight: "22px" }}
+                    />
+                </div>
+
+                {/* Right Send Action Button */}
                 <button
                     type="button"
                     onClick={handleSubmit}
                     disabled={!text.trim()}
-                    className={`px-3 py-1.5 font-bold text-xs tracking-wider uppercase transition-colors rounded-none ${
+                    className={`p-1.5 flex-shrink-0 transition-colors ${
                         text.trim() 
-                            ? "bg-emerald-600 text-white hover:bg-emerald-500" 
-                            : "bg-gray-150 text-gray-400 cursor-not-allowed"
+                            ? "text-[#0084ff] hover:text-[#0073de]" 
+                            : "text-gray-300 cursor-not-allowed"
                     }`}
                 >
-                    Gửi
+                    <SendHorizontal className="w-[20px] h-[20px]" />
                 </button>
             </div>
         </div>

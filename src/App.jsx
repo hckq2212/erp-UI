@@ -35,7 +35,7 @@ import { ServicePackageListPage } from './pages/ServicePackages/ServicePackageLi
 import { ServicePackageDetailPage } from './pages/ServicePackages/ServicePackageDetailPage';
 import { MePage } from './pages/Me/MePage';
 import Chatbot from './components/Chatbot';
-import { ChatPage } from './pages/ChatPage';
+import { ChatPage } from './pages/Chat/ChatPage';
 import { ChatBubbleWidget } from './components/chat/ChatBubbleWidget';
 
 function App() {
@@ -364,7 +364,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-                <Route
+        <Route
           path='/chat'
           element={
             <ProtectedRoute>
@@ -374,10 +374,10 @@ function App() {
             </ProtectedRoute>
           }
         />
-<Route path='*' element={<Navigate to='/' replace />} />
+        <Route path='*' element={<Navigate to='/' replace />} />
       </Routes>
       {/* {canChat && <Chatbot />} */}
-          <ChatBubbleWidget />
+      <ChatBubbleWidget />
     </BrowserRouter>
   );
 }

@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useChatStore } from "../../store/useChatStore";
 import { useGetMeQuery } from "../../api/auth";
 import { ChatBubbleRoom } from "./ChatBubbleRoom";
 import axios from "axios";
 
 export function ChatBubbleWidget() {
+    const location = useLocation();
+    
+    // Hide this widget on the dedicated /chat page
+    if (location.pathname === "/chat") {
+        return null;
+    }
+
     const [isOpen, setIsOpen] = useState(false);
     const [showUserList, setShowUserList] = useState(false);
     const [systemUsers, setSystemUsers] = useState([]);
