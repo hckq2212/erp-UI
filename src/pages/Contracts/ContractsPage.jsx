@@ -4,6 +4,8 @@ import { Button } from '../../components/ui/Button';
 import { Plus } from 'lucide-react';
 import { useGetContractsQuery } from '../../api/contracts';
 import { TableFilters } from '../../components/ui/TableFilters';
+import { useGetMeQuery } from '../../api/auth';
+import { ContractModal } from './ContractModal';
 
 export const ContractsPage = () => {
     const [filters, setFilters] = useState({
@@ -15,9 +17,13 @@ export const ContractsPage = () => {
         sortDir: 'DESC'
     });
 
-    const { data, isLoading: isLoadingContracts } = useGetContractsQuery(filters);
+    const { data: data, isLoading: isLoadingContracts } = useGetContractsQuery(filters);
+    const { data: currentUser } = useGetMeQuery();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     const contracts = data?.data || [];
     const meta = data?.meta || { total: 0, page: 1, limit: 10, totalPages: 0 };
+    const canCreate = currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD';
 
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
@@ -63,6 +69,14 @@ export const ContractsPage = () => {
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Quản Lý Hợp Đồng</h1>
                     <p className="text-gray-500 text-sm mt-1">Quản lý và theo dõi các hợp đồng đã ký kết</p>
                 </div>
+                {canCreate && (
+                    <Button
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl shadow-sm hover:bg-blue-700 transition-all font-semibold"
+                    >
+                        <Plus className="w-5 h-5" /> Tạo Hợp Đồng
+                    </Button>
+                )}
             </div>
 
             <TableFilters
@@ -84,6 +98,8 @@ export const ContractsPage = () => {
                     currentSort={{ sortBy: filters.sortBy, sortDir: filters.sortDir }}
                 />
             </div>
+
+            <ContractModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </div>
     );
 };

@@ -26,6 +26,7 @@ import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS } from '../../../utils/e
 import { cn } from '../../../utils/cn';
 import { AttachmentsList } from '../../Opportunities/OpportunityDetailPage/AttachmentsList';
 import { useGetMeQuery } from '../../../api/auth';
+import { ContractServicesModal } from './ContractServicesModal';
 
 export const ContractDetailPage = () => {
   const { id } = useParams();
@@ -34,8 +35,9 @@ export const ContractDetailPage = () => {
   const { data: project, isLoading: projectLoading } = useGetProjectsByContractQuery(id, {
     skip: !id,
   });
-  const [activeTab, setActiveTab] = useState('MAIN'); // 'MAIN' | 'EXTRA'
+  const [activeTab, setActiveTab] = useState('MAIN'); // 'MAIN' | 'EXTRA' | 'SERVICES'
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
 
   const [isCloudinaryUploading, setIsCloudinaryUploading] = useState(false);
   const [uploadProposal, { isLoading: isMutationUploading }] = useUploadProposalMutation();
@@ -225,17 +227,26 @@ export const ContractDetailPage = () => {
       </div>
 
       {/* Tabs Switcher */}
-      {hasExtraTasks && (
-        <div className="flex bg-gray-100/50 p-1.5 rounded-2xl border border-gray-200 shadow-sm mb-6 w-fit">
-          <button
-            onClick={() => setActiveTab('MAIN')}
-            className={cn(
-              "flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all",
-              activeTab === 'MAIN' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
-            )}
-          >
-            Thông tin chung
-          </button>
+      <div className="flex bg-gray-100/50 p-1.5 rounded-2xl border border-gray-200 shadow-sm mb-6 w-fit">
+        <button
+          onClick={() => setActiveTab('MAIN')}
+          className={cn(
+            "flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all",
+            activeTab === 'MAIN' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+          )}
+        >
+          Thông tin chung
+        </button>
+        <button
+          onClick={() => setActiveTab('SERVICES')}
+          className={cn(
+            "flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all",
+            activeTab === 'SERVICES' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+          )}
+        >
+          Dịch vụ
+        </button>
+        {hasExtraTasks && (
           <button
             onClick={() => setActiveTab('EXTRA')}
             className={cn(
@@ -248,11 +259,11 @@ export const ContractDetailPage = () => {
               {extraTasks.length}
             </span>
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Content Grid */}
-      {activeTab === 'MAIN' ? (
+      {activeTab === 'MAIN' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content - Left Side (2/3) */}
           <div className="lg:col-span-2 space-y-6">
@@ -294,7 +305,29 @@ export const ContractDetailPage = () => {
             <AttachmentsList attachments={contract.attachments} />
           </div>
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'SERVICES' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in duration-300">
+          <div className="p-4 bg-blue-50 text-blue-600 rounded-full">
+            <Briefcase className="w-10 h-10" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Dịch Vụ Hợp Đồng</h2>
+            <p className="text-gray-500 text-sm mt-1 max-w-md">
+              Xem danh sách chi tiết các dịch vụ trong hợp đồng này.
+            </p>
+          </div>
+          <button
+            onClick={() => setIsServicesModalOpen(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow-sm transition-all"
+          >
+            Xem
+          </button>
+        </div>
+      )}
+
+      {activeTab === 'EXTRA' && (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="mb-6">
             <h2 className="text-xl font-bold text-gray-900">Định giá công việc phát sinh</h2>
@@ -303,6 +336,12 @@ export const ContractDetailPage = () => {
           <AssessExtraTasks tasks={extraTasks} opportunityId={contract?.opportunity?.id} />
         </div>
       )}
+
+      <ContractServicesModal
+        isOpen={isServicesModalOpen}
+        onClose={() => setIsServicesModalOpen(false)}
+        contractServices={contract.services || []}
+      />
     </div>
   );
 };
