@@ -3,6 +3,7 @@ import { useChatStore } from "../../store/useChatStore";
 import { useGetMeQuery } from "../../api/auth";
 import { ChatSidebar } from "../../components/chat/ChatSidebar";
 import { ChatWorkspace } from "../../components/chat/ChatWorkspace";
+import { ChatInfoSidebar } from "../../components/chat/ChatInfoSidebar";
 import { ChatGroupModal } from "../../components/chat/ChatGroupModal";
 import { ChatAddMembersModal } from "../../components/chat/ChatAddMembersModal";
 import axios from "axios";
@@ -32,6 +33,12 @@ export function ChatPage() {
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [showAddMembersModal, setShowAddMembersModal] = useState(false);
     const [systemUsers, setSystemUsers] = useState([]);
+    const [showInfoSidebar, setShowInfoSidebar] = useState(false);
+
+    // Reset Info Sidebar to closed when changing room
+    useEffect(() => {
+        setShowInfoSidebar(false);
+    }, [activeRoom?.id]);
 
     useEffect(() => {
         if (selfUserId) {
@@ -111,7 +118,20 @@ export function ChatPage() {
                 onTyping={handleTyping}
                 onAddMembersClick={() => setShowAddMembersModal(true)}
                 getRoomName={getRoomName}
+                showInfo={showInfoSidebar}
+                onToggleInfo={() => setShowInfoSidebar(!showInfoSidebar)}
             />
+
+            {/* 2.5. CHAT INFO SIDEBAR */}
+            {showInfoSidebar && activeRoom && (
+                <ChatInfoSidebar
+                    activeRoom={activeRoom}
+                    selfUserId={selfUserId}
+                    onlineUsers={onlineUsers}
+                    getRoomName={getRoomName}
+                    onClose={() => setShowInfoSidebar(false)}
+                />
+            )}
 
             {/* 3. MODAL: Create Group Chat */}
             <ChatGroupModal

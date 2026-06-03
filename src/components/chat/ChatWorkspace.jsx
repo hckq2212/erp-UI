@@ -14,7 +14,9 @@ export function ChatWorkspace({
     onSendMessage,
     onTyping,
     onAddMembersClick,
-    getRoomName
+    getRoomName,
+    showInfo = false,
+    onToggleInfo
 }) {
     const { fetchMoreMessages, loadingMoreMessages, hasMoreMessages } = useChatStore();
     const scrollContainerRef = useRef(null);
@@ -117,7 +119,7 @@ export function ChatWorkspace({
     return (
         <div className="flex-1 flex flex-col overflow-hidden bg-white">
             {/* Room Header */}
-            <div className="px-6 py-3.5 bg-white border-b border-gray-100 flex items-center justify-between shadow-sm flex-shrink-0">
+            <div className="px-6 py-3.5 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="relative">
                         <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-bold text-sm text-[#0084ff]">
@@ -130,10 +132,10 @@ export function ChatWorkspace({
                     <div className="flex flex-col">
                         <span className="text-[15px] font-bold text-[#050505]">{getRoomName(activeRoom)}</span>
                         <span className="text-[11px] text-gray-500 font-medium">
-                            {activeRoom.isGroup 
+                            {activeRoom.isGroup
                                 ? `${activeRoom.participants?.length || 0} thành viên`
-                                : isOnline 
-                                    ? "Đang hoạt động" 
+                                : isOnline
+                                    ? "Đang hoạt động"
                                     : "Ngoại tuyến"
                             }
                         </span>
@@ -148,7 +150,7 @@ export function ChatWorkspace({
                     <button className="text-[#0084ff] hover:text-[#0073de] transition-colors p-1.5 rounded-full hover:bg-gray-100">
                         <Video className="w-5 h-5 fill-current" />
                     </button>
-                    
+
                     {activeRoom.isGroup && (
                         <button
                             onClick={onAddMembersClick}
@@ -158,15 +160,23 @@ export function ChatWorkspace({
                             <Plus className="w-5 h-5" />
                         </button>
                     )}
-                    
-                    <button className="text-[#0084ff] hover:text-[#0073de] transition-colors p-1.5 rounded-full hover:bg-gray-100">
-                        <Info className="w-5 h-5 fill-current" />
+
+                    <button 
+                        onClick={onToggleInfo}
+                        className={`transition-colors p-1.5 rounded-full ${
+                            showInfo 
+                                ? "bg-[#eaf4ff] text-[#0084ff]" 
+                                : "text-[#0084ff] hover:text-[#0073de] hover:bg-gray-100"
+                        }`}
+                        title="Thông tin về cuộc trò chuyện"
+                    >
+                        <Info className={`w-5 h-5 ${showInfo ? "fill-current" : ""}`} />
                     </button>
                 </div>
             </div>
 
             {/* Messages Area */}
-            <div 
+            <div
                 ref={scrollContainerRef}
                 onScroll={handleScroll}
                 className="flex-1 overflow-y-auto px-6 py-4 flex flex-col bg-white"
