@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-export function ChatMessageItem({ 
-    message, 
-    isMe, 
-    showSenderName = true, 
-    showAvatar = true, 
-    isConsecutive = false 
+export function ChatMessageItem({
+    message,
+    isMe,
+    showSenderName = true,
+    showAvatar = true,
+    isConsecutive = false
 }) {
     const navigate = useNavigate();
     const [resolvingTag, setResolvingTag] = useState(false);
@@ -34,11 +34,10 @@ export function ChatMessageItem({
                     type="button"
                     onClick={() => handleTagClick(taskCode)}
                     disabled={resolvingTag}
-                    className={`inline-flex items-center px-1.5 py-0.5 mx-0.5 font-mono font-bold text-xs rounded-full border transition-all cursor-pointer disabled:opacity-50 ${
-                        isMe 
-                            ? "bg-white/20 hover:bg-white/30 text-white border-white/30" 
+                    className={`inline-flex items-center px-1.5 py-0.5 mx-0.5 font-mono font-bold text-xs rounded-full border transition-all cursor-pointer disabled:opacity-50 ${isMe
+                            ? "bg-white/20 hover:bg-white/30 text-white border-white/30"
                             : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-250"
-                    }`}
+                        }`}
                 >
                     {taskCode}
                 </button>
@@ -97,11 +96,11 @@ export function ChatMessageItem({
                 </span>
 
                 {/* Bubble */}
-                <div 
+                <div
                     className="px-4 py-2 bg-[#0084ff] text-white shadow-sm rounded-[18px] text-sm font-sans whitespace-pre-wrap leading-relaxed max-w-[85%]"
                 >
                     {renderParsedContent(message.content)}
-                    
+
                     {/* Attachments */}
                     {message.attachments && message.attachments.length > 0 && (
                         <div className="mt-2 flex flex-col gap-1 border-t border-white/20 pt-2">
@@ -144,7 +143,7 @@ export function ChatMessageItem({
 
                 {/* Row containing bubble and time */}
                 <div className="flex items-center gap-2.5 w-full">
-                    <div 
+                    <div
                         className="px-4 py-2 bg-[#f0f2f5] text-slate-800 shadow-sm rounded-[18px] text-sm font-sans whitespace-pre-wrap leading-relaxed max-w-[85%]"
                     >
                         {renderParsedContent(message.content)}

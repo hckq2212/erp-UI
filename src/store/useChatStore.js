@@ -94,7 +94,7 @@ export const useChatStore = create((set, get) => ({
                 newUnread[message.roomId] = true;
             }
 
-            set({ 
+            set({
                 rooms: sortedRooms,
                 unreadRooms: newUnread
             });
@@ -170,8 +170,8 @@ export const useChatStore = create((set, get) => ({
         try {
             const response = await chatAxios.get(`/chat-rooms/${roomId}/messages?limit=50`);
             const fetchedMessages = response.data || [];
-            set({ 
-                messages: fetchedMessages, 
+            set({
+                messages: fetchedMessages,
                 loadingMessages: false,
                 hasMoreMessages: fetchedMessages.length === 50
             });
@@ -192,7 +192,7 @@ export const useChatStore = create((set, get) => ({
             const oldestMessageId = messages[0].id;
             const response = await chatAxios.get(`/chat-rooms/${activeRoom.id}/messages?limit=50&cursor=${oldestMessageId}`);
             const newMessages = response.data || [];
-            
+
             set({
                 messages: [...newMessages, ...messages],
                 loadingMoreMessages: false,
@@ -209,7 +209,7 @@ export const useChatStore = create((set, get) => ({
     // Select active room and join socket room
     selectRoom: (room) => {
         const { socket, activeRoom, unreadRooms } = get();
-        
+
         if (activeRoom && socket) {
             socket.emit("leave_room", activeRoom.id);
         }
@@ -217,21 +217,21 @@ export const useChatStore = create((set, get) => ({
         const newUnread = { ...unreadRooms };
         if (room) {
             newUnread[room.id] = false;
-            
+
             // Call backend API to mark as read in database persistently
             chatAxios.post(`/chat-rooms/${room.id}/read`).catch(err => {
                 console.error("Failed to mark room as read on server:", err);
             });
         }
 
-        set({ 
-            activeRoom: room, 
-            messages: [], 
+        set({
+            activeRoom: room,
+            messages: [],
             unreadRooms: newUnread,
             hasMoreMessages: true,
             loadingMoreMessages: false
         });
-        
+
         if (room) {
             get().fetchMessages(room.id);
             if (socket) {
@@ -271,10 +271,10 @@ export const useChatStore = create((set, get) => ({
                 isGroup: false,
                 recipientId
             });
-            
+
             // Re-fetch rooms
             await get().fetchRooms();
-            
+
             // Find and select the created room
             const createdRoom = response.data;
             get().selectRoom(createdRoom);

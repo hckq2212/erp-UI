@@ -144,12 +144,12 @@ export function ChatWorkspace({
 
                 {/* Messenger Top Header Action Tools */}
                 <div className="flex items-center gap-4">
-                    <button className="text-[#0084ff] hover:text-[#0073de] transition-colors p-1.5 rounded-full hover:bg-gray-100">
+                    {/* <button className="text-[#0084ff] hover:text-[#0073de] transition-colors p-1.5 rounded-full hover:bg-gray-100">
                         <Phone className="w-5 h-5 fill-current" />
                     </button>
                     <button className="text-[#0084ff] hover:text-[#0073de] transition-colors p-1.5 rounded-full hover:bg-gray-100">
                         <Video className="w-5 h-5 fill-current" />
-                    </button>
+                    </button> */}
 
                     {activeRoom.isGroup && (
                         <button
@@ -161,16 +161,15 @@ export function ChatWorkspace({
                         </button>
                     )}
 
-                    <button 
+                    <button
                         onClick={onToggleInfo}
-                        className={`transition-colors p-1.5 rounded-full ${
-                            showInfo 
-                                ? "bg-[#eaf4ff] text-[#0084ff]" 
-                                : "text-[#0084ff] hover:text-[#0073de] hover:bg-gray-100"
-                        }`}
+                        className={`transition-colors p-1.5 rounded-full ${showInfo
+                            ? "bg-[#eaf4ff] text-[#0084ff]"
+                            : "text-[#0084ff] hover:text-[#0073de] hover:bg-gray-100"
+                            }`}
                         title="Thông tin về cuộc trò chuyện"
                     >
-                        <Info className={`w-5 h-5 ${showInfo ? "fill-current" : ""}`} />
+                        <Info className={`w-5 h-5`} />
                     </button>
                 </div>
             </div>

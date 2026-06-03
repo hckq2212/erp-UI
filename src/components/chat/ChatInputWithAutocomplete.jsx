@@ -27,7 +27,7 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping }) {
                     params: { q: searchQuery, limit: 10 },
                     withCredentials: true
                 });
-                
+
                 const taskItems = response.data.data || [];
                 setSuggestions(taskItems);
                 setActiveSuggestionIndex(0);
@@ -46,7 +46,7 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping }) {
         if (onTyping) {
             onTyping(true);
             if (typingTimeout) clearTimeout(typingTimeout);
-            
+
             const timeout = setTimeout(() => {
                 onTyping(false);
             }, 2000);
@@ -55,9 +55,9 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping }) {
 
         const cursorIdx = e.target.selectionStart;
         const textBeforeCursor = val.slice(0, cursorIdx);
-        
+
         const lastAtIdx = textBeforeCursor.lastIndexOf("@");
-        
+
         if (lastAtIdx !== -1 && (lastAtIdx === 0 || /\s/.test(textBeforeCursor[lastAtIdx - 1]))) {
             const currentQuery = textBeforeCursor.slice(lastAtIdx + 1);
             if (!/\s/.test(currentQuery)) {
@@ -67,7 +67,7 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping }) {
                 return;
             }
         }
-        
+
         setShowSuggestions(false);
     };
 
@@ -77,14 +77,14 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping }) {
         const val = text;
         const textBeforeAt = val.slice(0, triggerIdx);
         const textAfterCursor = val.slice(inputRef.current.selectionStart);
-        
+
         const insertText = `@{${task.code}} `;
         const newText = textBeforeAt + insertText + textAfterCursor;
-        
+
         setText(newText);
         setShowSuggestions(false);
         setTriggerIdx(-1);
-        
+
         setTimeout(() => {
             if (inputRef.current) {
                 inputRef.current.focus();
@@ -138,7 +138,7 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping }) {
         <div className="relative w-full flex flex-col bg-white px-4 py-3 border-t border-gray-100">
             {/* Autocomplete suggestion dropup */}
             {showSuggestions && suggestions.length > 0 && (
-                <div 
+                <div
                     ref={suggestionsRef}
                     className="absolute left-16 bottom-full mb-2 w-72 max-h-48 overflow-y-auto bg-white border border-gray-200 shadow-2xl rounded-2xl z-50 divide-y divide-gray-100"
                 >
@@ -147,11 +147,10 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping }) {
                             key={task.id}
                             type="button"
                             onClick={() => handleSelectSuggestion(task)}
-                            className={`w-full text-left px-4 py-2 text-xs flex flex-col transition-colors ${
-                                idx === activeSuggestionIndex 
-                                    ? "bg-emerald-50 text-emerald-700" 
+                            className={`w-full text-left px-4 py-2 text-xs flex flex-col transition-colors ${idx === activeSuggestionIndex
+                                    ? "bg-emerald-50 text-emerald-700"
                                     : "text-slate-600 hover:bg-gray-50 hover:text-slate-900"
-                            }`}
+                                }`}
                         >
                             <span className="font-mono font-bold text-emerald-600">{task.code}</span>
                             <span className="truncate mt-0.5 text-[10px] text-gray-400">{task.name}</span>
@@ -195,11 +194,10 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping }) {
                     type="button"
                     onClick={handleSubmit}
                     disabled={!text.trim()}
-                    className={`p-1.5 flex-shrink-0 transition-colors ${
-                        text.trim() 
-                            ? "text-[#0084ff] hover:text-[#0073de]" 
+                    className={`p-1.5 flex-shrink-0 transition-colors ${text.trim()
+                            ? "text-[#0084ff] hover:text-[#0073de]"
                             : "text-gray-300 cursor-not-allowed"
-                    }`}
+                        }`}
                 >
                     <SendHorizontal className="w-[20px] h-[20px]" />
                 </button>
