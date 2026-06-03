@@ -33,8 +33,6 @@ export function ChatPage() {
     const [showAddMembersModal, setShowAddMembersModal] = useState(false);
     const [systemUsers, setSystemUsers] = useState([]);
 
-    const messagesEndRef = useRef(null);
-
     useEffect(() => {
         if (selfUserId) {
             initSocket(null, selfUserId);
@@ -49,10 +47,6 @@ export function ChatPage() {
             disconnectSocket();
         };
     }, []);
-
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages, typingUsers]);
 
     const loadSystemUsers = async () => {
         try {
@@ -117,7 +111,6 @@ export function ChatPage() {
                 onTyping={handleTyping}
                 onAddMembersClick={() => setShowAddMembersModal(true)}
                 getRoomName={getRoomName}
-                messagesEndRef={messagesEndRef}
             />
 
             {/* 3. MODAL: Create Group Chat */}

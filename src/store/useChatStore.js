@@ -21,6 +21,8 @@ export const useChatStore = create((set, get) => ({
     typingUsers: {}, // roomId -> { userId: username }
     loadingRooms: false,
     loadingMessages: false,
+    hasMoreMessages: true,
+    loadingMoreMessages: false,
 
     selfUserId: null,
     unreadRooms: {}, // roomId -> boolean
@@ -164,13 +166,43 @@ export const useChatStore = create((set, get) => ({
 
     // Fetch messages for a room
     fetchMessages: async (roomId) => {
-        set({ loadingMessages: true });
+        set({ loadingMessages: true, hasMoreMessages: true, loadingMoreMessages: false });
         try {
-            const response = await chatAxios.get(`/chat-rooms/${roomId}/messages`);
-            set({ messages: response.data, loadingMessages: false });
+            const response = await chatAxios.get(`/chat-rooms/${roomId}/messages?limit=50`);
+            const fetchedMessages = response.data || [];
+            set({ 
+                messages: fetchedMessages, 
+                loadingMessages: false,
+                hasMoreMessages: fetchedMessages.length === 50
+            });
         } catch (error) {
             console.error("Error fetching messages:", error);
             set({ loadingMessages: false });
+        }
+    },
+
+    // Fetch older messages (pagination)
+    fetchMoreMessages: async () => {
+        const { activeRoom, messages, loadingMoreMessages, hasMoreMessages } = get();
+        if (!activeRoom || loadingMoreMessages || !hasMoreMessages) return 0;
+        if (messages.length === 0) return 0;
+
+        set({ loadingMoreMessages: true });
+        try {
+            const oldestMessageId = messages[0].id;
+            const response = await chatAxios.get(`/chat-rooms/${activeRoom.id}/messages?limit=50&cursor=${oldestMessageId}`);
+            const newMessages = response.data || [];
+            
+            set({
+                messages: [...newMessages, ...messages],
+                loadingMoreMessages: false,
+                hasMoreMessages: newMessages.length === 50
+            });
+            return newMessages.length;
+        } catch (error) {
+            console.error("Error fetching more messages:", error);
+            set({ loadingMoreMessages: false });
+            return 0;
         }
     },
 
@@ -192,7 +224,13 @@ export const useChatStore = create((set, get) => ({
             });
         }
 
-        set({ activeRoom: room, messages: [], unreadRooms: newUnread });
+        set({ 
+            activeRoom: room, 
+            messages: [], 
+            unreadRooms: newUnread,
+            hasMoreMessages: true,
+            loadingMoreMessages: false
+        });
         
         if (room) {
             get().fetchMessages(room.id);

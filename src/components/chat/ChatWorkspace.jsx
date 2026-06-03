@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useRef, useEffect, useLayoutEffect } from "react";
 import { Phone, Video, Info, Users as UsersIcon, Plus } from "lucide-react";
 import { ChatMessageItem } from "./ChatMessageItem";
 import { ChatInputWithAutocomplete } from "./ChatInputWithAutocomplete";
+import { useChatStore } from "../../store/useChatStore";
 
 export function ChatWorkspace({
     activeRoom,
@@ -13,9 +14,73 @@ export function ChatWorkspace({
     onSendMessage,
     onTyping,
     onAddMembersClick,
-    getRoomName,
-    messagesEndRef
+    getRoomName
 }) {
+    const { fetchMoreMessages, loadingMoreMessages, hasMoreMessages } = useChatStore();
+    const scrollContainerRef = useRef(null);
+    const prevScrollHeightRef = useRef(0);
+    const prevMessagesLengthRef = useRef(0);
+    const hasScrolledToBottomForRoomRef = useRef(null);
+
+    // Initial load: scroll to bottom when room messages finish loading
+    useEffect(() => {
+        if (activeRoom && !loadingMessages) {
+            if (hasScrolledToBottomForRoomRef.current !== activeRoom.id) {
+                if (scrollContainerRef.current) {
+                    const container = scrollContainerRef.current;
+                    container.scrollTop = container.scrollHeight;
+                    hasScrolledToBottomForRoomRef.current = activeRoom.id;
+                    prevMessagesLengthRef.current = messages.length;
+                    prevScrollHeightRef.current = container.scrollHeight;
+                }
+            }
+        }
+    }, [activeRoom, loadingMessages, messages.length]);
+
+    // Handle auto-scroll on new messages at the bottom
+    useEffect(() => {
+        if (!scrollContainerRef.current || messages.length === 0) return;
+        const container = scrollContainerRef.current;
+        const isNearBottom = container.scrollHeight - container.clientHeight - container.scrollTop < 150;
+        const lastMessage = messages[messages.length - 1];
+        const isMyMessage = lastMessage?.senderId === selfUserId;
+
+        if (isMyMessage || isNearBottom) {
+            container.scrollTop = container.scrollHeight;
+        }
+    }, [messages, selfUserId]);
+
+    // Scroll Anchoring: adjust scrollTop when older messages are prepended
+    useLayoutEffect(() => {
+        if (!scrollContainerRef.current) return;
+        const container = scrollContainerRef.current;
+        const prevLength = prevMessagesLengthRef.current;
+        const currentLength = messages.length;
+
+        if (currentLength > prevLength && prevLength > 0) {
+            const firstOldMessage = messages[currentLength - prevLength];
+            const firstNewMessage = messages[0];
+
+            if (firstNewMessage?.id !== firstOldMessage?.id) {
+                const deltaHeight = container.scrollHeight - prevScrollHeightRef.current;
+                container.scrollTop = container.scrollTop + deltaHeight;
+            }
+        }
+
+        prevScrollHeightRef.current = container.scrollHeight;
+        prevMessagesLengthRef.current = currentLength;
+    }, [messages]);
+
+    // Infinite scroll triggering
+    const handleScroll = async () => {
+        if (!scrollContainerRef.current) return;
+        const container = scrollContainerRef.current;
+
+        if (container.scrollTop <= 5 && hasMoreMessages && !loadingMoreMessages && messages.length > 0) {
+            prevScrollHeightRef.current = container.scrollHeight;
+            await fetchMoreMessages();
+        }
+    };
     const getOtherParticipant = (room) => {
         return room.participants?.find(p => p.userId !== selfUserId)?.user;
     };
@@ -101,7 +166,16 @@ export function ChatWorkspace({
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col bg-white">
+            <div 
+                ref={scrollContainerRef}
+                onScroll={handleScroll}
+                className="flex-1 overflow-y-auto px-6 py-4 flex flex-col bg-white"
+            >
+                {loadingMoreMessages && (
+                    <div className="text-center py-2 text-xs text-slate-400 font-mono animate-pulse">
+                        ĐANG TẢI TIN NHẮN CŨ HƠN...
+                    </div>
+                )}
                 {loadingMessages ? (
                     <div className="flex-1 flex items-center justify-center text-xs text-slate-400 font-mono animate-pulse">
                         ĐANG TẢI LỊCH SỬ...
@@ -131,7 +205,6 @@ export function ChatWorkspace({
                         );
                     })
                 )}
-                <div ref={messagesEndRef} />
             </div>
 
             {/* Typing indicators */}

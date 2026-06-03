@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, SquarePen, Users as UsersIcon } from "lucide-react";
+import { Search, Plus, Users as UsersIcon } from "lucide-react";
 import { useGetUsersQuery } from "../../api/users";
 import { useChatStore } from "../../store/useChatStore";
 
@@ -95,7 +95,7 @@ export function ChatSidebar({
                         className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-slate-800"
                         title="Tạo nhóm mới"
                     >
-                        <SquarePen className="w-5 h-5" />
+                        <Plus className="w-5 h-5" />
                     </button>
                 </div>
 
@@ -146,24 +146,22 @@ export function ChatSidebar({
                                 </div>
                                 <div className="flex-1 min-w-0 flex flex-row items-center justify-between gap-2">
                                     <div className="flex-1 min-w-0 flex flex-col">
-                                        <span className={`text-[14px] truncate ${
-                                            isActive 
-                                                ? "text-[#0084ff] font-bold" 
-                                                : isUnread 
-                                                    ? "text-[#050505] font-black" 
-                                                    : "text-[#050505] font-semibold"
-                                        }`}>
+                                        <span className={`text-[14px] truncate ${isActive
+                                            ? "text-[#0084ff] font-bold"
+                                            : isUnread
+                                                ? "text-[#050505] font-black"
+                                                : "text-[#050505] font-semibold"
+                                            }`}>
                                             {item.name}
                                         </span>
-                                        <span className={`text-[12px] truncate mt-0.5 ${
-                                            isUnread 
-                                                ? "text-slate-950 font-bold" 
-                                                : "text-gray-550"
-                                        }`}>
+                                        <span className={`text-[12px] truncate mt-0.5 ${isUnread
+                                            ? "text-slate-950 font-bold"
+                                            : "text-gray-550"
+                                            }`}>
                                             {item.latestMessage}
                                         </span>
                                     </div>
-                                    
+
                                     {isUnread && (
                                         <span className="w-2.5 h-2.5 bg-[#0084ff] rounded-full flex-shrink-0" />
                                     )}
