@@ -152,9 +152,7 @@ export const CreateServicePackageModal = ({ isOpen, onClose }) => {
             <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in duration-200">
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-3xl">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-                            <Package className="w-6 h-6" />
-                        </div>
+
                         <div>
                             <h3 className="text-xl font-bold text-gray-900 uppercase">Thêm Gói dịch vụ mới</h3>
                             <p className="text-sm text-gray-500 font-medium">Định nghĩa tập hợp các dịch vụ mẫu</p>
@@ -273,9 +271,6 @@ export const CreateServicePackageModal = ({ isOpen, onClose }) => {
                                     <div className="flex flex-col">
                                         <span className="text-[10px] font-black uppercase tracking-widest opacity-70">Tổng giá trị gói</span>
                                         <span className="text-2xl font-black">{formatCurrency(totalPackagePrice)}</span>
-                                    </div>
-                                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-                                        <CheckCircle2 className="w-6 h-6" />
                                     </div>
                                 </div>
                             </div>

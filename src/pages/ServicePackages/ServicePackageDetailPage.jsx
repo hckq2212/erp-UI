@@ -138,7 +138,7 @@ export const ServicePackageDetailPage = () => {
     };
 
     return (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6 pb-20 max-w-5xl mx-auto">
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6 pb-20 mt-3 mx-auto">
             {/* Navigation & Actions */}
             <div className="flex items-center justify-between">
                 <button
@@ -207,9 +207,6 @@ export const ServicePackageDetailPage = () => {
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
                         <div className="flex items-center gap-4 mb-8">
-                            <div className="p-4 bg-blue-600 rounded-3xl text-white shadow-xl shadow-blue-200">
-                                <Package className="w-8 h-8" />
-                            </div>
                             <div>
                                 <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
                                     {packageData.name}
@@ -306,9 +303,6 @@ export const ServicePackageDetailPage = () => {
                                                         </select>
                                                     ) : (
                                                         <div className="flex items-center gap-3">
-                                                            <div className="p-2 bg-blue-50 rounded-lg">
-                                                                <CheckCircle2 className="w-4 h-4 text-blue-500" />
-                                                            </div>
                                                             <p className="font-bold text-gray-700 uppercase text-xs tracking-tight">
                                                                 {item.service?.name || serviceInfo?.name || 'Dịch vụ không xác định'}
                                                             </p>
