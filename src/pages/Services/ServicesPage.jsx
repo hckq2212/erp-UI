@@ -36,10 +36,17 @@ export const ServicesPage = () => {
 
     const handleCopy = async (service) => {
         try {
-            const { id, createdAt, updatedAt, ...copyData } = service;
+            const { id, createdAt, updatedAt, serviceJobs, ...rest } = service;
+            
+            // Map serviceJobs to jobIds and outputJobIds to create new associations
+            const jobIds = serviceJobs ? serviceJobs.map(sj => sj.jobId) : [];
+            const outputJobIds = serviceJobs ? serviceJobs.filter(sj => sj.isOutput).map(sj => sj.jobId) : [];
+
             await createService({
-                ...copyData,
-                name: `${service.name} (Copy)`
+                ...rest,
+                name: `${service.name} (Copy)`,
+                jobIds,
+                outputJobIds
             }).unwrap();
             toast.success('Đã sao chép dịch vụ');
         } catch (err) {
