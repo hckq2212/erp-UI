@@ -241,7 +241,7 @@ export const ServiceDetailPage = () => {
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                             <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                                 <List className="h-5 w-5 text-green-600" />
-                                Hạng mục công việc ({service.jobs?.length || 0})
+                                Hạng mục công việc
                             </h2>
                             <Button onClick={() => setIsAddJobModalOpen(true)} size="sm">
                                 <Plus className="h-4 w-4 mr-2" />
