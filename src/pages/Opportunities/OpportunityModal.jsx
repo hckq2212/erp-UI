@@ -460,9 +460,9 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
     // Validate start date after today
     const today = new Date().toISOString().split('T')[0];
-    if (formData.startDate && formData.startDate <= today) {
-      newErrors.startDate = 'Dự kiến bắt đầu phải sau ngày hiện tại';
-    }
+    // if (formData.startDate && formData.startDate <= today) {
+    //   newErrors.startDate = 'Dự kiến bắt đầu phải sau ngày hiện tại';
+    // }
 
     // Validate selected services & packages
     const hasSelectedPackage = selectedPackages.some(pkg => !!pkg.servicePackageId);
