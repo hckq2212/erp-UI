@@ -8,12 +8,59 @@ import {
 import { useGetServicesQuery } from '../../api/services';
 import {
     ArrowLeft, Package, Trash2, Plus, Save,
-    Info, List, CheckCircle2, AlertCircle
+    Info, List, CheckCircle2, AlertCircle,
+    ChevronRight, ChevronDown
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { toast } from 'react-toastify';
 import { formatCurrency } from '../../utils/format';
+import Select from 'react-select';
+
+const selectStyles = {
+    control: (base) => ({
+        ...base,
+        borderRadius: '1rem',
+        padding: '2px 4px',
+        border: '1px solid #e5e7eb',
+        backgroundColor: '#f9fafb',
+        boxShadow: 'none',
+        fontSize: '0.875rem',
+        fontWeight: '700',
+        color: '#374151',
+        minWidth: '220px',
+        '&:hover': {
+            border: '1px solid #3b82f6'
+        }
+    }),
+    option: (base, state) => ({
+        ...base,
+        fontSize: '0.875rem',
+        fontWeight: '700',
+        backgroundColor: state.isSelected ? '#2563eb' : state.isFocused ? '#eff6ff' : 'white',
+        color: state.isSelected ? 'white' : '#374151',
+        cursor: 'pointer',
+    }),
+    menuPortal: (base) => ({
+        ...base,
+        zIndex: 9999,
+    }),
+    menu: (base) => ({
+        ...base,
+        borderRadius: '1rem',
+        overflow: 'hidden',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        border: '1px solid #e5e7eb',
+    }),
+    placeholder: (base) => ({
+        ...base,
+        color: '#9ca3af',
+    }),
+    singleValue: (base) => ({
+        ...base,
+        color: '#374151',
+    })
+};
 
 export const ServicePackageDetailPage = () => {
     const { id } = useParams();
@@ -32,6 +79,32 @@ export const ServicePackageDetailPage = () => {
         description: '',
         items: []
     });
+    const [expandedRows, setExpandedRows] = useState({});
+
+    const toggleExpandRow = (index) => {
+        setExpandedRows(prev => ({
+            ...prev,
+            [index]: !prev[index]
+        }));
+    };
+
+    const selectedIds = useMemo(() =>
+        formData.items.map(item => item.serviceId).filter(Boolean),
+        [formData.items]);
+
+    const getServiceOptions = (currentIndex) => {
+        const currentId = formData.items[currentIndex].serviceId;
+        const otherSelectedIds = selectedIds.filter(id => String(id) !== String(currentId));
+
+        return services
+            .filter(s => !otherSelectedIds.some(id => String(id) === String(s.id)))
+            .map(s => ({
+                value: s.id,
+                label: s.name,
+                price: s.costPrice,
+                service: s
+            }));
+    };
 
     const calculatedTotalPrice = useMemo(() => {
         const itemsToUse = isEditing ? formData.items : packageData?.items || [];
@@ -290,49 +363,81 @@ export const ServicePackageDetailPage = () => {
                                         return (
                                             <tr key={index} className="hover:bg-gray-50/50 transition-colors group">
                                                 <td className="px-8 py-5">
-                                                    {isEditing ? (
-                                                        <select
-                                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-bold text-gray-700"
-                                                            value={item.serviceId}
-                                                            onChange={(e) => handleItemChange(index, 'serviceId', e.target.value)}
-                                                        >
-                                                            <option value="">-- Chọn dịch vụ --</option>
-                                                            {services.map(s => (
-                                                                <option key={s.id} value={s.id}>{s.name}</option>
-                                                            ))}
-                                                        </select>
-                                                    ) : (
-                                                        <div className="flex items-center gap-3">
-                                                            <p className="font-bold text-gray-700 uppercase text-xs tracking-tight">
-                                                                {item.service?.name || serviceInfo?.name || 'Dịch vụ không xác định'}
-                                                            </p>
-                                                        </div>
-                                                    )}
+                                                    {(() => {
+                                                        const jobs = serviceInfo?.serviceJobs || item.service?.serviceJobs || [];
+                                                        const hasJobs = jobs.length > 0;
+                                                        const isExpanded = !!expandedRows[index];
+
+                                                        return (
+                                                            <div className="flex items-start gap-2">
+                                                                {hasJobs ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => toggleExpandRow(index)}
+                                                                        className={`p-1 hover:bg-gray-100 text-gray-400 hover:text-gray-700 rounded-lg transition-colors ${isEditing ? 'mt-2.5' : 'mt-0.5'}`}
+                                                                    >
+                                                                        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                                                    </button>
+                                                                ) : (
+                                                                    <div className="w-6 flex-shrink-0" />
+                                                                )}
+                                                                <div className="flex-1 flex flex-col">
+                                                                    {isEditing ? (
+                                                                        <Select
+                                                                            options={getServiceOptions(index)}
+                                                                            value={getServiceOptions(index).find(opt => String(opt.value) === String(item.serviceId)) || null}
+                                                                            onChange={(val) => handleItemChange(index, 'serviceId', val ? val.value : '')}
+                                                                            placeholder="-- Chọn dịch vụ --"
+                                                                            isClearable
+                                                                            isSearchable
+                                                                            styles={selectStyles}
+                                                                            menuPortalTarget={document.body}
+                                                                            menuPosition="fixed"
+                                                                            noOptionsMessage={() => "Không tìm thấy dịch vụ"}
+                                                                        />
+                                                                    ) : (
+                                                                        <p className="font-bold text-gray-700 uppercase text-xs tracking-tight mt-1">
+                                                                            {item.service?.name || serviceInfo?.name || 'Dịch vụ không xác định'}
+                                                                        </p>
+                                                                    )}
+                                                                    {isExpanded && hasJobs && (
+                                                                        <ul className="mt-2 space-y-1.5 pl-4 border-l-2 border-gray-100">
+                                                                            {jobs.map((sj, jIdx) => (
+                                                                                <li key={jIdx} className="text-gray-500 text-[11px] font-semibold list-disc ml-3">
+                                                                                    {sj.job?.name || 'Hạng mục không xác định'} {sj.quantity > 1 ? `(x${sj.quantity})` : ''}
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </td>
                                                 <td className="px-8 py-5">
                                                     <div className="text-center font-medium text-gray-600 text-sm">
                                                         {formatCurrency(serviceInfo?.costPrice || 0)}
                                                     </div>
                                                 </td>
-                                                <td className="px-8 py-5">
+                                                <td className="px-3 py-2">
                                                     <div className="flex justify-center">
                                                         {isEditing ? (
                                                             <div className="relative">
                                                                 <input
                                                                     type="number"
                                                                     min="1"
-                                                                    className="w-24 px-4 py-3 pr-10 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm font-bold text-center"
+                                                                    className="w-24 px-4 py-3 pr-10 text-sm text-center"
                                                                     value={item.defaultQuantity}
                                                                     onChange={(e) => handleItemChange(index, 'defaultQuantity', e.target.value)}
                                                                 />
                                                                 {serviceInfo?.unit && (
-                                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 pointer-events-none uppercase">
+                                                                    <span className=" text-[8px] font-bold text-gray-400 ">
                                                                         {serviceInfo.unit}
                                                                     </span>
                                                                 )}
                                                             </div>
                                                         ) : (
-                                                            <span className="px-4 py-1.5 bg-gray-100 text-gray-600 rounded-xl font-black text-sm">
+                                                            <span className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-xl font-semibold text-sm">
                                                                 {item.defaultQuantity} {item.service?.unit || serviceInfo?.unit}
                                                             </span>
                                                         )}

@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { Pagination } from '../../components/ui/Pagination';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { CreateServicePackageModal } from './CreateServicePackageModal';
+import { formatCurrency } from '../../utils/format';
 
 export const ServicePackageListPage = () => {
     const navigate = useNavigate();
@@ -94,6 +95,9 @@ export const ServicePackageListPage = () => {
                                 </h3>
                                 <p className="text-sm text-gray-500 line-clamp-2 min-h-[2.5rem] leading-relaxed ">
                                     {pkg.description || 'Không có mô tả'}
+                                </p>
+                                <p className="text-lg text-gray-800 font-bold group-hover:text-blue-600 transition-colors uppercase ">
+                                    {formatCurrency(pkg?.price)}
                                 </p>
                             </div>
 
