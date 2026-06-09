@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Trash2, Calendar, User, Users, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell } from 'lucide-react';
-import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation } from '../../api/tasks';
+import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetMeQuery } from '../../api/auth';
 import { formatDate, formatDateTime } from '../../utils/format';
@@ -26,11 +26,35 @@ export const TaskDetailPage = () => {
     const [requestRework, { isLoading: isRequestingRework }] = useRequestReworkMutation();
     const [approveByCustomer, { isLoading: isApprovingByCustomer }] = useApproveByCustomerMutation();
     const [sendReminder, { isLoading: isSendingReminder }] = useSendTaskReminderMutation();
+    const [updateTask, { isLoading: isUpdatingTask }] = useUpdateTaskMutation();
 
     const isLoading = isTaskLoading || !user;
 
     const [isReworkModalOpen, setIsReworkModalOpen] = useState(false);
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [isEditingDescription, setIsEditingDescription] = useState(false);
+    const [editedDescription, setEditedDescription] = useState('');
+
+    const canEditDescription = user?.role === 'ADMIN' || user?.role === 'BOD' || user?.id === task?.project?.team?.teamLead?.id;
+
+    const handleStartEditDescription = () => {
+        setEditedDescription(task?.description || '');
+        setIsEditingDescription(true);
+    };
+
+    const handleSaveDescription = async () => {
+        try {
+            await updateTask({
+                id,
+                description: editedDescription,
+                projectId: task?.project?.id
+            }).unwrap();
+            toast.success('Cập nhật mô tả thành công!');
+            setIsEditingDescription(false);
+        } catch (err) {
+            toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi cập nhật mô tả');
+        }
+    };
     const [requestSupport] = useRequestSupportMutation();
     const [respondToSupport] = useRespondToSupportMutation();
     const [returnSupport] = useReturnSupportMutation();
@@ -347,17 +371,56 @@ export const TaskDetailPage = () => {
                 <div className="lg:col-span-2 space-y-8">
                     {/* Description Section */}
                     <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-                                <FileText className="w-5 h-5" />
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                                    <FileText className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-xl font-bold text-gray-900 tracking-tight">Mô tả & Ghi chú</h2>
                             </div>
-                            <h2 className="text-xl font-bold text-gray-900 tracking-tight">Mô tả & Ghi chú</h2>
+                            {canEditDescription && !isEditingDescription && (
+                                <button
+                                    onClick={handleStartEditDescription}
+                                    className="flex items-center gap-1.5 py-1.5 px-3 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    title="Chỉnh sửa mô tả"
+                                >
+                                    <Edit className="w-4 h-4" /> Chỉnh sửa
+                                </button>
+                            )}
                         </div>
-                        <div className="prose prose-blue max-w-none">
-                            <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
-                                {task.description || 'Không có mô tả cho công việc này.'}
-                            </p>
-                        </div>
+                        {isEditingDescription ? (
+                            <div className="space-y-4">
+                                <textarea
+                                    rows={6}
+                                    className="w-full p-4 bg-slate-50/50 border-2 border-slate-100 focus:border-indigo-500 focus:bg-white rounded-2xl outline-none transition-all text-slate-700 font-medium placeholder:text-slate-400 focus:ring-4 focus:ring-indigo-50/50 resize-y min-h-[120px]"
+                                    placeholder="Nhập mô tả chi tiết hoặc lưu ý cho người thực hiện..."
+                                    value={editedDescription}
+                                    onChange={(e) => setEditedDescription(e.target.value)}
+                                />
+                                <div className="flex gap-3 justify-end">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setIsEditingDescription(false)}
+                                        className="rounded-xl py-2 px-4 text-xs font-bold uppercase tracking-wider"
+                                    >
+                                        Hủy
+                                    </Button>
+                                    <Button
+                                        onClick={handleSaveDescription}
+                                        isLoading={isUpdatingTask}
+                                        className="rounded-xl py-2 px-4 text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-100"
+                                    >
+                                        Lưu thay đổi
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="prose prose-blue max-w-none">
+                                <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
+                                    {task.description || 'Không có mô tả cho công việc này.'}
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Evaluation Results Section */}

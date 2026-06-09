@@ -1,12 +1,10 @@
-import { useState, useMemo } from 'react';
-import { Calendar, Users, FileText, Search, UserPlus, ArrowUp, ArrowDown, ArrowUpDown, Plus, AlertCircle } from 'lucide-react';
+import { useState, useMemo, Fragment } from 'react';
+import { Calendar, Users, FileText, Search, UserPlus, Plus, AlertCircle, ChevronRight, ChevronDown } from 'lucide-react';
 import { TaskAssignModal } from './TaskAssignModal';
 import { AddExtraTaskModal } from './AddExtraTaskModal';
 import { useNavigate } from 'react-router-dom';
 import { useGetTeamMembersQuery } from '../../../api/teams';
 import { useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation } from '../../../api/tasks';
-import { useTableFeatures } from '../../../hooks/useTableFeatures';
-import { Pagination } from '../../../components/ui/Pagination';
 import { cn } from '../../../utils/cn';
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../../utils/enums';
 import { toast } from 'react-toastify';
@@ -39,27 +37,28 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [assigningTask, setAssigningTask] = useState(null);
     const [showAddExtraModal, setShowAddExtraModal] = useState(false);
     const [selectedTasks, setSelectedTasks] = useState([]);
+    const [expandedGroups, setExpandedGroups] = useState({});
+
+    const toggleGroup = (groupId) => {
+        setExpandedGroups(prev => ({
+            ...prev,
+            [groupId]: !prev[groupId]
+        }));
+    };
 
     if (!canSeeTable) return null;
 
-    const isTaskAssignable = (task) => {
+    const isTaskBatchAssignable = (task) => {
         if (!isProjectInProgress) return false;
 
-        // Standard Assign: Project Lead logic
-        const canProjectLeadAssign = task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT';
+        const validStatuses = ['PENDING', 'REJECTED', 'AWAITING_SUPPORT'];
+        if (!validStatuses.includes(task.status)) return false;
 
-        // Support Lead Reassign logic
-        const canSupportLeadAssign = task.isSupportAccepted &&
-            task.supportLeadId === user?.id &&
-            task.isSupportReturnRequested &&
-            (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'SUPPORT_AWAITING_RETURN');
+        if (isAdminOrBOD || isProjectLead) return true;
 
-        // Original Team Lead Reassign logic (when support requested but not assigned yet)
-        const canOriginalLeadReassign = task.isSupportRequested &&
-            !task.supportTeamId &&
-            task.project?.team?.teamLead?.id === user?.id;
+        if (task.supportLeadId === user?.id) return true;
 
-        return canProjectLeadAssign || canSupportLeadAssign || canOriginalLeadReassign;
+        return false;
     };
 
     const handleRespondSupport = async (taskId, response) => {
@@ -113,35 +112,46 @@ export const TaskTable = ({ tasks = [], project }) => {
         });
     }, [tasks, filter]);
 
-    const {
-        data: paginatedTasks,
-        sortConfig,
-        requestSort,
-        currentPage,
-        setCurrentPage,
-        totalPages,
-        totalItems
-    } = useTableFeatures(filteredTasks, { initialSort: { key: 'code', direction: 'ascending' } });
+    const groupedTasks = useMemo(() => {
+        const groups = {};
+        const others = [];
 
-    const getSortIcon = (key) => {
-        if (sortConfig?.key !== key) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-30" />;
-        return sortConfig.direction === 'ascending'
-            ? <ArrowUp className="w-3 h-3 ml-1 text-blue-600" />
-            : <ArrowDown className="w-3 h-3 ml-1 text-blue-600" />;
-    };
+        filteredTasks.forEach(task => {
+            const jobId = task.job?.id || task.jobId;
+            if (jobId) {
+                if (!groups[jobId]) {
+                    groups[jobId] = {
+                        job: task.job || { id: jobId, name: 'Tên Job đang trống' },
+                        tasks: []
+                    };
+                }
+                groups[jobId].tasks.push(task);
+            } else {
+                others.push(task);
+            }
+        });
 
-    const renderSortableHeader = (label, sortKey, align = 'left') => (
+        const result = Object.values(groups);
+        result.sort((a, b) => (a.job.name || '').localeCompare(b.job.name || ''));
+
+        if (others.length > 0) {
+            result.push({
+                job: { id: 'other', name: 'Công việc khác (Không thuộc nhóm nào)' },
+                tasks: others
+            });
+        }
+
+        return result;
+    }, [filteredTasks]);
+
+    const renderHeader = (label, align = 'left') => (
         <th
             className={cn(
-                "px-6 py-4 font-medium cursor-pointer hover:bg-gray-100/50 transition-colors group",
+                "px-6 py-4 font-medium",
                 align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left'
             )}
-            onClick={() => requestSort(sortKey)}
         >
-            <div className={cn("flex items-center", align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : 'justify-start')}>
-                {label}
-                {getSortIcon(sortKey)}
-            </div>
+            {label}
         </th>
     );
 
@@ -166,7 +176,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                     value={filter.status}
                     onChange={(e) => setFilter({ ...filter, status: e.target.value })}
                 >
-                    <option value="ALL">Tất cả trạng thái CV</option>
+                    <option value="ALL">Tất cả trạng thái Công việc</option>
                     {Object.entries(TASK_STATUS_LABELS).map(([value, label]) => (
                         <option key={value} value={value}>{label}</option>
                     ))}
@@ -199,31 +209,31 @@ export const TaskTable = ({ tasks = [], project }) => {
                 <table className="w-full text-sm text-left min-w-[1200px]">
                     <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100">
                         <tr>
-                            {/* <th className="px-6 py-4 text-center">
+                            <th className="px-6 py-4 text-center">
                                 <input
                                     type="checkbox"
                                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                                    checked={paginatedTasks.length > 0 && paginatedTasks.every(t => !isTaskAssignable(t) || selectedTasks.includes(t.id))}
+                                    checked={filteredTasks.length > 0 && filteredTasks.every(t => !isTaskBatchAssignable(t) || selectedTasks.includes(t.id))}
                                     onChange={(e) => {
                                         if (e.target.checked) {
-                                            const assignableIds = paginatedTasks
-                                                .filter(isTaskAssignable)
+                                            const assignableIds = filteredTasks
+                                                .filter(isTaskBatchAssignable)
                                                 .map(t => t.id);
                                             setSelectedTasks(prev => [...new Set([...prev, ...assignableIds])]);
                                         } else {
-                                            const pageIds = paginatedTasks.map(t => t.id);
-                                            setSelectedTasks(prev => prev.filter(id => !pageIds.includes(id)));
+                                            const allIds = filteredTasks.map(t => t.id);
+                                            setSelectedTasks(prev => prev.filter(id => !allIds.includes(id)));
                                         }
                                     }}
                                 />
-                            </th> */}
+                            </th>
                             <th className="px-6 py-4 font-medium">STT</th>
-                            {renderSortableHeader('Mã', 'code')}
-                            {renderSortableHeader('Tên công việc', 'name')}
-                            {renderSortableHeader('Thời hạn', 'plannedEndDate')}
-                            {renderSortableHeader('Bên thực hiện', 'performerType')}
-                            {renderSortableHeader('Người thực hiện', 'assignee.fullName', 'center')}
-                            {renderSortableHeader('Trạng thái', 'status', 'center')}
+                            {renderHeader('Mã')}
+                            {renderHeader('Tên công việc')}
+                            {renderHeader('Thời hạn')}
+                            {renderHeader('Bên thực hiện')}
+                            {renderHeader('Người thực hiện', 'center')}
+                            {renderHeader('Trạng thái', 'center')}
                             {isProjectInProgress && (
                                 <th className="px-6 py-4 font-medium text-center">Hành động</th>
                             )}
@@ -231,123 +241,174 @@ export const TaskTable = ({ tasks = [], project }) => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {paginatedTasks.length > 0 ? (
-                            paginatedTasks.map((task, index) => (
-                                <tr
-                                    key={task.id}
-                                    className={cn(
-                                        "transition-colors",
-                                        task.isSupportRequested ? "bg-red-50/50 hover:bg-red-50 border-l-4 border-l-red-500" : "hover:bg-gray-50/50"
-                                    )}
-                                >
-                                    {/* <td className="px-6 py-4 text-center">
-                                        <input
-                                            type="checkbox"
-                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                                            disabled={!isTaskAssignable(task)}
-                                            checked={selectedTasks.includes(task.id)}
-                                            onChange={(e) => {
-                                                if (e.target.checked) {
-                                                    setSelectedTasks(prev => [...prev, task.id]);
-                                                } else {
-                                                    setSelectedTasks(prev => prev.filter(id => id !== task.id));
-                                                }
-                                            }}
-                                        />
-                                    </td> */}
-                                    <td className="px-6 py-4 text-gray-500">{(currentPage - 1) * 10 + index + 1}</td>
-                                    <td className="px-6 py-4">
-                                        <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                            {task.code}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <p className="font-semibold text-blue-600 uppercase leading-snug">
-                                            {task.name}
-                                        </p>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className={cn("text-xs uppercase", getRemainingTime(task.plannedEndDate, task.status).color)}>
-                                            {getRemainingTime(task.plannedEndDate, task.status).text}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 uppercase text-xs font-semibold text-gray-500">
-                                        {task.performerType || '---'}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className="font-medium text-gray-700">{task.assignee?.fullName || task.vendorId || '---'}</span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center w-fit">
-                                        {getStatusBadge(task.status)}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center justify-center gap-2">
-                                            {isProjectInProgress && (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
-                                                <button
-                                                    onClick={() => setAssigningTask(task)}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all active:scale-95 text-xs font-bold uppercase"
-                                                >
-                                                    Phân công
-                                                </button>
-                                            )}
+                        {groupedTasks.length > 0 ? (
+                            groupedTasks.map((group, groupIndex) => {
+                                const assignableTasksInGroup = group.tasks.filter(isTaskBatchAssignable);
+                                const allAssignableSelected = assignableTasksInGroup.length > 0 && assignableTasksInGroup.every(t => selectedTasks.includes(t.id));
+                                const someAssignableSelected = assignableTasksInGroup.some(t => selectedTasks.includes(t.id));
 
-                                            {/* Original Team Lead Actions */}
-                                            {task.isSupportRequested && !task.supportTeamId && task.project?.team?.teamLead?.id === user?.id && (
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={() => setAssigningTask(task)}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
-                                                    >
-                                                        Đổi người
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setAssigningTask(task)}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
-                                                    >
-                                                        Phân công lại
-                                                    </button>
+                                return (
+                                    <Fragment key={group.job.id}>
+                                        {/* Group Header Row */}
+                                        <tr className="bg-gray-50/80 border-y border-gray-200 hover:bg-gray-100/50 transition-colors">
+                                            <td className="px-6 py-3 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    disabled={assignableTasksInGroup.length === 0}
+                                                    checked={allAssignableSelected}
+                                                    ref={input => {
+                                                        if (input) {
+                                                            input.indeterminate = someAssignableSelected && !allAssignableSelected;
+                                                        }
+                                                    }}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            const newIds = assignableTasksInGroup.map(t => t.id).filter(id => !selectedTasks.includes(id));
+                                                            setSelectedTasks(prev => [...prev, ...newIds]);
+                                                        } else {
+                                                            const idsToRemove = assignableTasksInGroup.map(t => t.id);
+                                                            setSelectedTasks(prev => prev.filter(id => !idsToRemove.includes(id)));
+                                                        }
+                                                    }}
+                                                />
+                                            </td>
+                                            <td
+                                                colSpan={isProjectInProgress ? 8 : 7}
+                                                className="px-6 py-3 font-bold text-gray-800 cursor-pointer"
+                                                onClick={() => toggleGroup(group.job.id)}
+                                            >
+                                                <div className="flex items-center gap-2 select-none">
+                                                    {expandedGroups[group.job.id] ? (
+                                                        <ChevronDown className="w-4 h-4 text-gray-500" />
+                                                    ) : (
+                                                        <ChevronRight className="w-4 h-4 text-gray-500" />
+                                                    )}
+                                                    {group.job.name}
+                                                    <span className="ml-2 text-xs font-normal text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">
+                                                        {group.tasks.length} công việc
+                                                    </span>
                                                 </div>
-                                            )}
+                                            </td>
+                                        </tr>
 
-                                            {/* Support Team Lead Actions (Pending) */}
-                                            {task.status === 'SUPPORT_PENDING' && task.supportLeadId === user?.id && (
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={() => handleRespondSupport(task.id, 'ACCEPT')}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
-                                                    >
-                                                        Đồng ý
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleRespondSupport(task.id, 'REJECT')}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
-                                                    >
-                                                        Từ chối
-                                                    </button>
-                                                </div>
-                                            )}
-
-                                            {/* Support Team Lead Actions (Accepted) */}
-                                            {task.isSupportAccepted && task.supportLeadId === user?.id && task.isSupportReturnRequested &&
-                                                (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'SUPPORT_AWAITING_RETURN') && (
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => setAssigningTask(task)}
-                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
-                                                        >
-                                                            Phân công lại
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleReturnSupport(task.id)}
-                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
-                                                        >
-                                                            Trả lại
-                                                        </button>
-                                                    </div>
+                                        {/* Group Tasks */}
+                                        {expandedGroups[group.job.id] && group.tasks.map((task, index) => (
+                                            <tr
+                                                key={task.id}
+                                                className={cn(
+                                                    "transition-colors",
+                                                    task.isSupportRequested ? "bg-red-50/50 hover:bg-red-50 border-l-4 border-l-red-500" : "hover:bg-gray-50/50"
                                                 )}
+                                            >
+                                                <td className="px-6 py-4 text-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                                        disabled={!isTaskBatchAssignable(task)}
+                                                        checked={selectedTasks.includes(task.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedTasks(prev => [...prev, task.id]);
+                                                            } else {
+                                                                setSelectedTasks(prev => prev.filter(id => id !== task.id));
+                                                            }
+                                                        }}
+                                                    />
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-500 pl-8">{index + 1}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                                        {task.code}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <p className="font-semibold text-blue-600 uppercase leading-snug">
+                                                        {task.name}
+                                                    </p>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className={cn("text-xs uppercase", getRemainingTime(task.plannedEndDate, task.status).color)}>
+                                                        {getRemainingTime(task.plannedEndDate, task.status).text}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 uppercase text-xs font-semibold text-gray-500">
+                                                    {task.performerType || '---'}
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className="font-medium text-gray-700">{task.assignee?.fullName || task.vendorId || '---'}</span>
+                                                </td>
+                                                <td className="px-3 py-2 text-center w-fit">
+                                                    {getStatusBadge(task.status)}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        {isProjectInProgress && (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
+                                                            <button
+                                                                onClick={() => setAssigningTask(task)}
+                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all active:scale-95 text-xs font-bold uppercase"
+                                                            >
+                                                                Phân công
+                                                            </button>
+                                                        )}
 
-                                            {/* Original Team Member Request Support */}
-                                            {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && user?.id === task.assigneeId && !task.isSupportRequested && (
+                                                        {/* Original Team Lead Actions */}
+                                                        {task.isSupportRequested && !task.supportTeamId && task.project?.team?.teamLead?.id === user?.id && (
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    onClick={() => setAssigningTask(task)}
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                                >
+                                                                    Đổi người
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setAssigningTask(task)}
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                                >
+                                                                    Phân công lại
+                                                                </button>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Support Team Lead Actions (Pending) */}
+                                                        {task.status === 'SUPPORT_PENDING' && task.supportLeadId === user?.id && (
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    onClick={() => handleRespondSupport(task.id, 'ACCEPT')}
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                                >
+                                                                    Đồng ý
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleRespondSupport(task.id, 'REJECT')}
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                                >
+                                                                    Từ chối
+                                                                </button>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Support Team Lead Actions (Accepted) */}
+                                                        {task.isSupportAccepted && task.supportLeadId === user?.id && task.isSupportReturnRequested &&
+                                                            (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'SUPPORT_AWAITING_RETURN') && (
+                                                                <div className="flex items-center gap-2">
+                                                                    <button
+                                                                        onClick={() => setAssigningTask(task)}
+                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                                    >
+                                                                        Phân công lại
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleReturnSupport(task.id)}
+                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                                    >
+                                                                        Trả lại
+                                                                    </button>
+                                                                </div>
+                                                            )}
+
+                                                        {/* Original Team Member Request Support */}
+                                                        {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && user?.id === task.assigneeId && !task.isSupportRequested && (
                                                 <button
                                                     onClick={async (e) => {
                                                         e.stopPropagation();
@@ -364,8 +425,8 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 </button>
                                             )} */}
 
-                                            {/* Helper Request Return Support */}
-                                            {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING') && user?.id === task.helperId && (
+                                                        {/* Helper Request Return Support */}
+                                                        {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING') && user?.id === task.helperId && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -377,23 +438,26 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 </button>
                                             )} */}
 
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    navigate(`/tasks/${task.id}`);
-                                                }}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-200 transition-all active:scale-95 text-xs font-bold uppercase"
-                                            >
-                                                Xem chi tiết
-                                            </button>
-                                        </div>
-                                    </td>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate(`/tasks/${task.id}`);
+                                                            }}
+                                                            className="inline-flex items-center px-3 py-1.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-200 transition-all active:scale-95 text-xs font-bold"
+                                                        >
+                                                            Xem chi tiết
+                                                        </button>
+                                                    </div>
+                                                </td>
 
-                                </tr>
-                            ))
+                                            </tr>
+                                        ))}
+                                    </Fragment>
+                                );
+                            })
                         ) : (
                             <tr>
-                                <td colSpan={isProjectInProgress ? 8 : 7} className="px-6 py-10 text-center text-gray-400 italic">
+                                <td colSpan={isProjectInProgress ? 9 : 8} className="px-6 py-10 text-center text-gray-400 italic">
                                     Không tìm thấy công việc nào
                                 </td>
                             </tr>
@@ -401,13 +465,6 @@ export const TaskTable = ({ tasks = [], project }) => {
                     </tbody>
                 </table>
             </div>
-
-            <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                totalItems={totalItems}
-            />
 
             {assigningTask && (
                 <TaskAssignModal
@@ -428,9 +485,9 @@ export const TaskTable = ({ tasks = [], project }) => {
 
             {/* Batch Action Bar */}
             {selectedTasks.length > 0 && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 z-50 ">
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-200 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 z-50 ">
                     <div className="flex items-center gap-2 border-r border-gray-700 pr-6">
-                        <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        <span className=" text-blue-600 text-xs font-bold px-2 py-0.5 rounded-full">
                             Đã chọn {selectedTasks.length} công việc
                         </span>
                     </div>
