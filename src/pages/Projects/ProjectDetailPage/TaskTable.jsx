@@ -103,13 +103,16 @@ export const TaskTable = ({ tasks = [], project }) => {
 
 
     const filteredTasks = useMemo(() => {
-        return tasks.filter(task => {
+        const filtered = tasks.filter(task => {
             const matchesSearch = task.name.toLowerCase().includes(filter.search.toLowerCase()) ||
                 task.code.toLowerCase().includes(filter.search.toLowerCase());
             const matchesStatus = filter.status === 'ALL' || task.status === filter.status;
             const matchesAssignee = filter.assigneeId === 'ALL' || task.assigneeId?.toString() === filter.assigneeId;
             return matchesSearch && matchesStatus && matchesAssignee;
         });
+
+        // Sắp xếp các task theo mã code tăng dần (sử dụng natural sort để nhận diện số cuối chính xác)
+        return [...filtered].sort((a, b) => (a.code || '').localeCompare(b.code || '', undefined, { numeric: true }));
     }, [tasks, filter]);
 
     const groupedTasks = useMemo(() => {
