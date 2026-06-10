@@ -356,21 +356,13 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                         )}
 
                                                         {/* Original Team Lead Actions */}
-                                                        {task.isSupportRequested && !task.supportTeamId && task.project?.team?.teamLead?.id === user?.id && (
-                                                            <div className="flex items-center gap-2">
-                                                                <button
-                                                                    onClick={() => setAssigningTask(task)}
-                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
-                                                                >
-                                                                    Đổi người
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setAssigningTask(task)}
-                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
-                                                                >
-                                                                    Phân công lại
-                                                                </button>
-                                                            </div>
+                                                        {isProjectInProgress && (isProjectLead || isAdminOrBOD) && ['DOING', 'REWORKING', 'OVERDUE', 'REJECTED'].includes(task.status) && (
+                                                            <button
+                                                                onClick={() => setAssigningTask(task)}
+                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                            >
+                                                                Đổi người
+                                                            </button>
                                                         )}
 
                                                         {/* Support Team Lead Actions (Pending) */}
@@ -399,7 +391,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                                         onClick={() => setAssigningTask(task)}
                                                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
                                                                     >
-                                                                        Phân công lại
+                                                                        Đổi người
                                                                     </button>
                                                                     <button
                                                                         onClick={() => handleReturnSupport(task.id)}
@@ -412,21 +404,21 @@ export const TaskTable = ({ tasks = [], project }) => {
 
                                                         {/* Original Team Member Request Support */}
                                                         {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && user?.id === task.assigneeId && !task.isSupportRequested && (
-                                                <button
-                                                    onClick={async (e) => {
-                                                        e.stopPropagation();
-                                                        try {
-                                                            await requestSupport({ id: task.id, projectId: project.id, note: "Yêu cầu hỗ trợ" }).unwrap();
-                                                            toast.success('Đã gửi yêu cầu hỗ trợ');
-                                                        } catch (err) {
-                                                            toast.error('Không thể gửi yêu cầu hỗ trợ');
-                                                        }
-                                                    }}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
-                                                >
-                                                    Hỗ trợ
-                                                </button>
-                                            )} */}
+                                                            <button
+                                                                onClick={async (e) => {
+                                                                    e.stopPropagation();
+                                                                    try {
+                                                                        await requestSupport({ id: task.id, projectId: project.id, note: "Yêu cầu hỗ trợ" }).unwrap();
+                                                                        toast.success('Đã gửi yêu cầu hỗ trợ');
+                                                                    } catch (err) {
+                                                                        toast.error('Không thể gửi yêu cầu hỗ trợ');
+                                                                    }
+                                                                }}
+                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                            >
+                                                                Hỗ trợ
+                                                            </button>
+                                                        )} */}
 
                                                         {/* Helper Request Return Support */}
                                                         {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING') && user?.id === task.helperId && (
