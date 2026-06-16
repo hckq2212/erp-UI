@@ -95,6 +95,16 @@ export const projectsApi = api.injectEndpoints({
         { type: 'Projects', id: 'LIST' },
       ],
     }),
+    retryProjectGoogleSheet: builder.mutation({
+      query: (id) => ({
+        url: `/projects/${id}/google-sheet/retry`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Projects', id },
+        { type: 'Projects', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -109,4 +119,5 @@ export const {
   useUpdateProjectProgressMutation,
   useAssignProjectMutation,
   useConfirmProjectMutation,
+  useRetryProjectGoogleSheetMutation,
 } = projectsApi;
