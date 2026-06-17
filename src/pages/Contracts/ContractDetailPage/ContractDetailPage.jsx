@@ -26,7 +26,7 @@ import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS } from '../../../utils/e
 import { cn } from '../../../utils/cn';
 import { AttachmentsList } from '../../Opportunities/OpportunityDetailPage/AttachmentsList';
 import { useGetMeQuery } from '../../../api/auth';
-import { ContractServicesModal } from './ContractServicesModal';
+import { ContractServices } from './ContractServices';
 
 export const ContractDetailPage = () => {
   const { id } = useParams();
@@ -37,7 +37,7 @@ export const ContractDetailPage = () => {
   });
   const [activeTab, setActiveTab] = useState('MAIN'); // 'MAIN' | 'EXTRA' | 'SERVICES'
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
+
 
   const [isCloudinaryUploading, setIsCloudinaryUploading] = useState(false);
   const [uploadProposal, { isLoading: isMutationUploading }] = useUploadProposalMutation();
@@ -308,23 +308,7 @@ export const ContractDetailPage = () => {
       )}
 
       {activeTab === 'SERVICES' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 flex flex-col items-center justify-center text-center space-y-4 animate-in fade-in duration-300">
-          <div className="p-4 bg-blue-50 text-blue-600 rounded-full">
-            <Briefcase className="w-10 h-10" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Dịch Vụ Hợp Đồng</h2>
-            <p className="text-gray-500 text-sm mt-1 max-w-md">
-              Xem danh sách chi tiết các dịch vụ trong hợp đồng này.
-            </p>
-          </div>
-          <button
-            onClick={() => setIsServicesModalOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow-sm transition-all"
-          >
-            Xem
-          </button>
-        </div>
+        <ContractServices contractServices={contract.services || []} />
       )}
 
       {activeTab === 'EXTRA' && (
@@ -337,11 +321,7 @@ export const ContractDetailPage = () => {
         </div>
       )}
 
-      <ContractServicesModal
-        isOpen={isServicesModalOpen}
-        onClose={() => setIsServicesModalOpen(false)}
-        contractServices={contract.services || []}
-      />
+
     </div>
   );
 };
