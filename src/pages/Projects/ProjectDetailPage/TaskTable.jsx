@@ -230,7 +230,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                     }}
                                 />
                             </th>
-                            <th className="px-6 py-4 font-medium">STT</th>
+                            {/* <th className="px-6 py-4 font-medium">STT</th> */}
                             {renderHeader('Mã')}
                             {renderHeader('Tên công việc')}
                             {renderHeader('Thời hạn')}
@@ -319,7 +319,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                         }}
                                                     />
                                                 </td>
-                                                <td className="px-6 py-4 text-gray-500 pl-8">{index + 1}</td>
+                                                {/* <td className="px-6 py-4 text-gray-500 pl-8">{index + 1}</td> */}
                                                 <td className="px-6 py-4">
                                                     <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                                                         {task.code}

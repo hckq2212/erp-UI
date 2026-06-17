@@ -13,7 +13,6 @@ export const ReviewQueueView = ({ awaitingReviewTasks, user, navigate }) => {
         <div className="space-y-6">
             <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-200">
-                    <Zap className="w-5 h-5" />
                 </div>
                 <div>
                     <h2 className="text-2xl font-black text-gray-900 tracking-tight italic">Việc cần duyệt</h2>
