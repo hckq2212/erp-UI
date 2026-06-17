@@ -99,9 +99,9 @@ export const ContractServices = ({ contractServices = [] }) => {
                   <div key={packageName} className="border border-indigo-100 rounded-xl overflow-hidden shadow-sm bg-indigo-50/5">
                     <div className="bg-indigo-50/40 px-6 py-3 border-b border-indigo-100 flex justify-between items-center">
                       <span className="font-bold text-indigo-900">{packageName}</span>
-                      <span className="text-xs font-semibold text-indigo-600 bg-indigo-100 px-2.5 py-1 rounded-full">
+                      {/* <span className="text-xs font-semibold text-indigo-600 bg-indigo-100 px-2.5 py-1 rounded-full">
                         Tổng gói: {packageSum.toLocaleString('vi-VN')} đ
-                      </span>
+                      </span> */}
                     </div>
                     <table className="w-full text-sm text-left text-gray-500 bg-white">
                       <thead className="text-xs text-gray-500 uppercase bg-gray-50/50">

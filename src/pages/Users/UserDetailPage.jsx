@@ -121,7 +121,7 @@ export const UserDetailPage = () => {
     };
 
     return (
-        <div className="space-y-6 max-w-5xl mx-auto pb-12">
+        <div className="space-y-6 max-w-full pt-6 mx-auto pb-12">
             <button
                 onClick={() => navigate('/users')}
                 className="flex items-center gap-2 text-gray-500 hover:text-gray-900 font-bold transition-colors group"
