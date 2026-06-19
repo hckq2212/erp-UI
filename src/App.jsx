@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
 import { useGetMeQuery } from './api/auth';
+import { ensureTenantPath, getTenantBasePath } from './utils/tenant';
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
@@ -37,6 +37,7 @@ import { MePage } from './pages/Me/MePage';
 import Chatbot from './components/Chatbot';
 
 function App() {
+  ensureTenantPath();
   // Use the query to check if the user is logged in via cookies on startup
   const { data: currentUser, isLoading } = useGetMeQuery();
   const canChat = currentUser?.role === 'ADMIN';
@@ -55,7 +56,7 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={getTenantBasePath()}>
       <Routes>
         {/* Public routes */}
         <Route path='/login' element={<LoginPage />} />

@@ -1,6 +1,10 @@
 {
     "rewrites": [
         {
+            "source": "/:companySlug/api/:path*",
+            "destination": "https://erp-z63c.onrender.com/:companySlug/api/:path*"
+        },
+        {
             "source": "/api/:path*",
             "destination": "https://erp-z63c.onrender.com/api/:path*"
         },

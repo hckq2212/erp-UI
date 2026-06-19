@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { BASE_URL } from '../store/api';
+import { getCompanySlugFromPath } from './tenant';
 
 /**
  * Upload a file directly to Cloudinary from the client side
@@ -11,14 +12,15 @@ import { BASE_URL } from '../store/api';
  */
 export const uploadToCloudinary = async (file, folder = 'GETVINI/ERP/others', onProgress) => {
     try {
+        const companySlug = getCompanySlugFromPath();
         // 1. Get signature from our backend
-        const response = await axios.get(`${BASE_URL}/cloudinary/signature`, {
+        const response = await axios.get(`${BASE_URL}/${companySlug}/api/cloudinary/signature`, {
             params: { folder },
             withCredentials: true // Required to send auth cookies to the backend
         });
 
-        const { signature, timestamp, api_key, cloud_name } = response.data;
-        console.log('Cloudinary Config received:', { cloud_name, api_key, timestamp, folder });
+        const { signature, timestamp, api_key, cloud_name, folder: signedFolder } = response.data;
+        console.log('Cloudinary Config received:', { cloud_name, api_key, timestamp, folder: signedFolder });
 
         // 2. Prepare Form Data for Cloudinary
         const formData = new FormData();
@@ -26,7 +28,7 @@ export const uploadToCloudinary = async (file, folder = 'GETVINI/ERP/others', on
         formData.append('signature', signature);
         formData.append('timestamp', timestamp);
         formData.append('api_key', api_key);
-        formData.append('folder', folder);
+        formData.append('folder', signedFolder);
 
         // 3. Upload to Cloudinary
         const uploadResponse = await axios.post(

@@ -161,9 +161,9 @@ export const LoginPage = () => {
                   Ghi nhớ đăng nhập
                 </span>
               </label>
-              <a className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline" href="#">
+              {/* <a className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline" href="#">
                 Quên mật khẩu?
-              </a>
+              </a> */}
             </div>
 
             {/* Submit Button */}
