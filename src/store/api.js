@@ -1,7 +1,12 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { getCompanySlugFromPath } from '../utils/tenant';
 
-export const BASE_URL = import.meta.env.VITE_API_URL || '';
+const configuredApiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+
+// Tenant requests add /:companySlug/api themselves, so the base must be the
+// backend origin only. This also keeps legacy VITE_API_URL values ending in
+// /api from producing URLs such as /api/getvini/api/auth/login.
+export const BASE_URL = configuredApiUrl.replace(/\/api$/, '');
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   credentials: 'include',
