@@ -22,7 +22,7 @@ export const MemberView = ({
         if (!member) return { overdue: 0, today: 0, pending: 0, progress: 0 };
 
         const violationStats = member?.violationStats || {};
-        const lateCount = Number(violationStats['LATE_UNFINISHED'] || 0) + Number(violationStats['LATE_SUBMISSION'] || 0);
+        const lateCount = Number(violationStats['LATE_UNFINISHED'] || 0);
 
         const today = new Date().toISOString().split('T')[0];
         const todayCount = member?.upcomingDeadlines?.filter(task =>
