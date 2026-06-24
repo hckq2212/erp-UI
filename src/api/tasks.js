@@ -72,6 +72,19 @@ export const tasksApi = api.injectEndpoints({
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
+    updateTaskNickname: builder.mutation({
+      query: ({ id, nickname }) => ({
+        url: `/tasks/${id}/nickname`,
+        method: 'PATCH',
+        body: { nickname },
+      }),
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        { type: 'Dashboard' },
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' },
+      ],
+    }),
     deleteTask: builder.mutation({
       query: (id) => ({
         url: `/tasks/${id}`,
@@ -258,6 +271,7 @@ export const {
   useGetTasksByOpportunityQuery,
   useCreateTaskMutation,
   useUpdateTaskMutation,
+  useUpdateTaskNicknameMutation,
   useDeleteTaskMutation,
   useUpdateTaskStatusMutation,
   useAssignTaskMutation,

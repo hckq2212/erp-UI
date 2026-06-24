@@ -10,6 +10,7 @@ import {
     ArrowLeft, CheckCircle, Activity, Clock, XCircle, Briefcase, Mail, Phone, User, Shield, MapPin, Calendar
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { getTaskDisplayName } from '../../utils/taskName';
 export const UserDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -323,7 +324,7 @@ export const UserDetailPage = () => {
                                                     {getStatusBadge(task.status)}
                                                 </div>
                                                 <h4 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                                    {task.name}
+                                                    {getTaskDisplayName(task)}
                                                 </h4>
                                             </div>
                                             <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all flex-shrink-0 hidden md:block" />

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, ChevronRight } from 'lucide-react';
+import { getTaskDisplayName } from '../../../utils/taskName';
 
 export const ReworkZone = ({ tasks = [], navigate }) => {
     return (
@@ -38,7 +39,7 @@ export const ReworkZone = ({ tasks = [], navigate }) => {
                         >
                             <div className="flex justify-between items-start mb-2">
                                 <h4 className="text-[11px] font-black text-slate-900 group-hover:text-rose-600 transition-colors truncate w-2/3">
-                                    {task.name}
+                                    {getTaskDisplayName(task)}
                                 </h4>
                                 <span className="text-[8px] font-black text-rose-500 bg-rose-50 px-2 py-0.5 rounded-lg uppercase">
                                     Hôm nay

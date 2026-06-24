@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, TASK_STATUS } from '../../utils/enums';
+import { getTaskDisplayName } from '../../utils/taskName';
 
 export const TaskCalendar = ({ tasks = [] }) => {
     const navigate = useNavigate();
@@ -149,7 +150,7 @@ export const TaskCalendar = ({ tasks = [] }) => {
                                             <div className="flex flex-col">
                                                 <div className="flex justify-between items-start gap-2">
                                                     <h5 className="text-[11px] font-black text-slate-900 group-hover:text-blue-600 transition-colors leading-tight truncate">
-                                                        {task.name}
+                                                        {getTaskDisplayName(task)}
                                                     </h5>
                                                 </div>
                                                 <div className="flex justify-between items-center mt-1">

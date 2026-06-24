@@ -1,4 +1,5 @@
 import React from 'react';
+import { getTaskDisplayName } from '../../utils/taskName';
 import { motion } from 'framer-motion';
 import { Zap, ArrowUpRight } from 'lucide-react';
 
@@ -34,7 +35,7 @@ export const ReviewQueueView = ({ awaitingReviewTasks, user, navigate }) => {
                                     {task.project?.name}
                                 </span>
                             </div>
-                            <h3 className="text-gray-900 font-black mb-4 line-clamp-1 group-hover:text-amber-600 transition-colors">{task.name}</h3>
+                            <h3 className="text-gray-900 font-black mb-4 line-clamp-1 group-hover:text-amber-600 transition-colors">{getTaskDisplayName(task)}</h3>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-gray-100 to-gray-50 flex items-center justify-center text-[10px] font-black text-gray-400 border border-white shadow-sm shrink-0 uppercase">

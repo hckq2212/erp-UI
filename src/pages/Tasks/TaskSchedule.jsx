@@ -20,6 +20,7 @@ import { ChevronLeft, ChevronRight, Briefcase, User, Calendar as CalendarIcon } 
 import { cn } from '../../utils/cn';
 import { TASK_STATUS_COLORS, TASK_STATUS_LABELS } from '../../utils/enums';
 import { useNavigate } from 'react-router-dom';
+import { getTaskDisplayName } from '../../utils/taskName';
 
 export const TaskSchedule = ({ tasks = [] }) => {
     const navigate = useNavigate();
@@ -155,7 +156,7 @@ export const TaskSchedule = ({ tasks = [] }) => {
                                         onClick={() => navigate(`/tasks/${task.id}`)}
                                     >
                                         <div className="text-[10px] font-mono text-blue-600 font-bold truncate mb-1">{task.code}</div>
-                                        <div className="text-xs font-bold text-gray-900 line-clamp-2 leading-relaxed">{task.name}</div>
+                                        <div className="text-xs font-bold text-gray-900 line-clamp-2 leading-relaxed">{getTaskDisplayName(task)}</div>
                                         <div className="flex items-center gap-1.5 mt-2 opacity-60 group-hover:opacity-100 transition-opacity">
                                             <Briefcase className="w-3 h-3 text-gray-400" />
                                             <span className="text-[10px] text-gray-500 font-medium truncate">{task.project?.name}</span>

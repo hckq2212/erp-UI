@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, FileText, AlertCircle, Link as LinkIcon, MessageSquare, XCircle } from 'lucide-react';
 import { useGetTaskQuery } from '../../api/tasks';
+import { getTaskDisplayName } from '../../utils/taskName';
 import { useGetTaskReviewsQuery, useToggleTaskReviewPassedMutation, useFinalizeTaskMutation, useRejectTaskMutation } from '../../api/taskReviews';
 import { useGetMeQuery } from '../../api/auth';
 import { toast } from 'react-toastify';
@@ -151,7 +152,7 @@ export const TaskReviewPage = () => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-1">
                         <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Đánh giá công việc</h1>
-                        <p className="text-gray-500 font-medium">{task.name}</p>
+                        <p className="text-gray-500 font-medium">{getTaskDisplayName(task)}</p>
                     </div>
 
                     {isDualReview && (

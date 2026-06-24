@@ -5,6 +5,8 @@ import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../../components/ui/Pagination';
 import { formatDateTime } from '../../utils/format';
+import { useGetMeQuery } from '../../api/auth';
+import { InlineTaskNickname } from '../../components/tasks/InlineTaskNickname';
 
 export const GlobalTaskTable = ({
     tasks = [],
@@ -14,6 +16,7 @@ export const GlobalTaskTable = ({
     currentSort
 }) => {
     const navigate = useNavigate();
+    const { data: user } = useGetMeQuery();
     const {
         data: paginatedTasks,
         sortConfig,
@@ -81,7 +84,7 @@ export const GlobalTaskTable = ({
                     <thead>
                         <tr className="bg-gray-50/50 border-b border-gray-100">
                             {renderSortableHeader('Mã Công Việc', 'code')}
-                            {renderSortableHeader('Tên Công Việc', 'name')}
+                            {renderSortableHeader('Tên hiển thị', 'name')}
                             {renderSortableHeader('Dự án', 'project.name')}
                             {renderSortableHeader('Phân công', 'assignee.fullName')}
                             {renderSortableHeader('Thời hạn', 'plannedEndDate')}
@@ -103,9 +106,11 @@ export const GlobalTaskTable = ({
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-bold text-gray-900 line-clamp-1">{task.name}</span>
-                                        </div>
+                                        <InlineTaskNickname
+                                            task={task}
+                                            projectId={task.project?.id}
+                                            canEdit={user?.role === 'ADMIN' || user?.role === 'BOD' || user?.id === task.project?.team?.teamLead?.id}
+                                        />
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2 text-gray-600">

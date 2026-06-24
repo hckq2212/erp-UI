@@ -10,6 +10,7 @@ import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../../utils/enums';
 import { toast } from 'react-toastify';
 import { formatDateTime, getRemainingTime } from '../../../utils/format';
 import { useGetMeQuery } from '../../../api/auth';
+import { InlineTaskNickname } from '../../../components/tasks/InlineTaskNickname';
 
 export const TaskTable = ({ tasks = [], project }) => {
     const navigate = useNavigate();
@@ -104,8 +105,10 @@ export const TaskTable = ({ tasks = [], project }) => {
 
     const filteredTasks = useMemo(() => {
         const filtered = tasks.filter(task => {
-            const matchesSearch = task.name.toLowerCase().includes(filter.search.toLowerCase()) ||
-                task.code.toLowerCase().includes(filter.search.toLowerCase());
+            const search = filter.search.toLowerCase();
+            const matchesSearch = task.name?.toLowerCase().includes(search) ||
+                task.nickname?.toLowerCase().includes(search) ||
+                task.code?.toLowerCase().includes(search);
             const matchesStatus = filter.status === 'ALL' || task.status === filter.status;
             const matchesAssignee = filter.assigneeId === 'ALL' || task.assigneeId?.toString() === filter.assigneeId;
             return matchesSearch && matchesStatus && matchesAssignee;
@@ -326,9 +329,11 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <p className="font-semibold text-blue-600 uppercase leading-snug">
-                                                        {task.name}
-                                                    </p>
+                                                    <InlineTaskNickname
+                                                        task={task}
+                                                        projectId={project.id}
+                                                        canEdit={isAdminOrBOD || isProjectLead}
+                                                    />
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className={cn("text-xs uppercase", getRemainingTime(task.plannedEndDate, task.status).color)}>

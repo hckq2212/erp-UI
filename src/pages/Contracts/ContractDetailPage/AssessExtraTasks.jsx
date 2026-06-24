@@ -5,6 +5,7 @@ import { formatCurrency } from '../../../utils/format';
 import { AlertCircle, Check, X, DollarSign, Tag, FileText } from 'lucide-react';
 import { AddendumQuotationModal } from './AddendumQuotationModal';
 import { QuotationDetailModal } from '../../Opportunities/OpportunityDetailPage/QuotationDetailModal';
+import { getTaskDisplayName } from '../../../utils/taskName';
 
 export const AssessExtraTasks = ({ tasks = [], opportunityId }) => {
     const [assessExtraTask, { isLoading: isAssessing }] = useAssessExtraTaskMutation();
@@ -88,7 +89,7 @@ export const AssessExtraTasks = ({ tasks = [], opportunityId }) => {
                                         </span>
                                     </div>
                                     <h3 className="text-lg font-bold text-gray-900 leading-tight">
-                                        {task.name}
+                                        {getTaskDisplayName(task)}
                                     </h3>
                                     <p className="text-sm text-gray-500 mt-1">
                                         Dự án: <span className="font-semibold">{task.project?.name}</span>

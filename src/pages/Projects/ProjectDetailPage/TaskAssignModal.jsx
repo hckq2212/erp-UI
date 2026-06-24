@@ -7,6 +7,7 @@ import { formatDate, formatDateTimeISO } from '../../../utils/format';
 import { useGetVendorsByJobQuery } from '../../../api/vendors';
 import { uploadToCloudinary } from '../../../utils/cloudinary';
 import { toast } from 'react-toastify';
+import { getTaskDisplayName } from '../../../utils/taskName';
 
 export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     const isBulk = Array.isArray(task);
@@ -229,7 +230,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                         ) : (
                                             <>
                                                 <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[11px] font-bold tracking-wider">{representativeTask.code}</span>
-                                                <span className="text-[11px] text-slate-400 font-medium truncate max-w-[200px]">{representativeTask.name}</span>
+                                                <span className="text-[11px] text-slate-400 font-medium truncate max-w-[200px]">{getTaskDisplayName(representativeTask)}</span>
                                             </>
                                         )}
                                     </div>

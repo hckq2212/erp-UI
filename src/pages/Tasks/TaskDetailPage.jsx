@@ -14,6 +14,7 @@ import { uploadToCloudinary, getFilePreviewUrl } from '../../utils/cloudinary';
 import { ReworkTaskModal } from '../../components/tasks/ReworkTaskModal';
 import { TaskAssignModal } from '../Projects/ProjectDetailPage/TaskAssignModal';
 import { History, MessageSquare, Paperclip } from 'lucide-react';
+import { getTaskDisplayName, getTaskOriginalName } from '../../utils/taskName';
 
 export const TaskDetailPage = () => {
     const { id } = useParams();
@@ -238,7 +239,7 @@ export const TaskDetailPage = () => {
                         <span>{task.project?.id ? `Quay lại dự án: ${task.project.name}` : 'Quay lại danh sách công việc'}</span>
                     </button>
                     <div className="flex flex-wrap items-center gap-4">
-                        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{task.name}</h1>
+                        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{getTaskDisplayName(task)}</h1>
                         {getStatusBadge(task.status)}
                     </div>
                     <p className="text-gray-500 font-mono text-sm bg-gray-100 px-3 py-1 rounded-lg inline-block">{task.code}</p>
@@ -781,7 +782,7 @@ export const TaskDetailPage = () => {
                 <ReworkTaskModal
                     isOpen={isReworkModalOpen}
                     onClose={() => setIsReworkModalOpen(false)}
-                    taskName={task.name}
+                    taskName={getTaskDisplayName(task)}
                     isLoading={isRequestingRework}
                     onSubmit={async (data) => {
                         try {

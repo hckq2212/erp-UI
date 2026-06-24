@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Clock, ChevronRight } from 'lucide-react';
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../../utils/enums';
+import { getTaskDisplayName } from '../../../utils/taskName';
 
 export const TimelineList = ({ tasks = [], navigate }) => {
     const sortedTasks = [...tasks].sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
@@ -58,7 +59,7 @@ export const TimelineList = ({ tasks = [], navigate }) => {
                                     <div className="flex justify-between items-start gap-4">
                                         <div>
                                             <h4 className="text-[11px] font-black text-slate-900 group-hover:text-blue-600 transition-colors leading-tight truncate">
-                                                {task.name}
+                                                {getTaskDisplayName(task)}
                                             </h4>
                                             <p className="text-[9px] font-bold text-slate-400 mt-0.5 truncate">
                                                 {task.projectName || 'Dự án nội bộ'}

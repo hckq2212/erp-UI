@@ -4,6 +4,7 @@ import { formatNumber, parseNumber } from '../../../utils/format';
 import { useCreateAddendumQuotationMutation } from '../../../api/quotations';
 import { useAssessExtraTaskMutation } from '../../../api/tasks';
 import { toast } from 'react-toastify';
+import { getTaskDisplayName } from '../../../utils/taskName';
 
 export const AddendumQuotationModal = ({ isOpen, onClose, task, opportunityId, onSubmitted }) => {
     const [priceType, setPriceType] = useState('recommended'); // minimum, recommended, custom
@@ -15,7 +16,7 @@ export const AddendumQuotationModal = ({ isOpen, onClose, task, opportunityId, o
 
     useEffect(() => {
         if (isOpen && task) {
-            setNotes(`Báo giá phụ lục cho công việc: ${task.name}`);
+            setNotes(`Báo giá phụ lục cho công việc: ${getTaskDisplayName(task)}`);
             setSellingPrice(task.sellingPrice || 0);
 
             // If task already has a custom price or it's been set in the previous component, handle it
@@ -89,7 +90,7 @@ export const AddendumQuotationModal = ({ isOpen, onClose, task, opportunityId, o
                     {/* Task Summary */}
                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                         <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Công việc</label>
-                        <h4 className="text-lg font-bold text-gray-900">{task.name}</h4>
+                        <h4 className="text-lg font-bold text-gray-900">{getTaskDisplayName(task)}</h4>
                         <p className="text-sm text-gray-500">Mã CV: {task.code} | Dự án: {task.project?.name}</p>
                     </div>
 
@@ -126,7 +127,7 @@ export const AddendumQuotationModal = ({ isOpen, onClose, task, opportunityId, o
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 <tr>
-                                    <td className="px-4 py-4 font-medium text-gray-900">{task.name}</td>
+                                    <td className="px-4 py-4 font-medium text-gray-900">{getTaskDisplayName(task)}</td>
                                     <td className="px-4 py-4 text-right">{formatNumber(costPrice)}</td>
                                     <td className="px-4 py-4 text-right">{formatNumber(minPrice)}</td>
                                     <td className="px-4 py-4 text-right">{formatNumber(recommendedPrice)}</td>
