@@ -1,10 +1,10 @@
 import { useState, useMemo, Fragment } from 'react';
-import { Calendar, Users, FileText, Search, UserPlus, Plus, AlertCircle, ChevronRight, ChevronDown } from 'lucide-react';
+import { Calendar, Users, FileText, Search, UserPlus, UserMinus, Plus, AlertCircle, ChevronRight, ChevronDown } from 'lucide-react';
 import { TaskAssignModal } from './TaskAssignModal';
 import { AddExtraTaskModal } from './AddExtraTaskModal';
 import { useNavigate } from 'react-router-dom';
 import { useGetTeamMembersQuery } from '../../../api/teams';
-import { useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation } from '../../../api/tasks';
+import { useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation } from '../../../api/tasks';
 import { cn } from '../../../utils/cn';
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../../utils/enums';
 import { toast } from 'react-toastify';
@@ -21,6 +21,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [respondToSupport] = useRespondToSupportMutation();
     const [returnSupport] = useReturnSupportMutation();
     const [requestReturnSupport] = useRequestReturnSupportMutation();
+    const [bulkUnassignTasks, { isLoading: isUnassigning }] = useBulkUnassignTasksMutation();
 
     const isAdminOrBOD = user?.role === 'ADMIN' || user?.role === 'BOD';
     const isProjectLead = user?.id === project?.team?.teamLead?.id;
@@ -38,6 +39,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [assigningTask, setAssigningTask] = useState(null);
     const [showAddExtraModal, setShowAddExtraModal] = useState(false);
     const [selectedTasks, setSelectedTasks] = useState([]);
+    const [selectionMode, setSelectionMode] = useState('assign');
     const [expandedGroups, setExpandedGroups] = useState({});
 
     const toggleGroup = (groupId) => {
@@ -60,6 +62,59 @@ export const TaskTable = ({ tasks = [], project }) => {
         if (task.supportLeadId === user?.id) return true;
 
         return false;
+    };
+
+    const isTaskUnassignable = (task) => {
+        if (!isProjectInProgress || (!isAdminOrBOD && !isProjectLead)) return false;
+        if (task.status !== 'DOING') return false;
+
+        const hasPerformer = Boolean(task.assigneeId) || task.performerType === 'VENDOR';
+        if (!hasPerformer) return false;
+
+        const hasExecutionData = Boolean(
+            task.result || task.actualStartDate || task.actualEndDate || task.lastSubmittedById ||
+            task.reviews?.length || task.iterations?.length
+        );
+        if (hasExecutionData) return false;
+
+        return !(
+            task.isSupportRequested || task.isSupportAccepted || task.isSupportReturnRequested ||
+            task.supportTeamId || task.supportLeadId || task.helperId ||
+            task.supportRequestNote || task.supportReturnNote
+        );
+    };
+
+    const isTaskSelectable = selectionMode === 'unassign' ? isTaskUnassignable : isTaskBatchAssignable;
+
+    const handleToggleUnassignMode = () => {
+        setSelectedTasks([]);
+        setSelectionMode(prev => prev === 'unassign' ? 'assign' : 'unassign');
+    };
+
+    const handleBulkUnassign = async () => {
+        if (selectedTasks.length === 0) return;
+        if (!window.confirm(`Xoá phân công của ${selectedTasks.length} công việc đã chọn?`)) return;
+
+        try {
+            const result = await bulkUnassignTasks({
+                projectId: project.id,
+                taskIds: selectedTasks
+            }).unwrap();
+            const successCount = result?.unassigned?.length || 0;
+            const skippedCount = result?.skipped?.length || 0;
+
+            if (successCount > 0) {
+                toast.success(`Đã xoá phân công ${successCount} công việc`);
+            }
+            if (skippedCount > 0) {
+                toast.warning(`Đã bỏ qua ${skippedCount} công việc không còn hợp lệ`);
+            }
+
+            setSelectedTasks([]);
+            setSelectionMode('assign');
+        } catch (error) {
+            toast.error(error?.data?.message || 'Không thể xoá phân công');
+        }
     };
 
     const handleRespondSupport = async (taskId, response) => {
@@ -162,6 +217,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     );
 
     const isProjectInProgress = project?.status === 'IN_PROGRESS' || project?.status === 'CONFIRMED';
+    const selectableFilteredTasks = filteredTasks.filter(isTaskSelectable);
 
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ">
@@ -199,10 +255,27 @@ export const TaskTable = ({ tasks = [], project }) => {
                         </option>
                     ))}
                 </select>
+                {canAddTask && isProjectInProgress && (
+                    <button
+                        onClick={handleToggleUnassignMode}
+                        className={cn(
+                            "ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all active:scale-95 shadow-sm font-medium text-sm",
+                            selectionMode === 'unassign'
+                                ? "bg-red-600 text-white hover:bg-red-700"
+                                : "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                        )}
+                    >
+                        <UserMinus className="w-4 h-4" />
+                        <span>{selectionMode === 'unassign' ? 'Huỷ xoá phân công' : 'Xoá phân công'}</span>
+                    </button>
+                )}
                 {canAddTask && (
                     <button
                         onClick={() => setShowAddExtraModal(true)}
-                        className="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm font-medium text-sm"
+                        className={cn(
+                            "inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm font-medium text-sm",
+                            !isProjectInProgress && "ml-auto"
+                        )}
                     >
                         <Plus className="w-4 h-4" />
                         <span>Thêm công việc</span>
@@ -218,12 +291,16 @@ export const TaskTable = ({ tasks = [], project }) => {
                             <th className="px-6 py-4 text-center">
                                 <input
                                     type="checkbox"
-                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                                    checked={filteredTasks.length > 0 && filteredTasks.every(t => !isTaskBatchAssignable(t) || selectedTasks.includes(t.id))}
+                                    className={cn(
+                                        "w-4 h-4 border-gray-300 rounded cursor-pointer",
+                                        selectionMode === 'unassign' ? "text-red-600 focus:ring-red-500" : "text-blue-600 focus:ring-blue-500"
+                                    )}
+                                    checked={selectableFilteredTasks.length > 0 && selectableFilteredTasks.every(t => selectedTasks.includes(t.id))}
+                                    disabled={selectableFilteredTasks.length === 0}
                                     onChange={(e) => {
                                         if (e.target.checked) {
                                             const assignableIds = filteredTasks
-                                                .filter(isTaskBatchAssignable)
+                                                .filter(isTaskSelectable)
                                                 .map(t => t.id);
                                             setSelectedTasks(prev => [...new Set([...prev, ...assignableIds])]);
                                         } else {
@@ -249,7 +326,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                     <tbody className="divide-y divide-gray-100">
                         {groupedTasks.length > 0 ? (
                             groupedTasks.map((group, groupIndex) => {
-                                const assignableTasksInGroup = group.tasks.filter(isTaskBatchAssignable);
+                                const assignableTasksInGroup = group.tasks.filter(isTaskSelectable);
                                 const allAssignableSelected = assignableTasksInGroup.length > 0 && assignableTasksInGroup.every(t => selectedTasks.includes(t.id));
                                 const someAssignableSelected = assignableTasksInGroup.some(t => selectedTasks.includes(t.id));
 
@@ -310,8 +387,11 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 <td className="px-6 py-4 text-center">
                                                     <input
                                                         type="checkbox"
-                                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                                                        disabled={!isTaskBatchAssignable(task)}
+                                                        className={cn(
+                                                            "w-4 h-4 border-gray-300 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed",
+                                                            selectionMode === 'unassign' ? "text-red-600 focus:ring-red-500" : "text-blue-600 focus:ring-blue-500"
+                                                        )}
+                                                        disabled={!isTaskSelectable(task)}
                                                         checked={selectedTasks.includes(task.id)}
                                                         onChange={(e) => {
                                                             if (e.target.checked) {
@@ -493,20 +573,33 @@ export const TaskTable = ({ tasks = [], project }) => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => {
-                                // Filter selected tasks that are actually in this page's task list (or pass all IDs if the modal can handle it)
-                                const tasksToAssign = tasks.filter(t => selectedTasks.includes(t.id));
-                                setAssigningTask(tasksToAssign);
-                            }}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-blue-500/20"
-                        >
-                            <Users className="w-3.5 h-3.5" />
-                            Phân công
-                        </button>
+                        {selectionMode === 'unassign' ? (
+                            <button
+                                onClick={handleBulkUnassign}
+                                disabled={isUnassigning}
+                                className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-red-500/20"
+                            >
+                                <UserMinus className="w-3.5 h-3.5" />
+                                {isUnassigning ? 'Đang xoá...' : 'Xoá phân công'}
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => {
+                                    const tasksToAssign = tasks.filter(t => selectedTasks.includes(t.id));
+                                    setAssigningTask(tasksToAssign);
+                                }}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                            >
+                                <Users className="w-3.5 h-3.5" />
+                                Phân công
+                            </button>
+                        )}
 
                         <button
-                            onClick={() => setSelectedTasks([])}
+                            onClick={() => {
+                                setSelectedTasks([]);
+                                if (selectionMode === 'unassign') setSelectionMode('assign');
+                            }}
                             className="text-red-400 hover:text-white px-3 py-2 rounded-xl text-xs font-bold uppercase transition-colors"
                         >
                             Hủy chọn
