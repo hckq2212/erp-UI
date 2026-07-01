@@ -266,7 +266,7 @@ export const TaskDetailPage = () => {
                                 </Button>
                             </div>
                         )}
-                    {task.status === 'INTERNAL_COMPLETED' && (user?.id === task.project.team.teamLead.id || user?.role === 'BOD' || user?.role === 'ADMIN') && (
+                    {task.status === 'INTERNAL_COMPLETED' && (user?.id === task.project?.team?.teamLead?.id || user?.role === 'BOD' || user?.role === 'ADMIN') && (
                         <Button
                             onClick={handleCustomerApprove}
                             isLoading={isApprovingByCustomer}

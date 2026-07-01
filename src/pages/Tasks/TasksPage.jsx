@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../store/authSlice';
 import { useGetTasksQuery } from '../../api/tasks';
+import { useGetTeamsQuery } from '../../api/teams';
 import { GlobalTaskTable } from './GlobalTaskTable';
 import { TaskFilters } from './TaskFilters';
 import { TaskSchedule } from './TaskSchedule';
@@ -23,8 +24,12 @@ export const TasksPage = () => {
     });
 
     const { data, isLoading } = useGetTasksQuery(filters);
+    const { data: teamsResult = [] } = useGetTeamsQuery();
     const tasks = data?.data || [];
     const meta = data?.meta || { total: 0, page: 1, limit: 10, totalPages: 0 };
+    const teams = Array.isArray(teamsResult) ? teamsResult : (teamsResult?.data || []);
+    const canCreateInternalTask = ['ADMIN', 'BOD'].includes(user?.role) ||
+        teams.some(team => team.teamLeadId === user?.id || team.teamLead?.id === user?.id);
 
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value, page: 1 })); // Reset to page 1 on filter
@@ -64,7 +69,7 @@ export const TasksPage = () => {
                         <span className="text-sm font-medium">Tổng việc</span>
                     </div>
 
-                    {(user?.role === 'ADMIN' || user?.role === 'BOD') && (
+                    {canCreateInternalTask && (
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
                             className="flex items-center gap-2 bg-blue-600 px-6 py-2.5 rounded-xl border border-blue-700 text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95"

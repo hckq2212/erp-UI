@@ -15,6 +15,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     const representativeTask = tasks[0];
 
     const isSupportMode = !isBulk && task?.isSupportRequested;
+    const projectId = project?.id;
     const teamId = project?.team?.id;
     const fileInputRef = useRef(null);
 
@@ -143,14 +144,14 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                         await requestSupport({
                             id: task.id,
                             note: formData.description || "Cần hỗ trợ thực hiện công việc này",
-                            projectId: project.id
+                            projectId
                         }).unwrap();
                     }
 
                     await assignSupportTeam({
                         id: task.id,
                         teamId: formData.selectedTeamId,
-                        projectId: project.id
+                        projectId
                     }).unwrap();
                 }
                 toast.success('Giao hỗ trợ team thành công');
@@ -164,7 +165,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                         plannedStartDate: formatDateTimeISO(new Date()),
                         description: formData.description || undefined,
                         attachments,
-                        projectId: project.id
+                        projectId
                     }).unwrap();
                 } else {
                     await assignTask({
@@ -175,7 +176,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                         plannedStartDate: formatDateTimeISO(new Date()),
                         description: formData.description || undefined,
                         attachments,
-                        projectId: project.id
+                        projectId
                     }).unwrap();
                 }
                 toast.success('Phân công công việc thành công');
@@ -185,7 +186,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi phân công');
         }
-    }, [formData, files, isBulk, tasks, task, project.id, bulkAssignTasks, assignTask, assignSupportTeam, onClose, plannedEndDate, requestSupport]);
+    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, plannedEndDate, requestSupport]);
 
     return (
         <AnimatePresence>

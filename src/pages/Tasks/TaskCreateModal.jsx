@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { X, Upload, Link as LinkIcon, Calendar, User, FileText, Trash2, Plus, ChevronDown, Search, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGetUsersQuery } from '../../api/users';
+import { useGetTeamsQuery } from '../../api/teams';
 import { useCreateInternalTaskMutation } from '../../api/tasks';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../../store/authSlice';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import { toast } from 'react-toastify';
 
@@ -115,7 +118,7 @@ const SearchableSelect = memo(({
     );
 });
 
-const TaskFields = memo(({ name, setName, supervisorId, setFormData, users }) => (
+const TaskFields = memo(({ name, setName, supervisorId, setFormData, users, showSupervisor }) => (
     <div className="space-y-5">
         <div>
             <label className="block text-sm font-bold text-gray-700 uppercase mb-2 ml-1">Tên công việc</label>
@@ -130,27 +133,52 @@ const TaskFields = memo(({ name, setName, supervisorId, setFormData, users }) =>
                 />
             </div>
         </div>
-        <SearchableSelect
-            label="Người giám sát"
-            icon={User}
-            placeholder="Chọn người giám sát"
-            searchPlaceholder="Tìm kiếm người giám sát..."
-            value={supervisorId}
-            onChange={(val) => setFormData(prev => ({ ...prev, supervisorId: val }))}
-            options={users}
-        />
+        {showSupervisor && (
+            <SearchableSelect
+                label="Người giám sát"
+                icon={User}
+                placeholder="Chọn người giám sát"
+                searchPlaceholder="Tìm kiếm người giám sát..."
+                value={supervisorId}
+                onChange={(val) => setFormData(prev => ({ ...prev, supervisorId: val }))}
+                options={users}
+            />
+        )}
     </div>
 ));
 
 export const TaskCreateModal = memo(({ isOpen, onClose }) => {
+    const currentUser = useSelector(selectCurrentUser);
     const { data: usersResult = [] } = useGetUsersQuery();
+    const { data: teamsResult = [] } = useGetTeamsQuery();
     const users = useMemo(() => Array.isArray(usersResult) ? usersResult : (usersResult?.data || []), [usersResult]);
+    const teams = useMemo(() => Array.isArray(teamsResult) ? teamsResult : (teamsResult?.data || []), [teamsResult]);
+    const isAdminOrBod = ['ADMIN', 'BOD'].includes(currentUser?.role);
+    const isTeamLead = teams.some(team =>
+        team.teamLeadId === currentUser?.id || team.teamLead?.id === currentUser?.id
+    );
 
     // Pre-calculate options for SearchableSelect
     const userOptions = useMemo(() => users.map(u => ({
         label: u.fullName || u.username,
         value: u.id
     })), [users]);
+
+    const assigneeOptions = useMemo(() => {
+        if (isAdminOrBod) return userOptions;
+
+        const ledTeams = teams.filter(team =>
+            team.teamLeadId === currentUser?.id || team.teamLead?.id === currentUser?.id
+        );
+        const allowedUserIds = new Set([currentUser?.id]);
+        ledTeams.forEach(team => {
+            team.members?.forEach(member => {
+                if (member.user?.id) allowedUserIds.add(member.user.id);
+            });
+        });
+
+        return userOptions.filter(option => allowedUserIds.has(option.value));
+    }, [currentUser?.id, isAdminOrBod, teams, userOptions]);
 
     const [createInternalTask, { isLoading: isCreating }] = useCreateInternalTaskMutation();
     const navigate = useNavigate();
@@ -217,6 +245,7 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
 
     const handleSubmit = async (e) => {
         if (e) e.preventDefault();
+        const supervisorId = isTeamLead && !isAdminOrBod ? currentUser.id : formData.supervisorId;
 
         if (!name) {
             toast.error('Vui lòng nhập tên công việc');
@@ -226,7 +255,7 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
             toast.error('Vui lòng chọn người thực hiện');
             return;
         }
-        if (!formData.supervisorId) {
+        if (!supervisorId) {
             toast.error('Vui lòng chọn người giám sát');
             return;
         }
@@ -265,7 +294,7 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
             const result = await createInternalTask({
                 name,
                 assigneeId: formData.assigneeId,
-                supervisorId: formData.supervisorId,
+                supervisorId,
                 description,
                 plannedStartDate: formData.plannedStartDate || undefined,
                 plannedEndDate: formData.plannedEndDate,
@@ -303,6 +332,7 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
                         supervisorId={formData.supervisorId}
                         setFormData={setFormData}
                         users={userOptions}
+                        showSupervisor={!isTeamLead || isAdminOrBod}
                     />
 
                     <SearchableSelect
@@ -312,7 +342,7 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
                         searchPlaceholder="Tìm kiếm người thực hiện..."
                         value={formData.assigneeId}
                         onChange={(val) => handleFieldChange('assigneeId', val)}
-                        options={userOptions}
+                        options={assigneeOptions}
                     />
 
                     <div className="grid grid-cols-2 gap-4">
