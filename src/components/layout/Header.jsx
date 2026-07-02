@@ -8,6 +8,7 @@ import { useGetMyNotificationsQuery, useMarkAsReadMutation } from '../../api/not
 import { useLogoutMutation } from '../../api/auth';
 import { formatDate } from '../../utils/format';
 import logo from '../../assets/logo.png';
+import { clearSessionMarker } from '../../utils/authSession';
 
 export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
   const user = useSelector(selectCurrentUser);
@@ -30,10 +31,12 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
   const handleLogout = async () => {
     try {
       await logoutApi().unwrap();
+      clearSessionMarker();
       dispatch(logoutAction());
       navigate('/login');
     } catch (err) {
       console.error('Logout failed:', err);
+      clearSessionMarker();
       dispatch(logoutAction());
       navigate('/login');
     }

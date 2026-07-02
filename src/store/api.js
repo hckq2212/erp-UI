@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { getCompanySlugFromPath } from '../utils/tenant';
+import { clearSessionMarker, hasSessionMarker, markSessionActive } from '../utils/authSession';
 
 const configuredApiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
@@ -15,6 +16,8 @@ const baseQuery = fetchBaseQuery({
     return headers;
   },
 });
+
+let refreshPromise = null;
 
 const withTenantApiPrefix = (args) => {
   const companySlug = getCompanySlugFromPath();
@@ -38,22 +41,51 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 
   let result = await baseQuery(withTenantApiPrefix(args), api, extraOptions);
 
-  // If 401 and NOT an auth request, try to refresh
-  // if (result.error && result.error.status === 401 && !isAuthRequest) {
-  //   const refreshResult = await baseQuery(
-  //     { url: '/auth/refresh', method: 'POST' },
-  //     api,
-  //     extraOptions
-  //   );
+  if (!result.error && url?.includes('/auth/login')) markSessionActive();
+  if (!result.error && url === '/me') markSessionActive();
+  if (!result.error && url?.includes('/auth/logout')) clearSessionMarker();
 
-  //   if (refreshResult.data) {
-  //     // Retry original request
-  //     result = await baseQuery(withTenantApiPrefix(args), api, extraOptions);
-  //   } else {
-  //     // Both failed - logout
-  //     api.dispatch({ type: 'auth/logout' });
-  //   }
-  // }
+  if (result.error?.status === 401 && !isAuthRequest) {
+    if (!refreshPromise) {
+      const refreshUnderLock = async () => {
+        // Another tab may have refreshed while this request waited for the lock.
+        const retriedBeforeRefresh = await baseQuery(withTenantApiPrefix(args), api, extraOptions);
+        if (retriedBeforeRefresh.error?.status !== 401) return { refreshed: true };
+
+        const refreshResult = await baseQuery(
+          withTenantApiPrefix({ url: '/auth/refresh', method: 'POST' }),
+          api,
+          extraOptions
+        );
+        return { refreshed: !refreshResult.error, refreshResult };
+      };
+
+      const lockName = `auth-refresh:${getCompanySlugFromPath()}`;
+      refreshPromise = globalThis.navigator?.locks
+        ? globalThis.navigator.locks.request(lockName, refreshUnderLock)
+        : refreshUnderLock();
+      refreshPromise = refreshPromise.finally(() => {
+        refreshPromise = null;
+      });
+    }
+
+    const refreshOutcome = await refreshPromise;
+    if (refreshOutcome.refreshed) {
+      result = await baseQuery(withTenantApiPrefix(args), api, extraOptions);
+    } else {
+      const refreshError = refreshOutcome.refreshResult?.error;
+      if (
+        refreshError?.status === 401 &&
+        refreshError?.data?.code === 'SESSION_EXPIRED' &&
+        hasSessionMarker()
+      ) {
+        api.dispatch({ type: 'auth/sessionExpired' });
+      } else if (refreshError) {
+        // Preserve the session for transient network and server failures.
+        result = refreshOutcome.refreshResult;
+      }
+    }
+  }
 
   return result;
 };

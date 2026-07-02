@@ -257,15 +257,17 @@ export const FinancePage = () => {
 
 
     return (
-        <div className="animate-in fade-in duration-500 space-y-4">
+        <div className="animate-in fade-in duration-500 space-y-6">
             {/* Header Area */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                        <Wallet className="w-7 h-7 md:w-8 md:h-8 text-blue-600" />
-                        Quản Lý Tài Chính
+                    <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-indigo-50/70 border border-indigo-100 text-indigo-600 rounded-xl">
+                            <Wallet className="w-6 h-6 md:w-7 md:h-7" strokeWidth={1.75} />
+                        </div>
+                        Quản lý tài chính
                     </h1>
-                    <p className="text-gray-500 text-sm mt-1">Theo dõi công nợ, lộ trình thanh toán và dòng tiền hợp đồng</p>
+                    <p className="text-slate-500 text-sm mt-1.5 ml-1">Theo dõi công nợ, lộ trình thanh toán và dòng tiền hợp đồng</p>
                 </div>
 
                 <div className="flex items-center gap-3 w-full md:w-auto">
@@ -275,18 +277,18 @@ export const FinancePage = () => {
                         disabled={isLoading}
                         aria-label="Tải lại dữ liệu"
                         className={cn(
-                            "p-2 bg-white border border-gray-100 rounded-xl shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-                            isLoading ? "text-gray-300 cursor-not-allowed" : "text-gray-400 hover:text-blue-600"
+                            "p-2 bg-white border border-slate-200/80 rounded-xl shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 active:scale-95",
+                            isLoading ? "text-slate-300 cursor-not-allowed" : "text-slate-400 hover:text-indigo-600 hover:border-indigo-200"
                         )}
                         title="Tải lại dữ liệu"
                     >
-                        <RefreshCw className={cn("w-5 h-5", isLoading && "animate-spin")} />
+                        <RefreshCw className={cn("w-5 h-5", isLoading && "animate-spin")} strokeWidth={1.75} />
                     </button>
 
                     <div
                         role="tablist"
                         aria-label="Chế độ xem tài chính"
-                        className="flex bg-gray-100 p-1.5 rounded-2xl border border-gray-200 shadow-sm ml-auto md:ml-0"
+                        className="flex bg-slate-100/70 p-1 rounded-xl border border-slate-200/50 shadow-sm ml-auto md:ml-0"
                         onKeyDown={handleTabsKeyDown}
                     >
                         <button
@@ -298,13 +300,13 @@ export const FinancePage = () => {
                             aria-controls={panelId}
                             tabIndex={viewType === 'list' ? 0 : -1}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70",
+                                "flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400",
                                 viewType === 'list'
-                                    ? "bg-white text-blue-600 shadow-sm"
-                                    : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+                                    ? "bg-white text-slate-800 shadow-sm border border-slate-200/10"
+                                    : "text-slate-500 hover:text-slate-700 hover:bg-white/40"
                             )}
                         >
-                            <List className="w-4 h-4" />
+                            <List className="w-4 h-4" strokeWidth={1.75} />
                             Hợp đồng
                         </button>
                         <button
@@ -316,13 +318,13 @@ export const FinancePage = () => {
                             aria-controls={panelId}
                             tabIndex={viewType === 'schedule' ? 0 : -1}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70",
+                                "flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400",
                                 viewType === 'schedule'
-                                    ? "bg-white text-blue-600 shadow-sm"
-                                    : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+                                    ? "bg-white text-slate-800 shadow-sm border border-slate-200/10"
+                                    : "text-slate-500 hover:text-slate-700 hover:bg-white/40"
                             )}
                         >
-                            <CalendarIcon className="w-4 h-4" />
+                            <CalendarIcon className="w-4 h-4" strokeWidth={1.75} />
                             Lịch trình
                         </button>
                     </div>
@@ -344,53 +346,64 @@ export const FinancePage = () => {
             />
 
             {/* Summary */}
-            <section className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-                <div className="px-5 pt-4 pb-3 flex items-center justify-between gap-3">
-                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tổng quan</div>
-                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{rangeCaption}</div>
+            <section className="space-y-3">
+                <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tổng quan tài chính</span>
+                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/50 uppercase tracking-wider">{rangeCaption}</span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-gray-100">
-                    <div className="p-5">
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
-                                <DollarSign className="w-5 h-5" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Planned Card */}
+                    <div className="bg-white rounded-xl border border-slate-200/60 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] p-5 hover:shadow-md transition-all duration-300">
+                        <div className="flex items-center justify-between mb-4">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dự kiến trong kỳ</span>
+                            <div className="p-1.5 rounded-lg bg-indigo-50/60 border border-indigo-100 text-indigo-600">
+                                <DollarSign className="w-4 h-4" strokeWidth={1.75} />
                             </div>
                         </div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">Dự kiến trong kỳ</p>
-                        <h3 className="text-xl font-black text-gray-900 tracking-tight">{formatCurrency(stats.planned)}</h3>
+                        <h3 className="text-2xl font-black text-slate-800 tracking-tight">{formatCurrency(stats.planned)}</h3>
                     </div>
 
-                    <div className="p-5">
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
-                                <CheckCircle2 className="w-5 h-5" />
+                    {/* Collected Card */}
+                    <div className="bg-white rounded-xl border border-slate-200/60 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] p-5 hover:shadow-md transition-all duration-300">
+                        <div className="flex items-center justify-between mb-4">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Đã thu trong kỳ</span>
+                            <div className="p-1.5 rounded-lg bg-emerald-50/60 border border-emerald-100 text-emerald-600">
+                                <CheckCircle2 className="w-4 h-4" strokeWidth={1.75} />
                             </div>
-                            <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                            <h3 className="text-2xl font-black text-emerald-600 tracking-tight">{formatCurrency(stats.collected)}</h3>
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
                                 {Math.round(stats.collectionRate)}%
                             </span>
                         </div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">Đã thu trong kỳ</p>
-                        <h3 className="text-xl font-black text-emerald-700 tracking-tight">{formatCurrency(stats.collected)}</h3>
+                        <div className="w-full h-1 bg-slate-100 rounded-full mt-3.5 overflow-hidden">
+                            <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${stats.collectionRate}%` }}></div>
+                        </div>
                     </div>
 
-                    <div className="p-5">
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                            <div className="p-2.5 rounded-xl bg-rose-50 text-rose-600">
-                                <AlertCircle className="w-5 h-5" />
+                    {/* Pending Card */}
+                    <div className="bg-white rounded-xl border border-slate-200/60 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] p-5 hover:shadow-md transition-all duration-300">
+                        <div className="flex items-center justify-between mb-4">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Còn phải thu</span>
+                            <div className="p-1.5 rounded-lg bg-rose-50/60 border border-rose-100 text-rose-600">
+                                <AlertCircle className="w-4 h-4" strokeWidth={1.75} />
                             </div>
                         </div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">Còn phải thu trong kỳ</p>
-                        <h3 className="text-xl font-black text-rose-700 tracking-tight">{formatCurrency(stats.pending)}</h3>
+                        <h3 className="text-2xl font-black text-rose-600 tracking-tight">{formatCurrency(stats.pending)}</h3>
                     </div>
 
-                    <div className="p-5">
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                            <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600">
-                                <FileText className="w-5 h-5" />
+                    {/* Contracts Card */}
+                    <div className="bg-white rounded-xl border border-slate-200/60 shadow-[0_2px_8px_-3px_rgba(0,0,0,0.05)] p-5 hover:shadow-md transition-all duration-300">
+                        <div className="flex items-center justify-between mb-4">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hợp đồng liên quan</span>
+                            <div className="p-1.5 rounded-lg bg-slate-50/60 border border-slate-200/80 text-slate-600">
+                                <FileText className="w-4 h-4" strokeWidth={1.75} />
                             </div>
                         </div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">Hợp đồng trong kỳ</p>
-                        <h3 className="text-xl font-black text-gray-900 tracking-tight">{stats.contractsCount}</h3>
+                        <h3 className="text-2xl font-black text-slate-800 tracking-tight">
+                            {stats.contractsCount} <span className="text-xs font-semibold text-slate-400 normal-case">hợp đồng</span>
+                        </h3>
                     </div>
                 </div>
             </section>
@@ -398,46 +411,34 @@ export const FinancePage = () => {
             {/* Main Content View */}
             {isLoading ? (
                 <div
-                    className="flex flex-col items-center justify-center py-40 gap-4 bg-white rounded-3xl border border-gray-100 shadow-sm"
+                    className="flex flex-col items-center justify-center py-40 gap-4 bg-white rounded-2xl border border-slate-200/60 shadow-sm"
                     role="status"
                     aria-live="polite"
                     aria-busy="true"
                 >
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                    <p className="text-gray-500 font-medium animate-pulse">Đang tải hợp đồng, công nợ và mốc thanh toán...</p>
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+                    <p className="text-slate-500 text-sm font-medium animate-pulse">Đang tải hợp đồng, công nợ và mốc thanh toán...</p>
                 </div>
             ) : (
                 <div className="animate-in fade-in duration-300">
                     <div role="tabpanel" id={panelId} aria-labelledby={viewType === 'list' ? listTabId : scheduleTabId}>
                         {contractsFiltered.length === 0 ? (
-                            <div className="py-24 flex flex-col items-center justify-center bg-white rounded-[2.5rem] border border-dashed border-gray-200">
-                                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-200 mb-4">
-                                    <FileText className="w-8 h-8" />
+                            <div className="py-24 flex flex-col items-center justify-center bg-white rounded-2xl border border-dashed border-slate-200 p-8 shadow-sm">
+                                <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-300 mb-4 shadow-sm">
+                                    <FileText className="w-7 h-7" strokeWidth={1.5} />
                                 </div>
-                                <p className="text-gray-500 font-black italic">Không có dữ liệu phù hợp trong khoảng đã chọn.</p>
-                                {/* <button
-                                    type="button"
-                                    onClick={handleReset}
-                                    className="mt-4 px-5 py-2.5 rounded-2xl bg-blue-600 text-white font-black text-sm shadow-sm hover:bg-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-                                >
-                                    Reset về Tháng này
-                                </button> */}
+                                <h3 className="text-base font-semibold text-slate-800 mb-1">Không có dữ liệu phù hợp</h3>
+                                <p className="text-slate-400 text-sm font-normal">Vui lòng thay đổi khoảng thời gian hoặc bộ lọc tìm kiếm.</p>
                             </div>
                         ) : viewType === 'list' ? (
                             <ContractDebtList contracts={contractsFiltered} debts={debts} milestones={milestonesFiltered} />
                         ) : scheduleMilestones.length === 0 ? (
-                            <div className="py-24 flex flex-col items-center justify-center bg-white rounded-[2.5rem] border border-dashed border-gray-200">
-                                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-200 mb-4">
-                                    <CalendarIcon className="w-8 h-8" />
+                            <div className="py-24 flex flex-col items-center justify-center bg-white rounded-2xl border border-dashed border-slate-200 p-8 shadow-sm">
+                                <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-300 mb-4 shadow-sm">
+                                    <CalendarIcon className="w-7 h-7" strokeWidth={1.5} />
                                 </div>
-                                <p className="text-gray-500 font-black italic">Không có mốc thanh toán trong khoảng đã chọn.</p>
-                                {/* <button
-                                    type="button"
-                                    onClick={handleReset}
-                                    className="mt-4 px-5 py-2.5 rounded-2xl bg-blue-600 text-white font-black text-sm shadow-sm hover:bg-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-                                >
-                                    Reset về Tháng này
-                                </button> */}
+                                <h3 className="text-base font-semibold text-slate-800 mb-1">Không có mốc thanh toán</h3>
+                                <p className="text-slate-400 text-sm font-normal">Không tìm thấy mốc thanh toán nào trong khoảng thời gian đã chọn.</p>
                             </div>
                         ) : (
                             <FinanceSchedule
