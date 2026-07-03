@@ -245,12 +245,6 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     const service = allServices.find(s => String(s.id) === String(selectedServiceId));
     if (!service) return;
 
-    // Check if service already exists
-    if (items.find(item => item.serviceId === service.id)) {
-      alert('Dịch vụ này đã được thêm vào báo giá');
-      return;
-    }
-
     const costPrice = parseFloat(service.costPrice) || 0;
     const minPrice = roundToTenThousands(costPrice / 0.8);
     const recommendedPrice = roundToTenThousands(costPrice / 0.6);
