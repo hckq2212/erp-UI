@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Upload, CheckCircle, FileCheck, Loader2, X, Send } from 'lucide-react';
+import { FileText, Upload, CheckCircle, FileCheck, Loader2, X, Send, Link2 } from 'lucide-react';
 import { getFilePreviewUrl } from '../../../utils/cloudinary';
 
 export const ProposalManagement = ({
@@ -17,6 +17,39 @@ export const ProposalManagement = ({
 }) => {
   const [isRejecting, setIsRejecting] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [isEditingProposal, setIsEditingProposal] = useState(false);
+  const [uploadMethod, setUploadMethod] = useState('');
+  const [proposalFile, setProposalFile] = useState(null);
+  const [contractLink, setContractLink] = useState('');
+  const [quotationLink, setQuotationLink] = useState('');
+
+  const openProposalEditor = () => {
+    setUploadMethod('');
+    setProposalFile(null);
+    setContractLink('');
+    setQuotationLink(contract.quotation_link || '');
+    setIsEditingProposal(true);
+  };
+
+  const changeUploadMethod = (method) => {
+    setUploadMethod(method);
+    setProposalFile(null);
+    setContractLink('');
+  };
+
+  const handleSubmitProposal = async (event) => {
+    event.preventDefault();
+    const succeeded = await onUploadProposal({
+      file: uploadMethod === 'FILE' ? proposalFile : undefined,
+      contractLink: uploadMethod === 'LINK' ? contractLink : undefined,
+      quotationLink,
+    });
+    if (succeeded) setIsEditingProposal(false);
+  };
+
+  const proposalViewUrl = contract.proposal_contract?.includes('res.cloudinary.com')
+    ? getFilePreviewUrl(contract.proposal_contract)
+    : contract.proposal_contract;
 
   const handleConfirmReject = () => {
     if (!rejectionReason.trim()) return;
@@ -51,7 +84,7 @@ export const ProposalManagement = ({
         <div className="border border-gray-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium text-gray-900">Hợp đồng <span className="text-sm italic text-gray-400">(.docx)</span></h3>
+              <h3 className="font-medium text-gray-900">Hợp đồng <span className="text-sm italic text-gray-400">(.docx hoặc link)</span></h3>
               <p className="text-sm text-gray-500 mt-1">
                 {contract.proposal_contract ? 'Đã upload' : 'Chưa có file'}
               </p>
@@ -61,7 +94,7 @@ export const ProposalManagement = ({
                 <>
                   {!isRejecting && (
                     <a
-                      href={getFilePreviewUrl(contract.proposal_contract)}
+                      href={proposalViewUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
@@ -96,7 +129,7 @@ export const ProposalManagement = ({
                   )}
                   {contract.status === 'PROPOSAL_REJECTED' && !isRejecting && (
                     <button
-                      onClick={onUploadProposal}
+                      onClick={openProposalEditor}
                       disabled={isUploadingProposal || isUploadingSigned}
                       className={`flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-medium ${(isUploadingProposal || isUploadingSigned) ? 'opacity-50 cursor-not-allowed' : ''
                         }`}
@@ -112,7 +145,7 @@ export const ProposalManagement = ({
                 </>
               ) : (
                 <button
-                  onClick={onUploadProposal}
+                  onClick={openProposalEditor}
                   disabled={isUploadingProposal || isUploadingSigned}
                   className={`flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-medium ${(isUploadingProposal || isUploadingSigned) ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
@@ -127,6 +160,106 @@ export const ProposalManagement = ({
               )}
             </div>
           </div>
+
+          {contract.quotation_link && !isEditingProposal && (
+            <a
+              href={contract.quotation_link}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 flex w-fit items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+            >
+              <Link2 className="w-4 h-4" />
+              Xem link báo giá
+            </a>
+          )}
+
+          {isEditingProposal && (
+            <form onSubmit={handleSubmitProposal} className="mt-4 space-y-4 border-t border-gray-100 pt-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700">Chọn hình thức upload hợp đồng</label>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${uploadMethod === 'FILE' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <input
+                      type="radio"
+                      name="proposalUploadMethod"
+                      value="FILE"
+                      checked={uploadMethod === 'FILE'}
+                      onChange={() => changeUploadMethod('FILE')}
+                    />
+                    <Upload className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-gray-700">Tải file .docx</span>
+                  </label>
+                  <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${uploadMethod === 'LINK' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <input
+                      type="radio"
+                      name="proposalUploadMethod"
+                      value="LINK"
+                      checked={uploadMethod === 'LINK'}
+                      onChange={() => changeUploadMethod('LINK')}
+                    />
+                    <Link2 className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-gray-700">Nhập link hợp đồng</span>
+                  </label>
+                </div>
+              </div>
+
+              {uploadMethod === 'FILE' && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700">File hợp đồng (.docx)</label>
+                  <input
+                    type="file"
+                    accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={(event) => setProposalFile(event.target.files?.[0] || null)}
+                    className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                </div>
+              )}
+
+              {uploadMethod === 'LINK' && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700">Link hợp đồng</label>
+                  <input
+                    type="url"
+                    required
+                    value={contractLink}
+                    onChange={(event) => setContractLink(event.target.value)}
+                    placeholder="https://drive.google.com/..."
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">Link báo giá (nếu có)</label>
+                <input
+                  type="url"
+                  value={quotationLink}
+                  onChange={(event) => setQuotationLink(event.target.value)}
+                  placeholder="https://docs.google.com/..."
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingProposal(false)}
+                  disabled={isUploadingProposal}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUploadingProposal || !uploadMethod || (uploadMethod === 'FILE' ? !proposalFile : !contractLink.trim())}
+                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isUploadingProposal ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {isUploadingProposal ? 'Đang cập nhật...' : 'Lưu'}
+                </button>
+              </div>
+            </form>
+          )}
 
           {/* Rejection UI Expansion */}
           {isRejecting && (

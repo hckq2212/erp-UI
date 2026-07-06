@@ -56,35 +56,39 @@ export const ContractDetailPage = () => {
     return new Date(dateString).toLocaleDateString('vi-VN');
   };
 
-  const handleUploadProposal = async () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.docx';
-    input.onchange = async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+  const handleUploadProposal = async ({ file, contractLink, quotationLink }) => {
+    if (!file && !contractLink) {
+      toast.error('Vui lòng tải file .docx hoặc nhập link hợp đồng');
+      return false;
+    }
 
-      if (!file.name.toLowerCase().endsWith('.docx')) {
-        toast.error('Chỉ chấp nhận file .docx cho proposal');
-        return;
-      }
+    if (file && !file.name.toLowerCase().endsWith('.docx')) {
+      toast.error('Chỉ chấp nhận file .docx cho proposal');
+      return false;
+    }
 
-      try {
-        setIsCloudinaryUploading(true);
-        setUploadProgress(0);
-        // Direct upload to Cloudinary
-        const uploadedFile = await uploadToCloudinary(file, "GETVINI/ERP/proposal", setUploadProgress);
+    try {
+      setIsCloudinaryUploading(Boolean(file));
+      setUploadProgress(0);
+      const uploadedFile = file
+        ? await uploadToCloudinary(file, "GETVINI/ERP/proposal", setUploadProgress)
+        : undefined;
 
-        await uploadProposal({ id: contract.id, file: uploadedFile }).unwrap();
-        toast.success('Upload proposal thành công');
-      } catch (err) {
-        toast.error(err?.data?.message || err?.message || 'Upload thất bại');
-      } finally {
-        setIsCloudinaryUploading(false);
-        setUploadProgress(0);
-      }
-    };
-    input.click();
+      await uploadProposal({
+        id: contract.id,
+        file: uploadedFile,
+        contractLink: contractLink?.trim() || undefined,
+        quotationLink: quotationLink?.trim() || undefined,
+      }).unwrap();
+      toast.success('Cập nhật proposal thành công');
+      return true;
+    } catch (err) {
+      toast.error(err?.data?.message || err?.message || 'Cập nhật thất bại');
+      return false;
+    } finally {
+      setIsCloudinaryUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   const handleApproveProposal = async () => {

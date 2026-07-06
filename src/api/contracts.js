@@ -50,10 +50,10 @@ export const contractsApi = api.injectEndpoints({
       invalidatesTags: [{ type: 'Contracts', id: 'LIST' }],
     }),
     uploadProposal: builder.mutation({
-      query: ({ id, file }) => ({
+      query: ({ id, file, contractLink, quotationLink }) => ({
         url: `/contracts/${id}/proposal`,
         method: 'POST',
-        body: { file },
+        body: { file, contractLink, quotationLink },
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Contracts', id },
