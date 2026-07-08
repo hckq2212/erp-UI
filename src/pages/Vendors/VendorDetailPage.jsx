@@ -39,6 +39,11 @@ export const VendorDetailPage = () => {
     };
 
     const handleRemoveJob = async (jobId) => {
+        if (!jobId) {
+            toast.error('Không tìm thấy hạng mục cần xóa');
+            return;
+        }
+
         if (window.confirm('Bạn có chắc muốn xóa hạng mục này khỏi vendor?')) {
             try {
                 await removeVendorJob({ id, jobId }).unwrap();
@@ -271,7 +276,7 @@ export const VendorDetailPage = () => {
                                                         <Edit2 className="h-4 w-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => handleRemoveJob(job.id)}
+                                                        onClick={() => handleRemoveJob(job.job?.id)}
                                                         className="p-1.5 hover:bg-red-50 rounded text-red-500 transition-colors"
                                                         title="Gỡ hạng mục"
                                                     >
@@ -348,7 +353,7 @@ export const VendorDetailPage = () => {
                 onSubmit={handleAddOrUpdateJob}
                 vendorId={id}
                 existingJob={selectedVendorJob}
-                existingJobIds={vendorJobs.map(j => j.id)}
+                existingJobIds={vendorJobs.map(j => j.job?.id).filter(Boolean)}
             />
         </div>
     );

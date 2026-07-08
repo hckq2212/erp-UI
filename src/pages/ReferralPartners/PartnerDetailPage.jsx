@@ -325,14 +325,6 @@ export const PartnerDetailPage = () => {
                     <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
                         <div className="p-6 border-b border-gray-50 bg-gray-50/20 flex justify-between items-center">
                             <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Danh sách {tabs.find(t => t.id === activeTab).label}</h4>
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                                <input
-                                    type="text"
-                                    placeholder="Tìm kiếm..."
-                                    className="pl-9 pr-4 py-2 border border-gray-100 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/10 w-48 transition-all"
-                                />
-                            </div>
                         </div>
 
                         <div className="divide-y divide-gray-50 max-h-[600px] overflow-y-auto custom-scrollbar">
