@@ -105,6 +105,17 @@ export const projectsApi = api.injectEndpoints({
         { type: 'Projects', id: 'LIST' },
       ],
     }),
+    syncProjectServiceJobs: builder.mutation({
+      query: (id) => ({
+        url: `/projects/${id}/sync-service-jobs`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Projects', id },
+        { type: 'Projects', id: 'LIST' },
+        { type: 'Tasks', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -120,4 +131,5 @@ export const {
   useAssignProjectMutation,
   useConfirmProjectMutation,
   useRetryProjectGoogleSheetMutation,
+  useSyncProjectServiceJobsMutation,
 } = projectsApi;

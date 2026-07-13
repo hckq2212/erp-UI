@@ -4,6 +4,7 @@ import {
   useGetProjectQuery,
   useConfirmProjectMutation,
   useRetryProjectGoogleSheetMutation,
+  useSyncProjectServiceJobsMutation,
 } from '../../../api/projects';
 import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../../utils/enums';
 import { TaskStatistics } from './TaskStatistics';
@@ -21,8 +22,10 @@ export const ProjectDetailPage = () => {
   const { data: project, isLoading, error } = useGetProjectQuery(id);
   const [confirmProject, { isLoading: isConfirming }] = useConfirmProjectMutation();
   const [retryProjectGoogleSheet, { isLoading: isRetryingGoogleSheet }] = useRetryProjectGoogleSheetMutation();
+  const [syncProjectServiceJobs, { isLoading: isSyncingServiceJobs }] = useSyncProjectServiceJobsMutation();
   const user = useSelector(selectCurrentUser);
   const canRetryGoogleSheet = ['ADMIN', 'BOD'].includes(user?.role);
+  const canSyncServiceJobs = user?.role === 'ADMIN';
 
   const isCoreMember = project?.team?.teamLead?.id === user?.id ||
     project?.team?.members?.some(m => m.user?.id === user?.id) ||
@@ -44,6 +47,15 @@ export const ProjectDetailPage = () => {
       toast.success('Tao lai Google Sheet thanh cong');
     } catch (err) {
       toast.error(err?.data?.message || 'Co loi xay ra khi tao lai Google Sheet');
+    }
+  };
+
+  const handleSyncServiceJobs = async () => {
+    try {
+      const result = await syncProjectServiceJobs(id).unwrap();
+      toast.success(`Đồng bộ xong: tạo ${result.createdTasks || 0} task, cập nhật ${result.updatedOutputTasks || 0} task đầu ra, bổ sung ${result.backfilledResults || 0} kết quả.`);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Có lỗi xảy ra khi đồng bộ công việc');
     }
   };
 
@@ -101,6 +113,16 @@ export const ProjectDetailPage = () => {
           </div>
 
           <div className="flex gap-3">
+            {canSyncServiceJobs && (
+              <button
+                onClick={handleSyncServiceJobs}
+                disabled={isSyncingServiceJobs}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm transition-all active:scale-95 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncingServiceJobs ? 'animate-spin' : ''}`} />
+                <span>{isSyncingServiceJobs ? 'Đang đồng bộ...' : 'Đồng bộ công việc'}</span>
+              </button>
+            )}
             {project.status === 'PENDING_CONFIRMATION' && (
               <button
                 onClick={handleConfirm}
