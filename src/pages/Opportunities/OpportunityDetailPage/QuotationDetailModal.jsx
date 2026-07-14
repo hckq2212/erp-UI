@@ -405,7 +405,7 @@ export const QuotationDetailModal = ({ quotationId, isOpen, onClose, formatDate,
               Sửa báo giá
             </button>
           )}
-          {quotation && quotation.status === 'DRAFT' && (opportunity?.status === 'PENDING_QUOTE_APPROVAL' || opportunity?.status === 'QUOTATION_DRAFTING' || quotation.type === 'ADDENDUM') && (currentUser.role === 'BOD' || currentUser.role === 'ADMIN') && (
+          {quotation && (quotation.status === 'DRAFT' || quotation.status === 'PENDING_APPROVAL') && (opportunity?.status === 'PENDING_QUOTE_APPROVAL' || opportunity?.status === 'QUOTATION_DRAFTING' || quotation.type === 'ADDENDUM') && (currentUser.role === 'BOD' || currentUser.role === 'ADMIN') && (
             <>
               {!isRejectingMode && (
                 <button
