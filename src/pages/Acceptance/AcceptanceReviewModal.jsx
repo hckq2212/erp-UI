@@ -267,7 +267,10 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                                                             </div>
                                                             <div className="mt-2 flex items-center gap-2">
                                                                 <a
-                                                                    href={getFilePreviewUrl(res.url, res.type)}
+                                                                    href={res.url ? getFilePreviewUrl(res.url, res.type) : undefined}
+                                                                    onClick={(e) => {
+                                                                        if (!res.url) e.preventDefault();
+                                                                    }}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     className="inline-flex items-center gap-2 px-2.5 py-1 bg-white text-blue-600 border border-blue-100 rounded-lg text-[10px] font-bold hover:bg-blue-50"
@@ -276,6 +279,17 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request }) => {
                                                                     Xem kết quả
                                                                     <ExternalLink className="w-3 h-3 opacity-40" />
                                                                 </a>
+                                                                {res.note && <p className="text-[10px] text-gray-500">{res.note}</p>}
+                                                                {res.type === 'CHECKLIST' && res.checklist?.length > 0 && (
+                                                                    <div className="space-y-1">
+                                                                        {res.checklist.map((item, itemIdx) => (
+                                                                            <div key={item.criteriaId || itemIdx} className="flex items-start gap-1.5 text-[10px] text-gray-600">
+                                                                                <CheckCircle2 className="w-3 h-3 text-emerald-500 mt-0.5 shrink-0" />
+                                                                                <span>{item.label}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
 

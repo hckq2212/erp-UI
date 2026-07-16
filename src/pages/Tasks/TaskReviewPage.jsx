@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, FileText, AlertCircle, Link as LinkIcon, MessageSquare, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, FileText, AlertCircle, Link as LinkIcon, MessageSquare, XCircle, ListChecks } from 'lucide-react';
 import { useGetTaskQuery } from '../../api/tasks';
 import { getTaskDisplayName } from '../../utils/taskName';
 import { useGetTaskReviewsQuery, useToggleTaskReviewPassedMutation, useFinalizeTaskMutation, useRejectTaskMutation } from '../../api/taskReviews';
@@ -186,22 +186,47 @@ export const TaskReviewPage = () => {
                         <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kết quả công việc</h2>
                     </div>
                     {task.result ? (
-                        <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100 flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-4 min-w-0">
-                                <div className="w-12 h-12 bg-white rounded-2xl border border-blue-200 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
-                                    <LinkIcon className="w-6 h-6" />
+                        <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100 space-y-4">
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-4 min-w-0">
+                                    <div className="w-12 h-12 bg-white rounded-2xl border border-blue-200 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+                                        {task.result.type === 'CHECKLIST' || task.result.type === 'CONFIRMATION' ? <ListChecks className="w-6 h-6" /> : <LinkIcon className="w-6 h-6" />}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-lg font-bold text-gray-900 break-all">{task.result.name || task.code}</p>
+                                        {task.result.note && <p className="text-sm text-gray-500 mt-1">{task.result.note}</p>}
+                                    </div>
                                 </div>
-                                <div className="min-w-0">
+                                {task.result.url && (
                                     <a
                                         href={getFilePreviewUrl(task.result.url, task.result.type)}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-lg font-bold text-blue-600 hover:underline break-all"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all shrink-0"
                                     >
-                                        {task.code}
+                                        Xem kết quả
                                     </a>
-                                </div>
+                                )}
                             </div>
+                            {task.result.type === 'CHECKLIST' && task.result.checklist?.length > 0 && (
+                                <div className="grid gap-2 pt-2 border-t border-blue-100">
+                                    {task.result.checklist.map((item, idx) => (
+                                        <div key={item.criteriaId || idx} className="flex items-start gap-2 text-xs text-gray-700">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                                            <div>
+                                                <p className="font-bold">{item.label}</p>
+                                                {item.description && <p className="text-gray-400 mt-0.5">{item.description}</p>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {task.result.type === 'CONFIRMATION' && (
+                                <div className="pt-2 border-t border-blue-100 text-xs font-bold text-emerald-600 flex items-center gap-2">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    Đã xác nhận hoàn thành
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="p-6 bg-gray-50 rounded-3xl border border-dashed border-gray-200 text-center text-gray-400">

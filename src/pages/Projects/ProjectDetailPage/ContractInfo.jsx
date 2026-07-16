@@ -100,17 +100,28 @@ export const ContractInfo = ({ contract, projectId }) => {
                                                             <div className="flex flex-col gap-2 items-end">
                                                                 {item.results.map((res, index) => (
                                                                     <div key={index} className="flex flex-col items-end">
-                                                                        <a
-                                                                            href={getFilePreviewUrl(res?.url, res?.type)}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            className={`font-bold border-2 px-2 py-1 rounded-md text-[10px] whitespace-nowrap transition-all hover:scale-105 active:scale-95 ${res.status === 'APPROVED' ? 'text-green-600 border-green-200 bg-green-50' :
-                                                                                res.status === 'REJECTED' ? 'text-red-600 border-red-200 bg-red-50' :
-                                                                                    'text-amber-600 border-amber-200 bg-amber-50'
-                                                                                }`}
-                                                                        >
-                                                                            {res?.name}
-                                                                        </a>
+                                                                        {res?.url ? (
+                                                                            <a
+                                                                                href={getFilePreviewUrl(res?.url, res?.type)}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                className={`font-bold border-2 px-2 py-1 rounded-md text-[10px] whitespace-nowrap transition-all hover:scale-105 active:scale-95 ${res.status === 'APPROVED' ? 'text-green-600 border-green-200 bg-green-50' :
+                                                                                    res.status === 'REJECTED' ? 'text-red-600 border-red-200 bg-red-50' :
+                                                                                        'text-amber-600 border-amber-200 bg-amber-50'
+                                                                                    }`}
+                                                                            >
+                                                                                {res?.name}
+                                                                            </a>
+                                                                        ) : (
+                                                                            <span
+                                                                                className={`font-bold border-2 px-2 py-1 rounded-md text-[10px] whitespace-nowrap ${res.status === 'APPROVED' ? 'text-green-600 border-green-200 bg-green-50' :
+                                                                                    res.status === 'REJECTED' ? 'text-red-600 border-red-200 bg-red-50' :
+                                                                                        'text-amber-600 border-amber-200 bg-amber-50'
+                                                                                    }`}
+                                                                            >
+                                                                                {res?.name}
+                                                                            </span>
+                                                                        )}
                                                                         {res.status === 'REJECTED' && res.feedback && (
                                                                             <span className="text-[9px] text-red-500 mt-1 max-w-[120px] text-right italic leading-tight">
                                                                                 Phản hồi: {res.feedback}

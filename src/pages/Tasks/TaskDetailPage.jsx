@@ -5,7 +5,7 @@ import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetMeQuery } from '../../api/auth';
 import { formatDate, formatDateTime } from '../../utils/format';
 import { toast } from 'react-toastify';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { JOB_PERFORMER_TYPE, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
@@ -65,9 +65,26 @@ export const TaskDetailPage = () => {
     const [submissionType, setSubmissionType] = useState('file'); // 'file' or 'link'
     const [resultLink, setResultLink] = useState('');
     const [resultFile, setResultFile] = useState(null);
+    const [confirmationNote, setConfirmationNote] = useState('');
+    const [checkedCriteriaIds, setCheckedCriteriaIds] = useState([]);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef(null);
+    const taskCriteria = task?.job?.criteria || [];
+    const hasCriteria = taskCriteria.length > 0;
+    const isConfirmationComplete = !hasCriteria || taskCriteria.every((criteria) => checkedCriteriaIds.includes(criteria.id));
+    const isResultReady = submissionType === 'file'
+        ? Boolean(resultFile)
+        : submissionType === 'link'
+            ? Boolean(resultLink)
+            : isConfirmationComplete;
+
+    useEffect(() => {
+        if (isResultModalOpen) {
+            setCheckedCriteriaIds([]);
+            setConfirmationNote('');
+        }
+    }, [isResultModalOpen, task?.id]);
 
     const getStatusBadge = (status) => {
         const label = TASK_STATUS_LABELS[status] || status;
@@ -118,6 +135,30 @@ export const TaskDetailPage = () => {
                 setIsUploading(false);
             } else if (submissionType === 'link' && resultLink) {
                 resultData = { type: 'LINK', url: resultLink, name: resultLink };
+            } else if (submissionType === 'confirmation') {
+                if (!isConfirmationComplete) {
+                    toast.warning('Vui lòng xác nhận đầy đủ checklist trước khi gửi');
+                    return;
+                }
+
+                const taskName = getTaskDisplayName(task);
+                resultData = hasCriteria
+                    ? {
+                        type: 'CHECKLIST',
+                        name: `Xác nhận hoàn thành: ${taskName}`,
+                        note: confirmationNote.trim(),
+                        checklist: taskCriteria.map((criteria) => ({
+                            criteriaId: criteria.id,
+                            label: criteria.name,
+                            description: criteria.description || '',
+                            checked: checkedCriteriaIds.includes(criteria.id),
+                        })),
+                    }
+                    : {
+                        type: 'CONFIRMATION',
+                        name: `Xác nhận hoàn thành: ${taskName}`,
+                        note: confirmationNote.trim() || 'Người thực hiện đã xác nhận hoàn thành task.',
+                    };
             }
 
             await submitResult({
@@ -130,6 +171,8 @@ export const TaskDetailPage = () => {
             setIsResultModalOpen(false);
             setResultFile(null);
             setResultLink('');
+            setConfirmationNote('');
+            setCheckedCriteriaIds([]);
             if (fileInputRef.current) fileInputRef.current.value = '';
         } catch (err) {
             setIsUploading(false);
@@ -518,28 +561,48 @@ export const TaskDetailPage = () => {
                             )}
                         </div>
                         {task.result ? (
-                            <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100 flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-4 min-w-0">
-                                    <div className="w-12 h-12 bg-white rounded-2xl border border-blue-200 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
-                                        <FileText className="w-6 h-6" />
+                            <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100 space-y-4">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-4 min-w-0">
+                                        <div className="w-12 h-12 bg-white rounded-2xl border border-blue-200 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+                                            {task.result.type === 'CHECKLIST' || task.result.type === 'CONFIRMATION' ? <ListChecks className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
+                                        </div>
+                                        <div className="min-w-0 overflow-hidden">
+                                            <p className="text-sm font-bold text-gray-900">{task.result.name}</p>
+                                            {task.result.note && (
+                                                <p className="text-xs text-gray-500 mt-1">{task.result.note}</p>
+                                            )}
+                                            {task.lastSubmittedBy && (
+                                                <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">
+                                                    Người làm: {task.lastSubmittedBy.fullName}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="min-w-0 overflow-hidden">
-                                        <p className="text-sm font-bold text-gray-900">{task.result.name}</p>
-                                        {task.lastSubmittedBy && (
-                                            <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">
-                                                Người làm: {task.lastSubmittedBy.fullName}
-                                            </p>
-                                        )}
-                                    </div>
+                                    {task.result.url && (
+                                        <a
+                                            href={getFilePreviewUrl(task.result.url, task.result.type)}
+                                            target="blank"
+                                            rel="noopener noreferrer"
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all shrink-0"
+                                        >
+                                            Xem ngay
+                                        </a>
+                                    )}
                                 </div>
-                                <a
-                                    href={getFilePreviewUrl(task.result.url, task.result.type)}
-                                    target="blank"
-                                    rel="noopener noreferrer"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all shrink-0"
-                                >
-                                    Xem ngay
-                                </a>
+                                {task.result.type === 'CHECKLIST' && task.result.checklist?.length > 0 && (
+                                    <div className="grid gap-2 pt-2 border-t border-blue-100">
+                                        {task.result.checklist.map((item, idx) => (
+                                            <div key={item.criteriaId || idx} className="flex items-start gap-2 text-xs text-gray-700">
+                                                <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                                                <div>
+                                                    <p className="font-bold">{item.label}</p>
+                                                    {item.description && <p className="text-gray-400 mt-0.5">{item.description}</p>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-12 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
@@ -689,6 +752,16 @@ export const TaskDetailPage = () => {
                                 <LinkIcon className="w-4 h-4" />
                                 Gửi link
                             </button>
+                            <button
+                                onClick={() => setSubmissionType('confirmation')}
+                                className={cn(
+                                    "flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
+                                    submissionType === 'confirmation' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                                )}
+                            >
+                                <ListChecks className="w-4 h-4" />
+                                Xác nhận
+                            </button>
                         </div>
 
                         {submissionType === 'file' ? (
@@ -741,7 +814,7 @@ export const TaskDetailPage = () => {
                                     </button>
                                 )}
                             </div>
-                        ) : (
+                        ) : submissionType === 'link' ? (
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Đường dẫn kết quả</label>
                                 <div className="relative">
@@ -755,6 +828,55 @@ export const TaskDetailPage = () => {
                                     />
                                 </div>
                                 <p className="text-[10px] text-gray-400 italic ml-2">* Vui lòng đảm bảo quyền truy cập link cho quản lý</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {hasCriteria ? (
+                                    <div className="space-y-3">
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-900">Checklist tự xác nhận</p>
+                                            <p className="text-xs text-gray-400 mt-1">Tick đầy đủ tiêu chí trước khi gửi Team Lead đánh giá.</p>
+                                        </div>
+                                        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                                            {taskCriteria.map((criteria) => (
+                                                <label key={criteria.id} className="flex items-start gap-3 p-3 rounded-2xl border border-gray-100 bg-gray-50 cursor-pointer hover:border-blue-200">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                        checked={checkedCriteriaIds.includes(criteria.id)}
+                                                        onChange={(e) => {
+                                                            setCheckedCriteriaIds((prev) => e.target.checked
+                                                                ? [...prev, criteria.id]
+                                                                : prev.filter((criteriaId) => criteriaId !== criteria.id)
+                                                            );
+                                                        }}
+                                                    />
+                                                    <span className="min-w-0">
+                                                        <span className="block text-sm font-bold text-gray-700">{criteria.name}</span>
+                                                        {criteria.description && <span className="block text-xs text-gray-400 mt-0.5">{criteria.description}</span>}
+                                                    </span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    // <div className="p-5 rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 text-center">
+                                    //     <ListChecks className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                                    //     <p className="text-sm font-bold text-gray-800">Task này không có checklist</p>
+                                    //     <p className="text-xs text-gray-500 mt-1">Xác nhận để gửi Team Lead đánh giá ở bước tiếp theo.</p>
+                                    // </div>
+                                    <div></div>
+                                )}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Ghi chú hoàn thành</label>
+                                    <textarea
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
+                                        rows="3"
+                                        value={confirmationNote}
+                                        onChange={(e) => setConfirmationNote(e.target.value)}
+                                        placeholder="Ghi chú thêm nếu cần..."
+                                    />
+                                </div>
                             </div>
                         )}
 
@@ -770,7 +892,7 @@ export const TaskDetailPage = () => {
                                 className="flex-1 rounded-2xl py-4 shadow-lg shadow-blue-200"
                                 onClick={handleResultSubmit}
                                 isLoading={isSubmittingResult || isUploading}
-                                disabled={isSubmittingResult || isUploading || (!resultFile && !resultLink)}
+                                disabled={isSubmittingResult || isUploading || !isResultReady}
                             >
                                 {isUploading ? 'Đang tải lên...' : 'Hoàn tất'}
                             </Button>

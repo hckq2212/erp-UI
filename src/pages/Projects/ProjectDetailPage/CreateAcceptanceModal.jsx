@@ -112,14 +112,21 @@ export const CreateAcceptanceModal = ({ isOpen, onClose, contract, projectId }) 
                                                 return uniqueResults.reverse()
                                                     .filter(r => r.status === 'PENDING')
                                                     .map((res, i) => (
-                                                        <a key={i} href={getFilePreviewUrl(res.url, res.type)}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="flex items-center gap-1 text-[10px] bg-white px-2 py-0.5 rounded-lg border border-gray-100 text-gray-500 hover:text-emerald-600 transition-colors">
-                                                            <FileText className="w-3 h-3" />
-                                                            {res.name}
-                                                        </a>
+                                                        res.url ? (
+                                                            <a key={i} href={getFilePreviewUrl(res.url, res.type)}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="flex items-center gap-1 text-[10px] bg-white px-2 py-0.5 rounded-lg border border-gray-100 text-gray-500 hover:text-emerald-600 transition-colors">
+                                                                <FileText className="w-3 h-3" />
+                                                                {res.name}
+                                                            </a>
+                                                        ) : (
+                                                            <span key={i} className="flex items-center gap-1 text-[10px] bg-white px-2 py-0.5 rounded-lg border border-gray-100 text-emerald-600">
+                                                                <CheckCircle2 className="w-3 h-3" />
+                                                                {res.name}
+                                                            </span>
+                                                        )
                                                     ));
                                             })()}
                                         </div>
