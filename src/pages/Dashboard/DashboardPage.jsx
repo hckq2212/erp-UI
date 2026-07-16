@@ -20,6 +20,7 @@ import { ReviewQueueView } from '../../components/dashboard/ReviewQueueView';
 export const DashboardPage = () => {
     const navigate = useNavigate();
     const { data: user } = useGetMeQuery();
+    const isAdminOrBod = user?.role === 'ADMIN' || user?.role === 'BOD';
     const [selectedMemberId, setSelectedMemberId] = useState(null);
     const [selectedDate, setSelectedDate] = useState({
         month: new Date().getMonth() + 1,
@@ -30,7 +31,10 @@ export const DashboardPage = () => {
         month: selectedDate.month,
         year: selectedDate.year
     });
-    const { data: awaitingReviewTasks, isLoading: isTasksLoading } = useGetTasksQuery({ status: 'AWAITING_REVIEW' });
+    const { data: awaitingReviewTasks, isLoading: isTasksLoading } = useGetTasksQuery(
+        { status: 'AWAITING_REVIEW' },
+        { skip: isAdminOrBod }
+    );
 
     // Identify if the user is a lead of any team
     const { data: teams } = useGetTeamsQuery();
@@ -105,10 +109,17 @@ export const DashboardPage = () => {
                         transition={{ delay: 0.4 }}
                         className="space-y-6 pb-12"
                     >
-                        {!isViewingMember && (
+                        {!isViewingMember && !isAdminOrBod && (
                             <ReviewQueueView
                                 awaitingReviewTasks={awaitingReviewTasks}
                                 user={user}
+                                navigate={navigate}
+                            />
+                        )}
+
+                        {dashboard.admin && !isViewingMember && isAdminOrBod && (
+                            <AdminView
+                                dashboard={dashboard}
                                 navigate={navigate}
                             />
                         )}
@@ -126,7 +137,7 @@ export const DashboardPage = () => {
                             </div>
                         )} */}
 
-                        {(dashboard.member || isViewingMember) && user?.role !== 'BD' && user?.role !== 'SALE' && (
+                        {(dashboard.member || isViewingMember) && user?.role !== 'BD' && user?.role !== 'SALE' && (!isAdminOrBod || isViewingMember) && (
                             <div className="">
                                 <MemberView
                                     dashboard={dashboard}
