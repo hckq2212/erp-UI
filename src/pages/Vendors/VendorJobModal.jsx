@@ -75,7 +75,8 @@ export const VendorJobModal = ({ isOpen, onClose, onSubmit, vendorId, existingJo
                 const newJob = await createJob({
                     name: data.name,
                     code: data.code,
-                    performerType: data.performerType
+                    performerType: data.performerType,
+                    costPrice: parseInt(data.price)
                 }).unwrap();
                 jobId = newJob.id;
             }

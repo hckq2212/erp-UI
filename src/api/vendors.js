@@ -58,6 +58,8 @@ export const vendorsApi = api.injectEndpoints({
             invalidatesTags: (result, error, { id }) => [
                 { type: 'VendorJobs', id },
                 { type: 'Vendors', id },
+                { type: 'Jobs', id: 'LIST' },
+                { type: 'Services', id: 'LIST' },
             ],
         }),
         updateVendorJob: builder.mutation({
@@ -69,6 +71,8 @@ export const vendorsApi = api.injectEndpoints({
             invalidatesTags: (result, error, { id }) => [
                 { type: 'VendorJobs', id },
                 { type: 'Vendors', id },
+                { type: 'Jobs', id: 'LIST' },
+                { type: 'Services', id: 'LIST' },
             ],
         }),
         removeVendorJob: builder.mutation({
@@ -79,6 +83,8 @@ export const vendorsApi = api.injectEndpoints({
             invalidatesTags: (result, error, { id }) => [
                 { type: 'VendorJobs', id },
                 { type: 'Vendors', id },
+                { type: 'Jobs', id: 'LIST' },
+                { type: 'Services', id: 'LIST' },
             ],
         }),
         getVendorsByJob: builder.query({
