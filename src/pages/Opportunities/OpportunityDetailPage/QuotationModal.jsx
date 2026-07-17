@@ -486,14 +486,14 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                             {pkg.name}
                           </div>
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-2 py-2">
                           <div className="flex items-center justify-center">
                             <input
                               type="number"
                               min="1"
                               value={pkg.quantity}
                               onChange={(e) => handleQuantityChange(pkg.name, e.target.value)}
-                              className="w-16 px-2 py-1 text-center border-2 border-blue-200 rounded text-sm font-bold text-blue-900 bg-white"
+                              className="w-10 py-1 text-center border-2 border-blue-200 rounded text-sm font-bold text-blue-900 bg-white"
                             />
                             <span className="ml-1 text-[10px] text-blue-400 font-black uppercase">Gói</span>
                           </div>
@@ -585,17 +585,21 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                           <td className="px-4 py-3 text-sm text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10 border-r border-gray-100 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                             {item.serviceName}
                           </td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="number"
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) => handleStandaloneQuantityChange(item.originalIndex, e.target.value)}
-                              className="w-20 mx-auto px-2 py-1 text-center border border-gray-300 rounded text-sm block"
-                            />
-                            {item.unit && (
-                              <span className="text-[10px] text-gray-400 font-bold uppercase block mt-1">{item.unit}</span>
-                            )}
+                          <td className="px-2 py-2 align-middle">
+                            <div className="flex items-center justify-center gap-1 leading-tight">
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) => handleStandaloneQuantityChange(item.originalIndex, e.target.value)}
+                                className="w-10 py-1 text-center border border-gray-300 rounded text-sm"
+                              />
+                              {item.unit && (
+                                <span className="text-[10px] text-gray-400 font-bold uppercase whitespace-nowrap">
+                                  {item.unit}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-right text-sm text-gray-900">
                             {formatNumber(item.costPrice)}
