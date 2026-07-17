@@ -379,7 +379,7 @@ export const QuotationDetailModal = ({
                                     </div>
                                   </td>
                                   <td className="px-4 py-3 text-center">
-                                    <span className="rounded-md bg-gray-100 px-2 py-1 text-sm font-bold text-gray-900">
+                                    <span className=" px-2 py-1 text-sm font-bold text-gray-900">
                                       {item.quantity} {item.service?.unit || item.unit}
                                     </span>
                                   </td>
