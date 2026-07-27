@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Upload, CheckCircle, FileCheck, Loader2, X, Send, Link2 } from 'lucide-react';
+import { FileText, Upload, CheckCircle, FileCheck, Loader2, X, Send, Link2, FileSpreadsheet } from 'lucide-react';
 import { getFilePreviewUrl } from '../../../utils/cloudinary';
 
 export const ProposalManagement = ({
@@ -21,12 +21,16 @@ export const ProposalManagement = ({
   const [uploadMethod, setUploadMethod] = useState('');
   const [proposalFile, setProposalFile] = useState(null);
   const [contractLink, setContractLink] = useState('');
+  const [quotationMethod, setQuotationMethod] = useState('');
+  const [quotationFile, setQuotationFile] = useState(null);
   const [quotationLink, setQuotationLink] = useState('');
 
   const openProposalEditor = () => {
     setUploadMethod('');
     setProposalFile(null);
     setContractLink('');
+    setQuotationMethod(contract.quotation_link ? 'LINK' : '');
+    setQuotationFile(null);
     setQuotationLink(contract.quotation_link || '');
     setIsEditingProposal(true);
   };
@@ -37,12 +41,19 @@ export const ProposalManagement = ({
     setContractLink('');
   };
 
+  const changeQuotationMethod = (method) => {
+    setQuotationMethod(method);
+    setQuotationFile(null);
+    setQuotationLink(method === 'LINK' ? contract.quotation_link || '' : '');
+  };
+
   const handleSubmitProposal = async (event) => {
     event.preventDefault();
     const succeeded = await onUploadProposal({
       file: uploadMethod === 'FILE' ? proposalFile : undefined,
       contractLink: uploadMethod === 'LINK' ? contractLink : undefined,
-      quotationLink,
+      quotationLink: quotationMethod === 'LINK' ? quotationLink : undefined,
+      quotationFile: quotationMethod === 'FILE' ? quotationFile : undefined,
     });
     if (succeeded) setIsEditingProposal(false);
   };
@@ -163,12 +174,12 @@ export const ProposalManagement = ({
 
           {contract.quotation_link && !isEditingProposal && (
             <a
-              href={contract.quotation_link}
+              href={contract.quotation_link.includes('res.cloudinary.com') ? getFilePreviewUrl(contract.quotation_link) : contract.quotation_link}
               target="_blank"
               rel="noreferrer"
               className="mt-3 flex w-fit items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
             >
-              <Link2 className="w-4 h-4" />
+              {contract.quotation_link.includes('res.cloudinary.com') ? <FileSpreadsheet className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
               Xem link báo giá
             </a>
           )}
@@ -230,14 +241,50 @@ export const ProposalManagement = ({
               )}
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">Link báo giá (nếu có)</label>
-                <input
-                  type="url"
-                  value={quotationLink}
-                  onChange={(event) => setQuotationLink(event.target.value)}
-                  placeholder="https://docs.google.com/..."
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                />
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">Báo giá (nếu có)</label>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${quotationMethod === 'LINK' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <input
+                      type="radio"
+                      name="quotationUploadMethod"
+                      value="LINK"
+                      checked={quotationMethod === 'LINK'}
+                      onChange={() => changeQuotationMethod('LINK')}
+                    />
+                    <Link2 className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-gray-700">Nhập link báo giá</span>
+                  </label>
+                  <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${quotationMethod === 'FILE' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <input
+                      type="radio"
+                      name="quotationUploadMethod"
+                      value="FILE"
+                      checked={quotationMethod === 'FILE'}
+                      onChange={() => changeQuotationMethod('FILE')}
+                    />
+                    <FileSpreadsheet className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-gray-700">Tải file Excel</span>
+                  </label>
+                </div>
+
+                {quotationMethod === 'LINK' && (
+                  <input
+                    type="url"
+                    value={quotationLink}
+                    onChange={(event) => setQuotationLink(event.target.value)}
+                    placeholder="https://docs.google.com/..."
+                    className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                )}
+
+                {quotationMethod === 'FILE' && (
+                  <input
+                    type="file"
+                    accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    onChange={(event) => setQuotationFile(event.target.files?.[0] || null)}
+                    className="mt-3 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                )}
               </div>
 
               <div className="flex justify-end gap-2">

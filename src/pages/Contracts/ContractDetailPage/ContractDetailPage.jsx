@@ -56,7 +56,7 @@ export const ContractDetailPage = () => {
     return new Date(dateString).toLocaleDateString('vi-VN');
   };
 
-  const handleUploadProposal = async ({ file, contractLink, quotationLink }) => {
+  const handleUploadProposal = async ({ file, contractLink, quotationLink, quotationFile }) => {
     if (!file && !contractLink) {
       toast.error('Vui lòng tải file .docx hoặc nhập link hợp đồng');
       return false;
@@ -67,18 +67,26 @@ export const ContractDetailPage = () => {
       return false;
     }
 
+    if (quotationFile && !/\.(xls|xlsx)$/i.test(quotationFile.name)) {
+      toast.error('Chỉ chấp nhận file Excel .xls hoặc .xlsx cho báo giá');
+      return false;
+    }
+
     try {
-      setIsCloudinaryUploading(Boolean(file));
+      setIsCloudinaryUploading(Boolean(file || quotationFile));
       setUploadProgress(0);
       const uploadedFile = file
         ? await uploadToCloudinary(file, "GETVINI/ERP/proposal", setUploadProgress)
+        : undefined;
+      const uploadedQuotationFile = quotationFile
+        ? await uploadToCloudinary(quotationFile, "GETVINI/ERP/quotation", setUploadProgress)
         : undefined;
 
       await uploadProposal({
         id: contract.id,
         file: uploadedFile,
         contractLink: contractLink?.trim() || undefined,
-        quotationLink: quotationLink?.trim() || undefined,
+        quotationLink: uploadedQuotationFile?.url || quotationLink?.trim() || undefined,
       }).unwrap();
       toast.success('Cập nhật proposal thành công');
       return true;
