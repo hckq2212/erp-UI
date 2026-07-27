@@ -109,7 +109,7 @@ export const DashboardPage = () => {
                         transition={{ delay: 0.4 }}
                         className="space-y-6 pb-12"
                     >
-                        {!isViewingMember && !isAdminOrBod && (
+                        {!isViewingMember && !isAdminOrBod && !isTeamLead && (
                             <ReviewQueueView
                                 awaitingReviewTasks={awaitingReviewTasks}
                                 user={user}
@@ -148,6 +148,8 @@ export const DashboardPage = () => {
                                     isTeamLead={isTeamLead}
                                     onSelectMember={setSelectedMemberId}
                                     currentUserId={user?.id}
+                                    awaitingReviewTasks={awaitingReviewTasks}
+                                    user={user}
                                 />
                             </div>
                         )}

@@ -2,7 +2,7 @@ import React from 'react';
 import { MetricCard } from './MetricCard';
 import { Clock, CheckCircle2, Layers, Coins, TrendingUp } from 'lucide-react';
 
-export const MetricCardsGrid = ({ member }) => {
+export const MetricCardsGrid = ({ member, projectMetricOverride }) => {
     const statusCounts = member?.statusCounts || {};
     const completedCount = Number(statusCounts.COMPLETED || 0) + Number(statusCounts.ACCEPTED || 0) + Number(statusCounts.DONE || 0);
     const totalViniCoin = member?.vinicoinTotal?.toLocaleString() || 0;
@@ -16,7 +16,7 @@ export const MetricCardsGrid = ({ member }) => {
                 color="blue"
                 sparklineData={[]}
             />
-            
+
             <MetricCard
                 title="Đã nghiệm thu"
                 value={completedCount}
@@ -25,13 +25,15 @@ export const MetricCardsGrid = ({ member }) => {
                 sparklineData={[]}
             />
 
-            <MetricCard
-                title="Dự án tham gia"
-                value={member?.participatingProjects?.length || 0}
-                icon={Layers}
-                color="purple"
-                sparklineData={[]}
-            />
+            {projectMetricOverride || (
+                <MetricCard
+                    title="Dự án tham gia"
+                    value={member?.participatingProjects?.length || 0}
+                    icon={Layers}
+                    color="purple"
+                    sparklineData={[]}
+                />
+            )}
 
             <MetricCard
                 title="Vinicoin Tổng"
