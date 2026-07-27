@@ -75,7 +75,7 @@ export const MePage = () => {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm"
+                className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 mt-2 rounded-[0.5rem] border border-gray-100 shadow-sm"
             >
                 <div className="flex items-center gap-6">
                     <div className="w-24 h-24 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-[2rem] flex items-center justify-center font-black text-4xl shadow-2xl shadow-blue-100 ring-8 ring-blue-50">
@@ -128,7 +128,7 @@ export const MePage = () => {
                     <motion.div
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm"
+                        className="bg-white p-10 rounded-[0.5rem] border border-gray-100 shadow-sm"
                     >
                         <div className="flex items-center gap-3 mb-8">
                             <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
@@ -192,7 +192,7 @@ export const MePage = () => {
                                 </div>
                             </div>
 
-                            <div className="pt-6 border-t border-gray-50">
+                            {/* <div className="pt-6 border-t border-gray-50">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
                                         <Lock className="w-5 h-5" />
@@ -225,19 +225,19 @@ export const MePage = () => {
                                     </div>
                                 </div>
                                 <p className="mt-3 text-[10px] text-gray-400 italic">* Để trống nếu không muốn thay đổi mật khẩu</p>
-                            </div>
+                            </div> */}
 
                             <button
                                 type="submit"
                                 disabled={isUpdating}
-                                className="w-full mt-10 py-5 bg-blue-600 text-white rounded-[1.5rem] font-black text-base shadow-2xl shadow-blue-100 hover:bg-blue-700 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-3 tracking-tight"
+                                className="w-fit mt-10 py-5 px-5 bg-blue-600 text-white rounded-[0.5rem] font-black text-base shadow-2xl shadow-blue-100 hover:bg-blue-700 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-3 tracking-tight"
                             >
                                 {isUpdating ? (
                                     <Loader2 className="w-6 h-6 animate-spin" />
                                 ) : (
                                     <Save className="w-6 h-6" />
                                 )}
-                                Lưu thay đổi hồ sơ
+                                Lưu thay đổi
                             </button>
                         </form>
                     </motion.div>
