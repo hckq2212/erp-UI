@@ -54,7 +54,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
           selectedPrice: sellingPrice,
           profitMargin: calculateProfitMargin(sellingPrice, costPrice),
           vat: sellingPrice * 0.08,
-          totalWithVat: roundToThousands(sellingPrice * 1.08),
+          totalWithVat: sellingPrice * 1.08,
           packageName: detail.packageName || 'STANDALONE',
           packageQuantity: detail.packageQuantity || 1,
           norm: detail.quantity / (detail.packageQuantity || 1),
@@ -127,10 +127,6 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
 
   const roundToTenThousands = (value) => {
     return Math.ceil(value / 10000) * 10000;
-  };
-
-  const roundToThousands = (value) => {
-    return Math.ceil(value / 1000) * 1000;
   };
 
   const calculateProfitMargin = (sellingPrice, costPrice) => {
@@ -327,8 +323,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
   const totals = items.reduce((acc, item) => {
     const revenue = (item.selectedPrice || 0) * (item.quantity || 0);
     const cost = (item.costPrice || 0) * (item.quantity || 0);
-    const vat = Math.round(revenue * 0.08);
-    const totalWithVat = roundToThousands(revenue + vat);
+    const vat = revenue * 0.08;
+    const totalWithVat = revenue + vat;
     return {
       revenue: acc.revenue + revenue,
       cost: acc.cost + cost,
@@ -365,8 +361,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
           };
         }
         const itemRevenue = item.selectedPrice * item.quantity;
-        const itemVat = Math.round(itemRevenue * 0.08);
-        const itemTotalWithVat = roundToThousands(itemRevenue + itemVat);
+        const itemVat = itemRevenue * 0.08;
+        const itemTotalWithVat = itemRevenue + itemVat;
 
         packages[key].costPrice += item.costPrice * (item.norm || 1);
         packages[key].minPrice += item.minPrice * (item.norm || 1);
@@ -624,10 +620,10 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                             {item.profitMargin.toFixed(0)}%
                           </td>
                           <td className="px-4 py-3 text-right text-sm text-gray-900">
-                            {formatNumber(Math.round((item.selectedPrice * item.quantity) * 0.08))}
+                            {formatNumber((item.selectedPrice * item.quantity) * 0.08)}
                           </td>
                           <td className="px-4 py-3 text-right text-sm font-bold text-gray-900">
-                            {formatNumber(roundToThousands((item.selectedPrice * item.quantity) * 1.08))}
+                            {formatNumber((item.selectedPrice * item.quantity) * 1.08)}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <button

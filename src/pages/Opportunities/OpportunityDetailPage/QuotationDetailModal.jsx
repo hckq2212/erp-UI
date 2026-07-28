@@ -40,8 +40,6 @@ export const QuotationDetailModal = ({
   const [expandedPackages, setExpandedPackages] = useState({});
   const [expandedServices, setExpandedServices] = useState({});
 
-  const roundToTenThousands = (value) => Math.ceil(value / 10000) * 10000;
-
   const { aggregatedItems, totalWithVat } = useMemo(() => {
     if (!quotation?.details) {
       return { aggregatedItems: { packages: [], standalone: [] }, totalWithVat: 0 };
@@ -55,9 +53,9 @@ export const QuotationDetailModal = ({
       const sellingPrice = parseFloat(detail.sellingPrice || 0);
       const quantity = detail.quantity || 0;
       const itemRevenue = sellingPrice * quantity;
-      const itemVat = Math.round(itemRevenue * 0.08);
+      const itemVat = itemRevenue * 0.08;
 
-      runningTotalWithVat += roundToTenThousands(itemRevenue + itemVat);
+      runningTotalWithVat += itemRevenue + itemVat;
 
       const groupKey = detail.packageName || 'STANDALONE';
 
@@ -66,7 +64,7 @@ export const QuotationDetailModal = ({
           ...detail,
           revenue: itemRevenue,
           vat: itemVat,
-          totalWithVat: roundToTenThousands(itemRevenue + itemVat)
+          totalWithVat: itemRevenue + itemVat
         });
         return;
       }
@@ -89,7 +87,7 @@ export const QuotationDetailModal = ({
       packages[groupKey].sellingPrice += sellingPrice * norm;
       packages[groupKey].costAtSale += parseFloat(detail.costAtSale || 0) * norm;
       packages[groupKey].vat += itemVat;
-      packages[groupKey].totalWithVat += roundToTenThousands(itemRevenue + itemVat);
+      packages[groupKey].totalWithVat += itemRevenue + itemVat;
       packages[groupKey].items.push({
         ...detail,
         norm
