@@ -2,7 +2,12 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight, Flame } from 'lucide-react';
 
-export const HotProjectList = ({ projects = [], navigate }) => {
+export const HotProjectList = ({
+    projects = [],
+    navigate,
+    title = 'Dự án đang tham gia',
+    subtitle = 'Tiến độ dự án',
+}) => {
     // Helper to get project avatar: first letter after "Dự án "
     const getProjectAvatar = (name) => {
         if (!name) return '?';
@@ -11,15 +16,15 @@ export const HotProjectList = ({ projects = [], navigate }) => {
     };
 
     return (
-        <div className="bg-white p-4 rounded-[1rem] border border-slate-100 shadow-sm h-full">
+        <div className="bg-white p-4  rounded-[1rem] border border-slate-100 shadow-sm h-full">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-rose-50 text-rose-500 rounded-lg">
                         <Flame size={18} />
                     </div>
                     <div>
-                        <h3 className="text-sm font-black text-slate-900 tracking-tight">Dự án đang tham gia</h3>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Tiến độ dự án</p>
+                        <h3 className="text-sm font-black text-slate-900 tracking-tight">{title}</h3>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{subtitle}</p>
                     </div>
                 </div>
                 <button className="text-[9px] font-black text-slate-400 hover:text-rose-500 transition-colors uppercase tracking-widest flex items-center gap-1">
@@ -38,7 +43,7 @@ export const HotProjectList = ({ projects = [], navigate }) => {
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: index * 0.1 }}
                                 key={project.id}
-                                className="group cursor-pointer"
+                                className="group cursor-pointer ml-2"
                                 onClick={() => navigate(`/projects/${project.id}`)}
                             >
                                 <div className="flex items-center justify-between mb-2">

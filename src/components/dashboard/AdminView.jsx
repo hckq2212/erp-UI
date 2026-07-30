@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
     ArrowUpRight,
     CalendarDays,
@@ -7,10 +7,17 @@ import {
     FileSignature,
     FileText,
     FolderKanban,
+    Layers,
+    TrendingUp,
     UserRound,
+    Users,
+    WalletCards,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { formatCurrency } from '../../utils/format';
 import { PROJECT_STATUS_COLORS } from '../../utils/enums';
+import { MetricCard } from './member/MetricCard';
+import { HotProjectList } from './member/HotProjectList';
 
 const PROJECT_STATUS_LABELS = {
     PENDING_CONFIRMATION: 'Chờ xác nhận',
@@ -31,6 +38,132 @@ const getProgressTone = (progress = 0) => {
     if (progress > 0) return 'bg-amber-500';
     return 'bg-slate-300';
 };
+
+const formatCompactCurrency = (value = 0) => {
+    const amount = Number(value || 0);
+    if (!amount) return '0';
+
+    return new Intl.NumberFormat('vi-VN', {
+        notation: 'compact',
+        maximumFractionDigits: 1,
+    }).format(amount);
+};
+
+const AdminFocusCard = ({
+    pendingApprovalCount = 0,
+    activeProjectCount = 0,
+    averageProgress = 0,
+    totalDebt = 0,
+    onViewApprovals,
+}) => (
+    <div className="relative overflow-hidden bg-gradient-to-br from-[#FFF6EF] via-[#FFEBE0] to-[#FFDBC4] rounded-[1.25rem] p-5 text-[#1A1A1A] shadow-xl shadow-orange-100/40 border border-[#FFE6D5]">
+        <svg className="absolute bottom-0 right-0 w-[550px] h-[350px] pointer-events-none z-0 opacity-80" viewBox="0 0 500 300" fill="none">
+            <path d="M0 300C120 230 250 290 500 160V300H0Z" fill="url(#admin-wave-grad)" />
+            <defs>
+                <linearGradient id="admin-wave-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#FFEADA" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#FFC8A6" stopOpacity="0.6" />
+                </linearGradient>
+            </defs>
+        </svg>
+        <svg className="absolute top-0 right-0 w-[280px] h-[180px] pointer-events-none z-0 opacity-40" viewBox="0 0 300 200" fill="none">
+            <path d="M80 0C140 70 200 40 300 100V0H80Z" fill="url(#admin-top-wave-grad)" />
+            <defs>
+                <linearGradient id="admin-top-wave-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#FFF2E8" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="#FFE2CD" stopOpacity="0.7" />
+                </linearGradient>
+            </defs>
+        </svg>
+
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+            <div className="lg:col-span-8 space-y-4">
+                <div>
+                    <p className="text-[#FF6633] text-[10px] font-black uppercase tracking-[0.2em] mb-2">ADMIN FOCUS</p>
+                    <h2 className="text-2xl sm:text-3xl font-semibold leading-tight tracking-tight text-[#1A1A1A]">
+                        Theo doi phe duyet va tien do<br />van hanh trong thang
+                    </h2>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button
+                        type="button"
+                        onClick={onViewApprovals}
+                        className="bg-white rounded-xl p-4 flex items-center gap-3 text-left shadow-md shadow-orange-100/40 border border-orange-50/50 hover:scale-[1.03] transition"
+                    >
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-red-50 text-red-500 shadow-inner flex-shrink-0">
+                            <ClipboardCheck size={18} />
+                        </div>
+                        <div>
+                            <span className="text-2xl font-black text-[#1A1A1A] leading-tight block">{pendingApprovalCount}</span>
+                            <p className="text-[10px] font-bold text-gray-500 leading-tight">Cần phê duyệt</p>
+                            <span className="text-[9px] font-bold text-red-500">Xử lý ưu tiên</span>
+                        </div>
+                    </button>
+
+                    <div className="bg-white rounded-xl p-4 flex items-center gap-3 shadow-md shadow-orange-100/40 border border-orange-50/50 hover:scale-[1.03] transition">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-50 text-blue-500 shadow-inner flex-shrink-0">
+                            <FolderKanban size={18} />
+                        </div>
+                        <div>
+                            <span className="text-2xl font-black text-[#1A1A1A] leading-tight block">{activeProjectCount}</span>
+                            <p className="text-[10px] font-bold text-gray-500 leading-tight">Dự án đang chạy</p>
+                            <span className="text-[9px] font-bold text-blue-500">Cần bám tiến độ</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl p-4 flex items-center gap-3 shadow-md shadow-orange-100/40 border border-orange-50/50 hover:scale-[1.03] transition">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-50 text-amber-500 shadow-inner flex-shrink-0">
+                            <WalletCards size={18} />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="text-2xl font-black text-[#1A1A1A] leading-tight block truncate">{formatCompactCurrency(totalDebt)}</span>
+                            <p className="text-[10px] font-bold text-gray-500 leading-tight">Công nợ</p>
+                            <span className="text-[9px] font-bold text-amber-500">Theo dõi thu hồi</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="hidden lg:flex lg:col-span-4 justify-center items-center relative z-10">
+                <div className="relative w-56 h-56 rounded-full bg-white flex items-center justify-center shadow-xl shadow-orange-100/50 border-4 border-white">
+                    <div className="relative w-44 h-44 flex items-center justify-center">
+                        <svg className="w-full h-full transform -rotate-90">
+                            <circle cx="88" cy="88" r="72" stroke="#FFF3EB" strokeWidth="10" fill="transparent" />
+                            <motion.circle
+                                cx="88"
+                                cy="88"
+                                r="72"
+                                stroke="#FF511A"
+                                strokeWidth="10"
+                                fill="transparent"
+                                strokeDasharray={2 * Math.PI * 72}
+                                initial={{ strokeDashoffset: 2 * Math.PI * 72 }}
+                                animate={{ strokeDashoffset: 2 * Math.PI * 72 * (1 - averageProgress / 100) }}
+                                transition={{ duration: 1.5, ease: "easeOut" }}
+                                strokeLinecap="round"
+                            />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-5xl font-black tracking-tighter text-[#FF511A]">{averageProgress}%</span>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Tiến độ TB</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+const AdminMetricCardsGrid = ({ admin, approvalCount, activeProjectCount, averageProgress }) => (
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <MetricCard title="Khách hàng" value={admin?.totalCustomers ?? 0} icon={Users} color="blue" sparklineData={[]} />
+        <MetricCard title="Khách hàng mới" value={admin?.newCustomers ?? 0} icon={TrendingUp} color="emerald" sparklineData={[]} />
+        <MetricCard title="Cần phê duyệt" value={approvalCount} icon={ClipboardCheck} color="purple" sparklineData={[]} />
+        <MetricCard title="Doanh thu" value={formatCompactCurrency(admin?.totalRevenue)} icon={WalletCards} color="orange" sparklineData={[]} />
+        <MetricCard title="Dự án đang chạy" value={activeProjectCount} icon={Layers} color="sky" sparklineData={[]} subValue={`${averageProgress}% tiến độ TB`} />
+    </div>
+);
 
 const SectionPanel = ({ title, count, icon: Icon, accentClass, children }) => (
     <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -163,53 +296,77 @@ const ProjectProgressCard = ({ project, navigate }) => {
 export const AdminView = ({ dashboard, navigate }) => {
     if (!dashboard?.admin) return null;
 
-    const quotations = dashboard.admin?.approvalQueue?.quotations || [];
-    const contracts = dashboard.admin?.approvalQueue?.contracts || [];
-    const currentProjects = dashboard.admin?.currentProjects || [];
-    const approvalItems = [...quotations, ...contracts]
-        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    const admin = dashboard.admin;
+    const quotations = admin?.approvalQueue?.quotations || [];
+    const contracts = admin?.approvalQueue?.contracts || [];
+    const currentProjects = admin?.currentProjects || [];
+    const approvalItems = useMemo(
+        () => [...quotations, ...contracts]
+            .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()),
+        [quotations, contracts]
+    );
+    const averageProgress = useMemo(() => {
+        if (!currentProjects.length) return 0;
+        const totalProgress = currentProjects.reduce((sum, project) => sum + Number(project.progress || 0), 0);
+        return Math.round(totalProgress / currentProjects.length);
+    }, [currentProjects]);
+    const approvalCount = admin?.pendingApprovalCount ?? approvalItems.length;
+    const projectProgressItems = currentProjects.map((project) => ({
+        ...project,
+        clientName: project.customerName,
+    }));
 
     return (
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(360px,0.85fr)_minmax(0,1.4fr)]">
-            <SectionPanel
-                title="Danh sách cần duyệt"
-                count={approvalItems.length}
-                icon={ClipboardCheck}
-                accentClass="bg-indigo-50 text-indigo-600"
-            >
-                {approvalItems.length > 0 ? (
-                    <div className="space-y-3">
-                        {approvalItems.map((item) => (
-                            <ApprovalItem key={`${item.type}-${item.id}`} item={item} navigate={navigate} />
-                        ))}
-                    </div>
-                ) : (
-                    <EmptyState
-                        icon={ClipboardCheck}
-                        text="Không có báo giá hoặc hợp đồng nào đang chờ duyệt"
-                    />
-                )}
-            </SectionPanel>
+        <div className="space-y-3 pb-20">
+            <AdminFocusCard
+                pendingApprovalCount={approvalCount}
+                activeProjectCount={currentProjects.length}
+                averageProgress={averageProgress}
+                totalDebt={admin?.totalDebt}
+                onViewApprovals={() => navigate('/contracts')}
+            />
 
-            <SectionPanel
-                title="Tiến trình dự án hiện tại"
-                count={currentProjects.length}
-                icon={FolderKanban}
-                accentClass="bg-emerald-50 text-emerald-600"
-            >
+            <AdminMetricCardsGrid
+                admin={admin}
+                approvalCount={approvalCount}
+                activeProjectCount={currentProjects.length}
+                averageProgress={averageProgress}
+            />
+
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(360px,0.85fr)_minmax(0,1.4fr)]">
+                <SectionPanel
+                    title="Danh sách cần duyệt"
+                    count={approvalItems.length}
+                    icon={ClipboardCheck}
+                    accentClass="bg-indigo-50 text-indigo-600"
+                >
+                    {approvalItems.length > 0 ? (
+                        <div className="space-y-3">
+                            {approvalItems.map((item) => (
+                                <ApprovalItem key={`${item.type}-${item.id}`} item={item} navigate={navigate} />
+                            ))}
+                        </div>
+                    ) : (
+                        <EmptyState
+                            icon={ClipboardCheck}
+                            text="Không có báo giá hoặc hợp đồng nào đang chờ duyệt"
+                        />
+                    )}
+                </SectionPanel>
                 {currentProjects.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                        {currentProjects.map((project) => (
-                            <ProjectProgressCard key={project.id} project={project} navigate={navigate} />
-                        ))}
-                    </div>
+                    <HotProjectList
+                        projects={projectProgressItems}
+                        navigate={navigate}
+                        title="Tiến trình dự án hiện tại"
+                        subtitle="Tiến độ dự án"
+                    />
                 ) : (
                     <EmptyState
                         icon={FolderKanban}
                         text="Không có dự án hiện tại"
                     />
                 )}
-            </SectionPanel>
+            </div>
         </div>
     );
 };
