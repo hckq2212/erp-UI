@@ -81,7 +81,7 @@ const AdminFocusCard = ({
                 <div>
                     <p className="text-[#FF6633] text-[10px] font-black uppercase tracking-[0.2em] mb-2">ADMIN FOCUS</p>
                     <h2 className="text-2xl sm:text-3xl font-semibold leading-tight tracking-tight text-[#1A1A1A]">
-                        Theo doi phe duyet va tien do<br />van hanh trong thang
+                        Tập trung để tạo ra<br />những điều khác biệt! 🔥
                     </h2>
                 </div>
 
