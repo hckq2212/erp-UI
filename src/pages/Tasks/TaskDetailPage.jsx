@@ -6,7 +6,7 @@ import { useGetMeQuery } from '../../api/auth';
 import { formatDate, formatDateTime } from '../../utils/format';
 import { toast } from 'react-toastify';
 import { useState, useRef, useEffect } from 'react';
-import { JOB_PERFORMER_TYPE, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
+import { JOB_PERFORMER_TYPE, PROJECT_MANAGEMENT_ROLES, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../utils/cn';
@@ -36,7 +36,7 @@ export const TaskDetailPage = () => {
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [editedDescription, setEditedDescription] = useState('');
 
-    const canEditDescription = user?.role === 'ADMIN' || user?.role === 'BOD' || user?.id === task?.project?.team?.teamLead?.id;
+    const canEditDescription = PROJECT_MANAGEMENT_ROLES.includes(user?.role) || user?.id === task?.project?.team?.teamLead?.id;
 
     const handleStartEditDescription = () => {
         setEditedDescription(task?.description || '');
@@ -309,7 +309,7 @@ export const TaskDetailPage = () => {
                                 </Button>
                             </div>
                         )}
-                    {task.status === 'INTERNAL_COMPLETED' && (user?.id === task.project?.team?.teamLead?.id || user?.role === 'BOD' || user?.role === 'ADMIN') && (
+                    {task.status === 'INTERNAL_COMPLETED' && (user?.id === task.project?.team?.teamLead?.id || PROJECT_MANAGEMENT_ROLES.includes(user?.role)) && (
                         <Button
                             onClick={handleCustomerApprove}
                             isLoading={isApprovingByCustomer}
@@ -395,7 +395,7 @@ export const TaskDetailPage = () => {
                         )}
 
                     {/* Reminder Action */}
-                    {(user?.role === 'ADMIN' || user?.role === 'BOD' || user?.id === task.project?.team?.teamLead?.id)
+                    {(PROJECT_MANAGEMENT_ROLES.includes(user?.role) || user?.id === task.project?.team?.teamLead?.id)
                         && (task.assigneeId || task.helperId)
                         && (task.status !== 'COMPLETED' && task.status !== 'ACCEPTED' && task.status !== 'DONE' && task.status !== 'INTERNAL_COMPLETED' && task.status !== 'AWAITING_REVIEW') && (
                             <Button

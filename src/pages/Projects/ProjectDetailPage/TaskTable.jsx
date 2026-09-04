@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGetTeamMembersQuery } from '../../../api/teams';
 import { useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation } from '../../../api/tasks';
 import { cn } from '../../../utils/cn';
-import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../../utils/enums';
+import { PROJECT_MANAGEMENT_ROLES, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../../utils/enums';
 import { toast } from 'react-toastify';
 import { formatDateTime, getRemainingTime } from '../../../utils/format';
 import { useGetMeQuery } from '../../../api/auth';
@@ -23,7 +23,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [requestReturnSupport] = useRequestReturnSupportMutation();
     const [bulkUnassignTasks, { isLoading: isUnassigning }] = useBulkUnassignTasksMutation();
 
-    const isAdminOrBOD = user?.role === 'ADMIN' || user?.role === 'BOD';
+    const isAdminOrBOD = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
     const isProjectLead = user?.id === project?.team?.teamLead?.id;
     const isSupportLead = tasks.some(t => t.supportLeadId === user?.id);
     const isHelper = tasks.some(t => t.helperId === user?.id);

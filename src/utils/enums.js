@@ -254,25 +254,42 @@ export const TEAM_MEMBER_ROLE = {
 
 
 export const USER_ROLE = {
-  SALE: "SALE",
+  ADMIN: "Admin",
   BOD: "BOD",
-  MEMBER: "Nhân viên",
-  ACCOUNTANT: "Kế toán",
   ADMIN_SALE: "ADMIN kinh doanh",
   BD: "BD",
-  HR: "HR",
+  PM: "PM",
+  STAFF_A: "Nhân sự Level A",
+  STAFF_B: "Nhân sự Level B",
+  STAFF_C: "Nhân sự Level C",
+  STAFF_D: "Nhân sự Level D",
 };
+
+export const USER_ROLE_OPTIONS = [
+  { value: 'ADMIN', label: USER_ROLE.ADMIN },
+  { value: 'BOD', label: USER_ROLE.BOD },
+  { value: 'BD', label: USER_ROLE.BD },
+  { value: 'ADMIN_SALE', label: USER_ROLE.ADMIN_SALE },
+  { value: 'PM', label: USER_ROLE.PM },
+  { value: 'STAFF_A', label: USER_ROLE.STAFF_A },
+  { value: 'STAFF_B', label: USER_ROLE.STAFF_B },
+  { value: 'STAFF_C', label: USER_ROLE.STAFF_C },
+  { value: 'STAFF_D', label: USER_ROLE.STAFF_D },
+];
+
+export const STAFF_ROLES = ['STAFF_A', 'STAFF_B', 'STAFF_C', 'STAFF_D'];
+export const PROJECT_MANAGEMENT_ROLES = ['ADMIN', 'BOD', 'PM'];
 
 export const USER_ROLE_COLORS = {
   ADMIN: 'bg-rose-50 text-rose-700 border-rose-100',
   BOD: 'bg-amber-50 text-amber-700 border-amber-100',
-  TL: 'bg-purple-50 text-purple-700 border-purple-100',
   BD: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   ADMIN_SALE: 'bg-violet-50 text-violet-700 border-violet-100',
-  MEMBER: 'bg-blue-50 text-blue-700 border-blue-100',
-  ACCOUNTANT: 'bg-blue-50 text-blue-700 border-blue-100',
-  SALE: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-  HR: 'bg-teal-50 text-teal-700 border-teal-100'
+  PM: 'bg-purple-50 text-purple-700 border-purple-100',
+  STAFF_A: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+  STAFF_B: 'bg-blue-50 text-blue-700 border-blue-100',
+  STAFF_C: 'bg-sky-50 text-sky-700 border-sky-100',
+  STAFF_D: 'bg-slate-50 text-slate-700 border-slate-100',
 };
 
 export const TEAM_MEMBER_ROLE_LABELS = {

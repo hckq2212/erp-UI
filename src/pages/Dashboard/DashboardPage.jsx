@@ -16,11 +16,12 @@ import { TeamLeadView } from '../../components/dashboard/TeamLeadView';
 import { BDView } from '../../components/dashboard/BDView';
 import { MemberView } from '../../components/dashboard/MemberView';
 import { ReviewQueueView } from '../../components/dashboard/ReviewQueueView';
+import { PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
 
 export const DashboardPage = () => {
     const navigate = useNavigate();
     const { data: user } = useGetMeQuery();
-    const isAdminOrBod = user?.role === 'ADMIN' || user?.role === 'BOD';
+    const isAdminOrBod = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
     const [selectedMemberId, setSelectedMemberId] = useState(null);
     const [selectedDate, setSelectedDate] = useState({
         month: new Date().getMonth() + 1,
@@ -144,7 +145,7 @@ export const DashboardPage = () => {
                             </div>
                         )} */}
 
-                        {(dashboard.member || isViewingMember) && user?.role !== 'BD' && user?.role !== 'SALE' && (!isAdminOrBod || isViewingMember) && (
+                        {(dashboard.member || isViewingMember) && user?.role !== 'BD' && (!isAdminOrBod || isViewingMember) && (
                             <div className="">
                                 <MemberView
                                     dashboard={dashboard}

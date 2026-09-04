@@ -9,6 +9,7 @@ import { TaskSchedule } from './TaskSchedule';
 import { ClipboardList, Filter, LayoutGrid, Calendar as CalendarIcon, List, Plus } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { TaskCreateModal } from './TaskCreateModal';
+import { PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
 
 export const TasksPage = () => {
     const user = useSelector(selectCurrentUser);
@@ -28,7 +29,7 @@ export const TasksPage = () => {
     const tasks = data?.data || [];
     const meta = data?.meta || { total: 0, page: 1, limit: 10, totalPages: 0 };
     const teams = Array.isArray(teamsResult) ? teamsResult : (teamsResult?.data || []);
-    const canCreateInternalTask = ['ADMIN', 'BOD'].includes(user?.role) ||
+    const canCreateInternalTask = PROJECT_MANAGEMENT_ROLES.includes(user?.role) ||
         teams.some(team => team.teamLeadId === user?.id || team.teamLead?.id === user?.id);
 
     const handleFilterChange = (key, value) => {

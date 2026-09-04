@@ -4,7 +4,7 @@ import { Users, Search, ChevronRight, Mail, Phone, Shield, Plus } from 'lucide-r
 import { useGetUsersQuery } from '../../api/users';
 import { useGetMeQuery } from '../../api/auth';
 import { AddUserModal } from './AddUserModal';
-import { USER_ROLE, USER_ROLE_COLORS } from '../../utils/enums';
+import { USER_ROLE, USER_ROLE_COLORS, USER_ROLE_OPTIONS } from '../../utils/enums';
 
 export const UserListPage = () => {
     const navigate = useNavigate();
@@ -84,16 +84,9 @@ export const UserListPage = () => {
                         onChange={(e) => setRoleFilter(e.target.value)}
                     >
                         <option value="ALL">Tất cả vai trò</option>
-                        <option value="BOD">BOD</option>
-                        <option value="ADMIN">Admin</option>
-                        <option value="TL">Team Lead</option>
-                        <option value="SALE">Sale</option>
-                        <option value="ADMIN_SALE">Admin kinh doanh</option>
-                        <option value="BD">BD</option>
-                        <option value="ACCOUNTANT">Kế toán</option>
-                        <option value="HR">HR</option>
-                        <option value="MEMBER">Member</option>
-                        <option value="EMP">Employee</option>
+                        {USER_ROLE_OPTIONS.map((role) => (
+                            <option key={role.value} value={role.value}>{role.label}</option>
+                        ))}
                     </select>
                 </div>
             </div>

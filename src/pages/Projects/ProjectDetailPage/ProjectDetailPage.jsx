@@ -7,7 +7,7 @@ import {
   useRetryProjectGoogleSheetMutation,
   useSyncProjectServiceJobsMutation,
 } from '../../../api/projects';
-import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../../utils/enums';
+import { PROJECT_MANAGEMENT_ROLES, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../../utils/enums';
 import { TaskStatistics } from './TaskStatistics';
 import { TaskTable } from './TaskTable';
 import { ProjectInfo } from './ProjectInfo';
@@ -28,14 +28,14 @@ export const ProjectDetailPage = () => {
   const [syncProjectServiceJobs, { isLoading: isSyncingServiceJobs }] = useSyncProjectServiceJobsMutation();
   const [isMonthlyWorkModalOpen, setIsMonthlyWorkModalOpen] = useState(false);
   const user = useSelector(selectCurrentUser);
-  const canRetryGoogleSheet = ['ADMIN', 'BOD'].includes(user?.role);
-  const canSyncServiceJobs = user?.role === 'ADMIN';
+  const canRetryGoogleSheet = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
+  const canSyncServiceJobs = user?.role === 'ADMIN' || user?.role === 'PM';
 
   const isCoreMember = project?.team?.teamLead?.id === user?.id ||
     project?.team?.members?.some(m => m.user?.id === user?.id) ||
-    ['ADMIN', 'BOD'].includes(user?.role);
+    PROJECT_MANAGEMENT_ROLES.includes(user?.role);
   const canCreateMonthlyWork = project?.team?.teamLead?.id === user?.id ||
-    ['ADMIN', 'BOD'].includes(user?.role);
+    PROJECT_MANAGEMENT_ROLES.includes(user?.role);
 
 
   const handleConfirm = async () => {

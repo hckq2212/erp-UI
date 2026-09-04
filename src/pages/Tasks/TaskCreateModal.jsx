@@ -9,6 +9,7 @@ import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../store/authSlice';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import { toast } from 'react-toastify';
+import { PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
 
 const SearchableSelect = memo(({
     label,
@@ -153,7 +154,7 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
     const { data: teamsResult = [] } = useGetTeamsQuery();
     const users = useMemo(() => Array.isArray(usersResult) ? usersResult : (usersResult?.data || []), [usersResult]);
     const teams = useMemo(() => Array.isArray(teamsResult) ? teamsResult : (teamsResult?.data || []), [teamsResult]);
-    const isAdminOrBod = ['ADMIN', 'BOD'].includes(currentUser?.role);
+    const isAdminOrBod = PROJECT_MANAGEMENT_ROLES.includes(currentUser?.role);
     const isTeamLead = teams.some(team =>
         team.teamLeadId === currentUser?.id || team.teamLead?.id === currentUser?.id
     );

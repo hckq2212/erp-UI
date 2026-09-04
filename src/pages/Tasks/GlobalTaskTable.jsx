@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Calendar, User, Briefcase, ChevronRight, Clock, AlertCircle, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
+import { PROJECT_MANAGEMENT_ROLES, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../../components/ui/Pagination';
 import { formatDateTime } from '../../utils/format';
@@ -109,7 +109,7 @@ export const GlobalTaskTable = ({
                                         <InlineTaskNickname
                                             task={task}
                                             projectId={task.project?.id}
-                                            canEdit={user?.role === 'ADMIN' || user?.role === 'BOD' || user?.id === task.project?.team?.teamLead?.id}
+                                            canEdit={PROJECT_MANAGEMENT_ROLES.includes(user?.role) || user?.id === task.project?.team?.teamLead?.id}
                                         />
                                     </td>
                                     <td className="px-6 py-4">

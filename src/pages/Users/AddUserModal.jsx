@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { X, User, Lock, Mail, Phone, Shield, Loader2 } from 'lucide-react';
 import { useCreateUserMutation } from '../../api/users';
 import { toast } from 'react-toastify';
+import { USER_ROLE_OPTIONS } from '../../utils/enums';
+
+const DEFAULT_ROLE = 'STAFF_D';
 
 export const AddUserModal = ({ isOpen, onClose }) => {
     const [createUser, { isLoading }] = useCreateUserMutation();
@@ -11,7 +14,7 @@ export const AddUserModal = ({ isOpen, onClose }) => {
         fullName: '',
         email: '',
         phoneNumber: '',
-        role: 'MEMBER'
+        role: DEFAULT_ROLE
     });
 
     if (!isOpen) return null;
@@ -37,7 +40,7 @@ export const AddUserModal = ({ isOpen, onClose }) => {
                 fullName: '',
                 email: '',
                 phoneNumber: '',
-                role: 'MEMBER'
+                role: DEFAULT_ROLE
             });
         } catch (error) {
             toast.error(error.data?.message || 'Có lỗi xảy ra khi thêm nhân sự');
@@ -158,11 +161,9 @@ export const AddUserModal = ({ isOpen, onClose }) => {
                                         onChange={handleChange}
                                         className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 transition-shadow text-gray-900 appearance-none shadow-sm"
                                     >
-                                        <option value="MEMBER">member</option>
-                                        <option value="BD">BD</option>
-                                        <option value="ACCOUNTANT">Kế toán</option>
-                                        <option value="ADMIN_SALE">Admin kinh doanh</option>
-                                        <option value="BOD">BOD</option>
+                                        {USER_ROLE_OPTIONS.map((role) => (
+                                            <option key={role.value} value={role.value}>{role.label}</option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>

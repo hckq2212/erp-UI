@@ -79,7 +79,7 @@ export const MemberSelector = ({ members = [], selectedId, onSelect, currentUser
                                             <div className="text-left min-w-0">
                                                 <p className="text-sm font-bold truncate max-w-[140px] leading-tight">{member.user.fullName}</p>
                                                 <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">
-                                                    {TEAM_MEMBER_ROLE_LABELS[member.role] || member.role || 'Member'}
+                                                    {TEAM_MEMBER_ROLE_LABELS[member.role] || USER_ROLE[member.role] || member.role || 'Nhân sự'}
                                                 </p>
                                             </div>
                                         </div>
