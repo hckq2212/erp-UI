@@ -88,6 +88,10 @@ export const UserListPage = () => {
                         <option value="ADMIN">Admin</option>
                         <option value="TL">Team Lead</option>
                         <option value="SALE">Sale</option>
+                        <option value="ADMIN_SALE">Admin kinh doanh</option>
+                        <option value="BD">BD</option>
+                        <option value="ACCOUNTANT">Kế toán</option>
+                        <option value="HR">HR</option>
                         <option value="MEMBER">Member</option>
                         <option value="EMP">Employee</option>
                     </select>

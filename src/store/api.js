@@ -1,45 +1,25 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { getCompanySlugFromPath } from '../utils/tenant';
 import { clearSessionMarker, hasSessionMarker, markSessionActive } from '../utils/authSession';
 
 const configuredApiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
-// Tenant requests add /:companySlug/api themselves, so the base must be the
-// backend origin only. This also keeps legacy VITE_API_URL values ending in
-// /api from producing URLs such as /api/getvini/api/auth/login.
-export const BASE_URL = configuredApiUrl.replace(/\/api$/, '');
+export const BASE_URL = configuredApiUrl
+  ? (configuredApiUrl.endsWith('/api') ? configuredApiUrl : `${configuredApiUrl}/api`)
+  : '/api';
+
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   credentials: 'include',
-  prepareHeaders: (headers) => {
-    headers.set('X-Company-Slug', getCompanySlugFromPath());
-    return headers;
-  },
 });
 
 let refreshPromise = null;
-
-const withTenantApiPrefix = (args) => {
-  const companySlug = getCompanySlugFromPath();
-  const prefix = `/${companySlug}/api`;
-
-  if (typeof args === 'string') {
-    return args.startsWith(prefix) ? args : `${prefix}${args.startsWith('/') ? args : `/${args}`}`;
-  }
-
-  const url = args.url || '';
-  return {
-    ...args,
-    url: url.startsWith(prefix) ? url : `${prefix}${url.startsWith('/') ? url : `/${url}`}`,
-  };
-};
 
 const baseQueryWithReauth = async (args, api, extraOptions) => {
   // Check if this is an authentication-related request
   const url = typeof args === 'string' ? args : args.url;
   const isAuthRequest = url && (url.includes('/auth/login') || url.includes('/auth/refresh') || url.includes('/auth/logout'));
 
-  let result = await baseQuery(withTenantApiPrefix(args), api, extraOptions);
+  let result = await baseQuery(args, api, extraOptions);
 
   if (!result.error && url?.includes('/auth/login')) markSessionActive();
   if (!result.error && url === '/me') markSessionActive();
@@ -49,18 +29,18 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
     if (!refreshPromise) {
       const refreshUnderLock = async () => {
         // Another tab may have refreshed while this request waited for the lock.
-        const retriedBeforeRefresh = await baseQuery(withTenantApiPrefix(args), api, extraOptions);
+        const retriedBeforeRefresh = await baseQuery(args, api, extraOptions);
         if (retriedBeforeRefresh.error?.status !== 401) return { refreshed: true };
 
         const refreshResult = await baseQuery(
-          withTenantApiPrefix({ url: '/auth/refresh', method: 'POST' }),
+          { url: '/auth/refresh', method: 'POST' },
           api,
           extraOptions
         );
         return { refreshed: !refreshResult.error, refreshResult };
       };
 
-      const lockName = `auth-refresh:${getCompanySlugFromPath()}`;
+      const lockName = 'auth-refresh';
       refreshPromise = globalThis.navigator?.locks
         ? globalThis.navigator.locks.request(lockName, refreshUnderLock)
         : refreshUnderLock();
@@ -71,7 +51,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 
     const refreshOutcome = await refreshPromise;
     if (refreshOutcome.refreshed) {
-      result = await baseQuery(withTenantApiPrefix(args), api, extraOptions);
+      result = await baseQuery(args, api, extraOptions);
     } else {
       const refreshError = refreshOutcome.refreshResult?.error;
       if (

@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, CheckCircle, ExternalLink, FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CalendarPlus, CheckCircle, ExternalLink, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import {
   useGetProjectQuery,
   useConfirmProjectMutation,
@@ -15,6 +16,8 @@ import { TeamInfo } from './TeamInfo';
 import { toast } from 'react-toastify';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../../store/authSlice';
+import { CreateMonthlyWorkModal } from './CreateMonthlyWorkModal';
+import { ExtraTasksSection } from './ExtraTasksSection';
 
 export const ProjectDetailPage = () => {
   const { id } = useParams();
@@ -23,12 +26,15 @@ export const ProjectDetailPage = () => {
   const [confirmProject, { isLoading: isConfirming }] = useConfirmProjectMutation();
   const [retryProjectGoogleSheet, { isLoading: isRetryingGoogleSheet }] = useRetryProjectGoogleSheetMutation();
   const [syncProjectServiceJobs, { isLoading: isSyncingServiceJobs }] = useSyncProjectServiceJobsMutation();
+  const [isMonthlyWorkModalOpen, setIsMonthlyWorkModalOpen] = useState(false);
   const user = useSelector(selectCurrentUser);
   const canRetryGoogleSheet = ['ADMIN', 'BOD'].includes(user?.role);
   const canSyncServiceJobs = user?.role === 'ADMIN';
 
   const isCoreMember = project?.team?.teamLead?.id === user?.id ||
     project?.team?.members?.some(m => m.user?.id === user?.id) ||
+    ['ADMIN', 'BOD'].includes(user?.role);
+  const canCreateMonthlyWork = project?.team?.teamLead?.id === user?.id ||
     ['ADMIN', 'BOD'].includes(user?.role);
 
 
@@ -113,6 +119,15 @@ export const ProjectDetailPage = () => {
           </div>
 
           <div className="flex gap-3">
+            {canCreateMonthlyWork && (
+              <button
+                onClick={() => setIsMonthlyWorkModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-sm transition-all active:scale-95"
+              >
+                <CalendarPlus className="w-4 h-4" />
+                <span>Tạo công việc cho tháng mới</span>
+              </button>
+            )}
             {canSyncServiceJobs && (
               <button
                 onClick={handleSyncServiceJobs}
@@ -204,11 +219,17 @@ export const ProjectDetailPage = () => {
 
         <TaskTable tasks={project.tasks} project={project} className="min-w-[2000px]" />
 
+        <ExtraTasksSection tasks={project.tasks} />
 
         {isCoreMember && (
           <ContractInfo contract={project.contract} projectId={project.id} />
         )}
       </div>
+      <CreateMonthlyWorkModal
+        isOpen={isMonthlyWorkModalOpen}
+        onClose={() => setIsMonthlyWorkModalOpen(false)}
+        projectId={project.id}
+      />
     </div >
   );
 };

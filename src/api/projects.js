@@ -116,6 +116,25 @@ export const projectsApi = api.injectEndpoints({
         { type: 'Tasks', id: 'LIST' },
       ],
     }),
+    getMonthlyWorkTemplate: builder.query({
+      query: ({ projectId, month }) => ({
+        url: `/projects/${projectId}/monthly-work-template`,
+        params: { month },
+      }),
+      providesTags: (result, error, { projectId }) => [{ type: 'Projects', id: projectId }],
+    }),
+    createMonthlyWorkAddendum: builder.mutation({
+      query: ({ projectId, ...data }) => ({
+        url: `/projects/${projectId}/monthly-work-addendums`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: 'Projects', id: projectId },
+        { type: 'Contracts', id: 'LIST' },
+        { type: 'ContractAddendums', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -132,4 +151,6 @@ export const {
   useConfirmProjectMutation,
   useRetryProjectGoogleSheetMutation,
   useSyncProjectServiceJobsMutation,
+  useGetMonthlyWorkTemplateQuery,
+  useCreateMonthlyWorkAddendumMutation,
 } = projectsApi;

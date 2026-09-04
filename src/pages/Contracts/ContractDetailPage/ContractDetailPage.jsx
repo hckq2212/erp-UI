@@ -35,7 +35,7 @@ export const ContractDetailPage = () => {
   const { data: project, isLoading: projectLoading } = useGetProjectsByContractQuery(id, {
     skip: !id,
   });
-  const [activeTab, setActiveTab] = useState('MAIN'); // 'MAIN' | 'EXTRA' | 'SERVICES'
+  const [activeTab, setActiveTab] = useState('MAIN'); // 'MAIN' | 'EXTRA' | 'SERVICES' | 'ADDENDUM'
   const [uploadProgress, setUploadProgress] = useState(0);
 
 
@@ -210,6 +210,8 @@ export const ContractDetailPage = () => {
 
   const extraTasks = project?.tasks?.filter(t => t.status === 'AWAITING_PRICING') || [];
   const hasExtraTasks = extraTasks.length > 0;
+  const addendums = contract.addendums || [];
+  const hasAddendums = addendums.length > 0;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -272,6 +274,20 @@ export const ContractDetailPage = () => {
             </span>
           </button>
         )}
+        {hasAddendums && (
+          <button
+            onClick={() => setActiveTab('ADDENDUM')}
+            className={cn(
+              "flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all",
+              activeTab === 'ADDENDUM' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+            )}
+          >
+            Phụ lục
+            <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-[10px]">
+              {addendums.length}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Content Grid */}
@@ -297,7 +313,6 @@ export const ContractDetailPage = () => {
               currentUser={currentUser}
             />
             <FinancialInfo contract={contract} />
-            <ContractAddendums addendums={contract.addendums} />
           </div>
 
           {/* Sidebar - Right Side (1/3) */}
@@ -330,6 +345,16 @@ export const ContractDetailPage = () => {
             <p className="text-gray-500 text-sm">Xác nhận đơn giá hoặc chuyển thành công việc ghi nhận chi phí cho các hạng mục phát sinh ngoài hợp đồng</p>
           </div>
           <AssessExtraTasks tasks={extraTasks} opportunityId={contract?.opportunity?.id} />
+        </div>
+      )}
+
+      {activeTab === 'ADDENDUM' && (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Phụ lục hợp đồng</h2>
+            <p className="text-gray-500 text-sm">Theo dõi các phụ lục phát sinh và yêu cầu tạo công việc tháng mới</p>
+          </div>
+          <ContractAddendums addendums={addendums} currentUser={currentUser} />
         </div>
       )}
 

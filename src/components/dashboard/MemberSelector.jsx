@@ -39,7 +39,7 @@ export const MemberSelector = ({ members = [], selectedId, onSelect, currentUser
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute right-0 mt-3 w-64 bg-white rounded-[2rem] shadow-2xl shadow-gray-200/50 border border-gray-100 p-3 z-50 overflow-hidden"
+                        className="absolute right-0 mt-3 w-64 bg-white rounded-sm shadow-2xl shadow-gray-200/50 border border-gray-100 p-3 z-50 overflow-hidden"
                     >
                         <div className="space-y-1">
                             <button
@@ -47,7 +47,7 @@ export const MemberSelector = ({ members = [], selectedId, onSelect, currentUser
                                     onSelect(null);
                                     setIsOpen(false);
                                 }}
-                                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${!selectedId ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50 text-gray-600'}`}
+                                className={`w-full flex items-center justify-between p-3 rounded-xs transition-all ${!selectedId ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50 text-gray-600'}`}
                             >
                                 <div className="flex items-center gap-3">
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${!selectedId ? 'bg-white shadow-sm' : 'bg-gray-100'}`}>

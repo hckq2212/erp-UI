@@ -268,6 +268,7 @@ export const USER_ROLE_COLORS = {
   BOD: 'bg-amber-50 text-amber-700 border-amber-100',
   TL: 'bg-purple-50 text-purple-700 border-purple-100',
   BD: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  ADMIN_SALE: 'bg-violet-50 text-violet-700 border-violet-100',
   MEMBER: 'bg-blue-50 text-blue-700 border-blue-100',
   ACCOUNTANT: 'bg-blue-50 text-blue-700 border-blue-100',
   SALE: 'bg-indigo-50 text-indigo-700 border-indigo-100',

@@ -4,7 +4,6 @@ import { toast } from 'react-toastify';
 import { BASE_URL, api } from '../store/api';
 import { selectIsAuthenticated } from '../store/authSlice';
 import { notificationsApi } from '../api/notifications';
-import { getCompanySlugFromPath } from '../utils/tenant';
 
 /**
  * useSSE - Hook to manage Server-Sent Events for real-time notifications.
@@ -21,8 +20,7 @@ export const useSSE = () => {
     // Note: EventSource doesn't support custom headers (like Authorization), 
     // so we rely on cookies (credentials: 'include' is default for most browsers 
     // if using withCredentials: true).
-    const companySlug = getCompanySlugFromPath();
-    const sseUrl = `${BASE_URL}/${companySlug}/api/notifications/stream`;
+    const sseUrl = `${BASE_URL}/notifications/stream`;
 
     const eventSource = new EventSource(sseUrl, {
       withCredentials: true,

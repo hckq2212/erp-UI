@@ -124,6 +124,13 @@ export const DashboardPage = () => {
                             />
                         )}
 
+                        {dashboard.sale && !isViewingMember && (
+                            <BDView
+                                dashboard={dashboard}
+                                navigate={navigate}
+                            />
+                        )}
+
                         {/* {dashboard.teamLead && !isViewingMember && (
                             <div className="space-y-4">
                                 <TeamLeadView

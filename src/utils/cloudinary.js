@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { BASE_URL } from '../store/api';
-import { getCompanySlugFromPath } from './tenant';
 
 /**
  * Upload a file directly to Cloudinary from the client side
@@ -12,9 +11,8 @@ import { getCompanySlugFromPath } from './tenant';
  */
 export const uploadToCloudinary = async (file, folder = 'GETVINI/ERP/others', onProgress) => {
     try {
-        const companySlug = getCompanySlugFromPath();
         // 1. Get signature from our backend
-        const response = await axios.get(`${BASE_URL}/${companySlug}/api/cloudinary/signature`, {
+        const response = await axios.get(`${BASE_URL}/cloudinary/signature`, {
             params: { folder },
             withCredentials: true // Required to send auth cookies to the backend
         });

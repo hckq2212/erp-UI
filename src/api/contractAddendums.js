@@ -64,6 +64,56 @@ export const contractAddendumsApi = api.injectEndpoints({
                 { type: 'Contracts', id: 'LIST' },
             ],
         }),
+        saleApproveAddendum: builder.mutation({
+            query: ({ id, note }) => ({
+                url: `/contract-addendums/${id}/sale-approve`,
+                method: 'POST',
+                body: { note },
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'ContractAddendums', id },
+                { type: 'ContractAddendums', id: 'LIST' },
+                { type: 'Contracts', id: 'LIST' },
+            ],
+        }),
+        saleRejectAddendum: builder.mutation({
+            query: ({ id, note }) => ({
+                url: `/contract-addendums/${id}/sale-reject`,
+                method: 'POST',
+                body: { note },
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'ContractAddendums', id },
+                { type: 'ContractAddendums', id: 'LIST' },
+                { type: 'Contracts', id: 'LIST' },
+            ],
+        }),
+        bodApproveAddendum: builder.mutation({
+            query: ({ id, note }) => ({
+                url: `/contract-addendums/${id}/bod-approve`,
+                method: 'POST',
+                body: { note },
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'ContractAddendums', id },
+                { type: 'ContractAddendums', id: 'LIST' },
+                { type: 'Contracts', id: 'LIST' },
+                { type: 'Projects', id: 'LIST' },
+                { type: 'Tasks', id: 'LIST' },
+            ],
+        }),
+        bodRejectAddendum: builder.mutation({
+            query: ({ id, note }) => ({
+                url: `/contract-addendums/${id}/bod-reject`,
+                method: 'POST',
+                body: { note },
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'ContractAddendums', id },
+                { type: 'ContractAddendums', id: 'LIST' },
+                { type: 'Contracts', id: 'LIST' },
+            ],
+        }),
     }),
 });
 
@@ -74,4 +124,8 @@ export const {
     useAddAddendumItemsMutation,
     useUploadSignedAddendumMutation,
     useScaleDownAddendumMutation,
+    useSaleApproveAddendumMutation,
+    useSaleRejectAddendumMutation,
+    useBodApproveAddendumMutation,
+    useBodRejectAddendumMutation,
 } = contractAddendumsApi;

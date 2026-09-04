@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useGetMeQuery } from './api/auth';
-import { ensureTenantPath, getTenantBasePath } from './utils/tenant';
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SessionExpiredModal } from './components/auth/SessionExpiredModal';
@@ -372,10 +371,8 @@ function AppContent() {
 }
 
 function App() {
-  ensureTenantPath();
-
   return (
-    <BrowserRouter basename={getTenantBasePath()}>
+    <BrowserRouter>
       <AppContent />
     </BrowserRouter>
   );

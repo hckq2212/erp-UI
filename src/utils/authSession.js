@@ -1,7 +1,5 @@
-import { getCompanySlugFromPath } from './tenant';
+const SESSION_KEY = 'auth-session';
 
-const sessionKey = () => `auth-session:${getCompanySlugFromPath()}`;
-
-export const hasSessionMarker = () => localStorage.getItem(sessionKey()) === 'active';
-export const markSessionActive = () => localStorage.setItem(sessionKey(), 'active');
-export const clearSessionMarker = () => localStorage.removeItem(sessionKey());
+export const hasSessionMarker = () => localStorage.getItem(SESSION_KEY) === 'active';
+export const markSessionActive = () => localStorage.setItem(SESSION_KEY, 'active');
+export const clearSessionMarker = () => localStorage.removeItem(SESSION_KEY);
