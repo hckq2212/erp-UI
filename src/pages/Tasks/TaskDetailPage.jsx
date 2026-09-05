@@ -15,6 +15,7 @@ import { ReworkTaskModal } from '../../components/tasks/ReworkTaskModal';
 import { TaskAssignModal } from '../Projects/ProjectDetailPage/TaskAssignModal';
 import { History, MessageSquare, Paperclip } from 'lucide-react';
 import { getTaskDisplayName, getTaskOriginalName } from '../../utils/taskName';
+import { getCurrentUserId, isSameUser } from '../../utils/authUser';
 
 export const TaskDetailPage = () => {
     const { id } = useParams();
@@ -36,7 +37,10 @@ export const TaskDetailPage = () => {
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [editedDescription, setEditedDescription] = useState('');
 
-    const canEditDescription = PROJECT_MANAGEMENT_ROLES.includes(user?.role) || user?.id === task?.project?.team?.teamLead?.id;
+    const currentUserId = getCurrentUserId(user);
+    const isProjectLead = isSameUser(currentUserId, task?.project?.team?.teamLead?.id);
+    const canManageProjectTask = PROJECT_MANAGEMENT_ROLES.includes(user?.role) || isProjectLead;
+    const canEditDescription = canManageProjectTask;
 
     const handleStartEditDescription = () => {
         setEditedDescription(task?.description || '');
@@ -290,7 +294,7 @@ export const TaskDetailPage = () => {
 
                 <div className="flex flex-wrap gap-3">
                     {task.status === 'AWAITING_REVIEW' &&
-                        (user?.id === task.project?.team?.teamLead?.id) && (
+                        canManageProjectTask && (
                             <div className="flex gap-3">
                                 <Button
                                     variant="outline"
@@ -309,7 +313,7 @@ export const TaskDetailPage = () => {
                                 </Button>
                             </div>
                         )}
-                    {task.status === 'INTERNAL_COMPLETED' && (user?.id === task.project?.team?.teamLead?.id || PROJECT_MANAGEMENT_ROLES.includes(user?.role)) && (
+                    {task.status === 'INTERNAL_COMPLETED' && canManageProjectTask && (
                         <Button
                             onClick={handleCustomerApprove}
                             isLoading={isApprovingByCustomer}
@@ -320,7 +324,7 @@ export const TaskDetailPage = () => {
                         </Button>
                     )}
                     {(task.status === 'DONE' || task.status === 'COMPLETED' || task.status === 'INTERNAL_COMPLETED') &&
-                        (user?.id === task.project?.team?.teamLead?.id) && (
+                        canManageProjectTask && (
                             <Button
                                 variant="outline"
                                 onClick={() => setIsReworkModalOpen(true)}
@@ -330,7 +334,9 @@ export const TaskDetailPage = () => {
                                 Yêu cầu làm lại
                             </Button>
                         )}
-                    {(task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && (user?.id === task.assigneeId || user?.id === task.helperId) && !task.isSupportRequested && (
+                    {(task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') &&
+                        (isSameUser(currentUserId, task.assigneeId) || isSameUser(currentUserId, task.helperId)) &&
+                        !task.isSupportRequested && (
                         <Button
                             variant="outline"
                             onClick={() => handleRequestSupport()}
@@ -340,7 +346,7 @@ export const TaskDetailPage = () => {
                             Nhờ hỗ trợ
                         </Button>
                     )}
-                    {task.status === 'SUPPORT_PENDING' && task.supportLeadId === user?.id && (
+                    {task.status === 'SUPPORT_PENDING' && isSameUser(task.supportLeadId, currentUserId) && (
                         <div className="flex gap-3">
                             <Button
                                 onClick={() => handleRespondSupport('ACCEPT')}
@@ -361,7 +367,7 @@ export const TaskDetailPage = () => {
                     )}
 
                     {/* Helper Action */}
-                    {(task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && user?.id === task.helperId && (
+                    {(task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && isSameUser(currentUserId, task.helperId) && (
                         <Button
                             variant="outline"
                             onClick={() => handleRequestReturnSupport()}
@@ -373,7 +379,7 @@ export const TaskDetailPage = () => {
                     )}
 
                     {/* Support Lead Actions (Accepted) */}
-                    {task.isSupportAccepted && task.supportLeadId === user?.id && task.isSupportReturnRequested &&
+                    {task.isSupportAccepted && isSameUser(task.supportLeadId, currentUserId) && task.isSupportReturnRequested &&
                         (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'SUPPORT_AWAITING_RETURN') && (
                             <div className="flex gap-3">
                                 <Button
@@ -395,7 +401,7 @@ export const TaskDetailPage = () => {
                         )}
 
                     {/* Reminder Action */}
-                    {(PROJECT_MANAGEMENT_ROLES.includes(user?.role) || user?.id === task.project?.team?.teamLead?.id)
+                    {canManageProjectTask
                         && (task.assigneeId || task.helperId)
                         && (task.status !== 'COMPLETED' && task.status !== 'ACCEPTED' && task.status !== 'DONE' && task.status !== 'INTERNAL_COMPLETED' && task.status !== 'AWAITING_REVIEW') && (
                             <Button

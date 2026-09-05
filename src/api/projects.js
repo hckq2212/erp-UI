@@ -95,16 +95,17 @@ export const projectsApi = api.injectEndpoints({
         { type: 'Projects', id: 'LIST' },
       ],
     }),
-    retryProjectGoogleSheet: builder.mutation({
-      query: (id) => ({
-        url: `/projects/${id}/google-sheet/retry`,
-        method: 'POST',
-      }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Projects', id },
-        { type: 'Projects', id: 'LIST' },
-      ],
-    }),
+    // Google Sheet integration is temporarily disabled.
+    // retryProjectGoogleSheet: builder.mutation({
+    //   query: (id) => ({
+    //     url: `/projects/${id}/google-sheet/retry`,
+    //     method: 'POST',
+    //   }),
+    //   invalidatesTags: (result, error, id) => [
+    //     { type: 'Projects', id },
+    //     { type: 'Projects', id: 'LIST' },
+    //   ],
+    // }),
     syncProjectServiceJobs: builder.mutation({
       query: (id) => ({
         url: `/projects/${id}/sync-service-jobs`,
@@ -149,7 +150,7 @@ export const {
   useUpdateProjectProgressMutation,
   useAssignProjectMutation,
   useConfirmProjectMutation,
-  useRetryProjectGoogleSheetMutation,
+  // useRetryProjectGoogleSheetMutation,
   useSyncProjectServiceJobsMutation,
   useGetMonthlyWorkTemplateQuery,
   useCreateMonthlyWorkAddendumMutation,

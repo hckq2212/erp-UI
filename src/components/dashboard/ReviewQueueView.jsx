@@ -2,10 +2,16 @@ import React from 'react';
 import { getTaskDisplayName } from '../../utils/taskName';
 import { motion } from 'framer-motion';
 import { Zap, ArrowUpRight } from 'lucide-react';
+import { PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
+import { getCurrentUserId, isSameUser } from '../../utils/authUser';
 
 export const ReviewQueueView = ({ awaitingReviewTasks, user, navigate }) => {
+    const currentUserId = getCurrentUserId(user);
+    const canManageProjectTasks = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
     const myReviewTasks = awaitingReviewTasks?.data?.filter(task =>
-        user?.id === task.assignerId || user?.id === task.project?.team?.teamLead?.id
+        canManageProjectTasks ||
+        isSameUser(currentUserId, task.assignerId) ||
+        isSameUser(currentUserId, task.project?.team?.teamLead?.id)
     ) || [];
 
     if (myReviewTasks.length === 0) return null;

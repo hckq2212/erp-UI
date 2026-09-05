@@ -10,6 +10,7 @@ import { selectCurrentUser } from '../../store/authSlice';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import { toast } from 'react-toastify';
 import { PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
+import { getCurrentUserId, isSameUser } from '../../utils/authUser';
 
 const SearchableSelect = memo(({
     label,
@@ -154,9 +155,10 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
     const { data: teamsResult = [] } = useGetTeamsQuery();
     const users = useMemo(() => Array.isArray(usersResult) ? usersResult : (usersResult?.data || []), [usersResult]);
     const teams = useMemo(() => Array.isArray(teamsResult) ? teamsResult : (teamsResult?.data || []), [teamsResult]);
+    const currentUserId = getCurrentUserId(currentUser);
     const isAdminOrBod = PROJECT_MANAGEMENT_ROLES.includes(currentUser?.role);
     const isTeamLead = teams.some(team =>
-        team.teamLeadId === currentUser?.id || team.teamLead?.id === currentUser?.id
+        isSameUser(team.teamLeadId, currentUserId) || isSameUser(team.teamLead?.id, currentUserId)
     );
 
     // Pre-calculate options for SearchableSelect
@@ -169,9 +171,9 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
         if (isAdminOrBod) return userOptions;
 
         const ledTeams = teams.filter(team =>
-            team.teamLeadId === currentUser?.id || team.teamLead?.id === currentUser?.id
+            isSameUser(team.teamLeadId, currentUserId) || isSameUser(team.teamLead?.id, currentUserId)
         );
-        const allowedUserIds = new Set([currentUser?.id]);
+        const allowedUserIds = new Set([currentUserId].filter(Boolean));
         ledTeams.forEach(team => {
             team.members?.forEach(member => {
                 if (member.user?.id) allowedUserIds.add(member.user.id);
@@ -179,7 +181,7 @@ export const TaskCreateModal = memo(({ isOpen, onClose }) => {
         });
 
         return userOptions.filter(option => allowedUserIds.has(option.value));
-    }, [currentUser?.id, isAdminOrBod, teams, userOptions]);
+    }, [currentUserId, isAdminOrBod, teams, userOptions]);
 
     const [createInternalTask, { isLoading: isCreating }] = useCreateInternalTaskMutation();
     const navigate = useNavigate();

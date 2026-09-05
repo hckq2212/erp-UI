@@ -16,12 +16,13 @@ import { TeamLeadView } from '../../components/dashboard/TeamLeadView';
 import { BDView } from '../../components/dashboard/BDView';
 import { MemberView } from '../../components/dashboard/MemberView';
 import { ReviewQueueView } from '../../components/dashboard/ReviewQueueView';
-import { PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
+import { getCurrentUserId, isSameUser } from '../../utils/authUser';
 
 export const DashboardPage = () => {
     const navigate = useNavigate();
     const { data: user } = useGetMeQuery();
-    const isAdminOrBod = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
+    const currentUserId = getCurrentUserId(user);
+    const isAdminOrBod = user?.role === 'ADMIN' || user?.role === 'BOD';
     const [selectedMemberId, setSelectedMemberId] = useState(null);
     const [selectedDate, setSelectedDate] = useState({
         month: new Date().getMonth() + 1,
@@ -39,7 +40,7 @@ export const DashboardPage = () => {
 
     // Identify if the user is a lead of any team
     const { data: teams } = useGetTeamsQuery();
-    const myTeam = teams?.find(t => t.teamLeadId === user?.id || t.teamLead?.id === user?.id);
+    const myTeam = teams?.find(t => isSameUser(t.teamLeadId, currentUserId) || isSameUser(t.teamLead?.id, currentUserId));
     const { data: teamMembers = [] } = useGetTeamMembersQuery(myTeam?.id, { skip: !myTeam?.id });
 
     const isViewingMember = !!selectedMemberId;
@@ -95,7 +96,7 @@ export const DashboardPage = () => {
                                 members={teamMembers}
                                 selectedId={selectedMemberId}
                                 onSelect={setSelectedMemberId}
-                                currentUserId={user?.id}
+                                currentUserId={currentUserId}
                             />
                         </div>
                     </div>
@@ -140,7 +141,7 @@ export const DashboardPage = () => {
                                     teamMembers={teamMembers}
                                     selectedMemberId={selectedMemberId}
                                     onSelectMember={setSelectedMemberId}
-                                    currentUserId={user?.id}
+                                    currentUserId={currentUserId}
                                 />
                             </div>
                         )} */}
@@ -155,7 +156,7 @@ export const DashboardPage = () => {
                                     teamMembers={teamMembers}
                                     isTeamLead={isTeamLead}
                                     onSelectMember={setSelectedMemberId}
-                                    currentUserId={user?.id}
+                                    currentUserId={currentUserId}
                                     awaitingReviewTasks={awaitingReviewTasks}
                                     user={user}
                                 />

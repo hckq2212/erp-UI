@@ -11,6 +11,7 @@ import { toast } from 'react-toastify';
 import { formatDateTime, getRemainingTime } from '../../../utils/format';
 import { useGetMeQuery } from '../../../api/auth';
 import { InlineTaskNickname } from '../../../components/tasks/InlineTaskNickname';
+import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
 
 export const TaskTable = ({ tasks = [], project }) => {
     const navigate = useNavigate();
@@ -23,13 +24,15 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [requestReturnSupport] = useRequestReturnSupportMutation();
     const [bulkUnassignTasks, { isLoading: isUnassigning }] = useBulkUnassignTasksMutation();
 
+    const currentUserId = getCurrentUserId(user);
     const isAdminOrBOD = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
-    const isProjectLead = user?.id === project?.team?.teamLead?.id;
-    const isSupportLead = tasks.some(t => t.supportLeadId === user?.id);
-    const isHelper = tasks.some(t => t.helperId === user?.id);
+    const isProjectLead = isSameUser(currentUserId, project?.team?.teamLead?.id);
+    const isSupportLead = tasks.some(t => isSameUser(t.supportLeadId, currentUserId));
+    const isHelper = tasks.some(t => isSameUser(t.helperId, currentUserId));
 
     const canSeeTable = isAdminOrBOD || isProjectLead || isSupportLead || isHelper;
     const canAddTask = isAdminOrBOD || isProjectLead;
+    const isProjectInProgress = project?.status === 'IN_PROGRESS' || project?.status === 'CONFIRMED';
 
     const [filter, setFilter] = useState({
         status: 'ALL',
@@ -59,7 +62,7 @@ export const TaskTable = ({ tasks = [], project }) => {
 
         if (isAdminOrBOD || isProjectLead) return true;
 
-        if (task.supportLeadId === user?.id) return true;
+        if (isSameUser(task.supportLeadId, currentUserId)) return true;
 
         return false;
     };
@@ -216,7 +219,6 @@ export const TaskTable = ({ tasks = [], project }) => {
         </th>
     );
 
-    const isProjectInProgress = project?.status === 'IN_PROGRESS' || project?.status === 'CONFIRMED';
     const selectableFilteredTasks = filteredTasks.filter(isTaskSelectable);
 
     return (
@@ -451,7 +453,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                         )}
 
                                                         {/* Support Team Lead Actions (Pending) */}
-                                                        {task.status === 'SUPPORT_PENDING' && task.supportLeadId === user?.id && (
+                                                        {task.status === 'SUPPORT_PENDING' && isSameUser(task.supportLeadId, currentUserId) && (
                                                             <div className="flex items-center gap-2">
                                                                 <button
                                                                     onClick={() => handleRespondSupport(task.id, 'ACCEPT')}
@@ -469,7 +471,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                         )}
 
                                                         {/* Support Team Lead Actions (Accepted) */}
-                                                        {task.isSupportAccepted && task.supportLeadId === user?.id && task.isSupportReturnRequested &&
+                                                        {task.isSupportAccepted && isSameUser(task.supportLeadId, currentUserId) && task.isSupportReturnRequested &&
                                                             (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'SUPPORT_AWAITING_RETURN') && (
                                                                 <div className="flex items-center gap-2">
                                                                     <button
@@ -488,7 +490,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                             )}
 
                                                         {/* Original Team Member Request Support */}
-                                                        {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && user?.id === task.assigneeId && !task.isSupportRequested && (
+                                                        {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && isSameUser(currentUserId, task.assigneeId) && !task.isSupportRequested && (
                                                             <button
                                                                 onClick={async (e) => {
                                                                     e.stopPropagation();
@@ -506,7 +508,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                         )} */}
 
                                                         {/* Helper Request Return Support */}
-                                                        {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING') && user?.id === task.helperId && (
+                                                        {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING') && isSameUser(currentUserId, task.helperId) && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();

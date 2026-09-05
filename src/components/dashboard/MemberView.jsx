@@ -4,6 +4,7 @@ import { useGetMyNotificationsQuery } from '../../api/notifications';
 import { TASK_STATUS } from '../../utils/enums';
 import { getTaskDisplayName } from '../../utils/taskName';
 import { Modal } from '../ui/Modal';
+import { getCurrentUserId, isSameUser } from '../../utils/authUser';
 
 // New Modular Components
 import { TodayFocusCard } from './member/TodayFocusCard';
@@ -116,9 +117,10 @@ export const MemberView = ({
 
     if (!member) return null;
 
+    const currentUserId = getCurrentUserId(user);
     const timelineTasks = (member?.upcomingDeadlines || []).slice(0, 10);
     const teamLeadReviewTasks = awaitingReviewTasks?.data?.filter(task =>
-        user?.id === task.assignerId || user?.id === task.project?.team?.teamLead?.id
+        isSameUser(currentUserId, task.assignerId) || isSameUser(currentUserId, task.project?.team?.teamLead?.id)
     ) || [];
     const shouldReplaceProjectMetric = isTeamLead && !isViewingMember;
 

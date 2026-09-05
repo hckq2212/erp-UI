@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, CalendarPlus, CheckCircle, ExternalLink, FileSpreadsheet, RefreshCw } from 'lucide-react';
+import { ArrowLeft, CalendarPlus, CheckCircle, RefreshCw } from 'lucide-react';
 import {
   useGetProjectQuery,
   useConfirmProjectMutation,
-  useRetryProjectGoogleSheetMutation,
   useSyncProjectServiceJobsMutation,
 } from '../../../api/projects';
 import { PROJECT_MANAGEMENT_ROLES, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../../utils/enums';
@@ -18,23 +17,23 @@ import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../../store/authSlice';
 import { CreateMonthlyWorkModal } from './CreateMonthlyWorkModal';
 import { ExtraTasksSection } from './ExtraTasksSection';
+import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
 
 export const ProjectDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: project, isLoading, error } = useGetProjectQuery(id);
   const [confirmProject, { isLoading: isConfirming }] = useConfirmProjectMutation();
-  const [retryProjectGoogleSheet, { isLoading: isRetryingGoogleSheet }] = useRetryProjectGoogleSheetMutation();
   const [syncProjectServiceJobs, { isLoading: isSyncingServiceJobs }] = useSyncProjectServiceJobsMutation();
   const [isMonthlyWorkModalOpen, setIsMonthlyWorkModalOpen] = useState(false);
   const user = useSelector(selectCurrentUser);
-  const canRetryGoogleSheet = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
+  const currentUserId = getCurrentUserId(user);
   const canSyncServiceJobs = user?.role === 'ADMIN' || user?.role === 'PM';
 
-  const isCoreMember = project?.team?.teamLead?.id === user?.id ||
-    project?.team?.members?.some(m => m.user?.id === user?.id) ||
+  const isCoreMember = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
+    project?.team?.members?.some(m => isSameUser(m.user?.id, currentUserId)) ||
     PROJECT_MANAGEMENT_ROLES.includes(user?.role);
-  const canCreateMonthlyWork = project?.team?.teamLead?.id === user?.id ||
+  const canCreateMonthlyWork = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
     PROJECT_MANAGEMENT_ROLES.includes(user?.role);
 
 
@@ -44,15 +43,6 @@ export const ProjectDetailPage = () => {
       toast.success('Chấp nhận dự án thành công');
     } catch (err) {
       toast.error(err?.data?.message || 'Có lỗi xảy ra khi chấp nhận dự án');
-    }
-  };
-
-  const handleRetryGoogleSheet = async () => {
-    try {
-      await retryProjectGoogleSheet(id).unwrap();
-      toast.success('Tao lai Google Sheet thanh cong');
-    } catch (err) {
-      toast.error(err?.data?.message || 'Co loi xay ra khi tao lai Google Sheet');
     }
   };
 
@@ -156,57 +146,8 @@ export const ProjectDetailPage = () => {
       <TaskStatistics tasks={project.tasks} />
 
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                <FileSpreadsheet className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-gray-900">Google Sheet</h2>
-                {project.googleSheetStatus === 'CREATING' && (
-                  <p className="text-sm text-amber-600 mt-1">Google Sheet đang được tạo, vui lòng quay lại sau.</p>
-                )}
-                {project.googleSheetStatus === 'FAILED' && (
-                  <div className="flex items-start gap-2 text-sm text-red-600 mt-1">
-                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                    <span>{project.googleSheetError || 'Không thể tạo Google Sheet cho dự án này.'}</span>
-                  </div>
-                )}
-                {(!project.googleSheetStatus || project.googleSheetStatus === 'NOT_CREATED') && (
-                  <p className="text-sm text-gray-500 mt-1">Chưa tạo Google Sheet cho dự án này.</p>
-                )}
-                {project.googleSheetStatus === 'CREATED' && !project.googleSheetUrl && (
-                  <p className="text-sm text-gray-500 mt-1">Google Sheet đã được tạo nhưng chưa có link hiển thị.</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {project.googleSheetStatus === 'CREATED' && project.googleSheetUrl && (
-                <a
-                  href={project.googleSheetUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-sm transition-all active:scale-95"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Mở Google Sheet</span>
-                </a>
-              )}
-              {project.googleSheetStatus === 'FAILED' && canRetryGoogleSheet && (
-                <button
-                  onClick={handleRetryGoogleSheet}
-                  disabled={isRetryingGoogleSheet}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm transition-all active:scale-95 disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isRetryingGoogleSheet ? 'animate-spin' : ''}`} />
-                  <span>{isRetryingGoogleSheet ? 'Dang tao lai...' : 'Tao lai'}</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* Google Sheet integration is temporarily disabled. */}
+        {/* <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">...</div> */}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 ">
           <div className="space-y-6">

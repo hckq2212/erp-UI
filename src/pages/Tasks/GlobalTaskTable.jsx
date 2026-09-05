@@ -7,6 +7,7 @@ import { Pagination } from '../../components/ui/Pagination';
 import { formatDateTime } from '../../utils/format';
 import { useGetMeQuery } from '../../api/auth';
 import { InlineTaskNickname } from '../../components/tasks/InlineTaskNickname';
+import { getCurrentUserId, isSameUser } from '../../utils/authUser';
 
 export const GlobalTaskTable = ({
     tasks = [],
@@ -34,6 +35,7 @@ export const GlobalTaskTable = ({
         totalItems: meta.total,
         itemsPerPage: meta.limit
     });
+    const currentUserId = getCurrentUserId(user);
 
     // Override internal state changes with external ones
     const handlePageChange = (page) => {
@@ -109,7 +111,7 @@ export const GlobalTaskTable = ({
                                         <InlineTaskNickname
                                             task={task}
                                             projectId={task.project?.id}
-                                            canEdit={PROJECT_MANAGEMENT_ROLES.includes(user?.role) || user?.id === task.project?.team?.teamLead?.id}
+                                            canEdit={PROJECT_MANAGEMENT_ROLES.includes(user?.role) || isSameUser(currentUserId, task.project?.team?.teamLead?.id)}
                                         />
                                     </td>
                                     <td className="px-6 py-4">

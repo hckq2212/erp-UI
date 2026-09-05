@@ -9,6 +9,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../utils/cn';
 import { getFilePreviewUrl } from '../../utils/cloudinary';
+import { PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
+import { getCurrentUserId, isSameUser } from '../../utils/authUser';
 
 export const TaskReviewPage = () => {
     const { id } = useParams();
@@ -29,8 +31,10 @@ export const TaskReviewPage = () => {
     const [passedIds, setPassedIds] = useState([]);
     const [activeTab, setActiveTab] = useState(null); // 'TEAM_LEAD' or 'ASSIGNER'
 
-    const isLead = user?.id === task?.project?.team?.teamLead?.id;
-    const isAssigner = user?.id === task?.assignerId;
+    const currentUserId = getCurrentUserId(user);
+    const isProjectManager = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
+    const isLead = isProjectManager || isSameUser(currentUserId, task?.project?.team?.teamLead?.id);
+    const isAssigner = isSameUser(currentUserId, task?.assignerId);
 
     const leadReviews = reviews?.filter(r => r.reviewerType === 'TEAM_LEAD') || [];
     const assignerReviews = reviews?.filter(r => r.reviewerType === 'ASSIGNER') || [];

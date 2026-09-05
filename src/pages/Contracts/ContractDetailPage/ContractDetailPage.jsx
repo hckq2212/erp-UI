@@ -214,7 +214,7 @@ export const ContractDetailPage = () => {
   const hasAddendums = addendums.length > 0;
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <button

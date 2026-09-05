@@ -10,6 +10,7 @@ import { ClipboardList, Filter, LayoutGrid, Calendar as CalendarIcon, List, Plus
 import { cn } from '../../utils/cn';
 import { TaskCreateModal } from './TaskCreateModal';
 import { PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
+import { getCurrentUserId, isSameUser } from '../../utils/authUser';
 
 export const TasksPage = () => {
     const user = useSelector(selectCurrentUser);
@@ -29,8 +30,9 @@ export const TasksPage = () => {
     const tasks = data?.data || [];
     const meta = data?.meta || { total: 0, page: 1, limit: 10, totalPages: 0 };
     const teams = Array.isArray(teamsResult) ? teamsResult : (teamsResult?.data || []);
+    const currentUserId = getCurrentUserId(user);
     const canCreateInternalTask = PROJECT_MANAGEMENT_ROLES.includes(user?.role) ||
-        teams.some(team => team.teamLeadId === user?.id || team.teamLead?.id === user?.id);
+        teams.some(team => isSameUser(team.teamLeadId, currentUserId) || isSameUser(team.teamLead?.id, currentUserId));
 
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value, page: 1 })); // Reset to page 1 on filter

@@ -2,35 +2,34 @@ import { Briefcase, ExternalLink, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../../utils/enums';
 import { useGetMeQuery } from '../../../api/auth';
-import { useGetTeamsQuery } from '../../../api/teams';
+import { useGetUsersQuery } from '../../../api/users';
 import { useAssignProjectMutation } from '../../../api/projects';
 import { toast } from 'react-toastify';
 
 export const ProjectInfo = ({ project, formatDate, navigate, contractId }) => {
   const { data: user } = useGetMeQuery();
-  const { data: teams = [] } = useGetTeamsQuery();
+  const { data: pmUsers = [] } = useGetUsersQuery({ role: 'PM' });
   const [assignProject, { isLoading }] = useAssignProjectMutation();
-  const [selectedTeamId, setSelectedTeamId] = useState(project?.team?.id || '');
+  const [selectedPmId, setSelectedPmId] = useState(project?.team?.teamLead?.id || '');
 
   const isAdminOrBOD = user?.role === 'ADMIN' || user?.role === 'BOD';
-
   if (!project) return null;
 
-  const handleTeamChange = (e) => {
-    setSelectedTeamId(e.target.value);
+  const handlePmChange = (e) => {
+    setSelectedPmId(e.target.value);
   };
 
   const handleAssign = async () => {
-    const teamId = selectedTeamId || null;
+    const pmId = selectedPmId || null;
     try {
-      await assignProject({ contractId, teamId }).unwrap();
+      await assignProject({ contractId, pmId }).unwrap();
       toast.success('Phân công thành công');
     } catch (err) {
       toast.error(err?.data?.message || 'Phân công thất bại');
     }
   };
 
-  const hasChanged = selectedTeamId !== (project?.team?.id || '');
+  const hasChanged = selectedPmId !== (project?.team?.teamLead?.id || '');
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -63,33 +62,35 @@ export const ProjectInfo = ({ project, formatDate, navigate, contractId }) => {
             </p>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-500">Đội ngũ</label>
+            <label className="text-sm font-medium text-gray-500">PM phụ trách</label>
             <div className="mt-1">
               {isAdminOrBOD ? (
-                <div className="flex gap-2">
-                  <select
-                    value={selectedTeamId}
-                    onChange={handleTeamChange}
-                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Chưa phân công</option>
-                    {teams.map((team) => (
-                      <option key={team.id} value={team.id}>
-                        {team.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={handleAssign}
-                    disabled={!hasChanged || isLoading}
-                    className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Phân công
-                  </button>
-                </div>
+                <>
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedPmId}
+                      onChange={handlePmChange}
+                      className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Chưa phân công PM</option>
+                      {pmUsers.map((pm) => (
+                        <option key={pm.id} value={pm.id}>
+                          {pm.fullName}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleAssign}
+                      disabled={!selectedPmId || !hasChanged || isLoading}
+                      className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Phân công
+                    </button>
+                  </div>
+                </>
               ) : (
-                <p className="text-sm font-semibold text-gray-700">{project.team?.name || 'Chưa phân công'}</p>
+                <p className="text-sm font-semibold text-gray-700">{project.team?.teamLead?.fullName || 'Chưa phân công PM'}</p>
               )}
             </div>
           </div>

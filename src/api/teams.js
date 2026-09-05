@@ -83,11 +83,14 @@ export const teamsApi = api.injectEndpoints({
       ],
     }),
     removeTeamMember: builder.mutation({
-      query: (memberId) => ({
-        url: `/teams/members/${memberId}`,
+      query: (arg) => ({
+        url: `/teams/members/${typeof arg === 'object' ? arg.memberId : arg}`,
         method: 'DELETE',
       }),
-      invalidatesTags: [{ type: 'Teams', id: 'LIST' }],
+      invalidatesTags: (result, error, arg) => [
+        { type: 'Teams', id: typeof arg === 'object' ? arg.teamId : undefined },
+        { type: 'Teams', id: 'LIST' },
+      ].filter(tag => tag.id !== undefined),
     }),
   }),
 });
