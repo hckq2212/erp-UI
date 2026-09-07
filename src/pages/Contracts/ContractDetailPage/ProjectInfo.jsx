@@ -1,5 +1,5 @@
 import { Briefcase, ExternalLink, UserPlus } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../../utils/enums';
 import { useGetMeQuery } from '../../../api/auth';
 import { useGetUsersQuery } from '../../../api/users';
@@ -10,7 +10,14 @@ export const ProjectInfo = ({ project, formatDate, navigate, contractId }) => {
   const { data: user } = useGetMeQuery();
   const { data: pmUsers = [] } = useGetUsersQuery({ role: 'PM' });
   const [assignProject, { isLoading }] = useAssignProjectMutation();
-  const [selectedPmId, setSelectedPmId] = useState(project?.team?.teamLead?.id || '');
+  const projectManager = useMemo(() => (
+    project?.team?.members?.find((member) => member.role === 'PROJECT_MANAGER')?.user || null
+  ), [project?.team?.members]);
+  const [selectedPmId, setSelectedPmId] = useState(projectManager?.id || '');
+
+  useEffect(() => {
+    setSelectedPmId(projectManager?.id || '');
+  }, [projectManager?.id]);
 
   const isAdminOrBOD = user?.role === 'ADMIN' || user?.role === 'BOD';
   if (!project) return null;
@@ -29,7 +36,7 @@ export const ProjectInfo = ({ project, formatDate, navigate, contractId }) => {
     }
   };
 
-  const hasChanged = selectedPmId !== (project?.team?.teamLead?.id || '');
+  const hasChanged = selectedPmId !== (projectManager?.id || '');
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -90,9 +97,13 @@ export const ProjectInfo = ({ project, formatDate, navigate, contractId }) => {
                   </div>
                 </>
               ) : (
-                <p className="text-sm font-semibold text-gray-700">{project.team?.teamLead?.fullName || 'Chưa phân công PM'}</p>
+                <p className="text-sm font-semibold text-gray-700">{projectManager?.fullName || 'Chưa phân công PM'}</p>
               )}
             </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Lead dự án</label>
+            <p className="mt-1 text-sm font-semibold text-gray-700">{project.team?.teamLead?.fullName || 'PM chưa chọn lead'}</p>
           </div>
         </div>
       </div>
