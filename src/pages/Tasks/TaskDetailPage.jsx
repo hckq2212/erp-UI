@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Trash2, Calendar, User, Users, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Calendar, User, Users, Briefcase, FileText, CheckCircle2, Clock, AlertCircle, AlertTriangle, Upload, Link as LinkIcon, X, ListChecks, Bell, FileCheck2, FileWarning } from 'lucide-react';
 import { useGetTaskQuery, useUpdateTaskStatusMutation, useSubmitTaskResultMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetMeQuery } from '../../api/auth';
@@ -69,6 +69,10 @@ export const TaskDetailPage = () => {
     const [submissionType, setSubmissionType] = useState('file'); // 'file' or 'link'
     const [resultLink, setResultLink] = useState('');
     const [resultFile, setResultFile] = useState(null);
+    // Set when submit-result comes back 422 with a spellCheck report (PDF), so
+    // we can show the report + offer "ignore & submit anyway" instead of the
+    // raw error/JSON.
+    const [spellCheckAlert, setSpellCheckAlert] = useState(null);
     const [confirmationNote, setConfirmationNote] = useState('');
     const [checkedCriteriaIds, setCheckedCriteriaIds] = useState([]);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -87,6 +91,7 @@ export const TaskDetailPage = () => {
         if (isResultModalOpen) {
             setCheckedCriteriaIds([]);
             setConfirmationNote('');
+            setSpellCheckAlert(null);
         }
     }, [isResultModalOpen, task?.id]);
 
@@ -114,13 +119,51 @@ export const TaskDetailPage = () => {
         if (file) {
             setResultFile(file);
             setResultLink(''); // Clear link if file is selected
+            setSpellCheckAlert(null);
         }
     };
 
     const handleLinkChange = (e) => {
         setResultLink(e.target.value);
         setResultFile(null); // Clear file if link is entered
+        setSpellCheckAlert(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const submitResultData = async (resultData, { ignoreSpellCheck } = {}) => {
+        try {
+            await submitResult({
+                id,
+                result: resultData,
+                ignoreSpellCheck,
+                projectId: task.project?.id
+            }).unwrap();
+
+            toast.success('Gửi kết quả thành công!');
+            setSpellCheckAlert(null);
+            setIsResultModalOpen(false);
+            setResultFile(null);
+            setResultLink('');
+            setConfirmationNote('');
+            setCheckedCriteriaIds([]);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        } catch (err) {
+            setIsUploading(false);
+
+            // Blocked by a spell-check report (PDF) — show it inline instead
+            // of a plain toast, and let the user open the report or confirm
+            // they want to submit anyway.
+            if (err?.status === 422 && err?.data?.spellCheck) {
+                setSpellCheckAlert({
+                    message: err.data.message,
+                    spellCheck: err.data.spellCheck,
+                    resultData,
+                });
+                return;
+            }
+
+            toast.error(err.data?.message || err.message || 'Có lỗi xảy ra khi gửi kết quả');
+        }
     };
 
     const handleResultSubmit = async () => {
@@ -165,23 +208,16 @@ export const TaskDetailPage = () => {
                     };
             }
 
-            await submitResult({
-                id,
-                result: resultData,
-                projectId: task.project?.id
-            }).unwrap();
-
-            toast.success('Gửi kết quả thành công!');
-            setIsResultModalOpen(false);
-            setResultFile(null);
-            setResultLink('');
-            setConfirmationNote('');
-            setCheckedCriteriaIds([]);
-            if (fileInputRef.current) fileInputRef.current.value = '';
+            await submitResultData(resultData);
         } catch (err) {
             setIsUploading(false);
             toast.error(err.data?.message || err.message || 'Có lỗi xảy ra khi gửi kết quả');
         }
+    };
+
+    const handleIgnoreSpellCheckAndSubmit = () => {
+        if (!spellCheckAlert?.resultData) return;
+        submitResultData(spellCheckAlert.resultData, { ignoreSpellCheck: true });
     };
 
 
@@ -609,6 +645,37 @@ export const TaskDetailPage = () => {
                                         ))}
                                     </div>
                                 )}
+
+                                {task.spellCheck && (
+                                    <div className={cn(
+                                        "flex items-center justify-between gap-3 pt-3 border-t",
+                                        task.spellCheck.status === 'HAS_ERRORS' ? "border-red-100" : task.spellCheck.status === 'FAILED' ? "border-gray-100" : "border-emerald-100"
+                                    )}>
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            {task.spellCheck.status === 'CLEAN' && <FileCheck2 className="w-4 h-4 text-emerald-500 shrink-0" />}
+                                            {task.spellCheck.status === 'HAS_ERRORS' && <FileWarning className="w-4 h-4 text-red-500 shrink-0" />}
+                                            {task.spellCheck.status === 'FAILED' && <AlertTriangle className="w-4 h-4 text-gray-400 shrink-0" />}
+                                            <p className={cn(
+                                                "text-xs font-bold truncate",
+                                                task.spellCheck.status === 'HAS_ERRORS' ? "text-red-600" : task.spellCheck.status === 'FAILED' ? "text-gray-400" : "text-emerald-600"
+                                            )}>
+                                                {task.spellCheck.status === 'CLEAN' && 'Kiểm tra chính tả: Sạch, không lỗi'}
+                                                {task.spellCheck.status === 'HAS_ERRORS' && `Kiểm tra chính tả: ${task.spellCheck.errorCount} lỗi${task.spellCheck.ignored ? ' (đã bỏ qua)' : ''}`}
+                                                {task.spellCheck.status === 'FAILED' && 'Không thể kiểm tra chính tả'}
+                                            </p>
+                                        </div>
+                                        {task.spellCheck.reportUrl && (
+                                            <a
+                                                href={task.spellCheck.reportUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-[11px] font-bold uppercase text-blue-600 hover:text-blue-700 shrink-0"
+                                            >
+                                                Xem báo cáo PDF
+                                            </a>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-12 bg-gray-50/50 rounded-3xl border border-dashed border-gray-200">
@@ -739,7 +806,7 @@ export const TaskDetailPage = () => {
                     <div className="space-y-6">
                         <div className="flex p-1 bg-gray-100 rounded-2xl">
                             <button
-                                onClick={() => setSubmissionType('file')}
+                                onClick={() => { setSubmissionType('file'); setSpellCheckAlert(null); }}
                                 className={cn(
                                     "flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
                                     submissionType === 'file' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
@@ -749,7 +816,7 @@ export const TaskDetailPage = () => {
                                 Tải file lên
                             </button>
                             <button
-                                onClick={() => setSubmissionType('link')}
+                                onClick={() => { setSubmissionType('link'); setSpellCheckAlert(null); }}
                                 className={cn(
                                     "flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
                                     submissionType === 'link' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
@@ -759,7 +826,7 @@ export const TaskDetailPage = () => {
                                 Gửi link
                             </button>
                             <button
-                                onClick={() => setSubmissionType('confirmation')}
+                                onClick={() => { setSubmissionType('confirmation'); setSpellCheckAlert(null); }}
                                 className={cn(
                                     "flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
                                     submissionType === 'confirmation' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
@@ -769,6 +836,43 @@ export const TaskDetailPage = () => {
                                 Xác nhận
                             </button>
                         </div>
+
+                        {spellCheckAlert && (
+                            <div className="p-5 rounded-2xl border border-red-200 bg-red-50/70 space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center text-red-600 shrink-0">
+                                        <FileWarning className="w-5 h-5" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold text-red-700">
+                                            Phát hiện {spellCheckAlert.spellCheck.errorCount} lỗi chính tả
+                                        </p>
+                                        <p className="text-xs text-red-600/80 mt-1">
+                                            Vui lòng xem báo cáo chi tiết, sửa lại nội dung hoặc xác nhận nộp bỏ qua nếu đây là từ đúng (thuật ngữ, tên riêng...).
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 pl-12">
+                                    {spellCheckAlert.spellCheck.reportUrl && (
+                                        <a
+                                            href={spellCheckAlert.spellCheck.reportUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-4 py-2 bg-white border border-red-200 text-red-700 rounded-xl text-xs font-bold uppercase hover:bg-red-50 transition-all"
+                                        >
+                                            Xem báo cáo PDF
+                                        </a>
+                                    )}
+                                    <button
+                                        onClick={handleIgnoreSpellCheckAndSubmit}
+                                        disabled={isSubmittingResult}
+                                        className="px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold uppercase hover:bg-red-700 transition-all disabled:opacity-60"
+                                    >
+                                        {isSubmittingResult ? 'Đang nộp...' : 'Bỏ qua & Nộp'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {submissionType === 'file' ? (
                             <div className="space-y-4">
@@ -890,7 +994,7 @@ export const TaskDetailPage = () => {
                             <Button
                                 variant="outline"
                                 className="flex-1 rounded-2xl py-4"
-                                onClick={() => setIsResultModalOpen(false)}
+                                onClick={() => { setIsResultModalOpen(false); setSpellCheckAlert(null); }}
                             >
                                 Hủy
                             </Button>
