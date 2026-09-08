@@ -30,6 +30,19 @@ export const TeamInfo = ({ team }) => {
     const memberUserIds = useMemo(() => new Set(members.map(member => member.user?.id)), [members]);
     const availableUsers = users.filter(user => !memberUserIds.has(user.id));
     const assignableMemberRoles = Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER);
+    const sortedMembers = useMemo(() => {
+        const getPriority = (member) => {
+            if (member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER) return 0;
+            if (isSameUser(member.user?.id, team?.teamLead?.id) || member.role === TEAM_MEMBER_ROLE.ACCOUNT) return 1;
+            return 2;
+        };
+
+        return [...members].sort((a, b) => {
+            const priorityDiff = getPriority(a) - getPriority(b);
+            if (priorityDiff !== 0) return priorityDiff;
+            return (a.user?.fullName || '').localeCompare(b.user?.fullName || '', 'vi');
+        });
+    }, [members, team?.teamLead?.id]);
 
     if (!team) return null;
 
@@ -76,7 +89,7 @@ export const TeamInfo = ({ team }) => {
                     <p className="text-sm font-semibold text-purple-700">{team.name}</p>
                 </div>
 
-                {team.teamLead && (
+                {/* {team.teamLead && (
                     <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                         <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-2">Trưởng nhóm</p>
                         <div className="flex items-center gap-3">
@@ -92,12 +105,12 @@ export const TeamInfo = ({ team }) => {
                             </div>
                         </div>
                     </div>
-                )}
+                )} */}
 
                 <div>
                     <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-2">Thành viên</p>
                     <div className="space-y-2">
-                        {members.map((member) => {
+                        {sortedMembers.map((member) => {
                             const isLead = isSameUser(member.user?.id, team.teamLead?.id);
                             const isProjectManager = member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER;
                             const accountRole = getUserAccountRole(member.user);

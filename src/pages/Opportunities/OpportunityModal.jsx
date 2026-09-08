@@ -189,7 +189,9 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
   };
 
   const FIELD_ORDER = [
-    'name',
+    'opportunityCustomerName',
+    'opportunityBrandName',
+    'opportunityMonthYear',
     'description',
     'field',
     'expectedRevenue',
@@ -201,7 +203,6 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
   ];
 
   const [formData, setFormData] = useState({
-    name: '',
     description: '',
     field: '',
     expectedRevenue: 0,
@@ -214,6 +215,41 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     durationMonths: 1,
     customerRequirements: '',
   });
+
+  const [opportunityNameParts, setOpportunityNameParts] = useState({
+    customerName: '',
+    brandName: '',
+    monthYear: '',
+  });
+
+  const opportunityName = useMemo(() => {
+    const { customerName, brandName, monthYear } = opportunityNameParts;
+    return [customerName.trim(), brandName.trim(), monthYear.trim()].filter(Boolean).join('_');
+  }, [opportunityNameParts]);
+
+  const handleOpportunityNamePartChange = useCallback((field, value) => {
+    setOpportunityNameParts(prev => ({
+      ...prev,
+      [field]: field === 'monthYear'
+        ? (() => {
+          const digits = value.replace(/\D/g, '').slice(0, 4);
+          if (prev.monthYear.endsWith('/') && digits.length === 2 && !value.includes('/')) {
+            return digits.slice(0, 1);
+          }
+          if (digits.length >= 2) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+          return digits;
+        })()
+        : value
+    }));
+
+    const errorKey = {
+      customerName: 'opportunityCustomerName',
+      brandName: 'opportunityBrandName',
+      monthYear: 'opportunityMonthYear',
+    }[field];
+
+    setErrors(prev => prev[errorKey] ? { ...prev, [errorKey]: null } : prev);
+  }, []);
 
 
 
@@ -443,7 +479,17 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
     // Validate
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'Vui lòng nhập tên cơ hội';
+    const normalizedMonthYear = opportunityNameParts.monthYear.trim();
+    const monthYearMatch = normalizedMonthYear.match(/^(\d{2})\/(\d{2})$/);
+    const monthValue = monthYearMatch ? Number(monthYearMatch[1]) : 0;
+
+    if (!opportunityNameParts.customerName.trim()) newErrors.opportunityCustomerName = 'Vui lòng nhập tên khách hàng';
+    if (!opportunityNameParts.brandName.trim()) newErrors.opportunityBrandName = 'Vui lòng nhập tên Brand';
+    if (!normalizedMonthYear) {
+      newErrors.opportunityMonthYear = 'Vui lòng nhập tháng/năm';
+    } else if (!monthYearMatch || monthValue < 1 || monthValue > 12) {
+      newErrors.opportunityMonthYear = 'Tháng/năm phải có định dạng MM/YY, ví dụ 09/26';
+    }
     if (!formData.description.trim()) newErrors.description = 'Vui lòng nhập mô tả';
     if (!formData.field) newErrors.field = 'Vui lòng chọn lĩnh vực';
     if (!formData.expectedRevenue || formData.expectedRevenue <= 0) newErrors.expectedRevenue = 'Vui lòng nhập doanh thu kỳ vọng';
@@ -540,6 +586,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
       const result = await createOpportunity({
         ...formData,
+        name: opportunityName,
         services: validServices,
         packages: validPackages,
         attachments
@@ -552,7 +599,6 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
       // Reset form
       setFormData({
-        name: '',
         description: '',
         field: '',
         expectedRevenue: 0,
@@ -564,6 +610,11 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
         region: [],
         durationMonths: 0,
         customerRequirements: '',
+      });
+      setOpportunityNameParts({
+        customerName: '',
+        brandName: '',
+        monthYear: '',
       });
       setSelectedServices([{ serviceId: '', quantity: 1 }]);
       setSelectedPackages([{ servicePackageId: '', services: [] }]);
@@ -615,19 +666,45 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                   <h3 className="font-semibold text-gray-900">Thông tin cơ bản</h3>
                 </div>
 
-                {/* Tên doanh nghiệp */}
+                {/* Tên cơ hội */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tên cơ hội / Doanh nghiệp</label>
-                  <input
-                    ref={setFieldRef('name')}
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="VD: GETVINI"
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}
-                  />
-                  {errors.name && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.name}</p>}
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tên cơ hội</label>
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_120px] gap-3">
+                    <div>
+                      <input
+                        ref={setFieldRef('opportunityCustomerName')}
+                        type="text"
+                        value={opportunityNameParts.customerName}
+                        onChange={(e) => handleOpportunityNamePartChange('customerName', e.target.value)}
+                        placeholder="Tên khách hàng"
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.opportunityCustomerName ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}
+                      />
+                      {errors.opportunityCustomerName && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.opportunityCustomerName}</p>}
+                    </div>
+                    <div>
+                      <input
+                        ref={setFieldRef('opportunityBrandName')}
+                        type="text"
+                        value={opportunityNameParts.brandName}
+                        onChange={(e) => handleOpportunityNamePartChange('brandName', e.target.value)}
+                        placeholder="Tên Brand"
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.opportunityBrandName ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}
+                      />
+                      {errors.opportunityBrandName && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.opportunityBrandName}</p>}
+                    </div>
+                    <div>
+                      <input
+                        ref={setFieldRef('opportunityMonthYear')}
+                        type="text"
+                        value={opportunityNameParts.monthYear}
+                        onChange={(e) => handleOpportunityNamePartChange('monthYear', e.target.value)}
+                        placeholder="mm/yy"
+                        maxLength={5}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.opportunityMonthYear ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}
+                      />
+                      {errors.opportunityMonthYear && <p className="mt-2 text-sm text-red-500 flex items-center gap-1"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.opportunityMonthYear}</p>}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Mô tả */}
