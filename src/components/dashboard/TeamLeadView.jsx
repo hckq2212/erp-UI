@@ -12,13 +12,13 @@ export const TeamLeadView = ({
     onSelectMember,
     currentUserId
 }) => {
-    if (!dashboard?.teamLead) return null;
+    const projects = dashboard?.teamLead || [];
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-start">
             {/* Tầng 1: Grid Projects  */}
             <div className="lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {dashboard.teamLead?.map((project, idx) => (
+                {projects.length > 0 ? projects.map((project, idx) => (
                     <motion.div
                         key={project.id}
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -67,7 +67,11 @@ export const TeamLeadView = ({
                             </div>
                         </div>
                     </motion.div>
-                ))}
+                )) : (
+                    <div className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center text-xs font-bold uppercase tracking-widest text-slate-300">
+                        Chưa có dự án đang phụ trách
+                    </div>
+                )}
             </div>
 
 

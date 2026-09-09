@@ -28,11 +28,12 @@ export const DashboardPage = () => {
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear()
     });
-    const { data: dashboard, isLoading: isDashboardLoading } = useGetDashboardDataQuery({
+    const { data: dashboardData, isLoading: isDashboardLoading } = useGetDashboardDataQuery({
         userId: selectedMemberId,
         month: selectedDate.month,
         year: selectedDate.year
     });
+    const dashboard = dashboardData || {};
     const { data: awaitingReviewTasks, isLoading: isTasksLoading } = useGetTasksQuery(
         { status: 'AWAITING_REVIEW' },
         { skip: isAdminOrBod }
@@ -55,8 +56,6 @@ export const DashboardPage = () => {
             </div>
         );
     }
-
-    if (!dashboard) return null;
 
     return (
         <div className="relative min-h-screen pb-20">
@@ -119,14 +118,14 @@ export const DashboardPage = () => {
                             />
                         )}
 
-                        {dashboard.admin && !isViewingMember && isAdminOrBod && (
+                        {!isViewingMember && isAdminOrBod && (
                             <AdminView
                                 dashboard={dashboard}
                                 navigate={navigate}
                             />
                         )}
 
-                        {dashboard.sale && !isViewingMember && (
+                        {!isViewingMember && user?.role === 'BD' && (
                             <BDView
                                 dashboard={dashboard}
                                 navigate={navigate}
@@ -146,7 +145,7 @@ export const DashboardPage = () => {
                             </div>
                         )} */}
 
-                        {(dashboard.member || isViewingMember) && user?.role !== 'BD' && (!isAdminOrBod || isViewingMember) && (
+                        {user?.role !== 'BD' && (!isAdminOrBod || isViewingMember) && (
                             <div className="">
                                 <MemberView
                                     dashboard={dashboard}
