@@ -22,6 +22,25 @@ export const isSpellCheckSupported = (name = '') => SUPPORTED_EXTENSIONS.include
 
 const hasSheets = (name = '') => SHEET_EXTENSIONS.includes(getFileExtension(name));
 
+const MAX_LOCATIONS_SHOWN = 5;
+
+const groupErrors = (errors = []) => {
+  const map = new Map();
+  for (const err of errors) {
+    if (!map.has(err.token)) map.set(err.token, []);
+    map.get(err.token).push(err.location);
+  }
+  return Array.from(map.entries())
+    .map(([token, locations]) => ({ token, locations, count: locations.length }))
+    .sort((a, b) => b.count - a.count);
+};
+
+const formatLocations = (locations) => {
+  if (locations.length <= MAX_LOCATIONS_SHOWN) return locations.join(', ');
+  const shown = locations.slice(0, MAX_LOCATIONS_SHOWN).join(', ');
+  return `${shown} +${locations.length - MAX_LOCATIONS_SHOWN} khác`;
+};
+
 export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => {
   const [jobId, setJobId] = useState(null);
   const [lang, setLang] = useState('both');
@@ -240,10 +259,13 @@ export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => 
           </div>
           {errorCount > 0 && (
             <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-xl bg-white divide-y">
-              {status.errors.slice(0, 100).map((err, idx) => (
-                <div key={idx} className="px-3 py-1.5 text-xs flex items-center justify-between gap-2">
-                  <span className="text-slate-400 font-mono">{err.location}</span>
-                  <span className="text-slate-700 font-medium truncate">{err.token}</span>
+              {groupErrors(status.errors).slice(0, 100).map((group) => (
+                <div key={group.token} className="px-3 py-1.5 text-xs space-y-0.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-slate-700 font-medium truncate">{group.token}</span>
+                    <span className="text-slate-400 font-mono shrink-0">x{group.count}</span>
+                  </div>
+                  <div className="text-slate-400 font-mono truncate">{formatLocations(group.locations)}</div>
                 </div>
               ))}
             </div>
