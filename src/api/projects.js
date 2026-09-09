@@ -83,7 +83,7 @@ export const projectsApi = api.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: [{ type: 'Projects', id: 'LIST' }],
+      invalidatesTags: [{ type: 'Projects' }, { type: 'Teams' }],
     }),
     confirmProject: builder.mutation({
       query: (id) => ({
@@ -132,6 +132,19 @@ export const projectsApi = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, { projectId }) => [
         { type: 'Projects', id: projectId },
+        { type: 'Contracts', id: 'LIST' },
+        { type: 'ContractAddendums', id: 'LIST' },
+      ],
+    }),
+    createProjectServiceAddendum: builder.mutation({
+      query: ({ projectId, ...data }) => ({
+        url: `/projects/${projectId}/service-addendums`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: 'Projects', id: projectId },
+        { type: 'Projects', id: 'LIST' },
         { type: 'Contracts', id: 'LIST' },
         { type: 'ContractAddendums', id: 'LIST' },
       ],
@@ -208,6 +221,7 @@ export const {
   useSyncProjectServiceJobsMutation,
   useGetMonthlyWorkTemplateQuery,
   useCreateMonthlyWorkAddendumMutation,
+  useCreateProjectServiceAddendumMutation,
   useGetProjectProductDescriptionsQuery,
   useCreateProjectProductDescriptionMutation,
   useUpdateProjectProductDescriptionMutation,

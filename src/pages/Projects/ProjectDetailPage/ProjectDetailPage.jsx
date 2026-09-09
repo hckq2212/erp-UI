@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CalendarPlus, CheckCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, CalendarPlus, CheckCircle, RefreshCw, UserPlus } from 'lucide-react';
 import {
   useGetProjectQuery,
+  useAssignProjectMutation,
   useConfirmProjectMutation,
   useSyncProjectServiceJobsMutation,
 } from '../../../api/projects';
-import { PROJECT_MANAGEMENT_ROLES, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../../utils/enums';
+import { PROJECT_MANAGEMENT_ROLES, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS, USER_ROLE } from '../../../utils/enums';
+import { useGetUsersQuery } from '../../../api/users';
 import { TaskStatistics } from './TaskStatistics';
 import { TaskTable } from './TaskTable';
 import { ProjectInfo } from './ProjectInfo';
@@ -23,12 +25,20 @@ export const ProjectDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: project, isLoading, error } = useGetProjectQuery(id);
+  const { data: pmUsers = [] } = useGetUsersQuery({ role: 'PM' });
+  const [assignProject, { isLoading: isAssigningProject }] = useAssignProjectMutation();
   const [confirmProject, { isLoading: isConfirming }] = useConfirmProjectMutation();
   const [syncProjectServiceJobs, { isLoading: isSyncingServiceJobs }] = useSyncProjectServiceJobsMutation();
   const [isMonthlyWorkModalOpen, setIsMonthlyWorkModalOpen] = useState(false);
+  const [selectedPmId, setSelectedPmId] = useState('');
   const user = useSelector(selectCurrentUser);
   const currentUserId = getCurrentUserId(user);
   const canSyncServiceJobs = user?.role === 'ADMIN' || user?.role === 'PM';
+  const projectManagerMember = project?.team?.members?.find(member => member.role === 'PROJECT_MANAGER');
+  const hasProjectManager = Boolean(projectManagerMember?.user?.id);
+  const canAssignPm = (user?.role === 'ADMIN' || user?.role === 'BOD') && !hasProjectManager;
+  const canConfirmProject = project?.status === 'PENDING_CONFIRMATION' &&
+    (user?.role === 'ADMIN' || isSameUser(project?.team?.teamLead?.id, currentUserId));
 
   const isCoreMember = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
     project?.team?.members?.some(m => isSameUser(m.user?.id, currentUserId)) ||
@@ -43,6 +53,22 @@ export const ProjectDetailPage = () => {
       toast.success('Chấp nhận dự án thành công');
     } catch (err) {
       toast.error(err?.data?.message || 'Có lỗi xảy ra khi chấp nhận dự án');
+    }
+  };
+
+  const handleAssignPm = async () => {
+    if (!selectedPmId) return;
+    if (!project?.contract?.id) {
+      toast.error('Dự án chưa có hợp đồng để phân công PM');
+      return;
+    }
+
+    try {
+      await assignProject({ contractId: project.contract.id, pmId: selectedPmId }).unwrap();
+      toast.success('Đã phân công PM cho dự án');
+      setSelectedPmId('');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Không thể phân công PM');
     }
   };
 
@@ -106,6 +132,11 @@ export const ProjectDetailPage = () => {
             {project.description && (
               <p className="text-gray-600 mt-2 max-w-2xl whitespace-pre-wrap">{project.description}</p>
             )}
+            {projectManagerMember?.user && (
+              <p className="mt-2 text-sm font-medium text-blue-700">
+                PM phụ trách: {projectManagerMember.user.fullName}
+              </p>
+            )}
           </div>
 
           <div className="flex gap-3">
@@ -128,7 +159,7 @@ export const ProjectDetailPage = () => {
                 <span>{isSyncingServiceJobs ? 'Đang đồng bộ...' : 'Đồng bộ công việc'}</span>
               </button>
             )}
-            {project.status === 'PENDING_CONFIRMATION' && (
+            {canConfirmProject && (
               <button
                 onClick={handleConfirm}
                 disabled={isConfirming}
@@ -140,6 +171,39 @@ export const ProjectDetailPage = () => {
             )}
           </div>
         </div>
+
+        {canAssignPm && (
+          <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-blue-700">
+                  PM phụ trách
+                </label>
+                <select
+                  value={selectedPmId}
+                  onChange={(event) => setSelectedPmId(event.target.value)}
+                  className="w-full rounded-lg border border-blue-100 bg-white px-3 py-2 text-sm font-medium text-gray-700"
+                >
+                  <option value="">{pmUsers.length ? 'Chọn PM cho dự án' : 'Chưa có tài khoản PM'}</option>
+                  {pmUsers.map((pm) => (
+                    <option key={pm.id} value={pm.id}>
+                      {pm.fullName} - {USER_ROLE.PM}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={handleAssignPm}
+                disabled={!selectedPmId || isAssigningProject}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+              >
+                <UserPlus className="h-4 w-4" />
+                {isAssigningProject ? 'Đang phân công...' : 'Phân công PM'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Task Statistics */}
