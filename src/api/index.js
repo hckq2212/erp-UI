@@ -13,3 +13,4 @@ export * from './users';
 export * from './debts';
 export * from './jobCriterias';
 export * from './taskReviews';
+export * from './spellingCheck';

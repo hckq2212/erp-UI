@@ -129,6 +129,23 @@ export const tasksApi = api.injectEndpoints({
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
+    submitTaskResultFile: builder.mutation({
+      query: ({ id, file }) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return {
+          url: `/tasks/${id}/submit-result-file`,
+          method: 'PATCH',
+          body: formData,
+        };
+      },
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        { type: 'TaskReviews', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
+    }),
     updatePricing: builder.mutation({
       query: ({ id, ...data }) => ({
         url: `/tasks/${id}/pricing`,
@@ -290,6 +307,7 @@ export const {
   useUpdateTaskStatusMutation,
   useAssignTaskMutation,
   useSubmitTaskResultMutation,
+  useSubmitTaskResultFileMutation,
   useUpdatePricingMutation,
   useAssessExtraTaskMutation,
   useCreateInternalTaskMutation,

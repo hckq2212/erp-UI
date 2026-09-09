@@ -11,6 +11,7 @@ import { cn } from '../../utils/cn';
 import { getFilePreviewUrl } from '../../utils/cloudinary';
 import { PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
 import { getCurrentUserId, isSameUser } from '../../utils/authUser';
+import { SpellCheckPanel } from '../../components/tasks/SpellCheckPanel';
 
 export const TaskReviewPage = () => {
     const { id } = useParams();
@@ -230,6 +231,9 @@ export const TaskReviewPage = () => {
                                     <CheckCircle2 className="w-4 h-4" />
                                     Đã xác nhận hoàn thành
                                 </div>
+                            )}
+                            {task.result.url && (
+                                <SpellCheckPanel fileUrl={task.result.url} fileName={task.result.name || task.code} />
                             )}
                         </div>
                     ) : (
