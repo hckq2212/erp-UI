@@ -31,6 +31,12 @@ const STATUS_CLASSES = {
     APPROVED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
 };
 
+const TYPE_LABELS = {
+    MONTHLY_TASKS: 'Công việc tháng mới',
+    ADD_SERVICES: 'Bổ sung dịch vụ',
+    MANUAL: 'Thủ công',
+};
+
 const STANDALONE = 'STANDALONE';
 
 const getServiceKey = (item, index) =>
@@ -201,6 +207,11 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
                                                     {addendum.monthKey}
                                                 </span>
                                             )}
+                                            {TYPE_LABELS[addendum.type] && (
+                                                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-600">
+                                                    {TYPE_LABELS[addendum.type]}
+                                                </span>
+                                            )}
                                         </div>
                                         <h4 className="truncate text-lg font-bold text-gray-900">{addendum.name}</h4>
                                         <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500">
@@ -357,6 +368,11 @@ const AddendumDetailModal = ({
                                 {addendum.monthKey && (
                                     <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-black text-gray-600">
                                         {addendum.monthKey}
+                                    </span>
+                                )}
+                                {TYPE_LABELS[addendum.type] && (
+                                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-600">
+                                        {TYPE_LABELS[addendum.type]}
                                     </span>
                                 )}
                             </div>
