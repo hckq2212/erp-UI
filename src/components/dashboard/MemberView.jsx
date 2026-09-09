@@ -85,12 +85,10 @@ export const MemberView = ({
     user,
 }) => {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-    const member = dashboard?.member;
+    const member = dashboard?.member || {};
     const { data: notifications = [] } = useGetMyNotificationsQuery();
 
     const stats = useMemo(() => {
-        if (!member) return { overdue: 0, today: 0, pending: 0, progress: 0 };
-
         const violationStats = member?.violationStats || {};
         const lateCount = Number(violationStats.LATE_UNFINISHED || 0);
 
@@ -114,8 +112,6 @@ export const MemberView = ({
             progress
         };
     }, [member]);
-
-    if (!member) return null;
 
     const currentUserId = getCurrentUserId(user);
     const timelineTasks = (member?.upcomingDeadlines || []).slice(0, 10);

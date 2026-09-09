@@ -98,9 +98,10 @@ export const contractAddendumsApi = api.injectEndpoints({
                 { type: 'ContractAddendums', id },
                 { type: 'ContractAddendums', id: 'LIST' },
                 { type: 'Contracts', id: 'LIST' },
+                result?.addendum?.project?.id ? { type: 'Projects', id: result.addendum.project.id } : null,
                 { type: 'Projects', id: 'LIST' },
                 { type: 'Tasks', id: 'LIST' },
-            ],
+            ].filter(Boolean),
         }),
         bodRejectAddendum: builder.mutation({
             query: ({ id, note }) => ({

@@ -6,6 +6,7 @@ import {
   Edit,
   Trash2,
   CheckCircle,
+  FileText,
 } from 'lucide-react';
 import { selectCurrentUser } from '../../../store/authSlice';
 import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation, useApproveOpportunityMutation } from '../../../api/opportunities';
@@ -248,9 +249,6 @@ export const OpportunityDetailPage = () => {
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{opportunity.name}</h1>
-            {opportunity.description && (
-              <p className="text-gray-600 mt-2 max-w-2xl whitespace-pre-wrap">{opportunity.description}</p>
-            )}
           </div>
 
           <div className="flex gap-2">
@@ -316,6 +314,22 @@ export const OpportunityDetailPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="pt-2 px-6">
+              <p
+                type="button"
+                className="inline-flex items-center justify-center gap-2 px-1 py-2 text-sm font-semibold text-blue-700"
+              >
+                <FileText className="w-4 h-4" />
+                Mô tả
+              </p>
+            </div>
+            <div className="px-6 pb-3">
+              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                {opportunity.description || 'Chưa có mô tả'}
+              </p>
+            </div>
+          </div>
           <FinancialInfo opportunity={opportunity} formatDate={formatDate} />
           <TimeLocationInfo opportunity={opportunity} formatDate={formatDate} />
           <OpportunityEvaluation opportunity={opportunity} />

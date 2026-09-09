@@ -9,7 +9,7 @@ import {
     useRemoveTeamMemberMutation,
     useUpdateTeamMemberMutation,
 } from '../../../api/teams';
-import { PROJECT_MANAGEMENT_ROLES, TEAM_MEMBER_ROLE, TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../../utils/enums';
+import { TEAM_MEMBER_ROLE, TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../../utils/enums';
 import { getCurrentUserId, getUserAccountRole, isSameUser } from '../../../utils/authUser';
 
 export const TeamInfo = ({ team }) => {
@@ -23,10 +23,26 @@ export const TeamInfo = ({ team }) => {
     const [selectedRole, setSelectedRole] = useState(TEAM_MEMBER_ROLE.EDITOR);
 
     const currentUserId = getCurrentUserId(currentUser);
-    const canManageTeam = PROJECT_MANAGEMENT_ROLES.includes(currentUser?.role) &&
-        (currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD' || isSameUser(currentUserId, team?.teamLead?.id));
+    const currentMembership = members.find(member => isSameUser(member.user?.id, currentUserId));
+    const isCurrentProjectManager = currentUser?.role === 'PM' && currentMembership?.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER;
+    const isCurrentTeamLead = isSameUser(currentUserId, team?.teamLead?.id);
+    const canManageTeam = currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD' || isCurrentTeamLead || isCurrentProjectManager;
     const memberUserIds = useMemo(() => new Set(members.map(member => member.user?.id)), [members]);
     const availableUsers = users.filter(user => !memberUserIds.has(user.id));
+    const assignableMemberRoles = Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER);
+    const sortedMembers = useMemo(() => {
+        const getPriority = (member) => {
+            if (member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER) return 0;
+            if (isSameUser(member.user?.id, team?.teamLead?.id) || member.role === TEAM_MEMBER_ROLE.ACCOUNT) return 1;
+            return 2;
+        };
+
+        return [...members].sort((a, b) => {
+            const priorityDiff = getPriority(a) - getPriority(b);
+            if (priorityDiff !== 0) return priorityDiff;
+            return (a.user?.fullName || '').localeCompare(b.user?.fullName || '', 'vi');
+        });
+    }, [members, team?.teamLead?.id]);
 
     if (!team) return null;
 
@@ -73,7 +89,7 @@ export const TeamInfo = ({ team }) => {
                     <p className="text-sm font-semibold text-purple-700">{team.name}</p>
                 </div>
 
-                {team.teamLead && (
+                {/* {team.teamLead && (
                     <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                         <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-2">Trưởng nhóm</p>
                         <div className="flex items-center gap-3">
@@ -89,27 +105,36 @@ export const TeamInfo = ({ team }) => {
                             </div>
                         </div>
                     </div>
-                )}
+                )} */}
 
                 <div>
                     <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-2">Thành viên</p>
                     <div className="space-y-2">
-                        {members.map((member) => {
+                        {sortedMembers.map((member) => {
                             const isLead = isSameUser(member.user?.id, team.teamLead?.id);
+                            const isProjectManager = member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER;
                             const accountRole = getUserAccountRole(member.user);
                             return (
                                 <div key={member.id} className="flex items-center gap-2 rounded-xl border border-gray-100 bg-white p-2">
                                     <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-bold text-gray-900">{member.user?.fullName}</p>
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            <p className="truncate text-sm font-bold text-gray-900">{member.user?.fullName}</p>
+                                            {member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER && (
+                                                <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-blue-700">PM/Manager</span>
+                                            )}
+                                            {(isLead || member.role === TEAM_MEMBER_ROLE.ACCOUNT) && (
+                                                <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-emerald-700">Lead dự án</span>
+                                            )}
+                                        </div>
                                         <p className="text-xs text-gray-500">{USER_ROLE[accountRole] || accountRole || 'Nhân sự'}</p>
                                     </div>
-                                    {canManageTeam && !isLead ? (
+                                    {canManageTeam && !isLead && !isProjectManager ? (
                                         <select
                                             value={member.role}
                                             onChange={(event) => handleUpdateRole(member.id, event.target.value)}
                                             className="max-w-[150px] rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700"
                                         >
-                                            {Object.values(TEAM_MEMBER_ROLE).map((role) => (
+                                            {assignableMemberRoles.map((role) => (
                                                 <option key={role} value={role}>{TEAM_MEMBER_ROLE_LABELS[role] || role}</option>
                                             ))}
                                         </select>
@@ -118,7 +143,7 @@ export const TeamInfo = ({ team }) => {
                                             {TEAM_MEMBER_ROLE_LABELS[member.role] || member.role}
                                         </span>
                                     )}
-                                    {canManageTeam && !isLead && (
+                                    {canManageTeam && !isLead && !isProjectManager && (
                                         <button
                                             type="button"
                                             onClick={() => handleRemoveMember(member.id)}
@@ -155,7 +180,7 @@ export const TeamInfo = ({ team }) => {
                                 onChange={(event) => setSelectedRole(event.target.value)}
                                 className="w-full rounded-lg border border-purple-100 bg-white px-3 py-2 text-sm font-medium text-gray-700"
                             >
-                                {Object.values(TEAM_MEMBER_ROLE).map((role) => (
+                                {assignableMemberRoles.map((role) => (
                                     <option key={role} value={role}>{TEAM_MEMBER_ROLE_LABELS[role] || role}</option>
                                 ))}
                             </select>

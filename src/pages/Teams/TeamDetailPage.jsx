@@ -17,10 +17,9 @@ import {
     useAddTeamMemberMutation,
     useRemoveTeamMemberMutation,
     useUpdateTeamMemberMutation,
-    useChangeLeadMutation
 } from '../../api/teams';
 import { useGetUsersQuery } from '../../api/users';
-import { PROJECT_MANAGEMENT_ROLES, TEAM_MEMBER_ROLE, TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../utils/enums';
+import { TEAM_MEMBER_ROLE, TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../utils/enums';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { toast } from 'react-toastify';
@@ -37,15 +36,19 @@ export const TeamDetailPage = () => {
     const [addMember, { isLoading: isAddingMember }] = useAddTeamMemberMutation();
     const [removeMember] = useRemoveTeamMemberMutation();
     const [updateMember] = useUpdateTeamMemberMutation();
-    const [changeLead, { isLoading: isChangingLead }] = useChangeLeadMutation();
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState('');
     const [selectedRole, setSelectedRole] = useState(TEAM_MEMBER_ROLE.EDITOR);
     const currentUserId = getCurrentUserId(currentUser);
-    const canChangeLead = currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD';
-    const canManageTeam = PROJECT_MANAGEMENT_ROLES.includes(currentUser?.role) &&
-        (canChangeLead || isSameUser(currentUserId, team?.teamLead?.id));
+    const currentMembership = team?.members?.find(member => isSameUser(member.user?.id, currentUserId));
+    const isCurrentProjectManager = currentUser?.role === 'PM' && currentMembership?.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER;
+    const isCurrentTeamLead = isSameUser(currentUserId, team?.teamLead?.id);
+    const canChangeProjectManager = currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD';
+    const canManageTeam = canChangeProjectManager || isCurrentProjectManager || isCurrentTeamLead;
+    const assignableMemberRoles = canChangeProjectManager
+        ? Object.values(TEAM_MEMBER_ROLE)
+        : Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER);
 
     // Filter out users who are already members of this team
     const availableUsers = useMemo(() => {
@@ -84,16 +87,6 @@ export const TeamDetailPage = () => {
             toast.success('Đã cập nhật vai trò');
         } catch (err) {
             toast.error(err?.data?.message || 'Không thể cập nhật vai trò');
-        }
-    };
-
-    const handleChangeLead = async (newLeadId) => {
-        if (!window.confirm('Bạn có chắc chắn muốn thay đổi Lead cho đội này?')) return;
-        try {
-            await changeLead({ id, newLeadId }).unwrap();
-            toast.success('Thay đổi Lead thành công');
-        } catch (err) {
-            toast.error(err?.data?.message || 'Không thể thay đổi Lead');
         }
     };
 
@@ -185,7 +178,11 @@ export const TeamDetailPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {team.members?.map((member) => (
+                                    {team.members?.map((member) => {
+                                        const isLead = isSameUser(team.teamLead?.id, member.user?.id);
+                                        const isProjectManager = member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER;
+                                        const canEditMember = canManageTeam && (canChangeProjectManager || !isProjectManager) && !isLead;
+                                        return (
                                         <tr key={member.id} className="hover:bg-gray-50 transition-colors group">
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-3">
@@ -196,8 +193,11 @@ export const TeamDetailPage = () => {
                                                         onClick={() => navigate(`/users/${member.user?.id}`)}
                                                         className="font-medium text-gray-900 flex items-center gap-2">
                                                         {member.user?.fullName || member.user?.username}
-                                                        {isSameUser(team.teamLead?.id, member.user?.id) && (
-                                                            <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">LEAD</span>
+                                                        {isProjectManager && (
+                                                            <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">PM/MANAGER</span>
+                                                        )}
+                                                        {(isLead || member.role === TEAM_MEMBER_ROLE.ACCOUNT) && (
+                                                            <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">LEAD DỰ ÁN</span>
                                                         )}
                                                     </div>
                                                     <div className="text-xs text-gray-500">
@@ -212,13 +212,13 @@ export const TeamDetailPage = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {canManageTeam && !isSameUser(team.teamLead?.id, member.user?.id) ? (
+                                                {canEditMember ? (
                                                     <select
                                                         value={member.role}
                                                         onChange={(event) => handleUpdateRole(member.id, event.target.value)}
                                                         className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700"
                                                     >
-                                                        {Object.values(TEAM_MEMBER_ROLE).map((role) => (
+                                                        {assignableMemberRoles.map((role) => (
                                                             <option key={role} value={role}>{TEAM_MEMBER_ROLE_LABELS[role] || role}</option>
                                                         ))}
                                                     </select>
@@ -228,16 +228,7 @@ export const TeamDetailPage = () => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    {canChangeLead && !isSameUser(team.teamLead?.id, member.user?.id) && (
-                                                        <button
-                                                            onClick={() => handleChangeLead(member.user?.id)}
-                                                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                            title="Đặt làm Lead"
-                                                        >
-                                                            <Shield className="w-4 h-4" />
-                                                        </button>
-                                                    )}
-                                                    {canManageTeam && !isSameUser(team.teamLead?.id, member.user?.id) && (
+                                                    {canEditMember && (
                                                         <button
                                                             onClick={() => handleRemoveMember(member.id)}
                                                             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -249,7 +240,7 @@ export const TeamDetailPage = () => {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )})}
                                     {(!team.members || team.members.length === 0) && (
                                         <tr>
                                             <td colSpan="4" className="px-6 py-12 text-center text-gray-500 italic">
@@ -299,9 +290,9 @@ export const TeamDetailPage = () => {
                             required
                             className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                         >
-                            {Object.keys(TEAM_MEMBER_ROLE).map(roleKey => (
-                                <option key={roleKey} value={TEAM_MEMBER_ROLE[roleKey]}>
-                                    {TEAM_MEMBER_ROLE_LABELS[TEAM_MEMBER_ROLE[roleKey]]}
+                            {assignableMemberRoles.map(role => (
+                                <option key={role} value={role}>
+                                    {TEAM_MEMBER_ROLE_LABELS[role]}
                                 </option>
                             ))}
                         </select>

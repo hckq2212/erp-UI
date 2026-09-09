@@ -40,6 +40,8 @@ export const teamsApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [
         { type: 'Teams', id },
         { type: 'Teams', id: 'LIST' },
+        { type: 'Projects' },
+        { type: 'Tasks' },
       ],
     }),
     deleteTeam: builder.mutation({
@@ -69,6 +71,8 @@ export const teamsApi = api.injectEndpoints({
       invalidatesTags: (result, error, { teamId }) => [
         { type: 'Teams', id: teamId },
         { type: 'Teams', id: 'LIST' },
+        { type: 'Projects' },
+        { type: 'Tasks' },
       ],
     }),
     changeLead: builder.mutation({
@@ -80,6 +84,8 @@ export const teamsApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [
         { type: 'Teams', id },
         { type: 'Teams', id: 'LIST' },
+        { type: 'Projects' },
+        { type: 'Tasks' },
       ],
     }),
     removeTeamMember: builder.mutation({
@@ -90,7 +96,9 @@ export const teamsApi = api.injectEndpoints({
       invalidatesTags: (result, error, arg) => [
         { type: 'Teams', id: typeof arg === 'object' ? arg.teamId : undefined },
         { type: 'Teams', id: 'LIST' },
-      ].filter(tag => tag.id !== undefined),
+        { type: 'Projects' },
+        { type: 'Tasks' },
+      ].filter(tag => tag.id !== undefined || tag.type === 'Projects' || tag.type === 'Tasks'),
     }),
   }),
 });

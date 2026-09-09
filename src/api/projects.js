@@ -83,7 +83,7 @@ export const projectsApi = api.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: [{ type: 'Projects', id: 'LIST' }],
+      invalidatesTags: [{ type: 'Projects' }, { type: 'Teams' }],
     }),
     confirmProject: builder.mutation({
       query: (id) => ({
@@ -136,6 +136,73 @@ export const projectsApi = api.injectEndpoints({
         { type: 'ContractAddendums', id: 'LIST' },
       ],
     }),
+    createProjectServiceAddendum: builder.mutation({
+      query: ({ projectId, ...data }) => ({
+        url: `/projects/${projectId}/service-addendums`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: 'Projects', id: projectId },
+        { type: 'Projects', id: 'LIST' },
+        { type: 'Contracts', id: 'LIST' },
+        { type: 'ContractAddendums', id: 'LIST' },
+      ],
+    }),
+    getProjectProductDescriptions: builder.query({
+      query: (projectId) => `/projects/${projectId}/product-descriptions`,
+      providesTags: (result, error, projectId) => [
+        { type: 'ProjectProductDescriptions', id: projectId },
+      ],
+    }),
+    createProjectProductDescription: builder.mutation({
+      query: ({ projectId, ...data }) => ({
+        url: `/projects/${projectId}/product-descriptions`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: 'ProjectProductDescriptions', id: projectId },
+      ],
+    }),
+    updateProjectProductDescription: builder.mutation({
+      query: ({ projectId, submissionId, ...data }) => ({
+        url: `/projects/${projectId}/product-descriptions/${submissionId}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: 'ProjectProductDescriptions', id: projectId },
+      ],
+    }),
+    submitProjectProductDescription: builder.mutation({
+      query: ({ projectId, submissionId }) => ({
+        url: `/projects/${projectId}/product-descriptions/${submissionId}/submit`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: 'ProjectProductDescriptions', id: projectId },
+      ],
+    }),
+    approveProjectProductDescription: builder.mutation({
+      query: ({ projectId, submissionId }) => ({
+        url: `/projects/${projectId}/product-descriptions/${submissionId}/approve`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: 'ProjectProductDescriptions', id: projectId },
+      ],
+    }),
+    rejectProjectProductDescription: builder.mutation({
+      query: ({ projectId, submissionId, reviewNote }) => ({
+        url: `/projects/${projectId}/product-descriptions/${submissionId}/reject`,
+        method: 'POST',
+        body: { reviewNote },
+      }),
+      invalidatesTags: (result, error, { projectId }) => [
+        { type: 'ProjectProductDescriptions', id: projectId },
+      ],
+    }),
     getMyProjects: builder.query({
       query: () => '/projects/my-projects',
       providesTags: [{ type: 'Projects', id: 'MY_LIST' }],
@@ -158,5 +225,12 @@ export const {
   useSyncProjectServiceJobsMutation,
   useGetMonthlyWorkTemplateQuery,
   useCreateMonthlyWorkAddendumMutation,
+  useCreateProjectServiceAddendumMutation,
+  useGetProjectProductDescriptionsQuery,
+  useCreateProjectProductDescriptionMutation,
+  useUpdateProjectProductDescriptionMutation,
+  useSubmitProjectProductDescriptionMutation,
+  useApproveProjectProductDescriptionMutation,
+  useRejectProjectProductDescriptionMutation,
   useGetMyProjectsQuery,
 } = projectsApi;

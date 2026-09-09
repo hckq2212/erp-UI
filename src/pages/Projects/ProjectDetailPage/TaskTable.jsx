@@ -1,7 +1,7 @@
 import { useState, useMemo, Fragment } from 'react';
 import { Calendar, Users, FileText, Search, UserPlus, UserMinus, Plus, AlertCircle, ChevronRight, ChevronDown } from 'lucide-react';
 import { TaskAssignModal } from './TaskAssignModal';
-import { AddExtraTaskModal } from './AddExtraTaskModal';
+import { AddProjectServiceModal } from './AddProjectServiceModal';
 import { useNavigate } from 'react-router-dom';
 import { useGetTeamMembersQuery } from '../../../api/teams';
 import { useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation } from '../../../api/tasks';
@@ -40,7 +40,7 @@ export const TaskTable = ({ tasks = [], project }) => {
         assigneeId: 'ALL'
     });
     const [assigningTask, setAssigningTask] = useState(null);
-    const [showAddExtraModal, setShowAddExtraModal] = useState(false);
+    const [showAddServiceModal, setShowAddServiceModal] = useState(false);
     const [selectedTasks, setSelectedTasks] = useState([]);
     const [selectionMode, setSelectionMode] = useState('assign');
     const [expandedGroups, setExpandedGroups] = useState({});
@@ -273,14 +273,14 @@ export const TaskTable = ({ tasks = [], project }) => {
                 )}
                 {canAddTask && (
                     <button
-                        onClick={() => setShowAddExtraModal(true)}
+                        onClick={() => setShowAddServiceModal(true)}
                         className={cn(
                             "inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm font-medium text-sm",
                             !isProjectInProgress && "ml-auto"
                         )}
                     >
                         <Plus className="w-4 h-4" />
-                        <span>Thêm công việc</span>
+                        <span>Thêm dịch vụ</span>
                     </button>
                 )}
             </div>
@@ -557,10 +557,10 @@ export const TaskTable = ({ tasks = [], project }) => {
                 />
             )}
 
-            {showAddExtraModal && (
-                <AddExtraTaskModal
-                    isOpen={showAddExtraModal}
-                    onClose={() => setShowAddExtraModal(false)}
+            {showAddServiceModal && (
+                <AddProjectServiceModal
+                    isOpen={showAddServiceModal}
+                    onClose={() => setShowAddServiceModal(false)}
                     project={project}
                 />
             )}

@@ -294,9 +294,7 @@ const ProjectProgressCard = ({ project, navigate }) => {
 };
 
 export const AdminView = ({ dashboard, navigate }) => {
-    if (!dashboard?.admin) return null;
-
-    const admin = dashboard.admin;
+    const admin = dashboard?.admin || {};
     const quotations = admin?.approvalQueue?.quotations || [];
     const contracts = admin?.approvalQueue?.contracts || [];
     const currentProjects = admin?.currentProjects || [];
