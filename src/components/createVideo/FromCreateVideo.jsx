@@ -403,7 +403,8 @@ export default function FromCreateVideo({ createVideoHook }) {
   })()
 
   return (
-    <section className="flex h-full w-[460px] flex-col overflow-hidden border-r border-gray-200 bg-white p-6">
+    // <section className="flex h-full w-[460px] flex-col overflow-hidden border-r border-gray-200 bg-white p-6">
+    <section className="flex h-full w-[420px] shrink-0 flex-col overflow-hidden border-r border-gray-200 bg-white p-6">
       <div className="flex h-full min-h-0 flex-col">
         <div className="scrollbar-hide flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-5">
           <div className="shrink-0">
