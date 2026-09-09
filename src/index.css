@@ -13,3 +13,17 @@
 }
 
 /* Tailwind v4: utilities are generated via @import "tailwindcss" */
+
+/* Ẩn thanh cuộn */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+main:has(.flex.flex-col.overflow-hidden) {
+  padding: 0;
+}

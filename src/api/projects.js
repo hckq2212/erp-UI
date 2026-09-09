@@ -136,6 +136,10 @@ export const projectsApi = api.injectEndpoints({
         { type: 'ContractAddendums', id: 'LIST' },
       ],
     }),
+    getMyProjects: builder.query({
+      query: () => '/projects/my-projects',
+      providesTags: [{ type: 'Projects', id: 'MY_LIST' }],
+    }),
   }),
 });
 
@@ -154,4 +158,5 @@ export const {
   useSyncProjectServiceJobsMutation,
   useGetMonthlyWorkTemplateQuery,
   useCreateMonthlyWorkAddendumMutation,
+  useGetMyProjectsQuery,
 } = projectsApi;

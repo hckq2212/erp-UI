@@ -79,6 +79,7 @@ export const api = createApi({
     'Users', 'Customers', 'Teams', 'Notifications',
     'ReferralPartners', 'Vendors', 'Debts', 'JobCriterias', 'TaskReviews',
     'ContractAddendums', 'Dashboard', 'Acceptance', 'ServicePackages', 'Chat',
+    'VideoGenerations', 'AiModels', 'Assets',
   ],
   endpoints: () => ({}),
 });

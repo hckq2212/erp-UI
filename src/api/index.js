@@ -13,3 +13,6 @@ export * from './users';
 export * from './debts';
 export * from './jobCriterias';
 export * from './taskReviews';
+export * from './videoGenerations';
+export * from './aiModels';
+export * from './assets';

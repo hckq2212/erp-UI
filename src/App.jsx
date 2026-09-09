@@ -35,7 +35,8 @@ import { ServicePackageListPage } from './pages/ServicePackages/ServicePackageLi
 import { ServicePackageDetailPage } from './pages/ServicePackages/ServicePackageDetailPage';
 import { MePage } from './pages/Me/MePage';
 import Chatbot from './components/Chatbot';
-
+import { CreateVideoAIPage } from './pages/CreateVideoAI/CreateVideoAIPage';
+import { CreateVideoMotionControlPage } from './pages/CreateVideoAI/CreateVideoMotionControlPage';
 function AppContent() {
   // Use the query to check if the user is logged in via cookies on startup
   const { data: currentUser, isLoading } = useGetMeQuery();
@@ -358,6 +359,27 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <AcceptanceInboxPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/create-video-ai'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CreateVideoAIPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/create-video-motion-control'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <CreateVideoMotionControlPage />
               </Layout>
             </ProtectedRoute>
           }
