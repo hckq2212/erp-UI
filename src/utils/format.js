@@ -18,9 +18,12 @@ export const formatNumber = (value) => {
   const numInteger = parseInt(integerPart || '0');
   const formattedInteger = isNaN(numInteger) ? '0' : numInteger.toLocaleString('vi-VN');
 
-  // If there's a decimal part, append it with a comma
-  if (decimalPart !== undefined && decimalPart !== '000') {
-    return `${formattedInteger},${decimalPart}`;
+  // If there's a decimal part, append it with a comma (maximum 3 decimal places)
+  if (decimalPart !== undefined) {
+    const trimmedDecimal = decimalPart.slice(0, 3);
+    if (trimmedDecimal && trimmedDecimal !== '000') {
+      return `${formattedInteger},${trimmedDecimal}`;
+    }
   }
 
   return formattedInteger;

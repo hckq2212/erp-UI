@@ -176,9 +176,10 @@ export const projectsApi = api.injectEndpoints({
       ],
     }),
     submitProjectProductDescription: builder.mutation({
-      query: ({ projectId, submissionId }) => ({
+      query: ({ projectId, submissionId, ...data }) => ({
         url: `/projects/${projectId}/product-descriptions/${submissionId}/submit`,
         method: 'POST',
+        body: data,
       }),
       invalidatesTags: (result, error, { projectId }) => [
         { type: 'ProjectProductDescriptions', id: projectId },
