@@ -12,6 +12,8 @@ import { Button } from '../../components/ui/Button';
 import { cn } from '../../utils/cn';
 import { getFilePreviewUrl } from '../../utils/cloudinary';
 import { SpellCheckPanel } from '../../components/tasks/SpellCheckPanel';
+import { QCPanel } from '../../components/tasks/QCPanel';
+import { PanelErrorBoundary } from '../../components/shared/PanelErrorBoundary';
 import { ReworkTaskModal } from '../../components/tasks/ReworkTaskModal';
 import { TaskAssignModal } from '../Projects/ProjectDetailPage/TaskAssignModal';
 import { getTaskDisplayName } from '../../utils/taskName';
@@ -58,6 +60,7 @@ export const TaskDetailPage = () => {
     const [spellCheckUrl, setSpellCheckUrl] = useState(null);
     const [spellCheckFileName, setSpellCheckFileName] = useState(null);
     const [spellCheckErrorCount, setSpellCheckErrorCount] = useState(0);
+    const [qcMismatchCount, setQcMismatchCount] = useState(0);
 
     const fileInputRef = useRef(null);
 
@@ -80,6 +83,7 @@ export const TaskDetailPage = () => {
             setSpellCheckUrl(null);
             setSpellCheckFileName(null);
             setSpellCheckErrorCount(0);
+            setQcMismatchCount(0);
         }
     }, [isResultModalOpen, task?.id]);
 
@@ -136,6 +140,7 @@ export const TaskDetailPage = () => {
         setSpellCheckUrl(null);
         setSpellCheckFileName(null);
         setIsSpellCheckStage(false);
+        setQcMismatchCount(0);
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
@@ -209,13 +214,21 @@ export const TaskDetailPage = () => {
         setIsSpellCheckStage(true);
     };
 
+    const buildCheckWarnings = () => {
+        const warnings = [];
+        if (spellCheckErrorCount > 0) warnings.push(`${spellCheckErrorCount} lỗi chính tả`);
+        if (qcMismatchCount > 0) warnings.push(`${qcMismatchCount} điểm QC chưa khớp`);
+        return warnings;
+    };
+
     const handleSubmitAfterSpellCheck = async () => {
         try {
             let resultData = null;
 
             if (submissionType === 'file' && resultFile) {
-                if (spellCheckErrorCount > 0) {
-                    const proceed = window.confirm(`Phát hiện ${spellCheckErrorCount} lỗi chính tả, vẫn nộp?`);
+                const warnings = buildCheckWarnings();
+                if (warnings.length) {
+                    const proceed = window.confirm(`Phát hiện ${warnings.join(' và ')}, vẫn nộp?`);
                     if (!proceed) return;
                 }
 
@@ -231,6 +244,7 @@ export const TaskDetailPage = () => {
                 setSpellCheckUrl(null);
                 setSpellCheckFileName(null);
                 setSpellCheckErrorCount(0);
+                setQcMismatchCount(0);
                 setResultFile(null);
                 setResultLink('');
                 setConfirmationNote('');
@@ -238,8 +252,9 @@ export const TaskDetailPage = () => {
                 if (fileInputRef.current) fileInputRef.current.value = '';
                 return;
             } else if (submissionType === 'link' && resultLink.trim()) {
-                if (spellCheckErrorCount > 0) {
-                    const proceed = window.confirm(`Phát hiện ${spellCheckErrorCount} lỗi chính tả, vẫn nộp?`);
+                const warnings = buildCheckWarnings();
+                if (warnings.length) {
+                    const proceed = window.confirm(`Phát hiện ${warnings.join(' và ')}, vẫn nộp?`);
                     if (!proceed) return;
                 }
                 resultData = {
@@ -287,6 +302,7 @@ export const TaskDetailPage = () => {
             setSpellCheckUrl(null);
             setSpellCheckFileName(null);
             setSpellCheckErrorCount(0);
+            setQcMismatchCount(0);
             setResultFile(null);
             setResultLink('');
             setConfirmationNote('');
@@ -939,8 +955,8 @@ export const TaskDetailPage = () => {
             <Modal
                 isOpen={isResultModalOpen}
                 onClose={() => setIsResultModalOpen(false)}
-                title={isSpellCheckStage ? 'Kiểm tra chính tả' : 'Gửi kết quả công việc'}
-                className="max-w-md"
+                title={isSpellCheckStage ? 'Kiểm tra trước khi nộp' : 'Gửi kết quả công việc'}
+                className={isSpellCheckStage ? "max-w-4xl" : "max-w-md"}
             >
                 {!isSpellCheckStage ? (
                     <div className="space-y-6">
@@ -1132,17 +1148,31 @@ export const TaskDetailPage = () => {
                 ) : (
                     <div className="space-y-6">
                         <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
-                            <p className="text-sm font-bold text-blue-800">Kiểm tra chính tả trước khi nộp</p>
-                            <p className="text-xs text-blue-600 mt-1">Hãy kiểm tra nội dung bên dưới. Kết quả chỉ được nộp sau bước này.</p>
+                            <p className="text-sm font-bold text-blue-800">Kiểm tra trước khi nộp</p>
+                            <p className="text-xs text-blue-600 mt-1">Chính tả và QC chạy độc lập, lỗi ở phần này không ảnh hưởng phần kia.</p>
                         </div>
 
                         {(spellCheckFile || spellCheckUrl) && (
-                            <SpellCheckPanel
-                                file={spellCheckFile}
-                                fileUrl={spellCheckUrl}
-                                fileName={spellCheckFileName || undefined}
-                                onStatusChange={status => setSpellCheckErrorCount(status?.errors?.length || 0)}
-                            />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                                <PanelErrorBoundary resetKey={spellCheckFile || spellCheckUrl} fallbackMessage="Không thể kiểm tra chính tả lúc này">
+                                    <SpellCheckPanel
+                                        file={spellCheckFile}
+                                        fileUrl={spellCheckUrl}
+                                        fileName={spellCheckFileName || undefined}
+                                        onStatusChange={status => setSpellCheckErrorCount(status?.errors?.length || 0)}
+                                    />
+                                </PanelErrorBoundary>
+
+                                <PanelErrorBoundary resetKey={spellCheckFile || spellCheckUrl} fallbackMessage="Không thể chạy QC lúc này">
+                                    <QCPanel
+                                        file={spellCheckFile}
+                                        fileUrl={spellCheckUrl}
+                                        fileName={spellCheckFileName || undefined}
+                                        projectId={task?.project?.id}
+                                        onStatusChange={status => setQcMismatchCount(status?.mismatchCount || 0)}
+                                    />
+                                </PanelErrorBoundary>
+                            </div>
                         )}
 
                         <div className="pt-4 flex gap-3">
@@ -1155,6 +1185,7 @@ export const TaskDetailPage = () => {
                                     setSpellCheckUrl(null);
                                     setSpellCheckFileName(null);
                                     setSpellCheckErrorCount(0);
+                                    setQcMismatchCount(0);
                                 }}
                             >
                                 Quay lại

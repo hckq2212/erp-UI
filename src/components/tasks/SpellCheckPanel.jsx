@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { SpellCheck, Download, X, Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { SpellCheck, Download, X, Loader2, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Button } from '../ui/Button';
 import {
@@ -46,6 +46,7 @@ export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => 
   const [checkedKey, setCheckedKey] = useState(null);
   const [sheets, setSheets] = useState(null);
   const [selectedSheets, setSelectedSheets] = useState([]);
+  const [sheetSearch, setSheetSearch] = useState('');
 
   const [listSheets, { isLoading: isLoadingSheetsFile }] = useListSpellCheckSheetsMutation();
   const [listSheetsFromUrl, { isLoading: isLoadingSheetsUrl }] = useListSpellCheckSheetsFromUrlMutation();
@@ -66,6 +67,13 @@ export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => 
 
   const isRunning = jobId && (!status || status.status === 'running');
 
+  const filteredSheets = useMemo(() => {
+    if (!sheets) return [];
+    const q = sheetSearch.trim().toLowerCase();
+    if (!q) return sheets;
+    return sheets.filter((name) => name.toLowerCase().includes(q));
+  }, [sheets, sheetSearch]);
+
   useEffect(() => {
     if (currentKey && checkedKey && currentKey !== checkedKey) {
       if (jobId) deleteSpellCheckJob(jobId);
@@ -73,6 +81,7 @@ export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => 
       setCheckedKey(null);
       setSheets(null);
       setSelectedSheets([]);
+      setSheetSearch('');
     }
   }, [currentKey, checkedKey]);
 
@@ -183,26 +192,41 @@ export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => 
             </div>
           )}
           {sheets?.length > 0 && (
-            <div className="border border-slate-200 rounded-xl bg-white p-2 max-h-32 overflow-y-auto space-y-1">
-              <label className="flex items-center gap-2 text-xs font-bold text-slate-600 pb-1 border-b border-slate-100">
+            <>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <input
-                  type="checkbox"
-                  checked={selectedSheets.length === sheets.length}
-                  onChange={toggleSelectAll}
+                  type="text"
+                  value={sheetSearch}
+                  onChange={(e) => setSheetSearch(e.target.value)}
+                  placeholder="Tìm sheet..."
+                  className="w-full pl-8 pr-2 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                Chọn tất cả ({sheets.length} sheet)
-              </label>
-              {sheets.map((name) => (
-                <label key={name} className="flex items-center gap-2 text-xs text-slate-700">
+              </div>
+              <div className="border border-slate-200 rounded-xl bg-white p-2 max-h-32 overflow-y-auto space-y-1">
+                <label className="flex items-center gap-2 text-xs font-bold text-slate-600 pb-1 border-b border-slate-100">
                   <input
                     type="checkbox"
-                    checked={selectedSheets.includes(name)}
-                    onChange={() => toggleSheet(name)}
+                    checked={selectedSheets.length === sheets.length}
+                    onChange={toggleSelectAll}
                   />
-                  {name}
+                  Chọn tất cả ({sheets.length} sheet)
                 </label>
-              ))}
-            </div>
+                {filteredSheets.length === 0 && (
+                  <div className="text-xs text-slate-400 py-1">Không tìm thấy sheet phù hợp</div>
+                )}
+                {filteredSheets.map((name) => (
+                  <label key={name} className="flex items-center gap-2 text-xs text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={selectedSheets.includes(name)}
+                      onChange={() => toggleSheet(name)}
+                    />
+                    {name}
+                  </label>
+                ))}
+              </div>
+            </>
           )}
         </div>
       )}
