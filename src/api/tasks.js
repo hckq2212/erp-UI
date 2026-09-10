@@ -130,9 +130,15 @@ export const tasksApi = api.injectEndpoints({
       ].filter(Boolean),
     }),
     submitTaskResultFile: builder.mutation({
-      query: ({ id, file }) => {
+      query: ({ id, file, spellCheckErrorCount, qcMismatchCount }) => {
         const formData = new FormData();
         formData.append('file', file);
+        if (spellCheckErrorCount !== undefined && spellCheckErrorCount !== null) {
+          formData.append('spellCheckErrorCount', spellCheckErrorCount);
+        }
+        if (qcMismatchCount !== undefined && qcMismatchCount !== null) {
+          formData.append('qcMismatchCount', qcMismatchCount);
+        }
         return {
           url: `/tasks/${id}/submit-result-file`,
           method: 'PATCH',

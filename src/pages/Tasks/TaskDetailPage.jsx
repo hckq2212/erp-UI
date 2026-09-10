@@ -214,7 +214,13 @@ export const TaskDetailPage = () => {
 
                 setIsUploading(true);
 
-                await submitResultFile({ id, file: resultFile, projectId: task.project?.id }).unwrap();
+                await submitResultFile({
+                    id,
+                    file: resultFile,
+                    projectId: task.project?.id,
+                    spellCheckErrorCount,
+                    qcMismatchCount
+                }).unwrap();
 
                 setIsUploading(false);
                 toast.success('Gửi kết quả thành công!');
@@ -245,7 +251,9 @@ export const TaskDetailPage = () => {
             await submitResult({
                 id,
                 result: resultData,
-                projectId: task.project?.id
+                projectId: task.project?.id,
+                spellCheckErrorCount,
+                qcMismatchCount
             }).unwrap();
 
             toast.success('Gửi kết quả thành công!');
@@ -671,6 +679,21 @@ export const TaskDetailPage = () => {
                                                     Người làm: {task.lastSubmittedBy.fullName}
                                                 </p>
                                             )}
+
+                                            {(task.lastSpellCheckErrorCount > 0 || task.lastQcMismatchCount > 0) && (
+                                                <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                                    {task.lastSpellCheckErrorCount > 0 && (
+                                                        <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-lg uppercase tracking-wider">
+                                                            {task.lastSpellCheckErrorCount} lỗi chính tả
+                                                        </span>
+                                                    )}
+                                                    {task.lastQcMismatchCount > 0 && (
+                                                        <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-lg uppercase tracking-wider">
+                                                            {task.lastQcMismatchCount} điểm QC chưa khớp
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -733,6 +756,18 @@ export const TaskDetailPage = () => {
                                                     {iteration.submittedBy && (
                                                         <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg uppercase tracking-wider">
                                                             Người làm: {iteration.submittedBy.fullName}
+                                                        </span>
+                                                    )}
+
+                                                    {iteration.spellCheckErrorCount > 0 && (
+                                                        <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg uppercase tracking-wider">
+                                                            {iteration.spellCheckErrorCount} lỗi chính tả
+                                                        </span>
+                                                    )}
+
+                                                    {iteration.qcMismatchCount > 0 && (
+                                                        <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-lg uppercase tracking-wider">
+                                                            {iteration.qcMismatchCount} điểm QC chưa khớp
                                                         </span>
                                                     )}
                                                 </div>
