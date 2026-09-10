@@ -26,6 +26,7 @@ export const QuotationDetailModal = ({
   onClose,
   formatDate,
   onEdit,
+  onApprovedContract,
   opportunity,
   currentUser
 }) => {
@@ -107,9 +108,15 @@ export const QuotationDetailModal = ({
     if (!quotationId) return;
 
     try {
-      await approveQuotation(quotationId).unwrap();
-      toast.success('Đã duyệt báo giá thành công');
+      const result = await approveQuotation(quotationId).unwrap();
+      const contractId = result?.contractId || result?.contract?.id;
+
+      toast.success(contractId ? 'Đã duyệt báo giá và tạo hợp đồng thành công' : 'Đã duyệt báo giá thành công');
       onClose();
+
+      if (contractId) {
+        onApprovedContract?.(contractId);
+      }
     } catch (err) {
       toast.error(err?.data?.message || 'Có lỗi xảy ra khi duyệt báo giá');
     }
