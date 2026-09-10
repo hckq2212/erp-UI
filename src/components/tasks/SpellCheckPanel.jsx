@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { SpellCheck, Download, X, Loader2, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Button } from '../ui/Button';
+import { SpellCheckWhitelist } from './SpellCheckWhitelist';
 import {
   useListSpellCheckSheetsMutation,
   useListSpellCheckSheetsFromUrlMutation,
@@ -43,6 +44,7 @@ const formatLocations = (locations) => {
 export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => {
   const [jobId, setJobId] = useState(null);
   const [lang, setLang] = useState('both');
+  const [whitelist, setWhitelist] = useState([]);
   const [checkedKey, setCheckedKey] = useState(null);
   const [sheets, setSheets] = useState(null);
   const [selectedSheets, setSelectedSheets] = useState([]);
@@ -60,10 +62,20 @@ export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => 
   const displayName = file?.name || fileName || '';
   const currentKey = file ? `${file.name}:${file.size}` : fileUrl ? fileUrl : null;
 
+  const [pollActive, setPollActive] = useState(false);
+
+  useEffect(() => {
+    setPollActive(Boolean(jobId));
+  }, [jobId]);
+
   const { data: status, error: statusError } = useGetSpellCheckStatusQuery(jobId, {
     skip: !jobId,
-    pollingInterval: jobId ? 1500 : 0,
+    pollingInterval: pollActive ? 1500 : 0,
   });
+
+  useEffect(() => {
+    if (status && status.status !== 'running') setPollActive(false);
+  }, [status]);
 
   const isRunning = jobId && (!status || status.status === 'running');
 
@@ -137,9 +149,9 @@ export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => 
     try {
       let res;
       if (file) {
-        res = await startSpellCheck({ file, lang, sheetNames: selectedSheets }).unwrap();
+        res = await startSpellCheck({ file, lang, sheetNames: selectedSheets, whitelist }).unwrap();
       } else {
-        res = await startSpellCheckFromUrl({ fileUrl, fileName, lang, sheetNames: selectedSheets }).unwrap();
+        res = await startSpellCheckFromUrl({ fileUrl, fileName, lang, sheetNames: selectedSheets, whitelist }).unwrap();
       }
       setJobId(res.job_id);
       setCheckedKey(currentKey);
@@ -183,6 +195,10 @@ export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => 
           </select>
         )}
       </div>
+
+      {!jobId && (
+        <SpellCheckWhitelist whitelist={whitelist} onChange={setWhitelist} />
+      )}
 
       {!jobId && hasSheets(displayName) && (
         <div className="space-y-1.5">

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ClipboardCheck, Loader2, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Button } from '../ui/Button';
+import { QcProductInfoPanel } from './QcProductInfoPanel';
 import {
   useListQcSheetsMutation,
   useListQcSheetsFromUrlMutation,
@@ -116,6 +117,8 @@ export const QCPanel = ({ file, fileUrl, fileName, projectId, onStatusChange }) 
         <ClipboardCheck className="w-4 h-4" />
         QC đối chiếu sản phẩm
       </div>
+
+      <QcProductInfoPanel projectId={projectId} />
 
       {!report && (
         <div className="space-y-1.5">

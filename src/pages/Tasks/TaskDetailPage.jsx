@@ -50,8 +50,6 @@ export const TaskDetailPage = () => {
     const [submissionType, setSubmissionType] = useState('file');
     const [resultLink, setResultLink] = useState('');
     const [resultFile, setResultFile] = useState(null);
-    const [confirmationNote, setConfirmationNote] = useState('');
-    const [checkedCriteriaIds, setCheckedCriteriaIds] = useState([]);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
     const [isPreparingSpellCheck, setIsPreparingSpellCheck] = useState(false);
@@ -64,20 +62,12 @@ export const TaskDetailPage = () => {
 
     const fileInputRef = useRef(null);
 
-    const taskCriteria = task?.job?.criteria || [];
-    const hasCriteria = taskCriteria.length > 0;
-    const isConfirmationComplete = !hasCriteria || taskCriteria.every(criteria => checkedCriteriaIds.includes(criteria.id));
-
     const isResultReady = submissionType === 'file'
         ? Boolean(resultFile)
-        : submissionType === 'link'
-            ? Boolean(resultLink.trim())
-            : isConfirmationComplete;
+        : Boolean(resultLink.trim());
 
     useEffect(() => {
         if (isResultModalOpen) {
-            setCheckedCriteriaIds([]);
-            setConfirmationNote('');
             setIsSpellCheckStage(false);
             setSpellCheckFile(null);
             setSpellCheckUrl(null);
@@ -185,17 +175,7 @@ export const TaskDetailPage = () => {
     };
 
     const handleStartSpellCheck = async () => {
-        if (!isResultReady) {
-            if (submissionType === 'confirmation') {
-                toast.warning('Vui lòng xác nhận đầy đủ checklist trước khi gửi');
-            }
-            return;
-        }
-
-        if (submissionType === 'confirmation') {
-            await handleSubmitAfterSpellCheck();
-            return;
-        }
+        if (!isResultReady) return;
 
         if (submissionType === 'link') {
             const { url, fileName } = resolveSpellCheckLinkSource(resultLink.trim());
@@ -247,8 +227,6 @@ export const TaskDetailPage = () => {
                 setQcMismatchCount(0);
                 setResultFile(null);
                 setResultLink('');
-                setConfirmationNote('');
-                setCheckedCriteriaIds([]);
                 if (fileInputRef.current) fileInputRef.current.value = '';
                 return;
             } else if (submissionType === 'link' && resultLink.trim()) {
@@ -262,31 +240,6 @@ export const TaskDetailPage = () => {
                     url: resultLink.trim(),
                     name: resultLink.trim()
                 };
-            } else if (submissionType === 'confirmation') {
-                if (!isConfirmationComplete) {
-                    toast.warning('Vui lòng xác nhận đầy đủ checklist trước khi gửi');
-                    return;
-                }
-
-                const taskName = getTaskDisplayName(task);
-
-                resultData = hasCriteria
-                    ? {
-                        type: 'CHECKLIST',
-                        name: `Xác nhận hoàn thành: ${taskName}`,
-                        note: confirmationNote.trim(),
-                        checklist: taskCriteria.map(criteria => ({
-                            criteriaId: criteria.id,
-                            label: criteria.name,
-                            description: criteria.description || '',
-                            checked: checkedCriteriaIds.includes(criteria.id)
-                        }))
-                    }
-                    : {
-                        type: 'CONFIRMATION',
-                        name: `Xác nhận hoàn thành: ${taskName}`,
-                        note: confirmationNote.trim() || 'Người thực hiện đã xác nhận hoàn thành task.'
-                    };
             }
 
             await submitResult({
@@ -305,8 +258,6 @@ export const TaskDetailPage = () => {
             setQcMismatchCount(0);
             setResultFile(null);
             setResultLink('');
-            setConfirmationNote('');
-            setCheckedCriteriaIds([]);
 
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
@@ -982,17 +933,6 @@ export const TaskDetailPage = () => {
                                 <LinkIcon className="w-4 h-4" />
                                 Gửi link
                             </button>
-
-                            <button
-                                onClick={() => setSubmissionType('confirmation')}
-                                className={cn(
-                                    "flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2",
-                                    submissionType === 'confirmation' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
-                                )}
-                            >
-                                <ListChecks className="w-4 h-4" />
-                                Xác nhận
-                            </button>
                         </div>
 
                         {submissionType === 'file' ? (
@@ -1046,7 +986,7 @@ export const TaskDetailPage = () => {
                                     </button>
                                 )}
                             </div>
-                        ) : submissionType === 'link' ? (
+                        ) : (
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">
@@ -1070,60 +1010,6 @@ export const TaskDetailPage = () => {
                                     </p>
                                 </div>
                             </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {hasCriteria && (
-                                    <div className="space-y-3">
-                                        <div>
-                                            <p className="text-sm font-bold text-gray-900">Checklist tự xác nhận</p>
-                                            <p className="text-xs text-gray-400 mt-1">Tick đầy đủ tiêu chí trước khi gửi Team Lead đánh giá.</p>
-                                        </div>
-
-                                        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                                            {taskCriteria.map(criteria => (
-                                                <label
-                                                    key={criteria.id}
-                                                    className="flex items-start gap-3 p-3 rounded-2xl border border-gray-100 bg-gray-50 cursor-pointer hover:border-blue-200"
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                        checked={checkedCriteriaIds.includes(criteria.id)}
-                                                        onChange={e => {
-                                                            setCheckedCriteriaIds(prev =>
-                                                                e.target.checked
-                                                                    ? [...prev, criteria.id]
-                                                                    : prev.filter(criteriaId => criteriaId !== criteria.id)
-                                                            );
-                                                        }}
-                                                    />
-
-                                                    <span className="min-w-0">
-                                                        <span className="block text-sm font-bold text-gray-700">{criteria.name}</span>
-                                                        {criteria.description && (
-                                                            <span className="block text-xs text-gray-400 mt-0.5">{criteria.description}</span>
-                                                        )}
-                                                    </span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">
-                                        Ghi chú hoàn thành
-                                    </label>
-
-                                    <textarea
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
-                                        rows="3"
-                                        value={confirmationNote}
-                                        onChange={e => setConfirmationNote(e.target.value)}
-                                        placeholder="Ghi chú thêm nếu cần..."
-                                    />
-                                </div>
-                            </div>
                         )}
 
                         <div className="pt-4 flex gap-3">
@@ -1141,7 +1027,7 @@ export const TaskDetailPage = () => {
                                 isLoading={isPreparingSpellCheck}
                                 disabled={isPreparingSpellCheck || !isResultReady}
                             >
-                                {isPreparingSpellCheck ? 'Đang chuẩn bị...' : submissionType === 'confirmation' ? 'Hoàn tất' : 'Kiểm tra chính tả'}
+                                {isPreparingSpellCheck ? 'Đang chuẩn bị...' : 'Kiểm tra & nộp kết quả'}
                             </Button>
                         </div>
                     </div>

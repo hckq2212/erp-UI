@@ -2,6 +2,9 @@ import { api } from '../store/api';
 
 export const qcApi = api.injectEndpoints({
   endpoints: (builder) => ({
+    getQcProductInfo: builder.query({
+      query: (projectId) => `/qc/product-info/${projectId}`,
+    }),
     listQcSheets: builder.mutation({
       query: ({ file }) => {
         const formData = new FormData();
@@ -39,6 +42,7 @@ export const qcApi = api.injectEndpoints({
 });
 
 export const {
+  useGetQcProductInfoQuery,
   useListQcSheetsMutation,
   useListQcSheetsFromUrlMutation,
   useRunQcMutation,
