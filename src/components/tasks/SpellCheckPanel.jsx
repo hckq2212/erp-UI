@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SpellCheck, Download, X, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Button } from '../ui/Button';
@@ -13,7 +13,6 @@ import {
 
 const SUPPORTED_EXTENSIONS = ['txt', 'csv', 'xlsx', 'xlsm'];
 const SHEET_EXTENSIONS = ['xlsx', 'xlsm'];
-const TIMEOUT_MS = 5 * 60 * 1000;
 const BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '') || '/api';
 
 export const getFileExtension = (name = '') => name.split('.').pop()?.toLowerCase() || '';
@@ -47,7 +46,6 @@ export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => 
   const [checkedKey, setCheckedKey] = useState(null);
   const [sheets, setSheets] = useState(null);
   const [selectedSheets, setSelectedSheets] = useState([]);
-  const startedAtRef = useRef(null);
 
   const [listSheets, { isLoading: isLoadingSheetsFile }] = useListSpellCheckSheetsMutation();
   const [listSheetsFromUrl, { isLoading: isLoadingSheetsUrl }] = useListSpellCheckSheetsFromUrlMutation();
@@ -67,7 +65,6 @@ export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => 
   });
 
   const isRunning = jobId && (!status || status.status === 'running');
-  const isTimedOut = isRunning && startedAtRef.current && Date.now() - startedAtRef.current > TIMEOUT_MS;
 
   useEffect(() => {
     if (currentKey && checkedKey && currentKey !== checkedKey) {
@@ -129,7 +126,6 @@ export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => 
       return;
     }
     try {
-      startedAtRef.current = Date.now();
       let res;
       if (file) {
         res = await startSpellCheck({ file, lang, sheetNames: selectedSheets }).unwrap();
@@ -217,7 +213,7 @@ export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => 
         </Button>
       )}
 
-      {isRunning && !isTimedOut && (
+      {isRunning && (
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -231,14 +227,8 @@ export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => 
               />
             </div>
           )}
-        </div>
-      )}
-
-      {isTimedOut && (
-        <div className="flex items-center justify-between gap-2 text-xs text-amber-600">
-          Kiểm tra quá lâu, vui lòng thử lại
           <Button type="button" variant="outline" size="sm" onClick={handleCancel}>
-            Thử lại
+            Hủy kiểm tra
           </Button>
         </div>
       )}
@@ -252,7 +242,7 @@ export const SpellCheckPanel = ({ file, fileUrl, fileName, onStatusChange }) => 
         </div>
       )}
 
-      {status?.status === 'done' && !isTimedOut && (
+      {status?.status === 'done' && (
         <div className="space-y-2">
           <div className={`text-xs font-bold ${errorCount > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
             {errorCount > 0 ? `Phát hiện ${errorCount} lỗi chính tả` : 'Không phát hiện lỗi chính tả'}
