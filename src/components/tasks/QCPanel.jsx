@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ClipboardCheck, Download, Loader2, Search } from 'lucide-react';
+import { ClipboardCheck, Loader2, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Button } from '../ui/Button';
 import { QcProductInfoPanel } from './QcProductInfoPanel';
@@ -10,7 +10,6 @@ import {
 } from '../../api/qc';
 
 const SHEET_EXTENSIONS = ['xlsx', 'xlsm'];
-const BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '') || '/api';
 
 export const getFileExtension = (name = '') => name.split('.').pop()?.toLowerCase() || '';
 
@@ -110,38 +109,6 @@ export const QCPanel = ({ file, fileUrl, fileName, projectId, onStatusChange }) 
     setCheckedKey(null);
   };
 
-  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
-
-  const handleDownloadPdf = async () => {
-    setIsDownloadingPdf(true);
-    try {
-      const res = await fetch(`${BASE_URL}/qc/report-pdf`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mismatches,
-          sheets: selectedSheets,
-          fileName: displayName || undefined,
-        }),
-      });
-      if (!res.ok) throw new Error('Không thể tải báo cáo PDF');
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'qc_report.pdf';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      toast.error(err?.message || 'Không thể tải báo cáo PDF');
-    } finally {
-      setIsDownloadingPdf(false);
-    }
-  };
-
   if (!currentKey || !isQcSupported(displayName)) return null;
 
   return (
@@ -239,28 +206,13 @@ export const QCPanel = ({ file, fileUrl, fileName, projectId, onStatusChange }) 
               ))}
             </div>
           )}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleDownloadPdf}
-              disabled={isDownloadingPdf}
-              className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline disabled:opacity-50"
-            >
-              {isDownloadingPdf ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Download className="w-3.5 h-3.5" />
-              )}
-              Tải báo cáo PDF
-            </button>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600"
-            >
-              Chạy lại
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleReset}
+            className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600"
+          >
+            Chạy lại
+          </button>
         </div>
       )}
     </div>

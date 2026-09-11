@@ -11,8 +11,7 @@ import { cn } from '../../utils/cn';
 import { getFilePreviewUrl } from '../../utils/cloudinary';
 import { PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
 import { getCurrentUserId, isSameUser } from '../../utils/authUser';
-import { SpellCheckPanel } from '../../components/tasks/SpellCheckPanel';
-import { QCPanel } from '../../components/tasks/QCPanel';
+import { TaskResultChecksPanel } from '../../components/tasks/TaskResultChecksPanel';
 import { PanelErrorBoundary } from '../../components/shared/PanelErrorBoundary';
 
 export const TaskReviewPage = () => {
@@ -235,13 +234,8 @@ export const TaskReviewPage = () => {
                                 </div>
                             )}
                             {task.result.url && (
-                                <PanelErrorBoundary resetKey={task.result.url} fallbackMessage="Không thể kiểm tra chính tả lúc này">
-                                    <SpellCheckPanel fileUrl={task.result.url} fileName={task.result.name || task.code} />
-                                </PanelErrorBoundary>
-                            )}
-                            {task.result.url && (
-                                <PanelErrorBoundary resetKey={task.result.url} fallbackMessage="Không thể chạy QC lúc này">
-                                    <QCPanel fileUrl={task.result.url} fileName={task.result.name || task.code} projectId={task.project?.id} />
+                                <PanelErrorBoundary resetKey={task.result.url} fallbackMessage="Không thể tải kết quả kiểm tra lúc này">
+                                    <TaskResultChecksPanel taskId={task.id} projectId={task.project?.id} />
                                 </PanelErrorBoundary>
                             )}
                         </div>
