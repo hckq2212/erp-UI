@@ -55,6 +55,7 @@ const formatDateTime = (value) => {
 };
 
 const emptyProduct = () => ({
+    id: null,
     productName: '',
     sourceType: 'LINK',
     link: '',
@@ -63,16 +64,17 @@ const emptyProduct = () => ({
 });
 
 const toEditableProduct = (item) => ({
-    productName: item.productName || '',
-    sourceType: item.sourceType || 'LINK',
-    link: item.sourceType === 'LINK' ? item.sourceUrl || '' : '',
+    id: item?.id || null,
+    productName: item?.productName || '',
+    sourceType: item?.sourceType || 'LINK',
+    link: item?.sourceType === 'LINK' ? item?.sourceUrl || '' : '',
     file: null,
-    existingFile: item.sourceType === 'FILE'
+    existingFile: item?.sourceType === 'FILE'
         ? {
-            name: item.sourceName,
-            url: item.sourceUrl,
-            size: item.size,
-            publicId: item.publicId,
+            name: item?.sourceName || item?.sourceUrl || 'File đính kèm',
+            url: item?.sourceUrl || '',
+            size: item?.size,
+            publicId: item?.publicId,
         }
         : null,
 });
@@ -101,17 +103,32 @@ const getProductSource = (product) => {
     return null;
 };
 
-const ProductSourceLink = ({ item }) => (
-    <a
-        href={getFilePreviewUrl(item.sourceUrl, item.sourceType)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
-    >
-        {item.sourceType === 'LINK' ? <LinkIcon className="w-4 h-4 shrink-0" /> : <FileText className="w-4 h-4 shrink-0" />}
-        <span className="truncate">{item.sourceName || item.sourceUrl}</span>
-    </a>
-);
+const ProductSourceLink = ({ item }) => {
+    const sourceUrl = item?.sourceUrl || '';
+    const sourceType = item?.sourceType || 'LINK';
+    const sourceName = item?.sourceName || sourceUrl || 'Không có nguồn';
+
+    if (!sourceUrl) {
+        return (
+            <span className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-gray-400">
+                <FileText className="w-4 h-4 shrink-0" />
+                <span className="truncate">{sourceName}</span>
+            </span>
+        );
+    }
+
+    return (
+        <a
+            href={getFilePreviewUrl(sourceUrl, sourceType)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
+        >
+            {sourceType === 'LINK' ? <LinkIcon className="w-4 h-4 shrink-0" /> : <FileText className="w-4 h-4 shrink-0" />}
+            <span className="truncate">{sourceName}</span>
+        </a>
+    );
+};
 
 const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onReject, onEdit, isReviewing }) => {
     const [isRejectingInline, setIsRejectingInline] = useState(false);
@@ -216,9 +233,9 @@ const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onRe
             )}
 
             <div className="mt-4 space-y-2">
-                {submission.items?.map((item) => (
-                    <div key={item.id} className="flex flex-col gap-1 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="min-w-0 text-sm font-bold text-gray-800">{item.productName}</p>
+                {(Array.isArray(submission.items) ? submission.items : []).map((item, index) => (
+                    <div key={item?.id || index} className="flex flex-col gap-1 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="min-w-0 text-sm font-bold text-gray-800">{item?.productName || 'Chưa có tên sản phẩm'}</p>
                         <ProductSourceLink item={item} />
                     </div>
                 ))}
@@ -229,7 +246,9 @@ const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onRe
 
 const ProductDescriptionHistoryModal = ({ isOpen, onClose, submissions, canEditSubmission, onEdit }) => {
     const sortedSubmissions = useMemo(() => (
-        [...submissions].sort((first, second) => new Date(second.createdAt || 0) - new Date(first.createdAt || 0))
+        submissions
+            .filter(Boolean)
+            .sort((first, second) => new Date(second.createdAt || 0) - new Date(first.createdAt || 0))
     ), [submissions]);
 
     const handleEdit = (submission) => {
@@ -282,10 +301,10 @@ const ProductDescriptionHistoryModal = ({ isOpen, onClose, submissions, canEditS
                             </div>
 
                             <div className="mt-4 space-y-2">
-                                {submission.items?.length > 0 ? (
-                                    submission.items.map((item) => (
-                                        <div key={item.id} className="flex flex-col gap-1 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
-                                            <p className="min-w-0 text-sm font-bold text-gray-800">{item.productName}</p>
+                                {Array.isArray(submission.items) && submission.items.length > 0 ? (
+                                    submission.items.map((item, index) => (
+                                        <div key={item?.id || index} className="flex flex-col gap-1 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+                                            <p className="min-w-0 text-sm font-bold text-gray-800">{item?.productName || 'Chưa có tên sản phẩm'}</p>
                                             <ProductSourceLink item={item} />
                                         </div>
                                     ))
@@ -308,9 +327,12 @@ const ProductDescriptionHistoryModal = ({ isOpen, onClose, submissions, canEditS
 const ProductDescriptionSection = ({ project }) => {
     const { data: user } = useGetMeQuery();
     const projectId = project?.id;
-    const { data: submissions = [], isLoading } = useGetProjectProductDescriptionsQuery(projectId, {
+    const { data: submissionResponse = [], isLoading } = useGetProjectProductDescriptionsQuery(projectId, {
         skip: !projectId,
     });
+    const submissions = useMemo(() => (
+        Array.isArray(submissionResponse) ? submissionResponse : []
+    ), [submissionResponse]);
     const [createSubmission, { isLoading: isCreating }] = useCreateProjectProductDescriptionMutation();
     const [updateSubmission, { isLoading: isUpdating }] = useUpdateProjectProductDescriptionMutation();
     const [submitSubmission, { isLoading: isSubmitting }] = useSubmitProjectProductDescriptionMutation();
@@ -318,7 +340,7 @@ const ProductDescriptionSection = ({ project }) => {
     const [rejectSubmission, { isLoading: isRejecting }] = useRejectProjectProductDescriptionMutation();
     const fileInputsRef = useRef({});
 
-    const hasPendingSubmission = submissions.some((submission) => submission.status === 'PENDING_REVIEW');
+    const hasPendingSubmission = submissions.some((submission) => submission?.status === 'PENDING_REVIEW');
     const isAssignedPm = user?.role === 'PM' && project?.team?.members?.some((member) =>
         member.role === 'PROJECT_MANAGER' && member.user?.id === user.id
     );
@@ -332,10 +354,10 @@ const ProductDescriptionSection = ({ project }) => {
     const [uploadProgress, setUploadProgress] = useState({});
     const [isUploading, setIsUploading] = useState(false);
     const activeSubmission = useMemo(() => (
-        submissions.find((submission) => submission.id === loadedSubmissionId) || null
+        submissions.find((submission) => submission?.id === loadedSubmissionId) || null
     ), [loadedSubmissionId, submissions]);
     const visibleSubmissions = useMemo(() => (
-        submissions.filter((submission) => MAIN_STATUSES.includes(submission.status))
+        submissions.filter((submission) => submission?.status && MAIN_STATUSES.includes(submission.status))
     ), [submissions]);
     const canEdit = canManageSubmission && isFormOpen && !hasPendingSubmission;
 
@@ -377,7 +399,8 @@ const ProductDescriptionSection = ({ project }) => {
     };
 
     const openEditForm = (submission) => {
-        setProducts(submission.items?.length ? submission.items.map(toEditableProduct) : [emptyProduct()]);
+        const editableItems = Array.isArray(submission.items) ? submission.items : [];
+        setProducts(editableItems.length ? editableItems.map(toEditableProduct) : [emptyProduct()]);
         setLoadedSubmissionId(submission.id);
         setUploadProgress({});
         setIsFormOpen(true);
@@ -422,7 +445,7 @@ const ProductDescriptionSection = ({ project }) => {
                 throw new Error(`Vui lòng chọn file hoặc nhập link cho sản phẩm ${productName}`);
             }
 
-            normalized.push({ productName, ...source });
+            normalized.push({ id: product.id, productName, ...source });
         }
 
         return { items: normalized };
@@ -695,6 +718,9 @@ const ProductDescriptionSection = ({ project }) => {
 };
 
 export const ProjectInfo = ({ project }) => {
+    const contract = project?.contract || {};
+    const contractAttachments = Array.isArray(contract.attachments) ? contract.attachments : [];
+
     return (
         <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full">
@@ -707,34 +733,36 @@ export const ProjectInfo = ({ project }) => {
                     <div className="grid grid-cols-3 gap-4">
                         <div>
                             <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Mã hợp đồng</p>
-                            <p className="text-sm font-medium text-gray-700">{project.contract.contractCode}</p>
+                            <p className="text-sm font-medium text-gray-700">{contract.contractCode || 'Chưa có'}</p>
                         </div>
                         <div>
                             <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Tên hợp đồng</p>
-                            <p className="text-sm font-medium text-gray-700">{project.contract.name}</p>
+                            <p className="text-sm font-medium text-gray-700">{contract.name || 'Chưa có'}</p>
                         </div>
                     </div>
-                    {project?.contract?.attachments && project?.contract?.attachments.length > 0 ? (
+                    {contractAttachments.length > 0 ? (
                         <div className="flex flex-col items-start gap-2 overflow-hidden">
                             <div>
                                 <h2 className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Mô tả khách hàng</h2>
                             </div>
-                            {project?.contract?.description && (
+                            {contract.description && (
                                 <div className="">
                                     <div className="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
                                         <Briefcase className="w-5 h-5 text-blue-600" />
                                         <span>Brief</span>
                                     </div>
                                     <div className="space-y-3">
-                                        <p className="text-gray-500 mt-1 italic text-sm">{project?.contract?.description}</p>
+                                        <p className="text-gray-500 mt-1 italic text-sm">{contract.description}</p>
                                     </div>
                                 </div>
                             )}
                             <div className="flex flex-row flex-nowrap gap-3 overflow-x-auto w-full pb-2">
-                                {project?.contract?.attachments.map((file, idx) => (
+                                {contractAttachments.map((file, idx) => {
+                                    const fileName = file?.name || file?.url || 'Tài liệu đính kèm';
+                                    return (
                                     <a
                                         key={idx}
-                                        href={getFilePreviewUrl(file.url, file.type)}
+                                        href={getFilePreviewUrl(file?.url, file?.type)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-blue-200 hover:bg-white transition-all"
@@ -743,11 +771,12 @@ export const ProjectInfo = ({ project }) => {
                                             <FileText className="w-4 h-4" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-bold text-gray-700 truncate text-ellipsis" title={file.name}>{file.name.length > 40 ? file.name.slice(0, 40) + '...' : file.name}</p>
-                                            <p className="text-[10px] text-gray-400 uppercase font-bold">{file.type}</p>
+                                            <p className="text-xs font-bold text-gray-700 truncate text-ellipsis" title={fileName}>{fileName.length > 40 ? fileName.slice(0, 40) + '...' : fileName}</p>
+                                            <p className="text-[10px] text-gray-400 uppercase font-bold">{file?.type || 'FILE'}</p>
                                         </div>
                                     </a>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     ) : (
