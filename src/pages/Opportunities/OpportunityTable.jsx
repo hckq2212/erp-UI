@@ -96,9 +96,9 @@ export const OpportunityTable = ({
                                 <tr key={opp.id} className="hover:bg-blue-50/30 transition-all group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-sm">
+                                            {/* <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-sm">
                                                 {opp.customer?.name?.charAt(0) || opp.leadName?.charAt(0) || <User className="w-4 h-4" />}
-                                            </div>
+                                            </div> */}
                                             <div>
                                                 <div className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
                                                     {opp.customer?.name || opp.leadName || '---'}

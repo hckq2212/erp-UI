@@ -41,6 +41,10 @@ export const TaskDetailPage = () => {
     const isProjectLead = isSameUser(currentUserId, task?.project?.team?.teamLead?.id);
     const canManageProjectTask = PROJECT_MANAGEMENT_ROLES.includes(user?.role) || isProjectLead;
     const canEditDescription = canManageProjectTask;
+    const isTaskAssigned = Boolean(task?.assigneeId || task?.assignee?.id || task?.vendorId);
+    const canAssignUnassignedTask = canManageProjectTask &&
+        !isTaskAssigned &&
+        !['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED', 'AWAITING_REVIEW', 'CANCELLED'].includes(task?.status);
 
     const handleStartEditDescription = () => {
         setEditedDescription(task?.description || '');
@@ -293,6 +297,15 @@ export const TaskDetailPage = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
+                    {canAssignUnassignedTask && (
+                        <Button
+                            onClick={() => setIsAssignModalOpen(true)}
+                            className="rounded-2xl py-3 px-6 shadow-lg shadow-blue-100 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                        >
+                            <Users className="w-5 h-5" />
+                            Phân công
+                        </Button>
+                    )}
                     {task.status === 'AWAITING_REVIEW' &&
                         canManageProjectTask && (
                             <div className="flex gap-3">

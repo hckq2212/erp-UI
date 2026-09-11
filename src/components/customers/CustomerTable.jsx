@@ -58,9 +58,9 @@ export const CustomerTable = ({ customers = [], onEdit, onDelete, onView }) => {
                 <tr key={customer.id} className="hover:bg-blue-50/30 transition-colors group">
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <div className="flex-shrink-0 h-9 w-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:scale-105 transition-transform">
+                      {/* <div className="flex-shrink-0 h-9 w-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:scale-105 transition-transform">
                         {customer.name.charAt(0)}
-                      </div>
+                      </div> */}
                       <div>
                         <div className="text-xs font-bold text-gray-900 group-hover:text-blue-600 transition-colors uppercase line-clamp-1">{customer.name}</div>
                       </div>
