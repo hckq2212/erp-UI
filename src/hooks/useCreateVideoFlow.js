@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { toast } from 'react-toastify'
 import {
   useCreateVideoGenerationMutation,
   useGetVideoGenerationStatusQuery,
@@ -6,7 +7,7 @@ import {
 
 function buildVideoFormData(params) {
   const {
-    projectId,
+    projectId, taskId,
     modelId, resolution, ratio, duration, mode, prompt, negativePrompt,
     startImageFile, endImageFile, startImageAssetId, endImageAssetId,
     sound = 'off', cost = 0, multiShot = false, shotType, multiPrompt,
@@ -14,6 +15,7 @@ function buildVideoFormData(params) {
 
   const formData = new FormData()
   formData.append('projectId', String(projectId))
+  if (taskId) formData.append('taskId', String(taskId))
   formData.append('modelId', String(modelId))
   formData.append('resolution', resolution)
   formData.append('duration', String(duration))
@@ -74,11 +76,22 @@ export function useCreateVideoFlow({ onDone } = {}) {
   const onDoneRef = useRef(onDone)
   onDoneRef.current = onDone
 
+  // useEffect(() => {
+  //   if (status === 'succeeded' || status === 'failed') {
+  //     setIsDone(true)
+  //     onDoneRef.current?.(status)
+  //   }
+  // }, [status])
   useEffect(() => {
-    if (status === 'succeeded' || status === 'failed') {
+    if (status === 'succeeded') {
       setIsDone(true)
+      toast.success('Tạo video thành công!')
       onDoneRef.current?.(status)
-    }
+    } else if (status === 'failed') {
+      setIsDone(true)
+      toast.error(error || 'Tạo video thất bại')
+      onDoneRef.current?.(status)
+     }
   }, [status])
 
   const submitCreateVideo = useCallback(
@@ -94,7 +107,10 @@ export function useCreateVideoFlow({ onDone } = {}) {
         setResult(data)
         setVideoGenerationId(data.videoGenerationId)
       } catch (err) {
-        setSubmitError(err?.data?.message || err?.message || 'Tạo video thất bại')
+        // setSubmitError(err?.data?.message || err?.message || 'Tạo video thất bại')
+        const msg = err?.data?.message || err?.message || 'Tạo video thất bại'
+        setSubmitError(msg)
+        toast.error(msg)
       }
     },
     [createVideoGeneration],

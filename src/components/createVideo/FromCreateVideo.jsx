@@ -7,6 +7,8 @@ import { calcVideoPrice } from '../../utils/videoPricing'
 import { RESOLUTION_TO_MODE } from '../../utils/videoOptions'
 import { ChevronDown, ChevronRight, ImagePlus, History, Trash2, Zap, RotateCcw } from 'lucide-react'
 import { useGetMyProjectsQuery } from '../../api/projects'
+import { useGetTasksQuery } from '../../api/tasks'
+import { TASK_STATUS } from '../../utils/enums'
 
 const STATUS_LABEL = {
   queued:     'Đang chờ xử lý...',
@@ -56,6 +58,18 @@ export default function FromCreateVideo({ createVideoHook }) {
   const [projectId, setProjectId] = useState('')
   const { data: myProjects = [], isFetching: projectsLoading } = useGetMyProjectsQuery()
   const hasNoProject = !projectsLoading && myProjects.length === 0
+
+  const [taskId, setTaskId] = useState('')
+  // const { data: tasksData, isFetching: tasksLoading } = useGetTasksQuery(
+  //   { projectId, excludeStatus: 'PENDING,ACCEPTED,COMPLETED', limit: 100 },
+  //   { skip: !projectId },
+  // )
+  const { data: tasksData, isFetching: tasksLoading } = useGetTasksQuery(
+    { projectId, excludeStatus: 'PENDING,ACCEPTED,COMPLETED', nameLike: 'Video Ai', limit: 100 },
+    { skip: !projectId },
+  )
+  const projectTasks = tasksData?.data ?? []
+  const hasNoTask = !!projectId && !tasksLoading && projectTasks.length === 0
 
   // ── derived: model code + provider ──────────────────────────────────────
   const selectedModelData = models.find((m) => String(m.id) === selectedModel)
@@ -208,6 +222,8 @@ export default function FromCreateVideo({ createVideoHook }) {
   const resetForm = useCallback(() => {
     if (startFrame) URL.revokeObjectURL(startFrame)
     if (endFrame)   URL.revokeObjectURL(endFrame)
+    setProjectId('')
+    setTaskId('')
     setStartFrame(null)
     setEndFrame(null)
     setStartFile(null)
@@ -261,6 +277,7 @@ export default function FromCreateVideo({ createVideoHook }) {
   // ── Submit ──────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!projectId) { alert('Vui lòng chọn dự án'); return }
+    if (!taskId) { alert('Vui lòng chọn công việc'); return }
     if (!startFile && !startAssetId) {
       alert('Vui lòng chọn Start Frame')
       return
@@ -281,6 +298,7 @@ export default function FromCreateVideo({ createVideoHook }) {
 
       await submitCreateVideo({
         projectId,
+        taskId,
         modelId:        selectedModel,
         resolution:     resolution.toLowerCase(),
         ratio,
@@ -321,6 +339,7 @@ export default function FromCreateVideo({ createVideoHook }) {
 
       await submitCreateVideo({
         projectId,
+        taskId,
         modelId:        selectedModel,
         resolution:     resolution.toLowerCase(),
         duration:       String(length),
@@ -348,6 +367,7 @@ export default function FromCreateVideo({ createVideoHook }) {
 
       await submitCreateVideo({
         projectId,
+        taskId,
         modelId:        selectedModel,
         resolution:     resolution.toLowerCase(),
         duration:       String(length),
@@ -373,6 +393,7 @@ export default function FromCreateVideo({ createVideoHook }) {
 
     await submitCreateVideo({
       projectId,
+      taskId,
       modelId:        selectedModel,
       resolution:     resolution.toLowerCase(),
       duration:       String(length),
@@ -393,6 +414,7 @@ export default function FromCreateVideo({ createVideoHook }) {
   const isSubmitDisabled = (() => {
     if (isProcessing)  return true
     if (!projectId || hasNoProject) return true
+    if (!taskId) return true
     if (!startFile && !startAssetId) return true
     if (isShotOverLimit || isShotUnderLimit) return true
 
@@ -427,6 +449,33 @@ export default function FromCreateVideo({ createVideoHook }) {
               </div>
             )}
           </div>
+
+                    {projectId && (
+            <div className="shrink-0">
+              {hasNoTask ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
+                  Dự án chưa có công việc nào đang thực hiện.
+                </div>
+              ) : (
+                <div className="relative">
+                  <select
+                    value={taskId}
+                    onChange={(e) => setTaskId(e.target.value)}
+                    disabled={tasksLoading}
+                    className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <option value="">{tasksLoading ? 'Đang tải...' : '-- Chọn công việc --'}</option>
+                    {projectTasks.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {(t.nickname || t.name)}{t.code ? ` (${t.code})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+                </div>
+              )}
+            </div>
+          )}
           {/* ── Model selector ── */}
           <div className="shrink-0">
             <div className="relative">

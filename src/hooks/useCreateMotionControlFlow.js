@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { toast } from 'react-toastify'
 import {
   useCreateMotionControlVideoMutation,
   useGetVideoGenerationStatusQuery,
@@ -24,17 +25,30 @@ export function useCreateMotionControlFlow({ onDone } = {}) {
   const onDoneRef = useRef(onDone)
   onDoneRef.current = onDone
 
+  // useEffect(() => {
+  //   if (status === 'succeeded' || status === 'failed') {
+  //     setIsDone(true)
+  //     onDoneRef.current?.(status)
+  //   }
+  // }, [status])
+
   useEffect(() => {
-    if (status === 'succeeded' || status === 'failed') {
+    if (status === 'succeeded') {
       setIsDone(true)
+      toast.success('Tạo motion video thành công!')
+      onDoneRef.current?.(status)
+    } else if (status === 'failed') {
+      setIsDone(true)
+      toast.error(statusData?.errorMessage || 'Tạo motion video thất bại')
       onDoneRef.current?.(status)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
 
   const submitCreateMotionControl = useCallback(
     async (params) => {
       const {
-        projectId,
+        projectId, taskId,
         modelId, modelName, prompt, characterOrientation, keepOriginalSound, mode,
         characterImageFile, referenceVideoFile,
         characterImageAssetId, referenceVideoAssetId,
@@ -50,6 +64,7 @@ export function useCreateMotionControlFlow({ onDone } = {}) {
       try {
         const formData = new FormData()
         formData.append('projectId', String(projectId))
+        if (taskId) formData.append('taskId', String(taskId))
         formData.append('modelId', String(modelId))
         formData.append('prompt', prompt || '')
         formData.append('characterOrientation', characterOrientation)
@@ -82,7 +97,10 @@ export function useCreateMotionControlFlow({ onDone } = {}) {
         })
         setVideoGenerationId(data.videoGenerationId)
       } catch (err) {
-        setSubmitError(err?.data?.message || err?.message || 'Tạo video thất bại')
+        // setSubmitError(err?.data?.message || err?.message || 'Tạo video thất bại')
+        const msg = err?.data?.message || err?.message || 'Tạo motion video thất bại'
+        setSubmitError(msg)
+        toast.error(msg)
       }
     },
     [createMotionControlVideo],
