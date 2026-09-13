@@ -4,7 +4,7 @@ import { TaskAssignModal } from './TaskAssignModal';
 import { AddProjectServiceModal } from './AddProjectServiceModal';
 import { useNavigate } from 'react-router-dom';
 import { useGetTeamMembersQuery } from '../../../api/teams';
-import { useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation } from '../../../api/tasks';
+import { useApproveByCustomerMutation, useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation } from '../../../api/tasks';
 import { cn } from '../../../utils/cn';
 import { PROJECT_MANAGEMENT_ROLES, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../../utils/enums';
 import { toast } from 'react-toastify';
@@ -23,6 +23,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [returnSupport] = useReturnSupportMutation();
     const [requestReturnSupport] = useRequestReturnSupportMutation();
     const [bulkUnassignTasks, { isLoading: isUnassigning }] = useBulkUnassignTasksMutation();
+    const [approveByCustomer, { isLoading: isApprovingByCustomer }] = useApproveByCustomerMutation();
 
     const currentUserId = getCurrentUserId(user);
     const isAdminOrBOD = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
@@ -44,6 +45,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [selectedTasks, setSelectedTasks] = useState([]);
     const [selectionMode, setSelectionMode] = useState('assign');
     const [expandedGroups, setExpandedGroups] = useState({});
+    const [approvingTaskId, setApprovingTaskId] = useState(null);
 
     const toggleGroup = (groupId) => {
         setExpandedGroups(prev => ({
@@ -148,11 +150,23 @@ export const TaskTable = ({ tasks = [], project }) => {
         }
     };
 
+    const handleCustomerApprove = async (taskId) => {
+        try {
+            setApprovingTaskId(taskId);
+            await approveByCustomer({ id: taskId, projectId: project.id }).unwrap();
+            toast.success('Khách hàng đã duyệt công việc');
+        } catch (error) {
+            toast.error(error?.data?.message || 'Có lỗi xảy ra khi duyệt công việc');
+        } finally {
+            setApprovingTaskId(null);
+        }
+    };
+
     const getStatusBadge = (status) => {
         const label = TASK_STATUS_LABELS[status] || status;
         return (
             <span className={cn(
-                "px-2 py-0.5 rounded-lg text-xs font-bold border",
+                "inline-flex whitespace-nowrap px-2 py-0.5 rounded-lg text-xs font-bold border",
                 TASK_STATUS_COLORS[status] || 'bg-gray-50 text-gray-500 border-gray-100'
             )}>
                 {label}
@@ -287,7 +301,7 @@ export const TaskTable = ({ tasks = [], project }) => {
 
             {/* Table */}
             <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left min-w-[1200px]">
+                <table className="w-full text-sm text-left min-w-[1450px]">
                     <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100">
                         <tr>
                             <th className="px-6 py-4 text-center">
@@ -406,7 +420,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 </td>
                                                 {/* <td className="px-6 py-4 text-gray-500 pl-8">{index + 1}</td> */}
                                                 <td className="px-6 py-4">
-                                                    <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                                    <span className="inline-flex whitespace-nowrap font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                                                         {task.code}
                                                     </span>
                                                 </td>
@@ -432,11 +446,11 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                     {getStatusBadge(task.status)}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex items-center justify-center gap-2">
+                                                    <div className="flex flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
                                                         {isProjectInProgress && (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
                                                             <button
                                                                 onClick={() => setAssigningTask(task)}
-                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all active:scale-95 text-xs font-bold uppercase"
+                                                                className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all active:scale-95 text-xs font-bold uppercase"
                                                             >
                                                                 Phân công
                                                             </button>
@@ -446,7 +460,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                         {isProjectInProgress && (isProjectLead || isAdminOrBOD) && ['DOING', 'REWORKING', 'OVERDUE', 'REJECTED'].includes(task.status) && (
                                                             <button
                                                                 onClick={() => setAssigningTask(task)}
-                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                                className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
                                                             >
                                                                 Đổi người
                                                             </button>
@@ -457,13 +471,13 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                             <div className="flex items-center gap-2">
                                                                 <button
                                                                     onClick={() => handleRespondSupport(task.id, 'ACCEPT')}
-                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                                    className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
                                                                 >
                                                                     Đồng ý
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleRespondSupport(task.id, 'REJECT')}
-                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                                    className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
                                                                 >
                                                                     Từ chối
                                                                 </button>
@@ -476,18 +490,28 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                                 <div className="flex items-center gap-2">
                                                                     <button
                                                                         onClick={() => setAssigningTask(task)}
-                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                                        className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
                                                                     >
                                                                         Đổi người
                                                                     </button>
                                                                     <button
                                                                         onClick={() => handleReturnSupport(task.id)}
-                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
+                                                                        className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
                                                                     >
                                                                         Trả lại
                                                                     </button>
                                                                 </div>
                                                             )}
+
+                                                        {isProjectInProgress && (isProjectLead || isAdminOrBOD) && task.status === 'INTERNAL_COMPLETED' && (
+                                                            <button
+                                                                onClick={() => handleCustomerApprove(task.id)}
+                                                                disabled={isApprovingByCustomer && approvingTaskId === task.id}
+                                                                className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase disabled:opacity-60"
+                                                            >
+                                                                {isApprovingByCustomer && approvingTaskId === task.id ? 'Đang duyệt...' : 'Khách hàng duyệt'}
+                                                            </button>
+                                                        )}
 
                                                         {/* Original Team Member Request Support */}
                                                         {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && isSameUser(currentUserId, task.assigneeId) && !task.isSupportRequested && (
@@ -525,7 +549,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                                 e.stopPropagation();
                                                                 navigate(`/tasks/${task.id}`);
                                                             }}
-                                                            className="inline-flex items-center px-3 py-1.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-200 transition-all active:scale-95 text-xs font-bold"
+                                                            className="inline-flex whitespace-nowrap items-center px-3 py-1.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-200 transition-all active:scale-95 text-xs font-bold"
                                                         >
                                                             Xem chi tiết
                                                         </button>

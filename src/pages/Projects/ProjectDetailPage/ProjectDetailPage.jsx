@@ -20,6 +20,7 @@ import { selectCurrentUser } from '../../../store/authSlice';
 import { CreateMonthlyWorkModal } from './CreateMonthlyWorkModal';
 import { ExtraTasksSection } from './ExtraTasksSection';
 import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
+import { cn } from '../../../utils/cn';
 
 export const ProjectDetailPage = () => {
   const { id } = useParams();
@@ -31,6 +32,7 @@ export const ProjectDetailPage = () => {
   const [syncProjectServiceJobs, { isLoading: isSyncingServiceJobs }] = useSyncProjectServiceJobsMutation();
   const [isMonthlyWorkModalOpen, setIsMonthlyWorkModalOpen] = useState(false);
   const [selectedPmId, setSelectedPmId] = useState('');
+  const [activeTab, setActiveTab] = useState('MAIN');
   const user = useSelector(selectCurrentUser);
   const currentUserId = getCurrentUserId(user);
   const canSyncServiceJobs = user?.role === 'ADMIN' || user?.role === 'PM';
@@ -109,8 +111,11 @@ export const ProjectDetailPage = () => {
     );
   }
 
+  const extraTasks = project.tasks?.filter((task) => task.isExtra) || [];
+  const taskCount = project.tasks?.length || 0;
+
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="mx-6 mt-6">
       {/* Header */}
       <div className="mb-6">
         <button
@@ -206,14 +211,58 @@ export const ProjectDetailPage = () => {
         )}
       </div>
 
-      {/* Task Statistics */}
-      <TaskStatistics tasks={project.tasks} />
+      {/* Tabs Switcher */}
+      <div className="mb-6 flex w-fit max-w-full gap-1.5 overflow-x-auto rounded-2xl border border-gray-200 bg-gray-100/50 p-1.5 shadow-sm">
+        <button
+          onClick={() => setActiveTab('MAIN')}
+          className={cn(
+            "flex shrink-0 items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold transition-all",
+            activeTab === 'MAIN' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
+          )}
+        >
+          Thông tin chung
+        </button>
+        <button
+          onClick={() => setActiveTab('TASKS')}
+          className={cn(
+            "flex shrink-0 items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold transition-all",
+            activeTab === 'TASKS' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
+          )}
+        >
+          Công việc
+          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] text-blue-700">
+            {taskCount}
+          </span>
+        </button>
+        {isCoreMember && (
+          <button
+            onClick={() => setActiveTab('SERVICES')}
+            className={cn(
+              "flex shrink-0 items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold transition-all",
+              activeTab === 'SERVICES' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
+            )}
+          >
+            Dịch vụ
+          </button>
+        )}
+        <button
+          onClick={() => setActiveTab('EXTRA')}
+          className={cn(
+            "flex shrink-0 items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold transition-all",
+            activeTab === 'EXTRA' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
+          )}
+        >
+          Công việc phát sinh
+          {extraTasks.length > 0 && (
+            <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] text-orange-700">
+              {extraTasks.length}
+            </span>
+          )}
+        </button>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
-        {/* Google Sheet integration is temporarily disabled. */}
-        {/* <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">...</div> */}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 ">
+      {activeTab === 'MAIN' && (
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <div className="space-y-6">
             <ProjectInfo project={project} formatDate={formatDate} />
           </div>
@@ -221,15 +270,23 @@ export const ProjectDetailPage = () => {
             <TeamInfo team={project.team} />
           </div>
         </div>
+      )}
 
-        <TaskTable tasks={project.tasks} project={project} className="min-w-[2000px]" />
+      {activeTab === 'TASKS' && (
+        <div className="space-y-8">
+          <TaskStatistics tasks={project.tasks} />
+          <TaskTable tasks={project.tasks} project={project} className="min-w-[2000px]" />
+        </div>
+      )}
 
+      {activeTab === 'SERVICES' && isCoreMember && (
+        <ContractInfo contract={project.contract} projectId={project.id} />
+      )}
+
+      {activeTab === 'EXTRA' && (
         <ExtraTasksSection tasks={project.tasks} />
+      )}
 
-        {isCoreMember && (
-          <ContractInfo contract={project.contract} projectId={project.id} />
-        )}
-      </div>
       <CreateMonthlyWorkModal
         isOpen={isMonthlyWorkModalOpen}
         onClose={() => setIsMonthlyWorkModalOpen(false)}

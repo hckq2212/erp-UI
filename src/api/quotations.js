@@ -67,8 +67,14 @@ export const quotationsApi = api.injectEndpoints({
       invalidatesTags: (result, error, id) => [
         { type: 'Quotations', id },
         { type: 'Quotations', id: 'LIST' },
-        { type: 'Opportunities', id: result?.opportunityId },
+        ...(result?.opportunityId ? [
+          { type: 'Quotations', id: `OPPORTUNITY_${result.opportunityId}` },
+          { type: 'Opportunities', id: result.opportunityId },
+        ] : []),
         { type: 'Opportunities', id: 'LIST' },
+        ...(result?.contractId || result?.contract?.id ? [
+          { type: 'Contracts', id: result.contractId || result.contract.id },
+        ] : []),
         { type: 'Contracts', id: 'LIST' },
       ],
     }),

@@ -75,7 +75,7 @@ export const CustomersPage = () => {
   };
 
   return (
-    <div className="animate-in fade-in duration-500 space-y-6">
+    <div className="animate-in fade-in duration-500 space-y-6 mt-6">
 
       <CustomerFilters
         onSearch={handleSearch}

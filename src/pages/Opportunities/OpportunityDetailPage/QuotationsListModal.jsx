@@ -11,6 +11,7 @@ export const QuotationsListModal = ({
   isLoading,
   onCreateNew,
   onEditQuotation,
+  onApprovedContract,
   opportunity,
   formatDate,
   currentUser
@@ -130,6 +131,10 @@ export const QuotationsListModal = ({
         onEdit={(quotation) => {
           setSelectedQuotationId(null);
           onEditQuotation(quotation);
+        }}
+        onApprovedContract={(contractId) => {
+          setSelectedQuotationId(null);
+          onApprovedContract?.(contractId);
         }}
         opportunity={opportunity}
         formatDate={formatDate}

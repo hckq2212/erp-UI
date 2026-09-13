@@ -12,7 +12,6 @@ import { selectCurrentUser } from '../../../store/authSlice';
 import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation, useApproveOpportunityMutation } from '../../../api/opportunities';
 import { useGetCustomersQuery } from '../../../api/customers';
 import { useGetQuotationsByOpportunityQuery, useCreateQuotationMutation, useUpdateQuotationMutation } from '../../../api/quotations';
-import { useCreateContractMutation } from '../../../api/contracts';
 import { useGetReferralPartnersQuery, useGetReferralPartnerQuery } from '../../../api/referralPartners';
 import { QuotationModal } from './QuotationModal';
 import { toast } from 'react-toastify';
@@ -44,7 +43,6 @@ export const OpportunityDetailPage = () => {
   const { data: currentUser = [] } = useGetMeQuery();
   const [createQuotation, { isLoading: isCreatingQuotation }] = useCreateQuotationMutation();
   const [updateQuotation, { isLoading: isUpdatingQuotation }] = useUpdateQuotationMutation();
-  const [createContract, { isLoading: isCreatingContract }] = useCreateContractMutation();
   const [approveOpportunity, { isLoading: isApproving }] = useApproveOpportunityMutation();
 
   const draftCount = useMemo(() =>
@@ -290,23 +288,6 @@ export const OpportunityDetailPage = () => {
                   )}
               </>
             )}
-            {opportunity.status === 'QUOTE_APPROVED' && (
-              <button
-                onClick={async () => {
-                  try {
-                    const result = await createContract({ opportunityId: (id), name: opportunity.name || `Hợp đồng ${opportunity.opportunityCode}` }).unwrap();
-                    navigate(`/contracts/${result.id}`);
-                    toast.success('Tạo hợp đồng thành công');
-                  } catch (err) {
-                    toast.error(err?.data?.message || 'Tạo hợp đồng thất bại');
-                  }
-                }}
-                disabled={isCreatingContract}
-                className="flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-60"
-              >
-                {isCreatingContract ? 'Đang tạo...' : 'Tạo hợp đồng'}
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -384,6 +365,10 @@ export const OpportunityDetailPage = () => {
         isLoading={isLoadingQuotations}
         onCreateNew={() => setShowQuotationModal(true)}
         onEditQuotation={handleEditQuotation}
+        onApprovedContract={(contractId) => {
+          setShowQuotationsListModal(false);
+          navigate(`/contracts/${contractId}`);
+        }}
         opportunity={opportunity}
         formatDate={formatDate}
         currentUser={currentUser}
