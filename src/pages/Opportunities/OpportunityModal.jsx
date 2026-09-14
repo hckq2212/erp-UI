@@ -133,9 +133,6 @@ const PackageItem = memo(({ pkg, index, availableServices, onRemove, onServiceCh
     <div className="bg-blue-50/40 border-2 border-blue-100 rounded-2xl p-5 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-500/20">
-            <Briefcase className="w-5 h-5" />
-          </div>
           <div>
             <h4 className="font-bold text-blue-900">{pkg.name}</h4>
             <p className="text-[10px] font-black uppercase tracking-wider text-blue-600 opacity-70">Gói dịch vụ</p>
