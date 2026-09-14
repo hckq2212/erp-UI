@@ -204,6 +204,10 @@ export const projectsApi = api.injectEndpoints({
         { type: 'ProjectProductDescriptions', id: projectId },
       ],
     }),
+    getMyProjects: builder.query({
+      query: () => '/projects/my-projects',
+      providesTags: [{ type: 'Projects', id: 'MY_LIST' }],
+    }),
   }),
 });
 
@@ -229,4 +233,5 @@ export const {
   useSubmitProjectProductDescriptionMutation,
   useApproveProjectProductDescriptionMutation,
   useRejectProjectProductDescriptionMutation,
+  useGetMyProjectsQuery,
 } = projectsApi;

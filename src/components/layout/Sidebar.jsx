@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Briefcase, FileText,
   FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store,
-  CheckCircle2, Package, User, Handshake, FolderOpenDotIcon
+  CheckCircle2, Package, User, Handshake, FolderOpenDotIcon , Video, BookText,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useGetMeQuery } from '../../api/auth';
@@ -23,7 +23,8 @@ const menuItems = [
   { path: '/users', icon: User, label: 'Nhân sự', roles: ['ADMIN', 'BOD'] },
   { path: '/vendors', icon: Store, label: 'Vendor', roles: ['ADMIN', 'BOD'] },
   { path: '/referral-partners', icon: Handshake, label: 'Đối tác', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
-
+  { path: '/create-video-ai', icon: Video, label: 'Tạo Video AI'},
+  { path: '/library-video-ai', icon: BookText, label: 'Thư viện Video AI'},
 ];
 
 export const Sidebar = ({ isCollapsed }) => {

@@ -15,3 +15,7 @@ export * from './jobCriterias';
 export * from './taskReviews';
 export * from './spellingCheck';
 export * from './qc';
+export * from './videoGenerations';
+export * from './aiModels';
+export * from './assets';
+export * from './elements';
