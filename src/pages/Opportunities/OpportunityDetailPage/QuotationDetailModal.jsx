@@ -323,12 +323,9 @@ export const QuotationDetailModal = ({
                                           </span>
                                         </div>
                                       </td>
-                                      <td className="px-4 py-2 text-right text-xs font-medium italic text-gray-400">
-                                        {formatNumber(Math.round(item.sellingPrice))}
-                                      </td>
                                       <td
-                                        className="px-4 py-2 text-right text-xs font-medium italic text-gray-400"
-                                        colSpan="3"
+                                        className="px-4 py-2 text-xs italic text-gray-300"
+                                        colSpan="4"
                                       />
                                     </tr>
 

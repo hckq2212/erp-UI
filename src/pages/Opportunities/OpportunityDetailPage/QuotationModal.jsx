@@ -540,29 +540,10 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                           <td className="px-4 py-2 text-center text-[10px] text-gray-400 font-bold uppercase">
                             {Number(item.norm) % 1 === 0 ? item.norm : Number(item.norm).toFixed(0).replace(/\.?0+$/, '')} {item?.unit} / gói
                           </td>
-                          <td className="px-4 py-2 text-right text-xs text-gray-400">
-                            {formatNumber(Math.round(item.costPrice))}
-                          </td>
-                          <td className="px-4 py-2 text-right text-[10px] text-gray-300">
-                            {formatNumber(Math.round(item.minPrice))}
-                          </td>
-                          <td className="px-4 py-2 text-right text-[10px] text-gray-300">
-                            {formatNumber(Math.round(item.recommendedPrice))}
-                          </td>
-                          {priceType === 'custom' && (
-                            <td className="px-4 py-2">
-                              <input
-                                type="text"
-                                value={formatNumber(Math.round(item.customPrice))}
-                                onChange={(e) => handleCustomPriceChange(item.originalIndex, e.target.value)}
-                                className="w-full px-2 py-0.5 text-right border border-blue-100 rounded text-[11px] font-medium text-blue-800 bg-white/50 focus:bg-white outline-none"
-                              />
-                            </td>
-                          )}
-                          <td className={`px-4 py-2 text-right text-[10px] font-bold ${item.profitMargin < 0 ? 'text-red-400' : 'text-blue-400'}`}>
-                            {item.profitMargin.toFixed(0)}%
-                          </td>
-                          <td colSpan={3}></td>
+                          <td
+                            colSpan={priceType === 'custom' ? 8 : 7}
+                            className="px-4 py-2 text-xs italic text-gray-300"
+                          />
                         </tr>
                       ))}
                     </Fragment>
