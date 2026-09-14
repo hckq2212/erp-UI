@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 
 const jobSchema = z.object({
     name: z.string().min(1, 'Tên hạng mục là bắt buộc'),
+    nickname: z.string().max(120, 'Nickname không được vượt quá 120 ký tự').optional().default(''),
     code: z.string().min(1, 'Mã hạng mục là bắt buộc'),
     costPrice: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     vinicoin: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
@@ -38,6 +39,7 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
         resolver: zodResolver(jobSchema),
         defaultValues: {
             name: '',
+            nickname: '',
             code: '',
             costPrice: '',
             vinicoin: '',
@@ -61,6 +63,7 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
 
             const result = await createJob({
                 ...data,
+                nickname: data.nickname?.trim() || null,
                 costPrice: parseNumber(data.costPrice),
                 vinicoin: parseNumber(data.vinicoin),
                 timeToComplete: parseFloat(data.timeToComplete || '0'),
@@ -90,6 +93,12 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                             placeholder="Ví dụ: Quay phim chính, Edit video..."
                         />
                     </div>
+                    <Input
+                        label="Nickname mặc định"
+                        {...register('nickname')}
+                        error={errors.nickname?.message}
+                        placeholder="Ví dụ: video"
+                    />
                     <Input
                         label="Mã hạng mục *"
                         {...register('code')}

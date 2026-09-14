@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 
 const jobInfoSchema = z.object({
     name: z.string().min(1, 'Tên hạng mục là bắt buộc'),
+    nickname: z.string().max(120, 'Nickname không được vượt quá 120 ký tự').optional().default(''),
     code: z.string().min(1, 'Mã hạng mục là bắt buộc'),
     costPrice: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     vinicoin: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
@@ -31,6 +32,7 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
         resolver: zodResolver(jobInfoSchema),
         defaultValues: {
             name: '',
+            nickname: '',
             code: '',
             costPrice: '',
             vinicoin: '',
@@ -42,6 +44,7 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
         if (isOpen && job) {
             reset({
                 name: job.name,
+                nickname: job.nickname || '',
                 code: job.code,
                 costPrice: String(job.costPrice || '0'),
                 vinicoin: String(job.vinicoin || '0'),
@@ -59,6 +62,7 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
             await updateJob({
                 id: job.id,
                 ...data,
+                nickname: data.nickname?.trim() || null,
                 costPrice: parseNumber(data.costPrice),
                 vinicoin: parseNumber(data.vinicoin),
                 timeToComplete: parseFloat(data.timeToComplete || '0'),
@@ -82,6 +86,12 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
                             placeholder="Ví dụ: Quay phim chính, Edit video..."
                         />
                     </div>
+                    <Input
+                        label="Nickname mặc định"
+                        {...register('nickname')}
+                        error={errors.nickname?.message}
+                        placeholder="Ví dụ: video"
+                    />
                     <Input
                         label="Mã hạng mục *"
                         {...register('code')}

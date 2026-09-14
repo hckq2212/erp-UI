@@ -20,6 +20,7 @@ export const JobsPage = () => {
         const rawData = Array.isArray(jobsData) ? jobsData : (jobsData?.data || []);
         return rawData.filter(job =>
             (job.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (job.nickname?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
             (job.code?.toLowerCase() || '').includes(searchTerm.toLowerCase())
         );
     }, [jobsData, searchTerm]);
@@ -79,7 +80,7 @@ export const JobsPage = () => {
                 filterValue="ALL"
                 onFilterChange={() => { }}
                 filterOptions={[]}
-                searchPlaceholder="Tìm mã hạng mục, tên hạng mục..."
+                searchPlaceholder="Tìm mã hạng mục, tên hạng mục, nickname..."
                 onReset={handleReset}
             />
 
@@ -106,7 +107,14 @@ export const JobsPage = () => {
                                     {paginatedJobs.map((job) => (
                                         <tr key={job.id} className="hover:bg-gray-50/50 transition-colors">
                                             <td className="px-6 py-4 text-sm font-mono text-blue-600 font-bold">{job.code}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-900 font-medium">{job.name}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-900 font-medium">
+                                                <div>{job.name}</div>
+                                                {job.nickname && (
+                                                    <div className="mt-0.5 text-xs font-semibold text-gray-400">
+                                                        Nickname: {job.nickname}
+                                                    </div>
+                                                )}
+                                            </td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-bold">{formatCurrency(job.costPrice)}</td>
                                             <td className="px-6 py-4 text-sm text-orange-600 font-bold">{job.vinicoin || 0}</td>
                                             <td className="px-6 py-4 text-sm text-right">
@@ -121,7 +129,7 @@ export const JobsPage = () => {
                                     ))}
                                     {jobs.length === 0 && (
                                         <tr>
-                                            <td colSpan="4" className="px-6 py-16 text-center text-gray-400 italic">
+                                            <td colSpan="5" className="px-6 py-16 text-center text-gray-400 italic">
                                                 Không tìm thấy hạng mục công việc nào
                                             </td>
                                         </tr>

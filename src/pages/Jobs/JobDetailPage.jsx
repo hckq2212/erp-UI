@@ -71,6 +71,11 @@ export const JobDetailPage = () => {
                                 {job.code}
                             </span>
                         </div>
+                        {job.nickname && (
+                            <p className="text-sm font-semibold text-gray-500 mt-1">
+                                Nickname mặc định: {job.nickname}
+                            </p>
+                        )}
                         <p className="text-gray-500 text-sm mt-1">Quản lý chi tiết và tiêu chí đánh giá hạng mục công việc</p>
                     </div>
                     {canEdit && (

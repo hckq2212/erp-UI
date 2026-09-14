@@ -578,7 +578,7 @@ const ProductDescriptionSection = ({ project }) => {
 
             {canManageSubmission && isFormOpen && (
                 <div className="mt-6 rounded-xl border border-gray-100 bg-gray-50 p-4">
-                    <div className="mb-4 flex items-center justify-between gap-3">
+                    <div className="mb-4 flex items-center justify-between gap-2">
                         <div>
                             <h3 className="text-sm font-bold text-gray-900">
                                 {activeSubmission?.status === 'REJECTED' ? 'Chỉnh sửa bản không duyệt' : activeSubmission ? 'Chỉnh sửa bản nháp' : 'Bản gửi mới'}
@@ -589,23 +589,25 @@ const ProductDescriptionSection = ({ project }) => {
                                 </p>
                             )}
                         </div>
-                        <button
-                            type="button"
-                            onClick={addProduct}
-                            disabled={!canEdit || isSaving}
-                            className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-blue-600 shadow-sm ring-1 ring-gray-200 hover:bg-blue-50 disabled:opacity-50"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Thêm sản phẩm
-                        </button>
-                        <button
-                            type="button"
-                            onClick={closeForm}
-                            disabled={isSaving}
-                            className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-gray-600 shadow-sm ring-1 ring-gray-200 hover:bg-gray-100 disabled:opacity-50"
-                        >
-                            Đóng
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={addProduct}
+                                disabled={!canEdit || isSaving}
+                                className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-blue-600 shadow-sm ring-1 ring-gray-200 hover:bg-blue-50 disabled:opacity-50"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Thêm sản phẩm
+                            </button>
+                            <button
+                                type="button"
+                                onClick={closeForm}
+                                disabled={isSaving}
+                                className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-gray-600 shadow-sm ring-1 ring-gray-200 hover:bg-gray-100 disabled:opacity-50"
+                            >
+                                Đóng
+                            </button>
+                        </div>
                     </div>
 
                     <div className="space-y-3">
@@ -760,21 +762,21 @@ export const ProjectInfo = ({ project }) => {
                                 {contractAttachments.map((file, idx) => {
                                     const fileName = file?.name || file?.url || 'Tài liệu đính kèm';
                                     return (
-                                    <a
-                                        key={idx}
-                                        href={getFilePreviewUrl(file?.url, file?.type)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-blue-200 hover:bg-white transition-all"
-                                    >
-                                        <div className="w-8 h-8 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
-                                            <FileText className="w-4 h-4" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-bold text-gray-700 truncate text-ellipsis" title={fileName}>{fileName.length > 40 ? fileName.slice(0, 40) + '...' : fileName}</p>
-                                            <p className="text-[10px] text-gray-400 uppercase font-bold">{file?.type || 'FILE'}</p>
-                                        </div>
-                                    </a>
+                                        <a
+                                            key={idx}
+                                            href={getFilePreviewUrl(file?.url, file?.type)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 group hover:border-blue-200 hover:bg-white transition-all"
+                                        >
+                                            <div className="w-8 h-8 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
+                                                <FileText className="w-4 h-4" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-bold text-gray-700 truncate text-ellipsis" title={fileName}>{fileName.length > 40 ? fileName.slice(0, 40) + '...' : fileName}</p>
+                                                <p className="text-[10px] text-gray-400 uppercase font-bold">{file?.type || 'FILE'}</p>
+                                            </div>
+                                        </a>
                                     );
                                 })}
                             </div>

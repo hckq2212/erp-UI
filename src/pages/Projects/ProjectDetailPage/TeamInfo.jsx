@@ -12,6 +12,19 @@ import {
 import { TEAM_MEMBER_ROLE, TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../../utils/enums';
 import { getCurrentUserId, getUserAccountRole, isSameUser } from '../../../utils/authUser';
 
+const prioritizeLeadRole = (roles) => [
+    TEAM_MEMBER_ROLE.ACCOUNT,
+    ...roles.filter(role => role !== TEAM_MEMBER_ROLE.ACCOUNT),
+];
+
+const getRoleSelectClassName = (role, baseClassName) => {
+    if (role !== TEAM_MEMBER_ROLE.ACCOUNT) return baseClassName;
+    return `${baseClassName} border-emerald-300 bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100`;
+};
+
+const getRoleOptionClassName = (role) =>
+    role === TEAM_MEMBER_ROLE.ACCOUNT ? 'bg-emerald-50 font-bold text-emerald-700' : '';
+
 export const TeamInfo = ({ team }) => {
     const { data: currentUser } = useGetMeQuery();
     const { data: users = [] } = useGetUsersQuery();
@@ -29,7 +42,10 @@ export const TeamInfo = ({ team }) => {
     const canManageTeam = currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD' || isCurrentTeamLead || isCurrentProjectManager;
     const memberUserIds = useMemo(() => new Set(members.map(member => member.user?.id)), [members]);
     const availableUsers = users.filter(user => !memberUserIds.has(user.id));
-    const assignableMemberRoles = Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER);
+    const assignableMemberRoles = useMemo(
+        () => prioritizeLeadRole(Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER)),
+        []
+    );
     const sortedMembers = useMemo(() => {
         const getPriority = (member) => {
             if (member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER) return 0;
@@ -120,10 +136,10 @@ export const TeamInfo = ({ team }) => {
                                         <div className="flex flex-wrap items-center gap-1.5">
                                             <p className="truncate text-sm font-bold text-gray-900">{member.user?.fullName}</p>
                                             {member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER && (
-                                                <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-blue-700">PM/Manager</span>
+                                                <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-blue-700">PM</span>
                                             )}
                                             {(isLead || member.role === TEAM_MEMBER_ROLE.ACCOUNT) && (
-                                                <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-emerald-700">Lead dự án</span>
+                                                <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-emerald-700">ACCOUNT</span>
                                             )}
                                         </div>
                                         <p className="text-xs text-gray-500">{USER_ROLE[accountRole] || accountRole || 'Nhân sự'}</p>
@@ -132,10 +148,15 @@ export const TeamInfo = ({ team }) => {
                                         <select
                                             value={member.role}
                                             onChange={(event) => handleUpdateRole(member.id, event.target.value)}
-                                            className="max-w-[150px] rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700"
+                                            className={getRoleSelectClassName(
+                                                member.role,
+                                                'max-w-[150px] rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700'
+                                            )}
                                         >
                                             {assignableMemberRoles.map((role) => (
-                                                <option key={role} value={role}>{TEAM_MEMBER_ROLE_LABELS[role] || role}</option>
+                                                <option key={role} value={role} className={getRoleOptionClassName(role)}>
+                                                    {TEAM_MEMBER_ROLE_LABELS[role] || role}
+                                                </option>
                                             ))}
                                         </select>
                                     ) : (
@@ -178,10 +199,15 @@ export const TeamInfo = ({ team }) => {
                             <select
                                 value={selectedRole}
                                 onChange={(event) => setSelectedRole(event.target.value)}
-                                className="w-full rounded-lg border border-purple-100 bg-white px-3 py-2 text-sm font-medium text-gray-700"
+                                className={getRoleSelectClassName(
+                                    selectedRole,
+                                    'w-full rounded-lg border border-purple-100 bg-white px-3 py-2 text-sm font-medium text-gray-700'
+                                )}
                             >
                                 {assignableMemberRoles.map((role) => (
-                                    <option key={role} value={role}>{TEAM_MEMBER_ROLE_LABELS[role] || role}</option>
+                                    <option key={role} value={role} className={getRoleOptionClassName(role)}>
+                                        {TEAM_MEMBER_ROLE_LABELS[role] || role}
+                                    </option>
                                 ))}
                             </select>
                             <button

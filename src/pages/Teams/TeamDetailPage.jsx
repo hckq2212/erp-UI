@@ -26,6 +26,19 @@ import { toast } from 'react-toastify';
 import { useGetMeQuery } from '../../api/auth';
 import { getCurrentUserId, getUserAccountRole, isSameUser } from '../../utils/authUser';
 
+const prioritizeLeadRole = (roles) => [
+    TEAM_MEMBER_ROLE.ACCOUNT,
+    ...roles.filter(role => role !== TEAM_MEMBER_ROLE.ACCOUNT),
+];
+
+const getRoleSelectClassName = (role, baseClassName) => {
+    if (role !== TEAM_MEMBER_ROLE.ACCOUNT) return baseClassName;
+    return `${baseClassName} border-emerald-300 bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100`;
+};
+
+const getRoleOptionClassName = (role) =>
+    role === TEAM_MEMBER_ROLE.ACCOUNT ? 'bg-emerald-50 font-bold text-emerald-700' : '';
+
 export const TeamDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -46,9 +59,12 @@ export const TeamDetailPage = () => {
     const isCurrentTeamLead = isSameUser(currentUserId, team?.teamLead?.id);
     const canChangeProjectManager = currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD';
     const canManageTeam = canChangeProjectManager || isCurrentProjectManager || isCurrentTeamLead;
-    const assignableMemberRoles = canChangeProjectManager
-        ? Object.values(TEAM_MEMBER_ROLE)
-        : Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER);
+    const assignableMemberRoles = useMemo(() => {
+        const roles = canChangeProjectManager
+            ? Object.values(TEAM_MEMBER_ROLE)
+            : Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER);
+        return prioritizeLeadRole(roles);
+    }, [canChangeProjectManager]);
 
     // Filter out users who are already members of this team
     const availableUsers = useMemo(() => {
@@ -183,64 +199,70 @@ export const TeamDetailPage = () => {
                                         const isProjectManager = member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER;
                                         const canEditMember = canManageTeam && (canChangeProjectManager || !isProjectManager) && !isLead;
                                         return (
-                                        <tr key={member.id} className="hover:bg-gray-50 transition-colors group">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 border border-gray-200">
-                                                        <User className="w-4 h-4" />
+                                            <tr key={member.id} className="hover:bg-gray-50 transition-colors group">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 border border-gray-200">
+                                                            <User className="w-4 h-4" />
+                                                        </div>
+                                                        <div
+                                                            onClick={() => navigate(`/users/${member.user?.id}`)}
+                                                            className="font-medium text-gray-900 flex items-center gap-2">
+                                                            {member.user?.fullName || member.user?.username}
+                                                            {isProjectManager && (
+                                                                <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">PM</span>
+                                                            )}
+                                                            {(isLead || member.role === TEAM_MEMBER_ROLE.ACCOUNT) && (
+                                                                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">ACCOUNT</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {USER_ROLE[getUserAccountRole(member.user)] || getUserAccountRole(member.user) || 'Nhân sự'}
+                                                        </div>
                                                     </div>
-                                                    <div
-                                                        onClick={() => navigate(`/users/${member.user?.id}`)}
-                                                        className="font-medium text-gray-900 flex items-center gap-2">
-                                                        {member.user?.fullName || member.user?.username}
-                                                        {isProjectManager && (
-                                                            <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">PM/MANAGER</span>
-                                                        )}
-                                                        {(isLead || member.role === TEAM_MEMBER_ROLE.ACCOUNT) && (
-                                                            <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">LEAD DỰ ÁN</span>
-                                                        )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    <div className="flex items-center gap-1">
+                                                        <Phone className="w-3 h-3" />
+                                                        {member.user?.phoneNumber || 'N/A'}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">
-                                                        {USER_ROLE[getUserAccountRole(member.user)] || getUserAccountRole(member.user) || 'Nhân sự'}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <div className="flex items-center gap-1">
-                                                    <Phone className="w-3 h-3" />
-                                                    {member.user?.phoneNumber || 'N/A'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {canEditMember ? (
-                                                    <select
-                                                        value={member.role}
-                                                        onChange={(event) => handleUpdateRole(member.id, event.target.value)}
-                                                        className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700"
-                                                    >
-                                                        {assignableMemberRoles.map((role) => (
-                                                            <option key={role} value={role}>{TEAM_MEMBER_ROLE_LABELS[role] || role}</option>
-                                                        ))}
-                                                    </select>
-                                                ) : (
-                                                    TEAM_MEMBER_ROLE_LABELS[member.role] || member.role
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    {canEditMember && (
-                                                        <button
-                                                            onClick={() => handleRemoveMember(member.id)}
-                                                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                            title="Xóa thành viên"
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    {canEditMember ? (
+                                                        <select
+                                                            value={member.role}
+                                                            onChange={(event) => handleUpdateRole(member.id, event.target.value)}
+                                                            className={getRoleSelectClassName(
+                                                                member.role,
+                                                                'rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700'
+                                                            )}
                                                         >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
+                                                            {assignableMemberRoles.map((role) => (
+                                                                <option key={role} value={role} className={getRoleOptionClassName(role)}>
+                                                                    {TEAM_MEMBER_ROLE_LABELS[role] || role}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        TEAM_MEMBER_ROLE_LABELS[member.role] || member.role
                                                     )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )})}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        {canEditMember && (
+                                                            <button
+                                                                onClick={() => handleRemoveMember(member.id)}
+                                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Xóa thành viên"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
                                     {(!team.members || team.members.length === 0) && (
                                         <tr>
                                             <td colSpan="4" className="px-6 py-12 text-center text-gray-500 italic">
@@ -288,10 +310,13 @@ export const TeamDetailPage = () => {
                             value={selectedRole}
                             onChange={(e) => setSelectedRole(e.target.value)}
                             required
-                            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                            className={getRoleSelectClassName(
+                                selectedRole,
+                                'w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all'
+                            )}
                         >
                             {assignableMemberRoles.map(role => (
-                                <option key={role} value={role}>
+                                <option key={role} value={role} className={getRoleOptionClassName(role)}>
                                     {TEAM_MEMBER_ROLE_LABELS[role]}
                                 </option>
                             ))}
