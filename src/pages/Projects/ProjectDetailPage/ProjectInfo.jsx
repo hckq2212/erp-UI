@@ -41,6 +41,9 @@ const STATUS_COLORS = {
 };
 
 const MAIN_STATUSES = ['APPROVED', 'PENDING_REVIEW', 'DRAFT'];
+const PRODUCT_DESCRIPTION_ALLOWED_EXTENSIONS = ['pdf', 'docx', 'xlsx'];
+const PRODUCT_DESCRIPTION_ACCEPT = '.pdf,.docx,.xlsx';
+const PRODUCT_DESCRIPTION_MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const formatDateTime = (value) => {
     if (!value) return 'Chưa có';
@@ -101,6 +104,25 @@ const getProductSource = (product) => {
     }
 
     return null;
+};
+
+const getFileExtension = (fileName = '') => {
+    const cleanName = fileName.split('?')[0].split('#')[0];
+    const extension = cleanName.includes('.') ? cleanName.split('.').pop() : '';
+    return extension.toLowerCase();
+};
+
+const validateProductDescriptionFile = (file) => {
+    if (!file) return;
+
+    const extension = getFileExtension(file.name);
+    if (!PRODUCT_DESCRIPTION_ALLOWED_EXTENSIONS.includes(extension)) {
+        throw new Error('Chỉ được upload file .pdf, .docx hoặc .xlsx');
+    }
+
+    if (file.size >= PRODUCT_DESCRIPTION_MAX_FILE_SIZE) {
+        throw new Error('Dung lượng mỗi file mô tả sản phẩm phải dưới 10MB');
+    }
 };
 
 const ProductSourceLink = ({ item }) => {
@@ -383,6 +405,16 @@ const ProductDescriptionSection = ({ project }) => {
 
     const handleFileChange = (index, file) => {
         if (!file) return;
+        try {
+            validateProductDescriptionFile(file);
+        } catch (error) {
+            toast.error(error.message);
+            if (fileInputsRef.current[index]) {
+                fileInputsRef.current[index].value = '';
+            }
+            return;
+        }
+
         updateProduct(index, {
             sourceType: 'FILE',
             file,
@@ -426,6 +458,7 @@ const ProductDescriptionSection = ({ project }) => {
 
             let source = getProductSource(product);
             if (product.sourceType === 'FILE' && product.file) {
+                validateProductDescriptionFile(product.file);
                 setIsUploading(true);
                 const uploadedFile = await uploadToCloudinary(
                     product.file,
@@ -666,6 +699,7 @@ const ProductDescriptionSection = ({ project }) => {
                                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                             <input
                                                 type="file"
+                                                accept={PRODUCT_DESCRIPTION_ACCEPT}
                                                 ref={(node) => { fileInputsRef.current[index] = node; }}
                                                 className="hidden"
                                                 onChange={(event) => handleFileChange(index, event.target.files?.[0])}
