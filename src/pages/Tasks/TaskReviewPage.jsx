@@ -11,6 +11,8 @@ import { cn } from '../../utils/cn';
 import { getFilePreviewUrl } from '../../utils/cloudinary';
 import { PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
 import { getCurrentUserId, isSameUser } from '../../utils/authUser';
+import { TaskResultChecksPanel } from '../../components/tasks/TaskResultChecksPanel';
+import { PanelErrorBoundary } from '../../components/shared/PanelErrorBoundary';
 
 export const TaskReviewPage = () => {
     const { id } = useParams();
@@ -230,6 +232,11 @@ export const TaskReviewPage = () => {
                                     <CheckCircle2 className="w-4 h-4" />
                                     Đã xác nhận hoàn thành
                                 </div>
+                            )}
+                            {task.result.url && (
+                                <PanelErrorBoundary resetKey={task.result.url} fallbackMessage="Không thể tải kết quả kiểm tra lúc này">
+                                    <TaskResultChecksPanel taskId={task.id} projectId={task.project?.id} />
+                                </PanelErrorBoundary>
                             )}
                         </div>
                     ) : (

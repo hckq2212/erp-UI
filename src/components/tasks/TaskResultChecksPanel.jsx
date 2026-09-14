@@ -1,0 +1,287 @@
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Loader2, SpellCheck, ClipboardCheck, Download, FileSpreadsheet, Lock, RefreshCw, PackageSearch, ChevronDown, ChevronRight } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { Button } from '../ui/Button';
+import { SpellCheckWhitelist } from './SpellCheckWhitelist';
+import {
+  useGetTaskResultCheckQuery,
+  useToggleResultCheckItemMutation,
+  useToggleResultCheckItemsMutation,
+  useFinalizeResultCheckMutation,
+  useRerunResultCheckMutation,
+} from '../../api/taskResultChecks';
+
+const BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '') || '/api';
+
+const groupSpellItems = (items) => {
+  const map = new Map();
+  items.forEach((item) => {
+    if (!map.has(item.token)) map.set(item.token, []);
+    map.get(item.token).push(item);
+  });
+  return Array.from(map.entries()).map(([token, group]) => ({
+    token,
+    items: group,
+    confirmedCount: group.filter((i) => i.confirmed).length,
+  }));
+};
+
+export const TaskResultChecksPanel = ({ taskId, projectId }) => {
+  const { data: record, isLoading } = useGetTaskResultCheckQuery(taskId, {
+    pollingInterval: 2000,
+    skip: !taskId,
+  });
+  const [toggleItem] = useToggleResultCheckItemMutation();
+  const [toggleItems] = useToggleResultCheckItemsMutation();
+  const [finalize, { isLoading: isFinalizing }] = useFinalizeResultCheckMutation();
+  const [rerunSpell, { isLoading: isRerunningSpell }] = useRerunResultCheckMutation();
+  const [rerunQc, { isLoading: isRerunningQc }] = useRerunResultCheckMutation();
+  const [rerunWhitelist, setRerunWhitelist] = useState(null);
+  const [expandedTokens, setExpandedTokens] = useState({});
+
+  const spellItems = record?.reviewedSpellErrors || [];
+  const spellGroups = useMemo(() => groupSpellItems(spellItems), [spellItems]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-slate-400 p-4">
+        <Loader2 className="w-4 h-4 animate-spin" /> Đang tải kết quả kiểm tra...
+      </div>
+    );
+  }
+
+  if (!record) {
+    return (
+      <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-500">
+        Kết quả này không được tự động kiểm tra chính tả/QC.
+      </div>
+    );
+  }
+
+  const isFinalized = Boolean(record.finalizedAt);
+  const qcItems = record.reviewedQcMismatches || [];
+  const confirmedSpellCount = spellItems.filter((i) => i.confirmed).length;
+  const confirmedQcCount = qcItems.filter((i) => i.confirmed).length;
+  const activeWhitelist = rerunWhitelist ?? record.reviewerWhitelist ?? [];
+
+  const handleToggle = async (kind, itemId, confirmed) => {
+    try {
+      await toggleItem({ taskId, kind, itemId, confirmed }).unwrap();
+    } catch (err) {
+      toast.error(err?.data?.message || 'Không thể cập nhật mục kiểm tra');
+    }
+  };
+
+  const handleToggleGroup = async (group, confirmed) => {
+    try {
+      await toggleItems({ taskId, kind: 'SPELL', itemIds: group.items.map((item) => item.id), confirmed }).unwrap();
+    } catch (err) {
+      toast.error(err?.data?.message || 'Không thể cập nhật mục kiểm tra');
+    }
+  };
+
+  const toggleExpanded = (token) => {
+    setExpandedTokens((prev) => ({ ...prev, [token]: !prev[token] }));
+  };
+
+  const handleFinalize = async () => {
+    try {
+      await finalize(taskId).unwrap();
+      toast.success('Đã chốt kết quả kiểm tra');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Không thể chốt kết quả kiểm tra');
+    }
+  };
+
+  const handleRerunSpell = async () => {
+    try {
+      await rerunSpell({ taskId, kind: 'SPELL', whitelist: activeWhitelist }).unwrap();
+      toast.success('Đang kiểm tra lại chính tả...');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Không thể kiểm tra lại chính tả');
+    }
+  };
+
+  const handleRerunQc = async () => {
+    try {
+      await rerunQc({ taskId, kind: 'QC', whitelist: activeWhitelist }).unwrap();
+      toast.success('Đang kiểm tra lại QC...');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Không thể kiểm tra lại QC');
+    }
+  };
+
+  if (record.status === 'PENDING' || record.status === 'RUNNING') {
+    return (
+      <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+        <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
+          <Loader2 className="w-4 h-4 animate-spin" /> Đang kiểm tra chính tả &amp; QC...
+        </div>
+      </div>
+    );
+  }
+
+  if (record.status === 'ERROR') {
+    return (
+      <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-xs text-red-600">
+        {record.errorMessage || 'Lỗi khi kiểm tra kết quả'}
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
+          <SpellCheck className="w-4 h-4" />
+          Lỗi chính tả ({confirmedSpellCount}/{spellItems.length})
+        </div>
+        {isFinalized && <Lock className="w-3.5 h-3.5 text-slate-400" />}
+      </div>
+
+      <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-xl bg-white divide-y">
+        {spellGroups.length === 0 && (
+          <div className="px-3 py-2 text-xs text-slate-400">Không phát hiện lỗi chính tả</div>
+        )}
+        {spellGroups.map((group) => {
+          const isExpanded = Boolean(expandedTokens[group.token]);
+          const allConfirmed = group.confirmedCount === group.items.length;
+          const noneConfirmed = group.confirmedCount === 0;
+          return (
+            <div key={group.token}>
+              <div className="flex items-center gap-2 px-3 py-1.5 text-xs">
+                <input
+                  type="checkbox"
+                  checked={allConfirmed}
+                  ref={(el) => {
+                    if (el) el.indeterminate = !allConfirmed && !noneConfirmed;
+                  }}
+                  disabled={isFinalized}
+                  onChange={(e) => handleToggleGroup(group, e.target.checked)}
+                />
+                <button
+                  type="button"
+                  className="flex items-center gap-1 text-slate-700 font-medium"
+                  onClick={() => toggleExpanded(group.token)}
+                >
+                  {group.items.length > 1 ? (
+                    isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />
+                  ) : null}
+                  {group.token}
+                  {group.items.length > 1 && (
+                    <span className="text-slate-400 font-normal">x{group.items.length}</span>
+                  )}
+                </button>
+                {group.items.length === 1 && (
+                  <span className="text-slate-400 font-mono ml-auto">{group.items[0].location}</span>
+                )}
+              </div>
+              {isExpanded && group.items.length > 1 && (
+                <div className="pl-8 pb-1.5 space-y-1">
+                  {group.items.map((item) => (
+                    <label key={item.id} className="flex items-center gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={item.confirmed}
+                        disabled={isFinalized}
+                        onChange={(e) => handleToggle('SPELL', item.id, e.target.checked)}
+                      />
+                      <span className="text-slate-400 font-mono">{item.location}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {!isFinalized && (
+        <div className="space-y-2">
+          <SpellCheckWhitelist whitelist={activeWhitelist} onChange={setRerunWhitelist} />
+          <Button type="button" size="sm" variant="outline" isLoading={isRerunningSpell} onClick={handleRerunSpell}>
+            <RefreshCw className="w-3.5 h-3.5 mr-1" /> Kiểm tra lại chính tả
+          </Button>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+        <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
+          <ClipboardCheck className="w-4 h-4" />
+          QC chưa khớp ({confirmedQcCount}/{qcItems.length})
+        </div>
+      </div>
+
+      <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl bg-white divide-y">
+        {qcItems.length === 0 && (
+          <div className="px-3 py-2 text-xs text-slate-400">Không phát hiện điểm chưa khớp</div>
+        )}
+        {qcItems.map((item) => (
+          <label key={item.id} className="flex items-start gap-2 px-3 py-1.5 text-xs">
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={item.confirmed}
+              disabled={isFinalized}
+              onChange={(e) => handleToggle('QC', item.id, e.target.checked)}
+            />
+            <div className="space-y-0.5">
+              <div className="text-slate-700 font-medium">
+                {item.sheet_name ? `${item.sheet_name} · ` : ''}{item.product_ref || 'Không rõ sản phẩm'} · {item.attribute}
+              </div>
+              <div className="text-slate-500">{item.claimed_value} → {item.expected_value ?? 'không tìm thấy'}</div>
+              <div className="text-slate-400 italic">{item.reasoning}</div>
+            </div>
+          </label>
+        ))}
+      </div>
+
+      {!isFinalized && (
+        <div className="space-y-2">
+          {projectId && (
+            <Link
+              to={`/projects/${projectId}`}
+              className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline"
+            >
+              <PackageSearch className="w-3.5 h-3.5" /> Thêm/cập nhật thông tin sản phẩm để đối chiếu
+            </Link>
+          )}
+          <div>
+            <Button type="button" size="sm" variant="outline" isLoading={isRerunningQc} onClick={handleRerunQc}>
+              <RefreshCw className="w-3.5 h-3.5 mr-1" /> Kiểm tra lại QC
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-3 pt-2 border-t border-slate-200">
+        {!isFinalized && (
+          <Button type="button" size="sm" isLoading={isFinalizing} onClick={handleFinalize}>
+            Chốt kiểm tra
+          </Button>
+        )}
+        {isFinalized && (
+          <>
+            <a
+              href={`${BASE_URL}/task-result-checks/task/${taskId}/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:underline"
+            >
+              <Download className="w-3.5 h-3.5" /> Xuất PDF
+            </a>
+            <a
+              href={`${BASE_URL}/task-result-checks/task/${taskId}/xlsx`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:underline"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" /> Xuất Excel (đã tô màu)
+            </a>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
