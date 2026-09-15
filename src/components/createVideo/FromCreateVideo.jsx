@@ -65,7 +65,11 @@ export default function FromCreateVideo({ createVideoHook }) {
   //   { skip: !projectId },
   // )
   const { data: tasksData, isFetching: tasksLoading } = useGetTasksQuery(
-    { projectId, excludeStatus: 'PENDING,ACCEPTED,COMPLETED', nameLike: 'Video Ai', limit: 100 },
+    {
+      projectId, excludeStatus: 'PENDING,ACCEPTED,COMPLETED',
+      //  nameLike: 'Video Ai',
+      limit: 100
+    },
     { skip: !projectId },
   )
   const projectTasks = tasksData?.data ?? []
@@ -710,8 +714,8 @@ export default function FromCreateVideo({ createVideoHook }) {
                   type="button"
                   onClick={handleToggleMultiShot}
                   className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-all ${multiShotEnabled
-                      ? 'bg-emerald-50 text-emerald-600'
-                      : 'text-gray-400 hover:text-gray-600'
+                    ? 'bg-emerald-50 text-emerald-600'
+                    : 'text-gray-400 hover:text-gray-600'
                     }`}
                 >
                   <span
@@ -733,10 +737,10 @@ export default function FromCreateVideo({ createVideoHook }) {
                   onClick={handleToggleCustomMode}
                   disabled={!multiShotEnabled}
                   className={`flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-all ${!multiShotEnabled
-                      ? 'cursor-not-allowed text-gray-300'
-                      : isCustomMode
-                        ? 'text-blue-600 hover:text-blue-700'
-                        : 'text-gray-400 hover:text-gray-600'
+                    ? 'cursor-not-allowed text-gray-300'
+                    : isCustomMode
+                      ? 'text-blue-600 hover:text-blue-700'
+                      : 'text-gray-400 hover:text-gray-600'
                     }`}
                 >
                   Custom
