@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { DebtCalendar } from './DebtCalendar';
 import { MetricCard } from './member/MetricCard';
+import { TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../utils/enums';
 
 const formatCompactCurrency = (value = 0) => {
     const amount = Number(value || 0);
@@ -134,29 +135,40 @@ const BDProjectList = ({ projects = [], navigate }) => (
 
         <div className="space-y-3">
             {projects.length > 0 ? (
-                projects.slice(0, 6).map((project, index) => (
-                    <motion.button
-                        type="button"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.06 }}
-                        key={project.id}
-                        onClick={() => navigate(`/projects/${project.id}`)}
-                        className="group grid w-full grid-cols-[1fr_auto] items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/40 p-4 text-left transition hover:border-emerald-100 hover:bg-white hover:shadow-md"
-                    >
-                        <div className="min-w-0">
-                            <h4 className="truncate text-[11px] font-black uppercase tracking-tight text-slate-900 group-hover:text-emerald-600">
-                                {project.name || 'Dự án chưa đặt tên'}
-                            </h4>
-                            <p className="mt-1 truncate text-[9px] font-bold uppercase text-slate-400">
-                                Khách: {project.customerName || 'N/A'}
-                            </p>
-                        </div>
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm transition group-hover:text-emerald-600">
-                            <ArrowUpRight size={16} />
-                        </div>
-                    </motion.button>
-                ))
+                projects.slice(0, 6).map((project, index) => {
+                    const roleLabel = TEAM_MEMBER_ROLE_LABELS[project.role] || USER_ROLE[project.role] || project.role || 'Kinh doanh';
+
+                    return (
+                        <motion.button
+                            type="button"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.06 }}
+                            key={project.id}
+                            onClick={() => navigate(`/projects/${project.id}`)}
+                            className="group grid w-full grid-cols-[1fr_auto] items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/40 p-4 text-left transition hover:border-emerald-100 hover:bg-white hover:shadow-md"
+                        >
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    <h4 className="truncate text-[11px] font-black uppercase tracking-tight text-slate-900 group-hover:text-emerald-600">
+                                        {project.name || 'Dự án chưa đặt tên'}
+                                    </h4>
+                                    {roleLabel && (
+                                        <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-orange-50 text-[#F38820] border border-orange-100 shrink-0">
+                                            {roleLabel}
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="mt-1 truncate text-[9px] font-bold uppercase text-slate-400">
+                                    Khách: {project.customerName || 'N/A'}
+                                </p>
+                            </div>
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm transition group-hover:text-emerald-600">
+                                <ArrowUpRight size={16} />
+                            </div>
+                        </motion.button>
+                    );
+                })
             ) : (
                 <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 py-10 text-center">
                     <Briefcase className="h-9 w-9 text-slate-300" />

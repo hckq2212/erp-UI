@@ -42,7 +42,7 @@ export const ReworkZone = ({ tasks = [], navigate }) => {
                                     {getTaskDisplayName(task)}
                                 </h4>
                                 <span className="text-[8px] font-black text-rose-500 bg-rose-50 px-2 py-0.5 rounded-lg uppercase">
-                                    Hôm nay
+                                    {task.status === 'REWORKING' ? 'Cần làm lại' : 'Bị từ chối'}
                                 </span>
                             </div>
                             <div className="flex justify-between items-end">

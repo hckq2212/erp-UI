@@ -83,19 +83,34 @@ export const MemberView = ({
     isTeamLead,
     awaitingReviewTasks,
     user,
+    selectedProjectId,
 }) => {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const member = dashboard?.member || {};
     const { data: notifications = [] } = useGetMyNotificationsQuery();
 
     const stats = useMemo(() => {
-        const violationStats = member?.violationStats || {};
-        const lateCount = Number(violationStats.LATE_UNFINISHED || 0);
+        const todayStr = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        const today = new Date().toISOString().split('T')[0];
-        const todayCount = member?.upcomingDeadlines?.filter(task =>
-            task.deadline && task.deadline.startsWith(today)
-        ).length || 0;
+        const rawUpcoming = member?.upcomingDeadlines || [];
+        const filteredUpcoming = selectedProjectId
+            ? rawUpcoming.filter(task => task.projectId === selectedProjectId || task.project?.id === selectedProjectId)
+            : rawUpcoming;
+
+        const todayCount = filteredUpcoming.filter(task =>
+            task.deadline && task.deadline.startsWith(todayStr)
+        ).length;
+
+        const rawOverdue = member?.overdueTasks || [];
+        const filteredOverdue = selectedProjectId
+            ? rawOverdue.filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
+            : rawOverdue;
+
+        const overdueCount = member?.overdueCount !== undefined
+            ? (selectedProjectId ? filteredOverdue.length : member.overdueCount)
+            : filteredUpcoming.filter(task => task.deadline && new Date(task.deadline) < startOfToday).length;
 
         const statusCounts = member?.statusCounts || {};
         const completedCount = Number(statusCounts[TASK_STATUS.COMPLETED] || 0) +
@@ -106,18 +121,33 @@ export const MemberView = ({
         const progress = total > 0 ? Math.round((completedCount / total) * 100) : 0;
 
         return {
-            overdue: lateCount,
+            overdue: overdueCount,
             today: todayCount,
             pending: statusCounts[TASK_STATUS.AWAITING_REVIEW] || statusCounts.WAITING_APPROVAL || 0,
             progress
         };
-    }, [member]);
+    }, [member, selectedProjectId]);
 
     const currentUserId = getCurrentUserId(user);
-    const timelineTasks = (member?.upcomingDeadlines || []).slice(0, 10);
+    const rawTimelineTasks = member?.upcomingDeadlines || [];
+    const filteredTimelineTasks = selectedProjectId
+        ? rawTimelineTasks.filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
+        : rawTimelineTasks;
+    const timelineTasks = filteredTimelineTasks.slice(0, 10);
+
     const teamLeadReviewTasks = awaitingReviewTasks?.data?.filter(task =>
-        isSameUser(currentUserId, task.assignerId) || isSameUser(currentUserId, task.project?.team?.teamLead?.id)
+        (isSameUser(currentUserId, task.assignerId) || isSameUser(currentUserId, task.project?.team?.teamLead?.id)) &&
+        (!selectedProjectId || task.projectId === selectedProjectId || task.project?.id === selectedProjectId)
     ) || [];
+
+    const filteredReworkTasks = selectedProjectId
+        ? (member?.reworkTasks || []).filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
+        : member?.reworkTasks;
+
+    const filteredCalendarTasks = selectedProjectId
+        ? (member?.calendarTasks || []).filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
+        : member?.calendarTasks;
+
     const shouldReplaceProjectMetric = isTeamLead && !isViewingMember;
 
     return (
@@ -134,7 +164,7 @@ export const MemberView = ({
                         />
                     </div>
                     <div className="lg:col-span-5 h-fit">
-                        <TaskCalendar tasks={member?.calendarTasks} />
+                        <TaskCalendar tasks={filteredCalendarTasks} />
                     </div>
                 </div>
 
@@ -150,7 +180,7 @@ export const MemberView = ({
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-stretch">
                     <div className="lg:col-span-3">
-                        <ReworkZone tasks={member?.reworkTasks} navigate={navigate} />
+                        <ReworkZone tasks={filteredReworkTasks} navigate={navigate} />
                     </div>
 
                     <div className="lg:col-span-5">

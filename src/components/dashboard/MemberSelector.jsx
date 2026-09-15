@@ -7,10 +7,10 @@ export const MemberSelector = ({ members = [], selectedId, onSelect, currentUser
     const [isOpen, setIsOpen] = useState(false);
 
     // Filter out the current user (the lead viewing their team)
-    const filteredMembers = members.filter(m => m.user.id !== currentUserId);
+    const filteredMembers = members.filter(m => m.user && m.user.id !== currentUserId);
 
     // Find the selected member object from the user list
-    const selectedMember = members.find(m => m.user.id === selectedId);
+    const selectedMember = members.find(m => m.user && m.user.id === selectedId);
 
     return (
         <div className="relative w-full">

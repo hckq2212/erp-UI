@@ -1,7 +1,7 @@
 import React from 'react';
 import { Briefcase, ArrowUpRight, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS, PROJECT_CARD_THEMES } from '../../utils/enums';
+import { PROJECT_STATUS_LABELS, PROJECT_CARD_THEMES, TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../utils/enums';
 import { motion } from 'framer-motion';
 
 export const MemberProjectList = ({ projects = [] }) => {
@@ -14,6 +14,8 @@ export const MemberProjectList = ({ projects = [] }) => {
                     const theme = (project.status === 'IN_PROGRESS' || project.status === 'CONFIRMED')
                         ? PROJECT_CARD_THEMES.ACTIVE
                         : PROJECT_CARD_THEMES.INACTIVE;
+                    const roleLabel = TEAM_MEMBER_ROLE_LABELS[project.role] || USER_ROLE[project.role] || project.role;
+
                     return (
                         <motion.div
                             key={project.id}
@@ -26,9 +28,16 @@ export const MemberProjectList = ({ projects = [] }) => {
                             <div className="flex items-center gap-4 flex-1 min-w-0">
                                 <div className={`w-1 h-10 rounded-full ${theme.accent} opacity-30 group-hover:opacity-100 transition-opacity`} />
                                 <div className="flex-1 min-w-0">
-                                    <h4 className="text-[11px] font-black text-slate-800 truncate group-hover:text-blue-600 transition-colors uppercase tracking-tight">
-                                        {project.name}
-                                    </h4>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                        <h4 className="text-[11px] font-black text-slate-800 truncate group-hover:text-blue-600 transition-colors uppercase tracking-tight">
+                                            {project.name}
+                                        </h4>
+                                        {roleLabel && (
+                                            <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-orange-50 text-[#F38820] border border-orange-100 shrink-0">
+                                                {roleLabel}
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className={`text-[8px] font-black uppercase tracking-[0.1em] text-slate-400 group-hover:text-slate-500 transition-colors`}>
                                             {PROJECT_STATUS_LABELS[project.status] || project.status}
