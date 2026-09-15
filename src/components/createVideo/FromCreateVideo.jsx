@@ -11,23 +11,23 @@ import { useGetTasksQuery } from '../../api/tasks'
 import { TASK_STATUS } from '../../utils/enums'
 
 const STATUS_LABEL = {
-  queued:     'Đang chờ xử lý...',
+  queued: 'Đang chờ xử lý...',
   processing: 'Đang tạo video...',
-  succeeded:  'Tạo video thành công!',
-  failed:     'Tạo video thất bại',
+  succeeded: 'Tạo video thành công!',
+  failed: 'Tạo video thất bại',
 }
 
 const STATUS_COLOR = {
-  queued:     'text-yellow-600',
+  queued: 'text-yellow-600',
   processing: 'text-blue-600',
-  succeeded:  'text-emerald-600',
-  failed:     'text-red-600',
+  succeeded: 'text-emerald-600',
+  failed: 'text-red-600',
 }
 
 const RESOLUTION_MODE_MAP = {
-  '720p':  'std',
+  '720p': 'std',
   '1080p': 'pro',
-  '4k':    '4k',
+  '4k': '4k',
 }
 
 function buildDefaultShots(totalDuration) {
@@ -43,17 +43,17 @@ export default function FromCreateVideo({ createVideoHook }) {
   const textareaRef = useRef(null)
 
   const [startFrame, setStartFrame] = useState(null)
-  const [endFrame,   setEndFrame]   = useState(null)
-  const [startFile,  setStartFile]  = useState(null)
-  const [endFile,    setEndFile]    = useState(null)
+  const [endFrame, setEndFrame] = useState(null)
+  const [startFile, setStartFile] = useState(null)
+  const [endFile, setEndFile] = useState(null)
 
   // ── Reuse ảnh có sẵn trong thư viện (không upload lại lên Cloudinary) ──
   const [startAssetId, setStartAssetId] = useState(null)
-  const [endAssetId,   setEndAssetId]   = useState(null)
+  const [endAssetId, setEndAssetId] = useState(null)
   const [pickerTarget, setPickerTarget] = useState(null) // 'start' | 'end' | null
 
   const { data: models = [], isLoading: modelsLoading } = useGetAiModelsQuery({ modelType: 'video_generation' })
-  const [selectedModel, setSelectedModel]  = useState('')
+  const [selectedModel, setSelectedModel] = useState('')
 
   const [projectId, setProjectId] = useState('')
   const { data: myProjects = [], isFetching: projectsLoading } = useGetMyProjectsQuery()
@@ -74,7 +74,7 @@ export default function FromCreateVideo({ createVideoHook }) {
   // ── derived: model code + provider ──────────────────────────────────────
   const selectedModelData = models.find((m) => String(m.id) === selectedModel)
   const selectedModelCode = selectedModelData?.code ?? ''
-  const isByteplus        = selectedModelData?.provider?.code === 'byteplus'
+  const isByteplus = selectedModelData?.provider?.code === 'byteplus'
 
   const prevModelRef = useRef(null)
   useEffect(() => {
@@ -102,9 +102,9 @@ export default function FromCreateVideo({ createVideoHook }) {
   }, [models])
 
   // ── settings ──
-  const [resolution,  setResolution]  = useState('1080p')
-  const [ratio,       setRatio]       = useState('adaptive')   // ← NEW, chỉ dùng khi isByteplus
-  const [length,      setLength]      = useState(5)
+  const [resolution, setResolution] = useState('1080p')
+  const [ratio, setRatio] = useState('adaptive')   // ← NEW, chỉ dùng khi isByteplus
+  const [length, setLength] = useState(5)
   const [nativeAudio, setNativeAudio] = useState(false)
 
   const priceInfo = useMemo(
@@ -113,17 +113,17 @@ export default function FromCreateVideo({ createVideoHook }) {
   )
 
   const priceColour =
-    !priceInfo                ? 'text-gray-400'    :
-    priceInfo.total < 50000   ? 'text-emerald-600' :
-    priceInfo.total < 75000   ? 'text-yellow-600'  :
-    priceInfo.total < 100000  ? 'text-orange-600'  :
-                                'text-red-600'
+    !priceInfo ? 'text-gray-400' :
+      priceInfo.total < 50000 ? 'text-emerald-600' :
+        priceInfo.total < 75000 ? 'text-yellow-600' :
+          priceInfo.total < 100000 ? 'text-orange-600' :
+            'text-red-600'
 
   const [prompt, setPrompt] = useState('')
 
   const [multiShotEnabled, setMultiShotEnabled] = useState(false)
-  const [isCustomMode,     setIsCustomMode]     = useState(false)
-  const [shots,            setShots]            = useState(() => buildDefaultShots(5))
+  const [isCustomMode, setIsCustomMode] = useState(false)
+  const [shots, setShots] = useState(() => buildDefaultShots(5))
 
   useEffect(() => {
     if (!isCustomMode) {
@@ -134,8 +134,8 @@ export default function FromCreateVideo({ createVideoHook }) {
   const { submitCreateVideo, isSubmitting, status, error } = createVideoHook
 
   const totalShotDuration = shots.reduce((sum, s) => sum + s.duration, 0)
-  const isShotOverLimit   = isCustomMode && totalShotDuration > length
-  const isShotUnderLimit  = isCustomMode && totalShotDuration < length
+  const isShotOverLimit = isCustomMode && totalShotDuration > length
+  const isShotUnderLimit = isCustomMode && totalShotDuration < length
 
   const handleImageUpload = useCallback(
     (event, type) => {
@@ -149,7 +149,7 @@ export default function FromCreateVideo({ createVideoHook }) {
       const imageUrl = URL.createObjectURL(file)
       if (type === 'start') {
         if (startFrame) URL.revokeObjectURL(startFrame)
-        if (endFrame)   URL.revokeObjectURL(endFrame)
+        if (endFrame) URL.revokeObjectURL(endFrame)
         setStartFrame(imageUrl)
         setStartFile(file)
         setStartAssetId(null)
@@ -173,7 +173,7 @@ export default function FromCreateVideo({ createVideoHook }) {
       event.stopPropagation()
       if (type === 'start') {
         if (startFrame) URL.revokeObjectURL(startFrame)
-        if (endFrame)   URL.revokeObjectURL(endFrame)
+        if (endFrame) URL.revokeObjectURL(endFrame)
         setStartFrame(null)
         setStartFile(null)
         setStartAssetId(null)
@@ -194,7 +194,7 @@ export default function FromCreateVideo({ createVideoHook }) {
     (asset) => {
       if (pickerTarget === 'start') {
         if (startFrame) URL.revokeObjectURL(startFrame)
-        if (endFrame)   URL.revokeObjectURL(endFrame)
+        if (endFrame) URL.revokeObjectURL(endFrame)
         setStartFrame(asset.storedUrl)
         setStartFile(null)
         setStartAssetId(asset.id)
@@ -221,7 +221,7 @@ export default function FromCreateVideo({ createVideoHook }) {
 
   const resetForm = useCallback(() => {
     if (startFrame) URL.revokeObjectURL(startFrame)
-    if (endFrame)   URL.revokeObjectURL(endFrame)
+    if (endFrame) URL.revokeObjectURL(endFrame)
     setProjectId('')
     setTaskId('')
     setStartFrame(null)
@@ -244,11 +244,11 @@ export default function FromCreateVideo({ createVideoHook }) {
     //   const def = models.find((m) => m.code === 'kling-v3') ?? models[models.length - 1]
     //   setSelectedModel(String(def.id))
     // }
-  // }, [startFrame, endFrame, models])
+    // }, [startFrame, endFrame, models])
   }, [startFrame, endFrame, isByteplus])
 
   const hasAutoResetRef = useRef(false)
-  const resetFormRef    = useRef(null)
+  const resetFormRef = useRef(null)
   useEffect(() => { resetFormRef.current = resetForm }, [resetForm])
   useEffect(() => {
     if (status === 'succeeded' && !hasAutoResetRef.current) {
@@ -299,19 +299,19 @@ export default function FromCreateVideo({ createVideoHook }) {
       await submitCreateVideo({
         projectId,
         taskId,
-        modelId:        selectedModel,
-        resolution:     resolution.toLowerCase(),
+        modelId: selectedModel,
+        resolution: resolution.toLowerCase(),
         ratio,
-        duration:       String(length),
+        duration: String(length),
         mode,
-        sound:          nativeAudio ? 'on' : 'off',
-        prompt:         prompt.trim(),
-        multiShot:      false,
+        sound: nativeAudio ? 'on' : 'off',
+        prompt: prompt.trim(),
+        multiShot: false,
         startImageFile: startFile,
-        endImageFile:   endFile,
+        endImageFile: endFile,
         startImageAssetId: startAssetId,
-        endImageAssetId:   endAssetId,
-        cost:           Math.round(priceInfo?.total ?? 0),
+        endImageAssetId: endAssetId,
+        cost: Math.round(priceInfo?.total ?? 0),
       })
       return
     }
@@ -332,28 +332,28 @@ export default function FromCreateVideo({ createVideoHook }) {
       }
 
       const multiPrompt = shots.map((s, i) => ({
-        index:    i + 1,
-        prompt:   s.prompt.trim(),
+        index: i + 1,
+        prompt: s.prompt.trim(),
         duration: String(s.duration),
       }))
 
       await submitCreateVideo({
         projectId,
         taskId,
-        modelId:        selectedModel,
-        resolution:     resolution.toLowerCase(),
-        duration:       String(length),
+        modelId: selectedModel,
+        resolution: resolution.toLowerCase(),
+        duration: String(length),
         mode,
-        sound:          nativeAudio ? 'on' : 'off',
-        prompt:         '',
-        multiShot:      true,
-        shotType:       'customize',
+        sound: nativeAudio ? 'on' : 'off',
+        prompt: '',
+        multiShot: true,
+        shotType: 'customize',
         multiPrompt,
         startImageFile: startFile,
-        endImageFile:   endFile,
+        endImageFile: endFile,
         startImageAssetId: startAssetId,
-        endImageAssetId:   endAssetId,
-        cost:           Math.round(priceInfo?.total ?? 0),
+        endImageAssetId: endAssetId,
+        cost: Math.round(priceInfo?.total ?? 0),
       })
       return
     }
@@ -368,19 +368,19 @@ export default function FromCreateVideo({ createVideoHook }) {
       await submitCreateVideo({
         projectId,
         taskId,
-        modelId:        selectedModel,
-        resolution:     resolution.toLowerCase(),
-        duration:       String(length),
+        modelId: selectedModel,
+        resolution: resolution.toLowerCase(),
+        duration: String(length),
         mode,
-        sound:          nativeAudio ? 'on' : 'off',
-        prompt:         prompt.trim(),
-        multiShot:      true,
-        shotType:       'intelligence',
+        sound: nativeAudio ? 'on' : 'off',
+        prompt: prompt.trim(),
+        multiShot: true,
+        shotType: 'intelligence',
         startImageFile: startFile,
-        endImageFile:   endFile,
+        endImageFile: endFile,
         startImageAssetId: startAssetId,
-        endImageAssetId:   endAssetId,
-        cost:           Math.round(priceInfo?.total ?? 0),
+        endImageAssetId: endAssetId,
+        cost: Math.round(priceInfo?.total ?? 0),
       })
       return
     }
@@ -394,25 +394,25 @@ export default function FromCreateVideo({ createVideoHook }) {
     await submitCreateVideo({
       projectId,
       taskId,
-      modelId:        selectedModel,
-      resolution:     resolution.toLowerCase(),
-      duration:       String(length),
+      modelId: selectedModel,
+      resolution: resolution.toLowerCase(),
+      duration: String(length),
       mode,
-      sound:          nativeAudio ? 'on' : 'off',
-      prompt:         prompt.trim(),
-      multiShot:      false,
+      sound: nativeAudio ? 'on' : 'off',
+      prompt: prompt.trim(),
+      multiShot: false,
       startImageFile: startFile,
-      endImageFile:   endFile,
+      endImageFile: endFile,
       startImageAssetId: startAssetId,
-      endImageAssetId:   endAssetId,
-      cost:           Math.round(priceInfo?.total ?? 0),
+      endImageAssetId: endAssetId,
+      cost: Math.round(priceInfo?.total ?? 0),
     })
   }
 
   const isProcessing = isSubmitting || status === 'queued' || status === 'processing'
 
   const isSubmitDisabled = (() => {
-    if (isProcessing)  return true
+    if (isProcessing) return true
     if (!projectId || hasNoProject) return true
     if (!taskId) return true
     if (!startFile && !startAssetId) return true
@@ -450,30 +450,30 @@ export default function FromCreateVideo({ createVideoHook }) {
             )}
           </div>
 
-                    {projectId && (
+          {projectId && (
             <div className="shrink-0">
-              {hasNoTask ? (
+              {/* {hasNoTask ? (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
                   Dự án chưa có công việc nào đang thực hiện.
                 </div>
-              ) : (
-                <div className="relative">
-                  <select
-                    value={taskId}
-                    onChange={(e) => setTaskId(e.target.value)}
-                    disabled={tasksLoading}
-                    className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <option value="">{tasksLoading ? 'Đang tải...' : '-- Chọn công việc --'}</option>
-                    {projectTasks.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {(t.nickname || t.name)}{t.code ? ` (${t.code})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
-                </div>
-              )}
+              ) : ( */}
+              <div className="relative">
+                <select
+                  value={taskId}
+                  onChange={(e) => setTaskId(e.target.value)}
+                  disabled={tasksLoading}
+                  className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <option value="">{tasksLoading ? 'Đang tải...' : '-- Chọn công việc --'}</option>
+                  {projectTasks.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {(t.nickname || t.name)}{t.code ? ` (${t.code})` : ''}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+              </div>
+              {/* )} */}
             </div>
           )}
           {/* ── Model selector ── */}
@@ -495,16 +495,15 @@ export default function FromCreateVideo({ createVideoHook }) {
                   ))
                 )}
               </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+              <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
             </div>
           </div>
 
           {/* ── Frame upload ── */}
           <div className="grid shrink-0 grid-cols-2 items-start gap-3">
             <label
-              className={`group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 transition-all hover:border-blue-400 ${
-                startFrame ? 'aspect-square' : 'h-[150px]'
-              }`}
+              className={`group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 transition-all hover:border-blue-400 ${startFrame ? 'aspect-square' : 'h-[150px]'
+                }`}
             >
               <input
                 type="file"
@@ -528,14 +527,14 @@ export default function FromCreateVideo({ createVideoHook }) {
                       title="Chọn từ thư viện"
                       className="flex h-7 w-7 items-center justify-center rounded-md bg-black/60 text-white transition-all hover:bg-black/80"
                     >
-                        <History className="h-4 w-4" /> 
+                      <History className="h-4 w-4" />
                     </button>
                     <button
                       type="button"
                       onClick={(e) => handleRemoveFrame(e, 'start')}
                       className="flex h-7 w-7 items-center justify-center rounded-md bg-black/60 text-white transition-all hover:bg-black/80"
                     >
-                        <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                   <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 text-[10px] font-medium text-white">
@@ -562,9 +561,8 @@ export default function FromCreateVideo({ createVideoHook }) {
             </label>
 
             <label
-              className={`group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 transition-all hover:border-blue-400 ${
-                startFrame ? 'aspect-square' : 'h-[150px]'
-              } ${!startFrame ? 'pointer-events-none opacity-40' : ''}`}
+              className={`group relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 transition-all hover:border-blue-400 ${startFrame ? 'aspect-square' : 'h-[150px]'
+                } ${!startFrame ? 'pointer-events-none opacity-40' : ''}`}
             >
               <input
                 type="file"
@@ -702,7 +700,7 @@ export default function FromCreateVideo({ createVideoHook }) {
               title="Reset form"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-gray-50 text-gray-400 transition-all hover:border-gray-400 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-30"
             >
-                <RotateCcw className="h-[18px] w-[18px]" />
+              <RotateCcw className="h-[18px] w-[18px]" />
             </button>
 
             {/* Multi-Shot toggle — ẩn hoàn toàn khi model là BytePlus */}
@@ -711,21 +709,18 @@ export default function FromCreateVideo({ createVideoHook }) {
                 <button
                   type="button"
                   onClick={handleToggleMultiShot}
-                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-all ${
-                    multiShotEnabled
+                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-all ${multiShotEnabled
                       ? 'bg-emerald-50 text-emerald-600'
                       : 'text-gray-400 hover:text-gray-600'
-                  }`}
+                    }`}
                 >
                   <span
-                    className={`relative inline-flex h-3.5 w-6 shrink-0 rounded-full transition-colors ${
-                      multiShotEnabled ? 'bg-emerald-500' : 'bg-gray-300'
-                    }`}
+                    className={`relative inline-flex h-3.5 w-6 shrink-0 rounded-full transition-colors ${multiShotEnabled ? 'bg-emerald-500' : 'bg-gray-300'
+                      }`}
                   >
                     <span
-                      className={`absolute top-0.5 h-2.5 w-2.5 rounded-full bg-white shadow transition-all ${
-                        multiShotEnabled ? 'left-3' : 'left-0.5'
-                      }`}
+                      className={`absolute top-0.5 h-2.5 w-2.5 rounded-full bg-white shadow transition-all ${multiShotEnabled ? 'left-3' : 'left-0.5'
+                        }`}
                     />
                   </span>
                   Multi-Shot
@@ -737,18 +732,17 @@ export default function FromCreateVideo({ createVideoHook }) {
                   type="button"
                   onClick={handleToggleCustomMode}
                   disabled={!multiShotEnabled}
-                  className={`flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-all ${
-                    !multiShotEnabled
+                  className={`flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-all ${!multiShotEnabled
                       ? 'cursor-not-allowed text-gray-300'
                       : isCustomMode
-                      ? 'text-blue-600 hover:text-blue-700'
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
+                        ? 'text-blue-600 hover:text-blue-700'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
                 >
                   Custom
-                    <span className={`ml-1 inline-flex ${!multiShotEnabled ? 'text-gray-300' : ''}`}>
-                        {isCustomMode ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                    </span>
+                  <span className={`ml-1 inline-flex ${!multiShotEnabled ? 'text-gray-300' : ''}`}>
+                    {isCustomMode ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                  </span>
                 </button>
               </div>
             )}
@@ -781,8 +775,8 @@ export default function FromCreateVideo({ createVideoHook }) {
                 </>
               ) : (
                 <>
-                    <Zap className="h-[18px] w-[18px]" />
-                    Tạo Video
+                  <Zap className="h-[18px] w-[18px]" />
+                  Tạo Video
                 </>
               )}
             </button>

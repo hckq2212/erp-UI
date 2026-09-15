@@ -100,10 +100,10 @@ export const ContractDetailPage = () => {
   };
 
   const handleApproveProposal = async () => {
-    if (!window.confirm('Bạn có chắc chắn muốn duyệt proposal này?')) return;
+    if (!window.confirm('Bạn có chắc chắn muốn duyệt hợp đồng này?')) return;
     try {
       await approveProposal(contract.id).unwrap();
-      toast.success('Duyệt proposal thành công');
+      toast.success('Duyệt hợp đồng thành công');
     } catch (err) {
       toast.error(err?.data?.message || 'Duyệt thất bại');
     }
