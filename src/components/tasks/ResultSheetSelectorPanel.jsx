@@ -22,6 +22,7 @@ export const ResultSheetSelectorPanel = ({
   onSelectedSheetsChange,
   whitelist,
   onWhitelistChange,
+  onLoadingChange,
 }) => {
   const [sheets, setSheets] = useState(null);
   const [sheetSearch, setSheetSearch] = useState('');
@@ -33,6 +34,12 @@ export const ResultSheetSelectorPanel = ({
   const isLoadingSheets = isLoadingSheetsFile || isLoadingSheetsUrl;
   const displayName = file?.name || fileName || '';
   const currentKey = file ? `${file.name}:${file.size}` : fileUrl ? fileUrl : null;
+
+  useEffect(() => {
+    onLoadingChange?.(Boolean(currentKey) && hasSheets(displayName) && isLoadingSheets);
+  }, [currentKey, displayName, isLoadingSheets]);
+
+  useEffect(() => () => onLoadingChange?.(false), []);
 
   const filteredSheets = useMemo(() => {
     if (!sheets) return [];

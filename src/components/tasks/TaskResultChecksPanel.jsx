@@ -61,8 +61,10 @@ export const TaskResultChecksPanel = ({ taskId, projectId }) => {
 
   const isFinalized = Boolean(record.finalizedAt);
   const qcItems = record.reviewedQcMismatches || [];
+  const qcMismatchItems = qcItems.filter((i) => i.status !== 'unresolved');
+  const qcNoteItems = qcItems.filter((i) => i.status === 'unresolved');
   const confirmedSpellCount = spellItems.filter((i) => i.confirmed).length;
-  const confirmedQcCount = qcItems.filter((i) => i.confirmed).length;
+  const confirmedQcCount = qcMismatchItems.filter((i) => i.confirmed).length;
   const activeWhitelist = rerunWhitelist ?? record.reviewerWhitelist ?? [];
 
   const handleToggle = async (kind, itemId, confirmed) => {
@@ -209,15 +211,26 @@ export const TaskResultChecksPanel = ({ taskId, projectId }) => {
       <div className="flex items-center justify-between pt-2 border-t border-slate-200">
         <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
           <ClipboardCheck className="w-4 h-4" />
-          QC chưa khớp ({confirmedQcCount}/{qcItems.length})
+          QC chưa khớp ({confirmedQcCount}/{qcMismatchItems.length})
         </div>
       </div>
 
+      {record.qcModels && (
+        <div className="flex flex-wrap gap-1.5">
+          <span className="px-2 py-0.5 text-[10px] font-medium bg-blue-100 text-blue-700 rounded-full">
+            Tách nội dung: {record.qcModels.extract}
+          </span>
+          <span className="px-2 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 rounded-full">
+            Đối chiếu: {record.qcModels.verify}
+          </span>
+        </div>
+      )}
+
       <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl bg-white divide-y">
-        {qcItems.length === 0 && (
+        {qcMismatchItems.length === 0 && (
           <div className="px-3 py-2 text-xs text-slate-400">Không phát hiện điểm chưa khớp</div>
         )}
-        {qcItems.map((item) => (
+        {qcMismatchItems.map((item) => (
           <label key={item.id} className="flex items-start gap-2 px-3 py-1.5 text-xs">
             <input
               type="checkbox"
@@ -236,6 +249,21 @@ export const TaskResultChecksPanel = ({ taskId, projectId }) => {
           </label>
         ))}
       </div>
+
+      {qcNoteItems.length > 0 && (
+        <details className="text-xs">
+          <summary className="cursor-pointer text-slate-400 hover:text-slate-600">
+            Thông tin không có dữ liệu chuẩn để đối chiếu ({qcNoteItems.length})
+          </summary>
+          <div className="mt-1.5 border border-slate-100 rounded-xl bg-slate-50 divide-y divide-slate-100">
+            {qcNoteItems.map((item) => (
+              <div key={item.id} className="px-3 py-1.5 text-slate-400">
+                {item.sheet_name ? `${item.sheet_name} · ` : ''}{item.product_ref || 'Không rõ sản phẩm'} · {item.attribute}: {item.claimed_value}
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
 
       {!isFinalized && (
         <div className="space-y-2">

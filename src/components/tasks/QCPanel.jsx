@@ -11,6 +11,18 @@ import {
 
 const SHEET_EXTENSIONS = ['xlsx', 'xlsm'];
 
+const EXTRACT_MODEL_OPTIONS = [
+  { value: 'openai/gpt-oss-20b', label: 'GPT-OSS 20B (nhanh, rẻ)' },
+  { value: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B (mạnh hơn)' },
+  { value: 'qwen/qwen3.6-27b', label: 'Qwen3.6 27B (mạnh nhất)' },
+];
+
+const VERIFY_MODEL_OPTIONS = [
+  { value: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B (mạnh, khuyên dùng)' },
+  { value: 'qwen/qwen3.6-27b', label: 'Qwen3.6 27B (mạnh nhất)' },
+  { value: 'openai/gpt-oss-20b', label: 'GPT-OSS 20B (nhanh, rẻ)' },
+];
+
 export const getFileExtension = (name = '') => name.split('.').pop()?.toLowerCase() || '';
 
 export const isQcSupported = (name = '') => SHEET_EXTENSIONS.includes(getFileExtension(name));
@@ -21,6 +33,8 @@ export const QCPanel = ({ file, fileUrl, fileName, projectId, onStatusChange }) 
   const [sheetSearch, setSheetSearch] = useState('');
   const [checkedKey, setCheckedKey] = useState(null);
   const [report, setReport] = useState(null);
+  const [extractModel, setExtractModel] = useState(EXTRACT_MODEL_OPTIONS[0].value);
+  const [verifyModel, setVerifyModel] = useState(VERIFY_MODEL_OPTIONS[0].value);
 
   const [listSheets, { isLoading: isLoadingSheetsFile }] = useListQcSheetsMutation();
   const [listSheetsFromUrl, { isLoading: isLoadingSheetsUrl }] = useListQcSheetsFromUrlMutation();
@@ -89,8 +103,8 @@ export const QCPanel = ({ file, fileUrl, fileName, projectId, onStatusChange }) 
     if (!currentKey || selectedSheets.length === 0 || !projectId) return;
     try {
       const res = file
-        ? await runQc({ file, sheetNames: selectedSheets, projectId }).unwrap()
-        : await runQc({ fileUrl, fileName, sheetNames: selectedSheets, projectId }).unwrap();
+        ? await runQc({ file, sheetNames: selectedSheets, projectId, extractModel, verifyModel }).unwrap()
+        : await runQc({ fileUrl, fileName, sheetNames: selectedSheets, projectId, extractModel, verifyModel }).unwrap();
       setReport(res);
       setCheckedKey(currentKey);
     } catch (err) {
@@ -171,6 +185,35 @@ export const QCPanel = ({ file, fileUrl, fileName, projectId, onStatusChange }) 
       )}
 
       {!report && !isLoadingSheets && sheets?.length > 0 && (
+        <div className="grid grid-cols-2 gap-2">
+          <label className="space-y-1 text-xs">
+            <span className="block text-slate-500 font-medium">Model tách nội dung</span>
+            <select
+              value={extractModel}
+              onChange={(e) => setExtractModel(e.target.value)}
+              className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              {EXTRACT_MODEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="space-y-1 text-xs">
+            <span className="block text-slate-500 font-medium">Model đối chiếu</span>
+            <select
+              value={verifyModel}
+              onChange={(e) => setVerifyModel(e.target.value)}
+              className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              {VERIFY_MODEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
+
+      {!report && !isLoadingSheets && sheets?.length > 0 && (
         <Button
           type="button"
           variant="outline"
@@ -185,6 +228,14 @@ export const QCPanel = ({ file, fileUrl, fileName, projectId, onStatusChange }) 
 
       {report && (
         <div className="space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            <span className="px-2 py-0.5 text-[10px] font-medium bg-blue-100 text-blue-700 rounded-full">
+              Tách nội dung: {report.models?.extract || extractModel}
+            </span>
+            <span className="px-2 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 rounded-full">
+              Đối chiếu: {report.models?.verify || verifyModel}
+            </span>
+          </div>
           <div className={`text-xs font-bold ${mismatches.length > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
             {mismatches.length > 0 ? `Phát hiện ${mismatches.length} điểm chưa khớp` : 'Không phát hiện điểm chưa khớp'}
           </div>

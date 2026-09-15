@@ -58,6 +58,7 @@ export const TaskDetailPage = () => {
     const [spellCheckFileName, setSpellCheckFileName] = useState(null);
     const [selectedSheets, setSelectedSheets] = useState([]);
     const [whitelist, setWhitelist] = useState([]);
+    const [isLoadingResultSheets, setIsLoadingResultSheets] = useState(false);
 
     const isTaskAssigned = Boolean(task?.assigneeId || task?.assignee?.id || task?.vendorId);
     const canAssignUnassignedTask = canManageProjectTask &&
@@ -77,6 +78,7 @@ export const TaskDetailPage = () => {
             setSpellCheckFileName(null);
             setSelectedSheets([]);
             setWhitelist([]);
+            setIsLoadingResultSheets(false);
         }
     }, [isResultModalOpen, task?.id]);
 
@@ -196,6 +198,7 @@ export const TaskDetailPage = () => {
     };
 
     const handleSubmitAfterSpellCheck = async () => {
+        if (isLoadingResultSheets) return;
         try {
             let resultData = null;
 
@@ -1044,6 +1047,7 @@ export const TaskDetailPage = () => {
                                 onSelectedSheetsChange={setSelectedSheets}
                                 whitelist={whitelist}
                                 onWhitelistChange={setWhitelist}
+                                onLoadingChange={setIsLoadingResultSheets}
                             />
                         </PanelErrorBoundary>
 
@@ -1058,6 +1062,7 @@ export const TaskDetailPage = () => {
                                     setSpellCheckFileName(null);
                                     setSelectedSheets([]);
                                     setWhitelist([]);
+                                    setIsLoadingResultSheets(false);
                                 }}
                             >
                                 Quay lại
@@ -1067,9 +1072,9 @@ export const TaskDetailPage = () => {
                                 className="flex-1 rounded-2xl py-4 shadow-lg shadow-blue-200"
                                 onClick={handleSubmitAfterSpellCheck}
                                 isLoading={isSubmittingResult || isSubmittingResultFile || isUploading}
-                                disabled={isSubmittingResult || isSubmittingResultFile || isUploading}
+                                disabled={isSubmittingResult || isSubmittingResultFile || isUploading || isLoadingResultSheets}
                             >
-                                {isUploading ? 'Đang tải lên...' : 'Nộp kết quả'}
+                                {isUploading ? 'Đang tải lên...' : isLoadingResultSheets ? 'Đang đọc danh sách sheet...' : 'Nộp kết quả'}
                             </Button>
                         </div>
                     </div>

@@ -24,13 +24,15 @@ export const qcApi = api.injectEndpoints({
       }),
     }),
     runQc: builder.mutation({
-      query: ({ file, fileUrl, fileName, sheetNames, projectId }) => {
+      query: ({ file, fileUrl, fileName, sheetNames, projectId, extractModel, verifyModel }) => {
         const formData = new FormData();
         if (file) formData.append('file', file);
         if (fileUrl) formData.append('fileUrl', fileUrl);
         if (fileName) formData.append('fileName', fileName);
         formData.append('sheetNames', (sheetNames || []).join(','));
         formData.append('projectId', projectId);
+        if (extractModel) formData.append('extractModel', extractModel);
+        if (verifyModel) formData.append('verifyModel', verifyModel);
         return {
           url: '/qc/run',
           method: 'POST',
