@@ -7,6 +7,7 @@ import { useGetMeQuery } from '../../api/auth';
 import { useGetDashboardDataQuery } from '../../api/dashboard';
 import { useGetTasksQuery } from '../../api/tasks';
 import { useGetTeamsQuery, useGetTeamMembersQuery } from '../../api/teams';
+import { useGetUsersQuery } from '../../api/users';
 
 // Components
 import { MemberSelector } from '../../components/dashboard/MemberSelector';
@@ -43,6 +44,8 @@ export const DashboardPage = () => {
         { skip: isAdminOrBod }
     );
 
+    const { data: allUsers = [] } = useGetUsersQuery();
+
     // Identify teams where the user is a lead OR a member (ACCOUNT, PM, or team member)
     const { data: teams = [] } = useGetTeamsQuery();
 
@@ -58,17 +61,19 @@ export const DashboardPage = () => {
     const primaryTeam = myTeams[0];
     const { data: fetchedTeamMembers = [] } = useGetTeamMembersQuery(primaryTeam?.id, { skip: !primaryTeam?.id });
 
-    // Consolidate team members across all relevant teams (or all teams for ADMIN/BOD)
-    const effectiveTeamMembers = useMemo(() => {
-        const memberMap = new Map();
-        const targetTeams = isAdminOrBod ? teams : (myTeams.length > 0 ? myTeams : teams);
+    const canSelectMember = isAdminOrBod || userRole === 'PM';
 
-        targetTeams.forEach(t => {
+    // Consolidate team members across all relevant teams (for ADMIN/BOD/PM only)
+    const effectiveTeamMembers = useMemo(() => {
+        if (!canSelectMember) return [];
+        const memberMap = new Map();
+
+        teams.forEach(t => {
             if (t.teamLead && t.teamLead.id) {
                 if (!memberMap.has(t.teamLead.id)) {
                     memberMap.set(t.teamLead.id, {
                         id: `lead-${t.teamLead.id}`,
-                        role: 'ACCOUNT',
+                        role: t.teamLead.role || 'ACCOUNT',
                         user: t.teamLead
                     });
                 }
@@ -86,8 +91,20 @@ export const DashboardPage = () => {
             }
         });
 
+        if (Array.isArray(allUsers)) {
+            allUsers.forEach(u => {
+                if (u && u.id && !memberMap.has(u.id)) {
+                    memberMap.set(u.id, {
+                        id: `user-${u.id}`,
+                        role: u.role || 'MEMBER',
+                        user: u
+                    });
+                }
+            });
+        }
+
         return Array.from(memberMap.values());
-    }, [teams, myTeams, fetchedTeamMembers, isAdminOrBod]);
+    }, [teams, fetchedTeamMembers, allUsers, canSelectMember]);
 
     const availableProjects = useMemo(() => {
         const map = new Map();
@@ -151,22 +168,17 @@ export const DashboardPage = () => {
                             selectedDate={selectedDate}
                             onChange={setSelectedDate}
                         />
-                        <div className="h-full flex mt-0">
-                            <ProjectSelector
-                                projects={availableProjects}
-                                selectedId={selectedProjectId}
-                                onSelect={setSelectedProjectId}
-                            />
-                        </div>
-                        {/* Member Selector (1/4 cột cuối) */}
-                        <div className=" h-full flex mt-0 ">
-                            <MemberSelector
-                                members={effectiveTeamMembers}
-                                selectedId={selectedMemberId}
-                                onSelect={setSelectedMemberId}
-                                currentUserId={currentUserId}
-                            />
-                        </div>
+                        {/* Member Selector (chỉ hiển thị cho PM, ADMIN, BOD) */}
+                        {canSelectMember && (
+                            <div className="h-full flex mt-0">
+                                <MemberSelector
+                                    members={effectiveTeamMembers}
+                                    selectedId={selectedMemberId}
+                                    onSelect={setSelectedMemberId}
+                                    currentUserId={currentUserId}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -201,19 +213,6 @@ export const DashboardPage = () => {
                             />
                         )}
 
-                        {/* {dashboard.teamLead && !isViewingMember && (
-                            <div className="space-y-4">
-                                <TeamLeadView
-                                    dashboard={dashboard}
-                                    navigate={navigate}
-                                    teamMembers={effectiveTeamMembers}
-                                    selectedMemberId={selectedMemberId}
-                                    onSelectMember={setSelectedMemberId}
-                                    currentUserId={currentUserId}
-                                />
-                            </div>
-                        )} */}
-
                         {user?.role !== 'BD' && (!isAdminOrBod || isViewingMember) && (
                             <div className="">
                                 <MemberView
@@ -222,6 +221,8 @@ export const DashboardPage = () => {
                                     isViewingMember={isViewingMember}
                                     selectedMemberId={selectedMemberId}
                                     selectedProjectId={selectedProjectId}
+                                    onSelectProject={setSelectedProjectId}
+                                    availableProjects={availableProjects}
                                     teamMembers={effectiveTeamMembers}
                                     isTeamLead={isTeamLead}
                                     onSelectMember={setSelectedMemberId}

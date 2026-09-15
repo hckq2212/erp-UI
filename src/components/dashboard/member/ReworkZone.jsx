@@ -37,11 +37,18 @@ export const ReworkZone = ({ tasks = [], navigate }) => {
                             onClick={() => navigate(`/tasks/${task.id}`)}
                             className="p-4 bg-rose-50/30 hover:bg-white hover:shadow-md border border-rose-100/20 hover:border-rose-100 rounded-xl transition-all cursor-pointer group"
                         >
-                            <div className="flex justify-between items-start mb-2">
-                                <h4 className="text-[11px] font-black text-slate-900 group-hover:text-rose-600 transition-colors truncate w-2/3">
-                                    {getTaskDisplayName(task)}
-                                </h4>
-                                <span className="text-[8px] font-black text-rose-500 bg-rose-50 px-2 py-0.5 rounded-lg uppercase">
+                            <div className="flex justify-between items-start mb-2 gap-2">
+                                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                    {task.code && (
+                                        <span className="shrink-0 rounded bg-rose-100/70 text-rose-700 px-1.5 py-0.5 text-[8px] font-black uppercase">
+                                            {task.code}
+                                        </span>
+                                    )}
+                                    <h4 className="text-[11px] font-black text-slate-900 group-hover:text-rose-600 transition-colors truncate">
+                                        {getTaskDisplayName(task)}
+                                    </h4>
+                                </div>
+                                <span className="text-[8px] font-black text-rose-500 bg-rose-50 px-2 py-0.5 rounded-lg uppercase shrink-0">
                                     {task.status === 'REWORKING' ? 'Cần làm lại' : 'Bị từ chối'}
                                 </span>
                             </div>

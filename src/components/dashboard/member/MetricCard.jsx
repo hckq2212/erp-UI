@@ -35,6 +35,21 @@ export const MetricCard = ({
             bg: 'bg-sky-50',
             icon: 'text-sky-500',
             stroke: '#0ea5e9'
+        },
+        red: {
+            bg: 'bg-red-50',
+            icon: 'text-red-500',
+            stroke: '#ef4444'
+        },
+        amber: {
+            bg: 'bg-amber-50',
+            icon: 'text-amber-500',
+            stroke: '#f59e0b'
+        },
+        indigo: {
+            bg: 'bg-indigo-50',
+            icon: 'text-indigo-500',
+            stroke: '#6366f1'
         }
     };
 

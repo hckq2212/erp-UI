@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import { ChevronDown, User, Check, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../utils/enums';
+import { isSameUser } from '../../utils/authUser';
 
 export const MemberSelector = ({ members = [], selectedId, onSelect, currentUserId }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     // Filter out the current user (the lead viewing their team)
-    const filteredMembers = members.filter(m => m.user && m.user.id !== currentUserId);
+    const filteredMembers = members.filter(m => m.user && m.user.id && !isSameUser(m.user.id, currentUserId));
 
     // Find the selected member object from the user list
-    const selectedMember = members.find(m => m.user && m.user.id === selectedId);
+    const selectedMember = members.find(m => m.user && isSameUser(m.user.id, selectedId));
 
     return (
         <div className="relative w-full">
@@ -63,29 +64,32 @@ export const MemberSelector = ({ members = [], selectedId, onSelect, currentUser
                             <p className="px-3 py-2 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Thành viên trong team</p>
 
                             <div className="max-h-[300px] overflow-y-auto pr-1 custom-scrollbar space-y-1">
-                                {filteredMembers.length > 0 ? filteredMembers.map((member) => (
-                                    <button
-                                        key={member.user.id}
-                                        onClick={() => {
-                                            onSelect(member.user.id);
-                                            setIsOpen(false);
-                                        }}
-                                        className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${selectedId === member.user.id ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50 text-gray-600'}`}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 font-bold text-xs uppercase ${selectedId === member.user.id ? 'bg-white shadow-sm text-blue-600' : ''}`}>
-                                                {member.user.fullName?.charAt(0)}
+                                {filteredMembers.length > 0 ? filteredMembers.map((member) => {
+                                    const isSelected = isSameUser(selectedId, member.user.id);
+                                    return (
+                                        <button
+                                            key={member.user.id}
+                                            onClick={() => {
+                                                onSelect(member.user.id);
+                                                setIsOpen(false);
+                                            }}
+                                            className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${isSelected ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50 text-gray-600'}`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 font-bold text-xs uppercase ${isSelected ? 'bg-white shadow-sm text-blue-600' : ''}`}>
+                                                    {member.user.fullName?.charAt(0) || <User className="w-4 h-4" />}
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <p className="text-sm font-bold truncate max-w-[140px] leading-tight">{member.user.fullName}</p>
+                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">
+                                                        {TEAM_MEMBER_ROLE_LABELS[member.role] || USER_ROLE[member.role] || member.role || 'Nhân sự'}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div className="text-left min-w-0">
-                                                <p className="text-sm font-bold truncate max-w-[140px] leading-tight">{member.user.fullName}</p>
-                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">
-                                                    {TEAM_MEMBER_ROLE_LABELS[member.role] || USER_ROLE[member.role] || member.role || 'Nhân sự'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        {selectedId === member.user.id && <Check className="w-4 h-4" />}
-                                    </button>
-                                )) : (
+                                            {isSelected && <Check className="w-4 h-4" />}
+                                        </button>
+                                    );
+                                }) : (
                                     <div className="px-3 py-4 text-center text-xs text-gray-400 italic font-medium">
                                         Không tìm thấy thành viên
                                     </div>

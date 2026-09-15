@@ -15,7 +15,7 @@ export const TimelineList = ({ tasks = [], navigate }) => {
                         <Clock size={18} />
                     </div>
                     <div>
-                        <h3 className="text-sm font-black text-slate-900 tracking-tight">Deadline sắp tới</h3>
+                        <h3 className="text-sm font-black text-slate-900 tracking-tight">Deadline sắp tới {`(${tasks.length})`}</h3>
                     </div>
                 </div>
                 <button
@@ -56,16 +56,23 @@ export const TimelineList = ({ tasks = [], navigate }) => {
                                 </div>
 
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-start gap-4">
-                                        <div>
-                                            <h4 className="text-[11px] font-black text-slate-900 group-hover:text-blue-600 transition-colors leading-tight truncate">
-                                                {getTaskDisplayName(task)}
-                                            </h4>
-                                            <p className="text-[9px] font-bold text-slate-400 mt-0.5 truncate">
+                                    <div className="flex justify-between items-start gap-3">
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
+                                                {task.code && (
+                                                    <span className="shrink-0 rounded bg-amber-50 border border-amber-200/60 px-1.5 py-0.5 text-[9px] font-black uppercase text-amber-700 tracking-wider">
+                                                        {task.code}
+                                                    </span>
+                                                )}
+                                                <h4 className="text-[11px] font-black text-slate-900 group-hover:text-blue-600 transition-colors leading-tight truncate">
+                                                    {getTaskDisplayName(task)}
+                                                </h4>
+                                            </div>
+                                            <p className="text-[9px] font-bold text-slate-400 truncate">
                                                 {task.projectName || 'Dự án nội bộ'}
                                             </p>
                                         </div>
-                                        <span className={`text-[8px] font-black px-2 py-1 rounded-lg uppercase whitespace-nowrap ${TASK_STATUS_COLORS[task.status] || 'bg-slate-50 text-slate-500'}`}>
+                                        <span className={`text-[8px] font-black px-2 py-1 rounded-lg uppercase whitespace-nowrap shrink-0 ${TASK_STATUS_COLORS[task.status] || 'bg-slate-50 text-slate-500'}`}>
                                             {TASK_STATUS_LABELS[task.status] || task.status}
                                         </span>
                                     </div>
