@@ -67,7 +67,7 @@ export default function FromCreateVideo({ createVideoHook }) {
   const { data: tasksData, isFetching: tasksLoading } = useGetTasksQuery(
     {
       projectId, excludeStatus: 'PENDING,ACCEPTED,COMPLETED',
-      //  nameLike: 'Video Ai',
+      nameLike: 'Video Ai',
       limit: 100
     },
     { skip: !projectId },
@@ -456,28 +456,28 @@ export default function FromCreateVideo({ createVideoHook }) {
 
           {projectId && (
             <div className="shrink-0">
-              {/* {hasNoTask ? (
+              {hasNoTask ? (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
                   Dự án chưa có công việc nào đang thực hiện.
                 </div>
-              ) : ( */}
-              <div className="relative">
-                <select
-                  value={taskId}
-                  onChange={(e) => setTaskId(e.target.value)}
-                  disabled={tasksLoading}
-                  className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <option value="">{tasksLoading ? 'Đang tải...' : '-- Chọn công việc --'}</option>
-                  {projectTasks.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {(t.nickname || t.name)}{t.code ? ` (${t.code})` : ''}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
-              </div>
-              {/* )} */}
+              ) : (
+                <div className="relative">
+                  <select
+                    value={taskId}
+                    onChange={(e) => setTaskId(e.target.value)}
+                    disabled={tasksLoading}
+                    className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <option value="">{tasksLoading ? 'Đang tải...' : '-- Chọn công việc --'}</option>
+                    {projectTasks.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {(t.nickname || t.name)}{t.code ? ` (${t.code})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+                </div>
+              )}
             </div>
           )}
           {/* ── Model selector ── */}
