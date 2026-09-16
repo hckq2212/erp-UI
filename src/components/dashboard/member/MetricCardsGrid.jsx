@@ -1,6 +1,6 @@
 import React from 'react';
 import { MetricCard } from './MetricCard';
-import { Clock, CheckCircle2, Layers, AlertCircle, RotateCcw, ClipboardCheck, BarChart3, Calendar, FileText } from 'lucide-react';
+import { Clock, CheckCircle2, AlertCircle, RotateCcw, ClipboardCheck, BarChart3, Calendar, FileText, TrendingUp } from 'lucide-react';
 import { ProjectSelector } from '../ProjectSelector';
 
 export const MetricCardsGrid = ({
@@ -33,19 +33,7 @@ export const MetricCardsGrid = ({
     const pendingVal = roleStats?.pendingCount ?? pendingCount ?? 0;
     const totalTasksVal = roleStats?.totalTasks ?? totalTasksCount ?? (member?.totalTasks || 0);
 
-    // Adaptive Project Metric Label & Count by Role
-    let projectLabel = 'Dự án tham gia';
-    let projectCount = member?.participatingProjects?.length || 0;
-
-    const isAdminOrBodOrPm = !isViewingMember && (userRole === 'ADMIN' || userRole === 'BOD' || userRole === 'PM');
-
-    if (isAdminOrBodOrPm) {
-        projectLabel = 'Dự án hệ thống';
-        projectCount = dashboard?.admin?.currentProjects?.length || projects?.length || member?.participatingProjects?.length || 0;
-    } else if (!isViewingMember && (isTeamLead || dashboard?.teamLead?.length > 0)) {
-        projectLabel = 'Dự án tham gia';
-        projectCount = dashboard?.teamLead?.length || projects?.length || member?.participatingProjects?.length || 0;
-    }
+    const completionRate = totalTasksVal > 0 ? Math.round((completedVal / totalTasksVal) * 100) : 0;
 
     return (
         <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm space-y-4">
@@ -138,9 +126,9 @@ export const MetricCardsGrid = ({
                 )}
 
                 <MetricCard
-                    title={projectLabel}
-                    value={projectCount}
-                    icon={Layers}
+                    title="Tỷ lệ hoàn thành"
+                    value={`${completionRate}%`}
+                    icon={TrendingUp}
                     color="purple"
                     sparklineData={[]}
                 />
@@ -156,6 +144,3 @@ export const MetricCardsGrid = ({
         </div>
     );
 };
-
-
-
