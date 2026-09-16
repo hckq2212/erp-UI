@@ -291,17 +291,8 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
 
     return (
         <section className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm md:p-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                    <div className="flex items-center gap-2 text-[#F38820]">
-                        <Percent className="h-5 w-5" />
-                        <h2 className="text-lg font-bold text-gray-900">Phân chia tỷ trọng công việc</h2>
-                    </div>
-                    <p className="mt-2 text-sm text-gray-500">
-                        Account lập phương án theo tỷ lệ; PM duyệt khi tổng tỷ trọng đạt 100%.
-                    </p>
-                </div>
-
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <h2 className="text-lg font-bold text-gray-900">Danh sách công việc con</h2>
                 {canDelegate && (!staffingBlockedReason || !subtaskBlockedReason) && (
                     <div className="flex flex-wrap gap-2">
                         {!staffingBlockedReason && (
@@ -326,21 +317,6 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
                         )}
                     </div>
                 )}
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Tổng tỷ trọng</p>
-                    <p className="mt-1 text-xl font-black text-slate-900">100%</p>
-                </div>
-                <div className="rounded-2xl bg-orange-50 p-4">
-                    <p className="text-xs font-bold uppercase tracking-wide text-orange-500">Đã phân bổ</p>
-                    <p className="mt-1 text-xl font-black text-orange-700">{allocatedPercent.toLocaleString('vi-VN')}%</p>
-                </div>
-                <div className="rounded-2xl bg-emerald-50 p-4">
-                    <p className="text-xs font-bold uppercase tracking-wide text-emerald-500">Còn lại</p>
-                    <p className="mt-1 text-xl font-black text-emerald-700">{remainingPercent.toLocaleString('vi-VN')}%</p>
-                </div>
             </div>
 
             {task.subtaskPlanStatus === 'PENDING_APPROVAL' && (
@@ -445,8 +421,7 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
             )}
 
             <div className="mt-6">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                    <h3 className="font-bold text-gray-900">Danh sách subtask</h3>
+                <div className="mb-3 flex flex-wrap items-center justify-end gap-3">
                     <div className="flex items-center gap-3">
                         <span className="text-sm font-semibold text-gray-400">{subtasks.length} công việc</span>
                         {canSubmitSubtaskPlan && (
