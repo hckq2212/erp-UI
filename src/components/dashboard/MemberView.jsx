@@ -115,9 +115,11 @@ export const MemberView = ({
             ? (selectedProjectId ? filteredOverdue.length : member.overdueCount)
             : filteredUpcoming.filter(task => task.deadline && new Date(task.deadline) < startOfToday).length;
         const statusCounts = member?.statusCounts || {};
-        const completedCount = Number(statusCounts[TASK_STATUS.COMPLETED] || 0) +
+        const completedCount = member?.completedCount ?? (
+            Number(statusCounts[TASK_STATUS.COMPLETED] || 0) +
             Number(statusCounts[TASK_STATUS.ACCEPTED] || 0) +
-            Number(statusCounts[TASK_STATUS.DONE] || 0);
+            Number(statusCounts[TASK_STATUS.INTERNAL_COMPLETED] || 0)
+        );
 
         const totalTasks = member?.totalTasks || Object.values(statusCounts).reduce((sum, val) => sum + Number(val || 0), 0);
         const progress = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
@@ -125,7 +127,7 @@ export const MemberView = ({
         return {
             overdue: overdueCount,
             today: todayCount,
-            pending: statusCounts[TASK_STATUS.AWAITING_REVIEW] || statusCounts.WAITING_APPROVAL || 0,
+            pending: Number(statusCounts[TASK_STATUS.AWAITING_REVIEW] || 0) + Number(statusCounts.WAITING_APPROVAL || 0),
             progress
         };
     }, [member, selectedProjectId]);
@@ -180,7 +182,7 @@ export const MemberView = ({
                             selectedProjectId={selectedProjectId}
                             onSelectProject={onSelectProject}
                             overdueCount={stats.overdue}
-                            reworkCount={filteredReworkTasks?.length || member?.reworkCount || 0}
+                            reworkCount={filteredReworkTasks?.length ?? member?.reworkCount ?? 0}
                             pendingCount={stats.pending}
                             todayCount={stats.today}
                             totalTasksCount={member?.totalTasks || 0}

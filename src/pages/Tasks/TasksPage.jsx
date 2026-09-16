@@ -3,10 +3,11 @@ import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../store/authSlice';
 import { useGetTasksQuery } from '../../api/tasks';
 import { useGetTeamsQuery } from '../../api/teams';
+import { useGetUsersQuery } from '../../api/users';
 import { GlobalTaskTable } from './GlobalTaskTable';
 import { TaskFilters } from './TaskFilters';
 import { TaskSchedule } from './TaskSchedule';
-import { ClipboardList, Filter, LayoutGrid, Calendar as CalendarIcon, List, Plus } from 'lucide-react';
+import { ClipboardList, Calendar as CalendarIcon, List, Plus } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { TaskCreateModal } from './TaskCreateModal';
 import { PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
@@ -19,6 +20,7 @@ export const TasksPage = () => {
     const [filters, setFilters] = useState({
         search: '',
         status: 'ALL',
+        assigneeId: '',
         page: 1,
         limit: 10,
         sortBy: 'createdAt',
@@ -31,8 +33,16 @@ export const TasksPage = () => {
     const meta = data?.meta || { total: 0, page: 1, limit: 10, totalPages: 0 };
     const teams = Array.isArray(teamsResult) ? teamsResult : (teamsResult?.data || []);
     const currentUserId = getCurrentUserId(user);
-    const canCreateInternalTask = PROJECT_MANAGEMENT_ROLES.includes(user?.role) ||
-        teams.some(team => isSameUser(team.teamLeadId, currentUserId) || isSameUser(team.teamLead?.id, currentUserId));
+    const isProjectManagementUser = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
+    const isTeamLead = teams.some(team =>
+        isSameUser(team.teamLeadId, currentUserId) || isSameUser(team.teamLead?.id, currentUserId)
+    );
+    const canFilterByAssignee = isProjectManagementUser || isTeamLead;
+    const canCreateInternalTask = isProjectManagementUser || isTeamLead;
+    const { data: usersResult = [], isFetching: isLoadingUsers } = useGetUsersQuery(undefined, {
+        skip: !canFilterByAssignee
+    });
+    const users = Array.isArray(usersResult) ? usersResult : (usersResult?.data || []);
 
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value, page: 1 })); // Reset to page 1 on filter
@@ -50,6 +60,7 @@ export const TasksPage = () => {
         setFilters({
             search: '',
             status: 'ALL',
+            assigneeId: '',
             page: 1,
             limit: 10,
             sortBy: 'createdAt',
@@ -111,6 +122,9 @@ export const TasksPage = () => {
                 filters={filters}
                 onFilterChange={handleFilterChange}
                 onReset={handleReset}
+                canFilterByAssignee={canFilterByAssignee}
+                users={users}
+                isLoadingUsers={isLoadingUsers}
             />
 
             {isLoading ? (

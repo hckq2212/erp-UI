@@ -20,12 +20,13 @@ export const MetricCardsGrid = ({
     dashboard,
 }) => {
     const statusCounts = member?.statusCounts || {};
-    // When isViewingMember is true, we ONLY show the individual member's personal metrics, not roleStats
-    const roleStats = !isViewingMember ? member?.roleStats : null;
+    const hasManagedProjects = (dashboard?.teamLead?.length || 0) > 0;
+    const canViewRoleStats = ['ADMIN', 'BOD', 'PM'].includes(userRole) || hasManagedProjects;
+    const roleStats = !isViewingMember && canViewRoleStats ? member?.roleStats : null;
     const selectedProject = projects.find(p => p.id === selectedProjectId);
 
     const doingVal = roleStats?.doingCount ?? member?.doingCount ?? 0;
-    const completedVal = roleStats?.completedCount ?? (Number(statusCounts.COMPLETED || 0) + Number(statusCounts.ACCEPTED || 0) + Number(statusCounts.DONE || 0));
+    const completedVal = roleStats?.completedCount ?? member?.completedCount ?? (Number(statusCounts.COMPLETED || 0) + Number(statusCounts.ACCEPTED || 0) + Number(statusCounts.INTERNAL_COMPLETED || 0));
     const overdueVal = roleStats?.overdueCount ?? overdueCount ?? (member?.overdueCount || member?.overdueTasks?.length || 0);
 
     const reworkVal = roleStats?.reworkCount ?? reworkCount ?? (member?.reworkCount || member?.reworkTasks?.length || 0);
@@ -42,7 +43,7 @@ export const MetricCardsGrid = ({
         projectLabel = 'Dự án hệ thống';
         projectCount = dashboard?.admin?.currentProjects?.length || projects?.length || member?.participatingProjects?.length || 0;
     } else if (!isViewingMember && (isTeamLead || dashboard?.teamLead?.length > 0)) {
-        projectLabel = 'Dự án quản lý';
+        projectLabel = 'Dự án tham gia';
         projectCount = dashboard?.teamLead?.length || projects?.length || member?.participatingProjects?.length || 0;
     }
 

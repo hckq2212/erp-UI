@@ -17,6 +17,7 @@ import { ReworkTaskModal } from '../../components/tasks/ReworkTaskModal';
 import { TaskAssignModal } from '../Projects/ProjectDetailPage/TaskAssignModal';
 import { getTaskDisplayName } from '../../utils/taskName';
 import { getCurrentUserId, isSameUser } from '../../utils/authUser';
+import { TaskDelegationPanel } from '../../components/tasks/TaskDelegationPanel';
 
 export const TaskDetailPage = () => {
     const { id } = useParams();
@@ -498,6 +499,8 @@ export const TaskDetailPage = () => {
                         )}
                 </div>
             </div>
+
+            <TaskDelegationPanel task={task} currentUser={user} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
