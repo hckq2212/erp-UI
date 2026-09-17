@@ -164,6 +164,16 @@ export const DashboardPage = () => {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
+                        {/* Project Selector (bộ lọc dự án) */}
+                        <div className="h-full flex mt-0">
+                            <ProjectSelector
+                                projects={availableProjects}
+                                selectedId={selectedProjectId}
+                                onSelect={setSelectedProjectId}
+                            />
+                        </div>
+
+                        {/* Month Selector (bộ lọc thời gian) */}
                         <MonthSelector
                             selectedDate={selectedDate}
                             onChange={setSelectedDate}

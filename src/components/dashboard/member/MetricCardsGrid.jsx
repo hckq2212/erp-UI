@@ -1,7 +1,6 @@
 import React from 'react';
 import { MetricCard } from './MetricCard';
-import { Clock, CheckCircle2, AlertCircle, RotateCcw, ClipboardCheck, BarChart3, Calendar, FileText, TrendingUp } from 'lucide-react';
-import { ProjectSelector } from '../ProjectSelector';
+import { Clock, CheckCircle2, AlertCircle, ClipboardCheck, RotateCcw } from 'lucide-react';
 
 export const MetricCardsGrid = ({
     member,
@@ -31,50 +30,11 @@ export const MetricCardsGrid = ({
 
     const reworkVal = roleStats?.reworkCount ?? reworkCount ?? (member?.reworkCount || member?.reworkTasks?.length || 0);
     const pendingVal = roleStats?.pendingCount ?? pendingCount ?? 0;
-    const totalTasksVal = roleStats?.totalTasks ?? totalTasksCount ?? (member?.totalTasks || 0);
-
-    const completionRate = totalTasksVal > 0 ? Math.round((completedVal / totalTasksVal) * 100) : 0;
 
     return (
         <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm space-y-4">
-            {/* Header Toolbar: Title + Integrated Project Selector */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#F38820] flex items-center justify-center font-black shrink-0">
-                        <BarChart3 className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">
-                                Chỉ số công việc
-                            </h3>
-                            {selectedProject && (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-[#F38820] truncate max-w-[180px]">
-                                    {selectedProject.name}
-                                </span>
-                            )}
-                        </div>
-                        <p className="text-xs font-medium text-slate-400">
-                            {selectedProject
-                                ? `Đang lọc dữ liệu theo dự án "${selectedProject.name}"`
-                                : 'Tổng quan chỉ số hoạt động theo vai trò của bạn'}
-                        </p>
-                    </div>
-                </div>
-
-                {onSelectProject && (
-                    <div className="w-full sm:w-auto min-w-[210px] shrink-0">
-                        <ProjectSelector
-                            projects={projects}
-                            selectedId={selectedProjectId}
-                            onSelect={onSelectProject}
-                        />
-                    </div>
-                )}
-            </div>
-
-            {/* 8 Task Metric Cards Grid: 4 Columns x 2 Rows */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Single Row 5 Metric Cards Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 <MetricCard
                     title="Đang thực hiện"
                     value={doingVal}
@@ -82,6 +42,16 @@ export const MetricCardsGrid = ({
                     color="blue"
                     sparklineData={[]}
                 />
+
+                {projectMetricOverride || (
+                    <MetricCard
+                        title="Việc cần duyệt"
+                        value={pendingVal}
+                        icon={ClipboardCheck}
+                        color="indigo"
+                        sparklineData={[]}
+                    />
+                )}
 
                 <MetricCard
                     title="Đã nghiệm thu"
@@ -104,40 +74,6 @@ export const MetricCardsGrid = ({
                     value={reworkVal}
                     icon={RotateCcw}
                     color="amber"
-                    sparklineData={[]}
-                />
-
-                <MetricCard
-                    title="Deadline hôm nay"
-                    value={todayCount}
-                    icon={Calendar}
-                    color="orange"
-                    sparklineData={[]}
-                />
-
-                {projectMetricOverride || (
-                    <MetricCard
-                        title="Chờ phê duyệt"
-                        value={pendingVal}
-                        icon={ClipboardCheck}
-                        color="indigo"
-                        sparklineData={[]}
-                    />
-                )}
-
-                <MetricCard
-                    title="Tỷ lệ hoàn thành"
-                    value={`${completionRate}%`}
-                    icon={TrendingUp}
-                    color="purple"
-                    sparklineData={[]}
-                />
-
-                <MetricCard
-                    title="Tổng số Task"
-                    value={totalTasksVal}
-                    icon={FileText}
-                    color="sky"
                     sparklineData={[]}
                 />
             </div>

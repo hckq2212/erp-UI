@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowUpRight, ClipboardCheck, UserRound, Coins, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, ClipboardCheck, UserRound } from 'lucide-react';
 import { useGetMyNotificationsQuery } from '../../api/notifications';
 import { TASK_STATUS } from '../../utils/enums';
 import { getTaskDisplayName } from '../../utils/taskName';
@@ -9,7 +9,6 @@ import { getCurrentUserId, isSameUser } from '../../utils/authUser';
 // New Modular Components
 import { TodayFocusCard } from './member/TodayFocusCard';
 import { MetricCardsGrid } from './member/MetricCardsGrid';
-import { MetricCard } from './member/MetricCard';
 import { ReworkZone } from './member/ReworkZone';
 import { TimelineList } from './member/TimelineList';
 import { HotProjectList } from './member/HotProjectList';
@@ -172,67 +171,29 @@ export const MemberView = ({
                     </div>
                 </div>
 
-                {/* Hàng ngang chứa Chỉ số công việc + Ví Vinicoin & Thưởng */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
-                    {/* chỉ số công việc (Col-8/9) */}
-                    <div className="lg:col-span-8 xl:col-span-9">
-                        <MetricCardsGrid
-                            member={member}
-                            projects={availableProjects}
-                            selectedProjectId={selectedProjectId}
-                            onSelectProject={onSelectProject}
-                            overdueCount={stats.overdue}
-                            reworkCount={filteredReworkTasks?.length ?? member?.reworkCount ?? 0}
-                            pendingCount={stats.pending}
-                            todayCount={stats.today}
-                            totalTasksCount={member?.totalTasks || 0}
-                            userRole={user?.role || user?.account?.role}
-                            isTeamLead={isTeamLead}
-                            isViewingMember={isViewingMember}
-                            dashboard={dashboard}
-                            projectMetricOverride={shouldReplaceProjectMetric ? (
-                                <ReviewSummaryCard
-                                    tasks={teamLeadReviewTasks}
-                                    onOpen={() => setIsReviewModalOpen(true)}
-                                />
-                            ) : null}
-                        />
-                    </div>
-
-                    {/* Phân khu Ví Vinicoin & Thưởng (Col-4/3 cùng hàng) */}
-                    <div className="lg:col-span-4 xl:col-span-3">
-                        <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm space-y-3 h-full flex flex-col justify-between">
-                            <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                                <div className="w-9 h-9 rounded-xl bg-orange-50 text-[#F38820] flex items-center justify-center font-black shrink-0">
-                                    <Coins size={18} />
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-black uppercase tracking-tight text-slate-900">
-                                        Ví Vinicoin & Thưởng
-                                    </h4>
-                                    <p className="text-xs font-medium text-slate-400">
-                                        Coin tích lũy & đã rút
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 my-auto">
-                                <MetricCard
-                                    title="Vinicoin Tổng"
-                                    value={member?.vinicoinTotal?.toLocaleString() || 0}
-                                    icon={Coins}
-                                    color="orange"
-                                    sparklineData={[]}
-                                />
-                                <MetricCard
-                                    title="Đã rút"
-                                    value={member?.vinicoinWithdrawn?.toLocaleString() || 0}
-                                    icon={TrendingUp}
-                                    color="sky"
-                                    sparklineData={[]}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                {/* Hàng ngang duy nhất hợp nhất Chỉ số công việc & Ví Vinicoin */}
+                <div className="w-full">
+                    <MetricCardsGrid
+                        member={member}
+                        projects={availableProjects}
+                        selectedProjectId={selectedProjectId}
+                        onSelectProject={onSelectProject}
+                        overdueCount={stats.overdue}
+                        reworkCount={filteredReworkTasks?.length ?? member?.reworkCount ?? 0}
+                        pendingCount={stats.pending}
+                        todayCount={stats.today}
+                        totalTasksCount={member?.totalTasks || 0}
+                        userRole={user?.role || user?.account?.role}
+                        isTeamLead={isTeamLead}
+                        isViewingMember={isViewingMember}
+                        dashboard={dashboard}
+                        projectMetricOverride={shouldReplaceProjectMetric ? (
+                            <ReviewSummaryCard
+                                tasks={teamLeadReviewTasks}
+                                onOpen={() => setIsReviewModalOpen(true)}
+                            />
+                        ) : null}
+                    />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-stretch">
