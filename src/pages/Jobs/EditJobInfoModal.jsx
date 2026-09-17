@@ -7,7 +7,7 @@ import { Input } from '../../components/ui/Input';
 import { useUpdateJobMutation } from '../../api/jobs';
 import { toast } from 'react-toastify';
 import { formatNumber, parseNumber } from '../../utils/format';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const jobInfoSchema = z.object({
     name: z.string().min(1, 'Tên hạng mục là bắt buộc'),
@@ -22,6 +22,7 @@ const jobInfoSchema = z.object({
 
 export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
     const [updateJob, { isLoading }] = useUpdateJobMutation();
+    const [isAiRelated, setIsAiRelated] = useState(false);
 
     const {
         register,
@@ -46,6 +47,7 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
 
     useEffect(() => {
         if (isOpen && job) {
+            setIsAiRelated(Boolean(job.isBriefVideo));
             reset({
                 name: job.name,
                 nickname: job.nickname || '',
@@ -59,14 +61,25 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
         }
     }, [isOpen, job, reset]);
 
+    // const costPriceValue = watch('costPrice');
+    // const vinicoinValue = watch('vinicoin');
+    // const timeToCompleteValue = watch('timeToComplete');
+    // const isBriefVideoValue = watch('isBriefVideo');
+
+    // useEffect(() => {
+    //     if (isBriefVideoValue) setValue('isQuotationItem', false);
+    // }, [isBriefVideoValue, setValue]);
     const costPriceValue = watch('costPrice');
     const vinicoinValue = watch('vinicoin');
     const timeToCompleteValue = watch('timeToComplete');
-    const isBriefVideoValue = watch('isBriefVideo');
 
-    useEffect(() => {
-        if (isBriefVideoValue) setValue('isQuotationItem', false);
-    }, [isBriefVideoValue, setValue]);
+    const handleAiRelatedChange = (checked) => {
+        setIsAiRelated(checked);
+        if (!checked) {
+            setValue('isBriefVideo', false);
+            setValue('isQuotationItem', true);
+        }
+    };
 
     const onSubmit = async (data) => {
         try {
@@ -146,15 +159,30 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
                     />
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">
-                        <input type="checkbox" {...register('isBriefVideo')} className="h-4 w-4 accent-blue-600" />
-                        Yêu cầu nhập brief video
+                <div className="space-y-3">
+                    <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700">
+                        <input
+                            type="checkbox"
+                            checked={isAiRelated}
+                            onChange={(e) => handleAiRelatedChange(e.target.checked)}
+                            className="h-4 w-4 accent-blue-600"
+                        />
+                        Công việc liên quan tới AI
                     </label>
-                    <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">
-                        <input type="checkbox" {...register('isQuotationItem')} disabled={isBriefVideoValue} className="h-4 w-4 accent-blue-600 disabled:opacity-50" />
-                        Được tính vào giá vốn dịch vụ
-                    </label>
+
+                    {isAiRelated && (
+                        <div className="grid grid-cols-1 gap-3 pl-4 md:grid-cols-2">
+                            <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">
+                                <input type="checkbox" {...register('isBriefVideo')} className="h-4 w-4 accent-blue-600" />
+                                Yêu cầu nhập brief video
+                            </label>
+                            <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">
+                                {/* <input type="checkbox" {...register('isQuotationItem')} disabled={isBriefVideoValue} className="h-4 w-4 accent-blue-600 disabled:opacity-50" /> */}
+                                <input type="checkbox" {...register('isQuotationItem')} className="h-4 w-4 accent-blue-600" />
+                                Được tính vào giá vốn dịch vụ
+                            </label>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4 border-t mt-6">

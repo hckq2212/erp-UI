@@ -141,7 +141,6 @@ const ServiceCard = ({ service, opportunityId, packageQuantity = 1 }) => (
             </div>
             <div className="text-right text-xs text-gray-500">
                 <p>Giá vốn: <strong>{formatNumber(service.costAtSale)} VNĐ</strong></p>
-                <p>Giá bán: <strong className="text-indigo-700">{formatNumber(service.sellingPrice)} VNĐ</strong></p>
             </div>
         </div>
         <JobPrices service={service} opportunityId={opportunityId} />
