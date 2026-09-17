@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, User, Users, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip } from 'lucide-react';
 import { useGetTaskQuery, useSubmitTaskResultMutation, useSubmitTaskResultFileMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetMeQuery } from '../../api/auth';
@@ -50,6 +50,7 @@ export const TaskDetailPage = () => {
 
     const [isReworkModalOpen, setIsReworkModalOpen] = useState(false);
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [isStaffingModalOpen, setIsStaffingModalOpen] = useState(false);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [editedDescription, setEditedDescription] = useState('');
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);
@@ -507,10 +508,34 @@ export const TaskDetailPage = () => {
                                 Nhắc việc
                             </Button>
                         )}
+
+                    {task?.performerType === 'INTERNAL' &&
+                        ['PENDING', 'DOING', 'REWORKING', 'OVERDUE'].includes(task?.status) &&
+                        task?.project?.team &&
+                        (isSameUser(task?.project?.team?.teamLead?.id, getCurrentUserId(user)) ||
+                            task?.project?.team?.members?.some(m => isSameUser(m.user?.id, getCurrentUserId(user)) && m.role === 'ACCOUNT') ||
+                            ['ADMIN', 'BOD'].includes(user?.role)) && (
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsStaffingModalOpen(true)}
+                                disabled={task?.supportRequestType === 'STAFFING' && task?.isSupportRequested && !task?.isSupportAccepted}
+                                className="rounded-2xl py-3 px-6 border-orange-200 text-orange-700 hover:bg-orange-50 flex items-center gap-2"
+                            >
+                                <UserPlus className="w-5 h-5 text-[#F38820]" />
+                                {task?.supportRequestType === 'STAFFING' && task?.isSupportRequested && !task?.isSupportAccepted
+                                    ? 'Đang chờ PM'
+                                    : 'Yêu cầu thêm người'}
+                            </Button>
+                        )}
                 </div>
             </div>
 
-            <TaskDelegationPanel task={task} currentUser={user} />
+            <TaskDelegationPanel
+                task={task}
+                currentUser={user}
+                isStaffingModalOpen={isStaffingModalOpen}
+                setIsStaffingModalOpen={setIsStaffingModalOpen}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">

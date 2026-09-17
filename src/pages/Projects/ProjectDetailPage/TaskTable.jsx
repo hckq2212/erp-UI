@@ -4,7 +4,7 @@ import { TaskAssignModal } from './TaskAssignModal';
 import { AddProjectServiceModal } from './AddProjectServiceModal';
 import { useNavigate } from 'react-router-dom';
 import { useGetTeamMembersQuery } from '../../../api/teams';
-import { useApproveByCustomerMutation, useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondSubtaskPlanMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation } from '../../../api/tasks';
+import { useApproveByCustomerMutation, useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation } from '../../../api/tasks';
 import { cn } from '../../../utils/cn';
 import { PROJECT_MANAGEMENT_ROLES, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../../utils/enums';
 import { toast } from 'react-toastify';
@@ -12,8 +12,6 @@ import { formatDateTime, getRemainingTime } from '../../../utils/format';
 import { useGetMeQuery } from '../../../api/auth';
 import { InlineTaskNickname } from '../../../components/tasks/InlineTaskNickname';
 import { ResolveStaffingRequestModal } from '../../../components/tasks/ResolveStaffingRequestModal';
-import { Button } from '../../../components/ui/Button';
-import { Modal } from '../../../components/ui/Modal';
 import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
 
 export const TaskTable = ({ tasks = [], project }) => {
@@ -27,7 +25,6 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [requestReturnSupport] = useRequestReturnSupportMutation();
     const [bulkUnassignTasks, { isLoading: isUnassigning }] = useBulkUnassignTasksMutation();
     const [approveByCustomer, { isLoading: isApprovingByCustomer }] = useApproveByCustomerMutation();
-    const [respondSubtaskPlan, { isLoading: isRespondingSubtaskPlan }] = useRespondSubtaskPlanMutation();
 
     const currentUserId = getCurrentUserId(user);
     const isAdminOrBOD = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
@@ -48,13 +45,11 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [assigningTask, setAssigningTask] = useState(null);
     const [staffingTask, setStaffingTask] = useState(null);
     const [isStaffingResolutionOpen, setIsStaffingResolutionOpen] = useState(false);
-    const [reviewingSubtaskPlanTask, setReviewingSubtaskPlanTask] = useState(null);
     const [showAddServiceModal, setShowAddServiceModal] = useState(false);
     const [selectedTasks, setSelectedTasks] = useState([]);
     const [selectionMode, setSelectionMode] = useState('assign');
     const [expandedGroups, setExpandedGroups] = useState({});
     const [approvingTaskId, setApprovingTaskId] = useState(null);
-    const [respondingSubtaskPlanId, setRespondingSubtaskPlanId] = useState(null);
 
     const toggleGroup = (groupId) => {
         setExpandedGroups(prev => ({
@@ -63,37 +58,10 @@ export const TaskTable = ({ tasks = [], project }) => {
         }));
     };
 
-    const handleRespondSubtaskPlan = async (task, action) => {
-        const note = action === 'REJECT'
-            ? window.prompt('Nhập lý do cần điều chỉnh phương án:')
-            : undefined;
-        if (action === 'REJECT' && note === null) return;
-
-        setRespondingSubtaskPlanId(task.id);
-        try {
-            await respondSubtaskPlan({
-                id: task.id,
-                projectId: project.id,
-                action,
-                note: note?.trim() || undefined,
-            }).unwrap();
-            toast.success(action === 'APPROVE'
-                ? 'Đã duyệt và kích hoạt phương án subtask'
-                : 'Đã yêu cầu Account điều chỉnh phương án');
-            setReviewingSubtaskPlanTask(null);
-        } catch (error) {
-            toast.error(error?.data?.message || 'Không thể xử lý phương án subtask');
-        } finally {
-            setRespondingSubtaskPlanId(null);
-        }
-    };
-
     if (!canSeeTable) return null;
 
     const isTaskBatchAssignable = (task) => {
         if (!isProjectInProgress) return false;
-        if (task.parentTaskId && task.subtaskPlanStatus && task.subtaskPlanStatus !== 'APPROVED') return false;
-
         const validStatuses = ['PENDING', 'REJECTED', 'AWAITING_SUPPORT'];
         if (!validStatuses.includes(task.status)) return false;
 
@@ -478,16 +446,11 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                     <span className="font-medium text-gray-700">{task.assignee?.fullName || task.vendorId || '---'}</span>
                                                 </td>
                                                 <td className="px-3 py-2 text-center w-fit">
-                                                    {task.parentTaskId && task.subtaskPlanStatus && task.subtaskPlanStatus !== 'APPROVED' ? (
-                                                        <span className="inline-flex whitespace-nowrap rounded-lg border border-amber-100 bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700">
-                                                            {task.subtaskPlanStatus === 'PENDING_APPROVAL' ? 'Chờ PM duyệt' : 'Bản nháp'}
-                                                        </span>
-                                                    ) : getStatusBadge(task.status)}
+                                                    {getStatusBadge(task.status)}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
                                                         {isProjectInProgress &&
-                                                            (!task.parentTaskId || !task.subtaskPlanStatus || task.subtaskPlanStatus === 'APPROVED') &&
                                                             (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
                                                             <button
                                                                 onClick={() => setAssigningTask(task)}
@@ -568,19 +531,6 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                                 >
                                                                     <UserPlus className="h-3.5 w-3.5" />
                                                                     Bổ sung nhân sự
-                                                                </button>
-                                                            )}
-
-                                                        {task.subtaskPlanStatus === 'PENDING_APPROVAL' &&
-                                                            (isSameUser(task.subtaskPlanReviewerId, currentUserId) || hasStaffingAdminOverride) && (
-                                                                <button
-                                                                    onClick={(event) => {
-                                                                        event.stopPropagation();
-                                                                        setReviewingSubtaskPlanTask(task);
-                                                                    }}
-                                                                    className="inline-flex whitespace-nowrap items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-bold uppercase text-emerald-600 transition-all hover:bg-emerald-600 hover:text-white active:scale-95"
-                                                                >
-                                                                    Duyệt phân bổ
                                                                 </button>
                                                             )}
 
@@ -667,96 +617,6 @@ export const TaskTable = ({ tasks = [], project }) => {
                 team={project?.team ? { ...project.team, members } : null}
                 projectId={project?.id}
             />
-
-            <Modal
-                isOpen={Boolean(reviewingSubtaskPlanTask)}
-                onClose={() => setReviewingSubtaskPlanTask(null)}
-                title="Duyệt phương án phân bổ subtask"
-                className="max-w-2xl"
-            >
-                {reviewingSubtaskPlanTask && (() => {
-                    const planSubtasks = tasks.filter(candidate =>
-                        isSameUser(candidate.parentTaskId, reviewingSubtaskPlanTask.id)
-                    );
-                    const totalPercent = planSubtasks.reduce(
-                        (total, subtask) => total + Number(subtask.allocationPercent || 0),
-                        0
-                    );
-                    const ownerHasSubtask = planSubtasks.some(subtask =>
-                        isSameUser(
-                            subtask.assigneeId || subtask.assignee?.id,
-                            reviewingSubtaskPlanTask.assigneeId
-                        )
-                    );
-                    const reviewerHasSubtask = planSubtasks.some(subtask =>
-                        isSameUser(subtask.assigneeId || subtask.assignee?.id, currentUserId)
-                    );
-
-                    return (
-                        <div className="space-y-4">
-                            <div className="rounded-xl border border-orange-100 bg-orange-50 px-4 py-3">
-                                <p className="font-bold text-orange-900">
-                                    {reviewingSubtaskPlanTask.nickname || reviewingSubtaskPlanTask.name}
-                                </p>
-                                <p className="mt-1 text-sm text-orange-700">
-                                    Tổng phân bổ: {totalPercent.toLocaleString('vi-VN')}% · Người phụ trách task cha {ownerHasSubtask ? 'đã có' : 'chưa có'} phần việc
-                                </p>
-                            </div>
-
-                            <div className="max-h-80 space-y-2 overflow-y-auto">
-                                {planSubtasks.map(subtask => (
-                                    <div
-                                        key={subtask.id}
-                                        className="grid grid-cols-[1fr_auto] gap-3 rounded-xl border border-gray-100 bg-slate-50 px-4 py-3"
-                                    >
-                                        <div className="min-w-0">
-                                            <p className="truncate font-semibold text-gray-900">{subtask.name}</p>
-                                            <p className="mt-1 text-xs text-gray-500">
-                                                {subtask.assignee?.fullName || 'Chưa có người thực hiện'}
-                                            </p>
-                                        </div>
-                                        <span className="font-black text-orange-700">
-                                            {Number(subtask.allocationPercent || 0).toLocaleString('vi-VN')}%
-                                        </span>
-                                    </div>
-                                ))}
-                                {planSubtasks.length === 0 && (
-                                    <p className="rounded-xl border border-dashed border-gray-200 py-8 text-center text-sm text-gray-500">
-                                        Không tìm thấy danh sách subtask trong dữ liệu dự án.
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="flex justify-end gap-3">
-                                {reviewerHasSubtask && !hasStaffingAdminOverride && (
-                                    <p className="mr-auto max-w-sm text-xs font-semibold text-amber-700">
-                                        Bạn có phần việc trong phương án nên ADMIN/BOD phải duyệt thay.
-                                    </p>
-                                )}
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleRespondSubtaskPlan(reviewingSubtaskPlanTask, 'REJECT')}
-                                    disabled={isRespondingSubtaskPlan}
-                                    className="border-red-200 text-red-600 hover:bg-red-50"
-                                >
-                                    Yêu cầu sửa
-                                </Button>
-                                <Button
-                                    onClick={() => handleRespondSubtaskPlan(reviewingSubtaskPlanTask, 'APPROVE')}
-                                    isLoading={isRespondingSubtaskPlan && respondingSubtaskPlanId === reviewingSubtaskPlanTask.id}
-                                    disabled={
-                                        planSubtasks.length === 0 ||
-                                        (reviewerHasSubtask && !hasStaffingAdminOverride)
-                                    }
-                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
-                                >
-                                    Duyệt và kích hoạt
-                                </Button>
-                            </div>
-                        </div>
-                    );
-                })()}
-            </Modal>
 
             {/* Batch Action Bar */}
             {selectedTasks.length > 0 && (

@@ -1,20 +1,19 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Pencil, Percent, Plus, Send, UserPlus, Users, XCircle } from 'lucide-react';
+import { CheckCircle2, ListOrdered, Pencil, Percent, Plus, UserPlus, Users, XCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import {
     useCreateSubtaskMutation,
     useRequestTaskStaffingMutation,
-    useRespondSubtaskPlanMutation,
     useRespondTaskStaffingMutation,
-    useSubmitSubtaskPlanMutation,
     useUpdateSubtaskMutation,
 } from '../../api/tasks';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { ResolveStaffingRequestModal } from './ResolveStaffingRequestModal';
-import { formatNumber } from '../../utils/format';
-import { getCurrentUserId, isSameUser } from '../../utils/authUser';
+import { SubtaskRoadmapModal } from './SubtaskRoadmapModal';
+import { formatNumber, formatDate } from '../../utils/format';
+import { getCurrentUserId, isSameUser, getUserAccountRole } from '../../utils/authUser';
 import { TASK_STATUS_LABELS } from '../../utils/enums';
 
 const emptySubtaskForm = {
@@ -27,20 +26,24 @@ const emptySubtaskForm = {
 const SPLITTABLE_TASK_STATUSES = new Set(['PENDING', 'DOING', 'REWORKING', 'OVERDUE']);
 const SPLITTABLE_STATUS_TEXT = 'Chờ thực hiện, Đang thực hiện, Đang làm lại hoặc Quá hạn';
 
-const getAllocationPercent = (subtask, rewardPool) => {
+const getAllocationPercent = subtask => {
     const percent = Number(subtask?.allocationPercent || 0);
-    if (percent > 0) return percent;
-    const legacyAllocation = Number(subtask?.vinicoinAllocation || 0);
-    return rewardPool > 0 && legacyAllocation > 0
-        ? (legacyAllocation / rewardPool) * 100
-        : 0;
+    return percent > 0 ? percent : 0;
 };
 
-export const TaskDelegationPanel = ({ task, currentUser }) => {
+export const TaskDelegationPanel = ({
+    task,
+    currentUser,
+    isStaffingModalOpen: externalIsStaffingModalOpen,
+    setIsStaffingModalOpen: externalSetIsStaffingModalOpen,
+}) => {
     const navigate = useNavigate();
-    const [isStaffingModalOpen, setIsStaffingModalOpen] = useState(false);
+    const [internalIsStaffingModalOpen, setInternalIsStaffingModalOpen] = useState(false);
+    const isStaffingModalOpen = externalIsStaffingModalOpen !== undefined ? externalIsStaffingModalOpen : internalIsStaffingModalOpen;
+    const setIsStaffingModalOpen = externalSetIsStaffingModalOpen || setInternalIsStaffingModalOpen;
     const [isAddStaffingMemberModalOpen, setIsAddStaffingMemberModalOpen] = useState(false);
     const [isSubtaskModalOpen, setIsSubtaskModalOpen] = useState(false);
+    const [isRoadmapModalOpen, setIsRoadmapModalOpen] = useState(false);
     const [editingSubtaskId, setEditingSubtaskId] = useState(null);
     const [staffingNote, setStaffingNote] = useState('');
     const [subtaskForm, setSubtaskForm] = useState(emptySubtaskForm);
@@ -48,23 +51,25 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
     const [respondStaffing, { isLoading: isRespondingStaffing }] = useRespondTaskStaffingMutation();
     const [createSubtask, { isLoading: isCreatingSubtask }] = useCreateSubtaskMutation();
     const [updateSubtask, { isLoading: isUpdatingSubtask }] = useUpdateSubtaskMutation();
-    const [submitSubtaskPlan, { isLoading: isSubmittingPlan }] = useSubmitSubtaskPlanMutation();
-    const [respondSubtaskPlan, { isLoading: isRespondingPlan }] = useRespondSubtaskPlanMutation();
 
     const currentUserId = getCurrentUserId(currentUser);
+    const userRole = getUserAccountRole(currentUser);
     const team = task?.project?.team;
     const currentMembership = team?.members?.find(member => isSameUser(member.user?.id, currentUserId));
+    const isPM = currentMembership?.role === 'PROJECT_MANAGER' || isSameUser(task?.project?.projectManager?.id, currentUserId);
     const isAccount = isSameUser(team?.teamLead?.id, currentUserId) || currentMembership?.role === 'ACCOUNT';
-    const isAdminOverride = ['ADMIN', 'BOD'].includes(currentUser?.role);
-    const canDelegate = isAccount || isAdminOverride;
+    const isAdminOverride = ['ADMIN', 'BOD'].includes(userRole);
+    const canDelegate = isAccount || isPM || isAdminOverride;
+    const isStaffRole = !userRole ||
+        userRole.startsWith('STAFF') ||
+        ['STAFF', 'STAFF_A', 'STAFF_B', 'STAFF_C', 'STAFF_D', 'EMPLOYEE', 'USER'].includes(userRole);
+    const isManagementRole = ['ADMIN', 'BOD', 'PROJECT_MANAGER', 'ACCOUNT', 'PM', 'TEAM_LEAD'].includes(userRole);
+    const canViewAllocationPercent = !isStaffRole && (canDelegate || isManagementRole);
     const isPendingStaffingRequest = task?.supportRequestType === 'STAFFING' &&
         task?.isSupportRequested &&
         !task?.isSupportAccepted;
     const canRespondStaffing = isPendingStaffingRequest &&
         (isSameUser(task?.supportLeadId, currentUserId) || isAdminOverride);
-    const isSubtaskPlanLocked = ['PENDING_APPROVAL', 'APPROVED'].includes(task?.subtaskPlanStatus);
-    const canRespondSubtaskPlan = task?.subtaskPlanStatus === 'PENDING_APPROVAL' &&
-        (isSameUser(task?.subtaskPlanReviewerId, currentUserId) || isAdminOverride);
 
     const assignableMembers = useMemo(() => (
         (team?.members || []).filter(member =>
@@ -73,23 +78,21 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
     ), [team?.members]);
 
     const subtasks = task?.subtasks || [];
-    const rewardPool = Number(task?.vinicoinBudget ?? task?.job?.vinicoin ?? 0);
     const allocatedPercent = subtasks.reduce(
-        (total, subtask) => total + getAllocationPercent(subtask, rewardPool),
+        (total, subtask) => total + getAllocationPercent(subtask),
         0
     );
     const remainingPercent = Math.max(0, 100 - allocatedPercent);
-    const parentAssigneeHasSubtask = subtasks.some(subtask =>
-        isSameUser(subtask.assigneeId || subtask.assignee?.id, task?.assigneeId)
+    const isSubtaskDefinitionLocked = subtask => Boolean(
+        subtask?.result ||
+        subtask?.actualStartDate ||
+        subtask?.actualEndDate ||
+        subtask?.lastSubmittedById ||
+        subtask?.rewardVinicoin != null ||
+        subtask?.reviews?.length ||
+        subtask?.iterations?.length ||
+        ['AWAITING_REVIEW', 'INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED', 'REWORKING'].includes(subtask?.status)
     );
-    const reviewerHasSubtask = subtasks.some(subtask =>
-        isSameUser(subtask.assigneeId || subtask.assignee?.id, currentUserId)
-    );
-    const canSubmitSubtaskPlan = canDelegate &&
-        subtasks.length > 0 &&
-        Math.round(allocatedPercent * 100) === 10_000 &&
-        parentAssigneeHasSubtask &&
-        !isSubtaskPlanLocked;
     const isSplittableStatus = SPLITTABLE_TASK_STATUSES.has(task?.status);
     const projectManager = team?.members?.find(member =>
         member.role === 'PROJECT_MANAGER' && member.user?.id
@@ -108,9 +111,7 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
         !projectManager ? 'Dự án chưa có PM phụ trách để nhận yêu cầu.' : ''
     );
     const subtaskBlockedReason = sharedActionBlockedReason || (
-        isSubtaskPlanLocked
-            ? 'Phương án phân bổ đang chờ duyệt hoặc đã được duyệt.'
-            : !task?.job
+        !task?.job
             ? 'Task chưa có hạng mục để xác định quỹ Vinicoin.'
             : !task?.assigneeId
                 ? 'Cần phân công người thực hiện task chính trước khi chia subtask.'
@@ -129,23 +130,18 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                         <div className="flex items-center gap-2">
-                            <Percent className="h-5 w-5 text-[#F38820]" />
-                            <h2 className="text-lg font-bold text-gray-900">Tỷ trọng công việc của subtask</h2>
+                            <h2 className="text-lg font-bold text-gray-900">
+                                Thông tin công việc
+                            </h2>
                         </div>
                         <p className="mt-2 text-sm text-gray-500">
                             Thuộc công việc: {task.parentTask?.nickname || task.parentTask?.name || 'Task gốc'}
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                        <span className="rounded-xl bg-orange-50 px-4 py-2 font-black text-orange-700">
-                            {getAllocationPercent(
-                                task,
-                                Number(task.parentTask?.vinicoinBudget ?? task.job?.vinicoin ?? 0)
-                            ).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%
-                        </span>
-                        {task.subtaskPlanStatus && task.subtaskPlanStatus !== 'APPROVED' && (
-                            <span className="rounded-xl bg-amber-50 px-4 py-2 text-sm font-bold text-amber-700">
-                                {task.subtaskPlanStatus === 'PENDING_APPROVAL' ? 'Chờ PM duyệt' : 'Bản nháp phân bổ'}
+                        {canViewAllocationPercent && (
+                            <span className="rounded-xl bg-orange-50 px-4 py-2 font-black text-orange-700">
+                                {getAllocationPercent(task).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%
                             </span>
                         )}
                         {task.rewardVinicoin != null && (
@@ -197,7 +193,7 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
     const handleCreateSubtask = async () => {
         const allocationPercent = Number(String(subtaskForm.allocationPercent).replace(',', '.'));
         const editingSubtask = subtasks.find(subtask => subtask.id === editingSubtaskId);
-        const editablePercent = remainingPercent + getAllocationPercent(editingSubtask, rewardPool);
+        const editablePercent = remainingPercent + getAllocationPercent(editingSubtask);
         if (!subtaskForm.name.trim() || !subtaskForm.assigneeId) {
             toast.error('Vui lòng nhập tên và chọn người thực hiện');
             return;
@@ -221,7 +217,7 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
                     projectId: task.project.id,
                     ...payload,
                 }).unwrap();
-                toast.success('Đã cập nhật subtask trong phương án phân bổ');
+                toast.success('Đã cập nhật công việc con');
             } else {
                 await createSubtask({
                     id: task.id,
@@ -249,7 +245,7 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
         setSubtaskForm({
             name: subtask.name || '',
             assigneeId: subtask.assigneeId || subtask.assignee?.id || '',
-            allocationPercent: String(getAllocationPercent(subtask, rewardPool)),
+            allocationPercent: String(getAllocationPercent(subtask)),
             description: subtask.description || '',
         });
         setIsSubtaskModalOpen(true);
@@ -261,116 +257,22 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
         setSubtaskForm(emptySubtaskForm);
     };
 
-    const handleSubmitSubtaskPlan = async () => {
-        try {
-            await submitSubtaskPlan({ id: task.id, projectId: task.project.id }).unwrap();
-            toast.success('Đã gửi phương án phân bổ cho PM duyệt');
-        } catch (error) {
-            toast.error(error?.data?.message || 'Không thể gửi phương án phân bổ');
-        }
-    };
-
-    const handleRespondSubtaskPlan = async action => {
-        const note = action === 'REJECT'
-            ? window.prompt('Nhập lý do cần điều chỉnh phương án:')
-            : undefined;
-        if (action === 'REJECT' && note === null) return;
-
-        try {
-            await respondSubtaskPlan({
-                id: task.id,
-                projectId: task.project.id,
-                action,
-                note: note?.trim() || undefined,
-            }).unwrap();
-            toast.success(action === 'APPROVE' ? 'Đã duyệt và kích hoạt các subtask' : 'Đã yêu cầu điều chỉnh phương án');
-        } catch (error) {
-            toast.error(error?.data?.message || 'Không thể xử lý phương án phân bổ');
-        }
-    };
-
     return (
         <section className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm md:p-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <h2 className="text-lg font-bold text-gray-900">Danh sách công việc con</h2>
-                {canDelegate && (!staffingBlockedReason || !subtaskBlockedReason) && (
+                {canDelegate && !subtaskBlockedReason && (
                     <div className="flex flex-wrap gap-2">
-                        {!staffingBlockedReason && (
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsStaffingModalOpen(true)}
-                                disabled={isPendingStaffingRequest}
-                                className="border-orange-200 text-orange-700 hover:bg-orange-50"
-                            >
-                                <UserPlus className="mr-2 h-4 w-4" />
-                                {isPendingStaffingRequest ? 'Đang chờ PM' : 'Yêu cầu thêm người'}
-                            </Button>
-                        )}
-                        {!subtaskBlockedReason && (
-                            <Button
-                                onClick={openCreateSubtaskModal}
-                                className="bg-[#F38820] text-white hover:bg-[#D97010] focus:ring-orange-500"
-                            >
-                                <Plus className="mr-2 h-4 w-4" />
-                                Thêm subtask
-                            </Button>
-                        )}
+                        <Button
+                            onClick={openCreateSubtaskModal}
+                            className="bg-[#F38820] text-white hover:bg-[#D97010] focus:ring-orange-500"
+                        >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Thêm subtask
+                        </Button>
                     </div>
                 )}
             </div>
-
-            {task.subtaskPlanStatus === 'PENDING_APPROVAL' && (
-                <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <p className="font-bold text-amber-900">Phương án 100% đang chờ PM duyệt</p>
-                            <p className="mt-1 text-sm text-amber-700">Các subtask chưa được kích hoạt và chưa thể nộp kết quả.</p>
-                        </div>
-                        {canRespondSubtaskPlan && (
-                            <div className="flex flex-col items-start gap-2 md:items-end">
-                                {reviewerHasSubtask && !isAdminOverride && (
-                                    <p className="max-w-sm text-xs font-semibold text-amber-700 md:text-right">
-                                        Bạn có phần việc trong phương án nên ADMIN/BOD phải duyệt thay.
-                                    </p>
-                                )}
-                                <div className="flex gap-2">
-                                <Button
-                                    onClick={() => handleRespondSubtaskPlan('APPROVE')}
-                                    isLoading={isRespondingPlan}
-                                    disabled={reviewerHasSubtask && !isAdminOverride}
-                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
-                                >
-                                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    Duyệt phương án
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleRespondSubtaskPlan('REJECT')}
-                                    disabled={isRespondingPlan}
-                                    className="border-red-200 text-red-600 hover:bg-red-50"
-                                >
-                                    <XCircle className="mr-2 h-4 w-4" />
-                                    Yêu cầu sửa
-                                </Button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {task.subtaskPlanStatus === 'APPROVED' && (
-                <div className="mt-5 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
-                    <CheckCircle2 className="h-5 w-5 shrink-0" />
-                    PM đã duyệt phương án. Các subtask đã được kích hoạt.
-                </div>
-            )}
-
-            {task.subtaskPlanStatus === 'DRAFT' && task.subtaskPlanReviewNote && (
-                <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                    <span className="font-bold">PM yêu cầu điều chỉnh:</span> {task.subtaskPlanReviewNote}
-                </div>
-            )}
 
             {isPendingStaffingRequest && (
                 <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -421,27 +323,19 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
             )}
 
             <div className="mt-6">
-                <div className="mb-3 flex flex-wrap items-center justify-end gap-3">
-                    <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-gray-400">{subtasks.length} công việc</span>
-                        {canSubmitSubtaskPlan && (
-                            <Button
-                                onClick={handleSubmitSubtaskPlan}
-                                isLoading={isSubmittingPlan}
-                                className="bg-[#F38820] text-white hover:bg-[#D97010]"
-                            >
-                                <Send className="mr-2 h-4 w-4" />
-                                Gửi PM duyệt
-                            </Button>
-                        )}
-                    </div>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    {canViewAllocationPercent ? (
+                        <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+                            <span className="rounded-lg bg-orange-50 px-3 py-1.5 text-orange-700">
+                                Đã phân bổ: {allocatedPercent.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%
+                            </span>
+                            <span className="rounded-lg bg-blue-50 px-3 py-1.5 text-blue-700">
+                                Người làm task gốc: {remainingPercent.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%
+                            </span>
+                        </div>
+                    ) : <div />}
+                    <span className="text-sm font-semibold text-gray-400">{subtasks.length} công việc</span>
                 </div>
-
-                {Math.round(allocatedPercent * 100) === 10_000 && !parentAssigneeHasSubtask && !isSubtaskPlanLocked && (
-                    <p className="mb-3 text-sm font-semibold text-amber-700">
-                        Người chịu trách nhiệm task cha cần nhận ít nhất một subtask trước khi gửi PM duyệt.
-                    </p>
-                )}
 
                 {subtasks.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center">
@@ -449,38 +343,83 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
                         <p className="mt-1 text-xs text-gray-400">Account có thể chia công việc sau khi PM bổ sung đủ nhân sự.</p>
                     </div>
                 ) : (
-                    <div className="space-y-3">
-                        {subtasks.map(subtask => (
-                            <div key={subtask.id} className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => navigate(`/tasks/${subtask.id}`)}
-                                    className="grid min-w-0 flex-1 grid-cols-1 gap-3 rounded-2xl border border-gray-100 bg-slate-50 p-4 text-left transition-colors hover:border-orange-200 hover:bg-orange-50/40 md:grid-cols-[1fr_auto_auto] md:items-center"
+                    <div className="space-y-3.5">
+                        {subtasks.map(subtask => {
+                            const percent = getAllocationPercent(subtask);
+
+                            return (
+                                <div
+                                    key={subtask.id}
+                                    className="group relative rounded-2xl border border-slate-200/90 bg-white p-4 transition-all duration-200 hover:border-orange-300 hover:shadow-md hover:shadow-orange-500/5"
                                 >
-                                    <div className="min-w-0">
-                                        <p className="truncate font-bold text-gray-900">{subtask.name}</p>
-                                        <p className="mt-1 text-xs text-gray-500">{subtask.assignee?.fullName || 'Chưa phân công'}</p>
+                                    <div className="grid grid-cols-1 gap-3.5 md:grid-cols-12 md:items-center">
+                                        {/* TÊN CÔNG VIỆC CON & NGƯỜI THỰC HIỆN */}
+                                        <div className={`min-w-0 ${canViewAllocationPercent ? 'md:col-span-5' : 'md:col-span-8'}`}>
+                                            <span className="mb-1 block text-[10px] font-black uppercase tracking-wider text-gray-400">
+                                                TÊN CÔNG VIỆC CON
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => navigate(`/tasks/${subtask.id}`)}
+                                                className="text-left group-hover:text-[#F38820] transition-colors block w-full"
+                                            >
+                                                <p className="truncate font-bold text-gray-900 text-sm">{subtask.name}</p>
+                                            </button>
+                                            <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
+                                                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-orange-100 text-[9px] font-black text-orange-700">
+                                                    {(subtask.assignee?.fullName || 'U').charAt(0).toUpperCase()}
+                                                </span>
+                                                <span className="truncate font-medium text-gray-600">
+                                                    {subtask.assignee?.fullName || 'Chưa phân công'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* TRỌNG SỐ (%) - ẨN KHI LÀ STAFF */}
+                                        {canViewAllocationPercent && (
+                                            <div className="md:col-span-3">
+                                                <span className="mb-1 block text-[10px] font-black uppercase tracking-wider text-gray-400">
+                                                    TRỌNG SỐ
+                                                </span>
+                                                <span className="inline-block rounded-xl bg-orange-50 px-2.5 py-1 text-xs font-black text-orange-700 border border-orange-100/50">
+                                                    {percent.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* TRẠNG THÁI & HẠN */}
+                                        <div className="md:col-span-3">
+                                            <span className="mb-1 block text-[10px] font-black uppercase tracking-wider text-gray-400">
+                                                TRẠNG THÁI
+                                            </span>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-xs font-bold text-gray-700">
+                                                    {TASK_STATUS_LABELS[subtask.status] || subtask.status}
+                                                </span>
+                                                {subtask.dueDate && (
+                                                    <span className="text-[10px] font-semibold text-gray-400">
+                                                        Hạn: {formatDate(subtask.dueDate)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-end md:col-span-1">
+                                            {canDelegate && !isSubtaskDefinitionLocked(subtask) && (
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() => openEditSubtaskModal(subtask)}
+                                                    className="rounded-xl border-orange-200 p-2 text-orange-700 hover:bg-orange-50"
+                                                    title="Chỉnh sửa công việc con"
+                                                >
+                                                    <Pencil className="h-3.5 w-3.5" />
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
-                                    <span className="text-xs font-bold text-gray-500">
-                                        {task.subtaskPlanStatus === 'PENDING_APPROVAL'
-                                            ? 'Chờ PM duyệt'
-                                            : TASK_STATUS_LABELS[subtask.status] || subtask.status}
-                                    </span>
-                                    <span className="font-black text-orange-700">
-                                        {getAllocationPercent(subtask, rewardPool).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%
-                                    </span>
-                                </button>
-                                {canDelegate && !isSubtaskPlanLocked && (
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => openEditSubtaskModal(subtask)}
-                                        className="shrink-0 border-orange-200 px-3 text-orange-700 hover:bg-orange-50"
-                                    >
-                                        <Pencil className="h-4 w-4" />
-                                    </Button>
-                                )}
-                            </div>
-                        ))}
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -529,14 +468,13 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
             <Modal
                 isOpen={isSubtaskModalOpen}
                 onClose={closeSubtaskModal}
-                title={editingSubtaskId ? 'Chỉnh sửa subtask' : 'Tạo subtask trong phương án'}
+                title={editingSubtaskId ? 'Chỉnh sửa công việc con' : 'Tạo công việc trong phương án'}
                 className="max-w-xl"
             >
                 <div className="space-y-4">
                     <div className="rounded-xl bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-800">
                         Tỷ trọng có thể phân bổ: {(remainingPercent + getAllocationPercent(
-                            subtasks.find(subtask => subtask.id === editingSubtaskId),
-                            rewardPool
+                            subtasks.find(subtask => subtask.id === editingSubtaskId)
                         )).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%
                     </div>
                     <div>
@@ -610,6 +548,18 @@ export const TaskDelegationPanel = ({ task, currentUser }) => {
                     </div>
                 </div>
             </Modal>
+
+            <SubtaskRoadmapModal
+                isOpen={isRoadmapModalOpen}
+                onClose={() => setIsRoadmapModalOpen(false)}
+                task={task}
+                assignableMembers={assignableMembers}
+                initialSubtasks={subtasks}
+                onSave={(updatedSubtasks) => {
+                    toast.success('Đã lưu lộ trình công việc con');
+                    setIsRoadmapModalOpen(false);
+                }}
+            />
         </section>
     );
 };
