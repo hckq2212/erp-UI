@@ -192,6 +192,80 @@ export const tasksApi = api.injectEndpoints({
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
+    requestTaskStaffing: builder.mutation({
+      query: ({ id, note }) => ({
+        url: `/tasks/${id}/request-staffing`,
+        method: 'POST',
+        body: { note },
+      }),
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : null,
+      ].filter(Boolean),
+    }),
+    respondTaskStaffing: builder.mutation({
+      query: ({ id, action }) => ({
+        url: `/tasks/${id}/respond-staffing`,
+        method: 'PATCH',
+        body: { action },
+      }),
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : null,
+      ].filter(Boolean),
+    }),
+    createSubtask: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/tasks/${id}/subtasks`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        result?.id ? { type: 'Tasks', id: result.id } : null,
+        projectId ? { type: 'Projects', id: projectId } : null,
+        { type: 'Dashboard' },
+      ].filter(Boolean),
+    }),
+    updateSubtask: builder.mutation({
+      query: ({ id, name, assigneeId, allocationPercent, description }) => ({
+        url: `/tasks/${id}/subtask`,
+        method: 'PATCH',
+        body: { name, assigneeId, allocationPercent, description },
+      }),
+      invalidatesTags: (result, error, { id, parentTaskId, projectId }) => [
+        { type: 'Tasks', id },
+        parentTaskId ? { type: 'Tasks', id: parentTaskId } : null,
+        { type: 'Tasks', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : null,
+      ].filter(Boolean),
+    }),
+    submitSubtaskPlan: builder.mutation({
+      query: ({ id }) => ({
+        url: `/tasks/${id}/subtask-plan/submit`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : null,
+      ].filter(Boolean),
+    }),
+    respondSubtaskPlan: builder.mutation({
+      query: ({ id, action, note }) => ({
+        url: `/tasks/${id}/subtask-plan/respond`,
+        method: 'PATCH',
+        body: { action, note },
+      }),
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : null,
+      ].filter(Boolean),
+    }),
     assignSupportTeam: builder.mutation({
       query: ({ id, teamId }) => ({
         url: `/tasks/${id}/assign-support-team`,
@@ -314,6 +388,12 @@ export const {
   useAssessExtraTaskMutation,
   useCreateInternalTaskMutation,
   useRequestSupportMutation,
+  useRequestTaskStaffingMutation,
+  useRespondTaskStaffingMutation,
+  useCreateSubtaskMutation,
+  useUpdateSubtaskMutation,
+  useSubmitSubtaskPlanMutation,
+  useRespondSubtaskPlanMutation,
   useAssignSupportTeamMutation,
   useRespondToSupportMutation,
   useReturnSupportMutation,

@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, User, Users, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip } from 'lucide-react';
 import { useGetTaskQuery, useSubmitTaskResultMutation, useSubmitTaskResultFileMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetMeQuery } from '../../api/auth';
@@ -17,6 +17,9 @@ import { ReworkTaskModal } from '../../components/tasks/ReworkTaskModal';
 import { TaskAssignModal } from '../Projects/ProjectDetailPage/TaskAssignModal';
 import { getTaskDisplayName } from '../../utils/taskName';
 import { getCurrentUserId, isSameUser } from '../../utils/authUser';
+import { TaskDelegationPanel } from '../../components/tasks/TaskDelegationPanel';
+
+const COMPLETED_SUBTASK_STATUSES = new Set(['INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED']);
 
 export const TaskDetailPage = () => {
     const { id } = useParams();
@@ -40,9 +43,14 @@ export const TaskDetailPage = () => {
     const isProjectLead = isSameUser(currentUserId, task?.project?.team?.teamLead?.id);
     const canManageProjectTask = PROJECT_MANAGEMENT_ROLES.includes(user?.role) || isProjectLead;
     const canEditDescription = canManageProjectTask;
+    const incompleteSubtasks = (task?.subtasks || []).filter(
+        subtask => !COMPLETED_SUBTASK_STATUSES.has(subtask.status)
+    );
+    const isParentBlockedBySubtasks = !task?.parentTaskId && incompleteSubtasks.length > 0;
 
     const [isReworkModalOpen, setIsReworkModalOpen] = useState(false);
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [isStaffingModalOpen, setIsStaffingModalOpen] = useState(false);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [editedDescription, setEditedDescription] = useState('');
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);
@@ -385,6 +393,8 @@ export const TaskDetailPage = () => {
 
                             <Button
                                 onClick={() => navigate(`/tasks/${id}/review`)}
+                                disabled={isParentBlockedBySubtasks}
+                                title={isParentBlockedBySubtasks ? 'Cần hoàn tất tất cả subtask trước khi duyệt task chính' : undefined}
                                 className="rounded-2xl py-3 px-6 shadow-lg shadow-blue-100 flex items-center gap-2"
                             >
                                 <CheckCircle2 className="w-5 h-5" />
@@ -397,6 +407,8 @@ export const TaskDetailPage = () => {
                         <Button
                             onClick={handleCustomerApprove}
                             isLoading={isApprovingByCustomer}
+                            disabled={isParentBlockedBySubtasks}
+                            title={isParentBlockedBySubtasks ? 'Cần hoàn tất tất cả subtask trước khi hoàn thành task chính' : undefined}
                             className="rounded-2xl py-3 px-6 shadow-lg shadow-emerald-100 bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2"
                         >
                             <CheckCircle2 className="w-5 h-5" />
@@ -496,8 +508,34 @@ export const TaskDetailPage = () => {
                                 Nhắc việc
                             </Button>
                         )}
+
+                    {task?.performerType === 'INTERNAL' &&
+                        ['PENDING', 'DOING', 'REWORKING', 'OVERDUE'].includes(task?.status) &&
+                        task?.project?.team &&
+                        (isSameUser(task?.project?.team?.teamLead?.id, getCurrentUserId(user)) ||
+                            task?.project?.team?.members?.some(m => isSameUser(m.user?.id, getCurrentUserId(user)) && m.role === 'ACCOUNT') ||
+                            ['ADMIN', 'BOD'].includes(user?.role)) && (
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsStaffingModalOpen(true)}
+                                disabled={task?.supportRequestType === 'STAFFING' && task?.isSupportRequested && !task?.isSupportAccepted}
+                                className="rounded-2xl py-3 px-6 border-orange-200 text-orange-700 hover:bg-orange-50 flex items-center gap-2"
+                            >
+                                <UserPlus className="w-5 h-5 text-[#F38820]" />
+                                {task?.supportRequestType === 'STAFFING' && task?.isSupportRequested && !task?.isSupportAccepted
+                                    ? 'Đang chờ PM'
+                                    : 'Yêu cầu thêm người'}
+                            </Button>
+                        )}
                 </div>
             </div>
+
+            <TaskDelegationPanel
+                task={task}
+                currentUser={user}
+                isStaffingModalOpen={isStaffingModalOpen}
+                setIsStaffingModalOpen={setIsStaffingModalOpen}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
@@ -626,6 +664,11 @@ export const TaskDetailPage = () => {
                     })()}
 
                     <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8 overflow-hidden">
+                        {isParentBlockedBySubtasks && (
+                            <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                                Task chính chưa thể nộp kết quả hoặc hoàn thành vì còn {incompleteSubtasks.length} subtask chưa hoàn tất.
+                            </div>
+                        )}
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
@@ -635,7 +678,8 @@ export const TaskDetailPage = () => {
                             </div>
 
                             {(task.status === 'DOING' || task.status === 'REJECTED' || task.status === 'REWORKING' || task.status === 'OVERDUE') &&
-                                task.assigneeId !== null && (
+                                task.assigneeId !== null &&
+                                !isParentBlockedBySubtasks && (
                                     <button
                                         onClick={() => setIsResultModalOpen(true)}
                                         className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors"

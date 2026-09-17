@@ -38,7 +38,7 @@ export const TaskCalendar = ({ tasks = [] }) => {
     const selectedTasks = tasksByDay[format(selectedDate, 'yyyy-MM-dd')] || [];
 
     return (
-        <div className="bg-white p-4 rounded-[0.75rem] shadow-sm flex flex-col lg:flex-row gap-4 h-full h-fit">
+        <div className="bg-white p-4 rounded-[0.75rem] shadow-sm flex flex-col lg:flex-row gap-4 h-auto lg:h-[300px] overflow-hidden">
             {/* Left: Calendar Section */}
             <div className="flex-1 flex flex-col min-w-[220px]">
                 <div className="flex items-center justify-between mb-4">
@@ -108,12 +108,12 @@ export const TaskCalendar = ({ tasks = [] }) => {
             </div>
 
             {/* Right: Selected Day Tasks */}
-            <div className="lg:w-56 xl:w-64 overflow-hidden flex flex-col pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l border-gray-50 lg:pl-5">
+            <div className="lg:w-56 xl:w-64 min-h-0 overflow-hidden flex flex-col pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l border-gray-50 lg:pl-5">
                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">
                     Ngày {format(selectedDate, 'dd/MM')}
                 </h4>
                 
-                <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-[200px]">
+                <div className="flex-1 min-h-0 max-h-[260px] lg:max-h-none overflow-y-auto overscroll-contain pr-1 scrollbar-hide">
                     <div className="relative space-y-6 before:absolute before:left-[47px] before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-100">
                         <AnimatePresence mode="popLayout">
                             {selectedTasks.length > 0 ? selectedTasks.map((task, index) => {

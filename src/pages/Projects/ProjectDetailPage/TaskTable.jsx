@@ -11,6 +11,7 @@ import { toast } from 'react-toastify';
 import { formatDateTime, getRemainingTime } from '../../../utils/format';
 import { useGetMeQuery } from '../../../api/auth';
 import { InlineTaskNickname } from '../../../components/tasks/InlineTaskNickname';
+import { ResolveStaffingRequestModal } from '../../../components/tasks/ResolveStaffingRequestModal';
 import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
 
 export const TaskTable = ({ tasks = [], project }) => {
@@ -27,6 +28,7 @@ export const TaskTable = ({ tasks = [], project }) => {
 
     const currentUserId = getCurrentUserId(user);
     const isAdminOrBOD = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
+    const hasStaffingAdminOverride = ['ADMIN', 'BOD'].includes(user?.role);
     const isProjectLead = isSameUser(currentUserId, project?.team?.teamLead?.id);
     const isSupportLead = tasks.some(t => isSameUser(t.supportLeadId, currentUserId));
     const isHelper = tasks.some(t => isSameUser(t.helperId, currentUserId));
@@ -41,6 +43,8 @@ export const TaskTable = ({ tasks = [], project }) => {
         assigneeId: 'ALL'
     });
     const [assigningTask, setAssigningTask] = useState(null);
+    const [staffingTask, setStaffingTask] = useState(null);
+    const [isStaffingResolutionOpen, setIsStaffingResolutionOpen] = useState(false);
     const [showAddServiceModal, setShowAddServiceModal] = useState(false);
     const [selectedTasks, setSelectedTasks] = useState([]);
     const [selectionMode, setSelectionMode] = useState('assign');
@@ -58,7 +62,6 @@ export const TaskTable = ({ tasks = [], project }) => {
 
     const isTaskBatchAssignable = (task) => {
         if (!isProjectInProgress) return false;
-
         const validStatuses = ['PENDING', 'REJECTED', 'AWAITING_SUPPORT'];
         if (!validStatuses.includes(task.status)) return false;
 
@@ -447,7 +450,8 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
-                                                        {isProjectInProgress && (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
+                                                        {isProjectInProgress &&
+                                                            (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
                                                             <button
                                                                 onClick={() => setAssigningTask(task)}
                                                                 className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all active:scale-95 text-xs font-bold uppercase"
@@ -512,6 +516,23 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                                 {isApprovingByCustomer && approvingTaskId === task.id ? 'Đang duyệt...' : 'Khách hàng duyệt'}
                                                             </button>
                                                         )}
+
+                                                        {task.supportRequestType === 'STAFFING' &&
+                                                            task.isSupportRequested &&
+                                                            !task.isSupportAccepted &&
+                                                            (isSameUser(task.supportLeadId, currentUserId) || hasStaffingAdminOverride) && (
+                                                                <button
+                                                                    onClick={(event) => {
+                                                                        event.stopPropagation();
+                                                                        setStaffingTask(task);
+                                                                        setIsStaffingResolutionOpen(true);
+                                                                    }}
+                                                                    className="inline-flex whitespace-nowrap items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-bold uppercase text-emerald-600 transition-all hover:bg-emerald-600 hover:text-white active:scale-95"
+                                                                >
+                                                                    <UserPlus className="h-3.5 w-3.5" />
+                                                                    Bổ sung nhân sự
+                                                                </button>
+                                                            )}
 
                                                         {/* Original Team Member Request Support */}
                                                         {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && isSameUser(currentUserId, task.assigneeId) && !task.isSupportRequested && (
@@ -588,6 +609,14 @@ export const TaskTable = ({ tasks = [], project }) => {
                     project={project}
                 />
             )}
+
+            <ResolveStaffingRequestModal
+                isOpen={isStaffingResolutionOpen}
+                onClose={() => setIsStaffingResolutionOpen(false)}
+                task={staffingTask}
+                team={project?.team ? { ...project.team, members } : null}
+                projectId={project?.id}
+            />
 
             {/* Batch Action Bar */}
             {selectedTasks.length > 0 && (
