@@ -7,6 +7,8 @@ import { calcVideoPrice } from '../../utils/videoPricing'
 import { RESOLUTION_TO_MODE } from '../../utils/videoOptions'
 import { ChevronDown, ChevronRight, ImagePlus, History, Trash2, Zap, RotateCcw } from 'lucide-react'
 import { useGetTasksQuery } from '../../api/tasks'
+import { useGetMeQuery } from '../../api/auth'
+import { getCurrentUserId } from '../../utils/authUser'
 
 const STATUS_LABEL = {
   queued: 'Đang chờ xử lý...',
@@ -56,9 +58,17 @@ export default function FromCreateVideo({ createVideoHook }) {
   const [sourceType, setSourceType] = useState('project')
   const [contextId, setContextId] = useState('')
   const [taskId, setTaskId] = useState('')
-  const { data: tasksData, isFetching: tasksLoading } = useGetTasksQuery(
-    { excludeStatus: 'PENDING,ACCEPTED,AWAITING_REVIEW,INTERNAL_COMPLETED,COMPLETED,CANCELLED', limit: 100 },
+  const { data: currentUser, isLoading: currentUserLoading } = useGetMeQuery()
+  const currentUserId = getCurrentUserId(currentUser)
+  const { data: tasksData, isFetching: isFetchingTasks, isError: isTasksError } = useGetTasksQuery(
+    {
+      assigneeId: currentUserId,
+      excludeStatus: 'ACCEPTED,AWAITING_REVIEW,INTERNAL_COMPLETED,COMPLETED',
+      limit: 500,
+    },
+    { skip: !currentUserId },
   )
+  const tasksLoading = currentUserLoading || isFetchingTasks
   const assignedTasks = tasksData?.data ?? []
   const contexts = useMemo(() => {
     const byId = new Map()
@@ -73,7 +83,7 @@ export default function FromCreateVideo({ createVideoHook }) {
   )
   const projectId = sourceType === 'project' ? contextId : ''
   const opportunityId = sourceType === 'opportunity' ? contextId : ''
-  const hasNoContext = !tasksLoading && contexts.length === 0
+  const hasNoContext = !isTasksError && !tasksLoading && contexts.length === 0
   const hasNoTask = !!contextId && !tasksLoading && contextTasks.length === 0
   const selectedTask = contextTasks.find(task => String(task.id) === String(taskId))
 
@@ -444,7 +454,11 @@ export default function FromCreateVideo({ createVideoHook }) {
             <button type="button" onClick={() => { setSourceType('opportunity'); setContextId(''); setTaskId('') }} className={`rounded-lg border px-3 py-2 text-sm font-medium ${sourceType === 'opportunity' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-600'}`}>Cơ hội</button>
           </div>
           <div className="shrink-0">
-            {hasNoContext ? (
+            {isTasksError ? (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                Không thể tải danh sách công việc được phân công. Vui lòng thử lại.
+              </div>
+            ) : hasNoContext ? (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
                 Bạn chưa có {sourceType === 'project' ? 'dự án' : 'cơ hội'} nào được phân công.
               </div>

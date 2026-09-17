@@ -62,6 +62,11 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
     const costPriceValue = watch('costPrice');
     const vinicoinValue = watch('vinicoin');
     const timeToCompleteValue = watch('timeToComplete');
+    const isBriefVideoValue = watch('isBriefVideo');
+
+    useEffect(() => {
+        if (isBriefVideoValue) setValue('isQuotationItem', false);
+    }, [isBriefVideoValue, setValue]);
 
     const onSubmit = async (data) => {
         try {
@@ -147,8 +152,8 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
                         Yêu cầu nhập brief video
                     </label>
                     <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">
-                        <input type="checkbox" {...register('isQuotationItem')} className="h-4 w-4 accent-blue-600" />
-                        Được tính vào báo giá
+                        <input type="checkbox" {...register('isQuotationItem')} disabled={isBriefVideoValue} className="h-4 w-4 accent-blue-600 disabled:opacity-50" />
+                        Được tính vào giá vốn dịch vụ
                     </label>
                 </div>
 

@@ -1,24 +1,35 @@
 import { useEffect, useState } from 'react';
-import { Briefcase, Package, Save } from 'lucide-react';
+import { Briefcase, CheckCircle2, ExternalLink, Package, Save } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { formatNumber, parseNumber } from '../../../utils/format';
 import { useUpdateOpportunityServiceMutation } from '../../../api/opportunityService';
 
+const normalizeMoneyInput = value => {
+    const digits = String(value ?? '').replace(/\D/g, '');
+    if (!digits) return '';
+    return digits.replace(/^0+(?=\d)/, '');
+};
+
 const JobPrices = ({ service, opportunityId }) => {
     const [drafts, setDrafts] = useState({});
     const [updateOpportunityService, { isLoading }] = useUpdateOpportunityServiceMutation();
+    const visibleJobs = (service.jobs || []).filter(job =>
+        job.isBriefVideo || Number(job.job?.costPrice || 0) <= 0
+    );
+    const editableJobs = visibleJobs.filter(job =>
+        !job.isBriefVideo && job.isQuotationItem && Number(job.job?.costPrice || 0) <= 0
+    );
 
     useEffect(() => {
-        setDrafts(Object.fromEntries((service.jobs || []).map(job => [job.id, {
-            costAtSale: String(job.costAtSale || 0),
-            sellingPrice: String(job.sellingPrice || 0),
+        setDrafts(Object.fromEntries(editableJobs.map(job => [job.id, {
+            costAtSale: String(Math.round(Number(job.costAtSale || 0))),
         }])));
-    }, [service.jobs]);
+    }, [service.jobs]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    if (!service.jobs?.length) return null;
+    if (!visibleJobs.length) return null;
 
     const changePrice = (jobId, field, value) => {
-        const raw = value.replace(/\D/g, '');
+        const raw = normalizeMoneyInput(value);
         setDrafts(previous => ({
             ...previous,
             [jobId]: { ...previous[jobId], [field]: raw },
@@ -30,13 +41,12 @@ const JobPrices = ({ service, opportunityId }) => {
             await updateOpportunityService({
                 id: service.id,
                 opportunityId,
-                jobs: service.jobs.filter(job => job.isQuotationItem).map(job => ({
+                jobs: editableJobs.map(job => ({
                     id: job.id,
                     costAtSale: parseNumber(drafts[job.id]?.costAtSale || '0'),
-                    sellingPrice: parseNumber(drafts[job.id]?.sellingPrice || '0'),
                 })),
             }).unwrap();
-            toast.success('Đã cập nhật giá các hạng mục');
+            toast.success('Đã cập nhật giá vốn các hạng mục');
         } catch (error) {
             toast.error(error?.data?.message || 'Không thể cập nhật giá hạng mục');
         }
@@ -44,34 +54,80 @@ const JobPrices = ({ service, opportunityId }) => {
 
     return (
         <div className="mt-3 space-y-2 border-t border-gray-200 pt-3">
-            {service.jobs.map(job => (
+            {visibleJobs.map(job => {
+                const canEditCost = editableJobs.some(item => item.id === job.id);
+                const approvedResults = (job.tasks || []).filter(task =>
+                    ['INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED'].includes(task.status) && task.result?.url
+                );
+
+                return (
                 <div key={job.id} className="rounded-lg border border-gray-100 bg-white p-3">
                     <div className="mb-2 flex items-center justify-between gap-3">
                         <div>
                             <p className="text-sm font-medium text-gray-900">{job.name}</p>
                             {job.briefVideo && <p className="mt-1 whitespace-pre-wrap text-xs text-blue-700">Brief: {job.briefVideo}</p>}
                         </div>
-                        {!job.isQuotationItem && <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700">Không tính báo giá</span>}
+                        {job.isBriefVideo && <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700">Không tính vào giá vốn báo giá</span>}
                     </div>
-                    {job.isQuotationItem ? (
-                        <div className="grid grid-cols-2 gap-3">
+                    {canEditCost ? (
+                        <div>
                             <label className="text-xs text-gray-500">Giá vốn
-                                <input value={formatNumber(drafts[job.id]?.costAtSale || '0')} onChange={event => changePrice(job.id, 'costAtSale', event.target.value)} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900" />
-                            </label>
-                            <label className="text-xs text-gray-500">Giá bán
-                                <input value={formatNumber(drafts[job.id]?.sellingPrice || '0')} onChange={event => changePrice(job.id, 'sellingPrice', event.target.value)} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900" />
+                                <input
+                                    name={`job-${job.id}-costAtSale`}
+                                    inputMode="numeric"
+                                    autoComplete="off"
+                                    value={formatNumber(drafts[job.id]?.costAtSale || '0')}
+                                    onFocus={event => event.target.select()}
+                                    onChange={event => changePrice(job.id, 'costAtSale', event.target.value)}
+                                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900"
+                                />
                             </label>
                         </div>
                     ) : (
                         <p className="text-xs text-gray-600">Chi phí thực tế: <strong>{formatNumber(job.costAtSale)} VNĐ</strong></p>
                     )}
+                    {job.isBriefVideo && approvedResults.length > 0 && (
+                        <div className="mt-3 space-y-3 border-t border-emerald-100 pt-3">
+                            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
+                                <CheckCircle2 className="h-4 w-4" />
+                                Kết quả Video AI demo đã được PM xác nhận
+                            </div>
+                            {approvedResults.map(task => (
+                                <div key={task.id} className="overflow-hidden rounded-lg border border-emerald-100 bg-emerald-50/40 p-2.5">
+                                    <video
+                                        src={task.result.url}
+                                        controls
+                                        preload="metadata"
+                                        className="max-h-72 w-full rounded-md bg-black"
+                                    />
+                                    <div className="mt-2 flex items-center justify-between gap-3">
+                                        <p className="truncate text-xs font-medium text-gray-700">
+                                            {task.result.name || task.nickname || task.name || 'Video AI demo'}
+                                        </p>
+                                        <a
+                                            href={task.result.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="flex shrink-0 items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                                        >
+                                            Mở video <ExternalLink className="h-3.5 w-3.5" />
+                                        </a>
+                                    </div>
+                                    {task.result.note && <p className="mt-1 text-xs text-gray-500">{task.result.note}</p>}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
-            ))}
-            <div className="flex justify-end">
-                <button type="button" onClick={save} disabled={isLoading} className="flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
-                    <Save className="h-4 w-4" /> {isLoading ? 'Đang lưu...' : 'Lưu giá hạng mục'}
-                </button>
-            </div>
+                );
+            })}
+            {editableJobs.length > 0 && (
+                <div className="flex justify-end">
+                    <button type="button" onClick={save} disabled={isLoading} className="flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                        <Save className="h-4 w-4" /> {isLoading ? 'Đang lưu...' : 'Lưu giá vốn hạng mục'}
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

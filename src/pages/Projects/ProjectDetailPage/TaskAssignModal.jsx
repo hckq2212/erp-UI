@@ -8,6 +8,7 @@ import { useGetVendorsByJobQuery } from '../../../api/vendors';
 import { uploadToCloudinary } from '../../../utils/cloudinary';
 import { toast } from 'react-toastify';
 import { getTaskDisplayName } from '../../../utils/taskName';
+import { useGetUsersQuery } from '../../../api/users';
 
 export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     const isBulk = Array.isArray(task);
@@ -17,10 +18,15 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     const isSupportMode = !isBulk && task?.isSupportRequested;
     const projectId = project?.id;
     const teamId = project?.team?.id;
+    const isVideoDemoTask = Boolean(representativeTask?.opportunityServiceJob?.isBriefVideo);
     const fileInputRef = useRef(null);
 
     // Normal members
     const { data: members = [] } = useGetTeamMembersQuery(teamId, { skip: !teamId });
+    const { data: allEmployees = [], isLoading: isLoadingEmployees } = useGetUsersQuery(undefined, {
+        skip: !isVideoDemoTask
+    });
+    const activeEmployees = allEmployees.filter(employee => employee.account?.isActive === true);
 
     // Lazy fetch for support teams
     const [fetchTeams, { data: allTeams = [], isLoading: isLoadingTeams }] = useLazyGetTeamsQuery();
@@ -254,7 +260,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                             }}
                         >
                             {/* Performer Type Selector */}
-                            {!formData.isTeamAssignment && (
+                            {!formData.isTeamAssignment && !isVideoDemoTask && (
                                 <div className="space-y-4">
                                     <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">Hình thức thực hiện</label>
                                     <div className="flex p-1.5 bg-slate-100/80 rounded-2xl relative">
@@ -290,7 +296,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                     <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">
                                         {formData.isTeamAssignment ? 'Team hỗ trợ' : (formData.performerType === 'INTERNAL' ? 'Người thực hiện' : 'Đối tác Vendor')}
                                     </label>
-                                    {!isBulk && ((isSupportMode || (representativeTask?.status === 'DOING' || representativeTask?.status === 'REWORKING') && !representativeTask?.isSupportRequested) && !representativeTask?.supportTeamId) && (
+                                    {!isVideoDemoTask && !isBulk && ((isSupportMode || (representativeTask?.status === 'DOING' || representativeTask?.status === 'REWORKING') && !representativeTask?.isSupportRequested) && !representativeTask?.supportTeamId) && (
                                         <label className="flex items-center gap-2 cursor-pointer group/check">
                                             <div className="relative flex items-center justify-center">
                                                 <input
@@ -342,7 +348,9 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                         <option value="">
                                             {formData.isTeamAssignment
                                                 ? (isLoadingTeams ? 'Đang tải danh sách team...' : 'Chọn team hỗ trợ')
-                                                : (formData.performerType === 'VENDOR' && isLoadingVendors
+                                                : (isVideoDemoTask && isLoadingEmployees
+                                                    ? 'Đang tải danh sách nhân viên...'
+                                                    : formData.performerType === 'VENDOR' && isLoadingVendors
                                                     ? 'Đang tải danh sách...'
                                                     : `Chọn ${formData.performerType === 'INTERNAL' ? 'người thực hiện' : 'vendor'}`)}
                                         </option>
@@ -352,9 +360,13 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                             ))
                                         ) : (
                                             formData.performerType === 'INTERNAL' ? (
-                                                (isSupportMode && representativeTask.supportTeamId ? supportMembers : members).map(m => (
-                                                    <option key={m.user.id} value={m.user.id}>{m.user.fullName}</option>
-                                                ))
+                                                isVideoDemoTask
+                                                    ? activeEmployees.map(employee => (
+                                                        <option key={employee.id} value={employee.id}>{employee.fullName}</option>
+                                                    ))
+                                                    : (isSupportMode && representativeTask.supportTeamId ? supportMembers : members).map(m => (
+                                                        <option key={m.user.id} value={m.user.id}>{m.user.fullName}</option>
+                                                    ))
                                             ) : (
                                                 vendors.map(v => (
                                                     <option key={v.id} value={v.id}>{v.name}</option>
