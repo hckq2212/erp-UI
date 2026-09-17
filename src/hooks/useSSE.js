@@ -61,6 +61,7 @@ export const useSSE = () => {
             'project_updated': ['Projects'],
             'project_deleted': ['Projects'],
             'task_review_updated': ['TaskReviews', 'Tasks'],
+            'task_result_check_updated': ['TaskResultChecks'],
           };
 
           const tagsToInvalidate = eventToTags[payload.event] || [];

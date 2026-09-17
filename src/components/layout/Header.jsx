@@ -130,7 +130,7 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                             <p className={`text-xs ${!n.isRead ? 'font-bold text-gray-900' : 'font-medium text-gray-600'} truncate`}>
                               {n.title}
                             </p>
-                            <p className="text-[11px] text-gray-500 line-clamp-2 mt-1 leading-relaxed">
+                            <p className="text-[11px] text-gray-500 line-clamp-2 mt-1 leading-relaxed whitespace-pre-line">
                               {n.content}
                             </p>
                             <div className="flex items-center gap-2 mt-2">

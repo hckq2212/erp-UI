@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     Briefcase,
     Calendar,
@@ -10,7 +10,6 @@ import {
     Plus,
     Send,
     Trash2,
-    Upload,
     XCircle
 } from 'lucide-react';
 import {
@@ -22,7 +21,7 @@ import {
     useUpdateProjectProductDescriptionMutation,
 } from '../../../api/projects';
 import { useGetMeQuery } from '../../../api/auth';
-import { getFilePreviewUrl, uploadToCloudinary } from '../../../utils/cloudinary';
+import { getFilePreviewUrl } from '../../../utils/cloudinary';
 import { toast } from 'react-toastify';
 import { Modal } from '../../../components/ui/Modal';
 
@@ -41,9 +40,6 @@ const STATUS_COLORS = {
 };
 
 const MAIN_STATUSES = ['APPROVED', 'PENDING_REVIEW', 'DRAFT'];
-const PRODUCT_DESCRIPTION_ALLOWED_EXTENSIONS = ['pdf', 'docx', 'xlsx'];
-const PRODUCT_DESCRIPTION_ACCEPT = '.pdf,.docx,.xlsx';
-const PRODUCT_DESCRIPTION_MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const formatDateTime = (value) => {
     if (!value) return 'Chưa có';
@@ -60,95 +56,48 @@ const formatDateTime = (value) => {
 const emptyProduct = () => ({
     id: null,
     productName: '',
-    sourceType: 'LINK',
-    link: '',
-    file: null,
-    existingFile: null,
+    specs: [{ key: '', value: '' }],
+    note: '',
+    docUrl: '',
 });
 
 const toEditableProduct = (item) => ({
     id: item?.id || null,
     productName: item?.productName || '',
-    sourceType: item?.sourceType || 'LINK',
-    link: item?.sourceType === 'LINK' ? item?.sourceUrl || '' : '',
-    file: null,
-    existingFile: item?.sourceType === 'FILE'
-        ? {
-            name: item?.sourceName || item?.sourceUrl || 'File đính kèm',
-            url: item?.sourceUrl || '',
-            size: item?.size,
-            publicId: item?.publicId,
-        }
-        : null,
+    specs: Array.isArray(item?.specs) && item.specs.length > 0
+        ? item.specs.map((spec) => ({ key: spec.key || '', value: spec.value || '' }))
+        : [{ key: '', value: '' }],
+    note: item?.note || '',
+    docUrl: item?.docUrl || '',
 });
 
-const getProductSource = (product) => {
-    if (product.sourceType === 'LINK') {
-        return product.link?.trim()
-            ? {
-                sourceType: 'LINK',
-                sourceName: product.link.trim(),
-                sourceUrl: product.link.trim(),
-            }
-            : null;
-    }
-
-    if (product.existingFile?.url) {
-        return {
-            sourceType: 'FILE',
-            sourceName: product.existingFile.name,
-            sourceUrl: product.existingFile.url,
-            size: product.existingFile.size,
-            publicId: product.existingFile.publicId,
-        };
-    }
-
-    return null;
-};
-
-const getFileExtension = (fileName = '') => {
-    const cleanName = fileName.split('?')[0].split('#')[0];
-    const extension = cleanName.includes('.') ? cleanName.split('.').pop() : '';
-    return extension.toLowerCase();
-};
-
-const validateProductDescriptionFile = (file) => {
-    if (!file) return;
-
-    const extension = getFileExtension(file.name);
-    if (!PRODUCT_DESCRIPTION_ALLOWED_EXTENSIONS.includes(extension)) {
-        throw new Error('Chỉ được upload file .pdf, .docx hoặc .xlsx');
-    }
-
-    if (file.size >= PRODUCT_DESCRIPTION_MAX_FILE_SIZE) {
-        throw new Error('Dung lượng mỗi file mô tả sản phẩm phải dưới 10MB');
-    }
-};
-
-const ProductSourceLink = ({ item }) => {
-    const sourceUrl = item?.sourceUrl || '';
-    const sourceType = item?.sourceType || 'LINK';
-    const sourceName = item?.sourceName || sourceUrl || 'Không có nguồn';
-
-    if (!sourceUrl) {
-        return (
-            <span className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-gray-400">
-                <FileText className="w-4 h-4 shrink-0" />
-                <span className="truncate">{sourceName}</span>
-            </span>
-        );
-    }
+const ProductSpecsView = ({ item }) => {
+    const specs = Array.isArray(item?.specs) ? item.specs : [];
 
     return (
-        <a
-            href={getFilePreviewUrl(sourceUrl, sourceType)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
-        >
-            {sourceType === 'LINK' ? <LinkIcon className="w-4 h-4 shrink-0" /> : <FileText className="w-4 h-4 shrink-0" />}
-            <span className="truncate">{sourceName}</span>
-        </a>
+        <div className="min-w-0 space-y-1">
+            {specs.length > 0 && (
+                <div className="grid gap-x-3 gap-y-0.5 sm:grid-cols-2">
+                    {specs.map((spec, idx) => (
+                        <div key={idx} className="text-xs text-gray-600">
+                            <span className="font-bold text-gray-700">{spec.key}:</span> {spec.value}
+                        </div>
+                    ))}
+                </div>
+            )}
+            {item?.note && <p className="text-xs italic text-gray-400">{item.note}</p>}
+            {item?.docUrl && (
+                <a
+                    href={getFilePreviewUrl(item.docUrl, 'LINK')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                >
+                    <LinkIcon className="w-3 h-3 shrink-0" />
+                    <span className="truncate">Tài liệu</span>
+                </a>
+            )}
+        </div>
     );
 };
 
@@ -256,9 +205,9 @@ const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onRe
 
             <div className="mt-4 space-y-2">
                 {(Array.isArray(submission.items) ? submission.items : []).map((item, index) => (
-                    <div key={item?.id || index} className="flex flex-col gap-1 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="min-w-0 text-sm font-bold text-gray-800">{item?.productName || 'Chưa có tên sản phẩm'}</p>
-                        <ProductSourceLink item={item} />
+                    <div key={item?.id || index} className="flex flex-col gap-2 rounded-lg bg-white p-3 sm:flex-row sm:items-start sm:justify-between">
+                        <p className="min-w-0 shrink-0 text-sm font-bold text-gray-800">{item?.productName || 'Chưa có tên sản phẩm'}</p>
+                        <ProductSpecsView item={item} />
                     </div>
                 ))}
             </div>
@@ -325,9 +274,9 @@ const ProductDescriptionHistoryModal = ({ isOpen, onClose, submissions, canEditS
                             <div className="mt-4 space-y-2">
                                 {Array.isArray(submission.items) && submission.items.length > 0 ? (
                                     submission.items.map((item, index) => (
-                                        <div key={item?.id || index} className="flex flex-col gap-1 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
-                                            <p className="min-w-0 text-sm font-bold text-gray-800">{item?.productName || 'Chưa có tên sản phẩm'}</p>
-                                            <ProductSourceLink item={item} />
+                                        <div key={item?.id || index} className="flex flex-col gap-2 rounded-lg bg-white p-3 sm:flex-row sm:items-start sm:justify-between">
+                                            <p className="min-w-0 shrink-0 text-sm font-bold text-gray-800">{item?.productName || 'Chưa có tên sản phẩm'}</p>
+                                            <ProductSpecsView item={item} />
                                         </div>
                                     ))
                                 ) : (
@@ -360,7 +309,6 @@ const ProductDescriptionSection = ({ project }) => {
     const [submitSubmission, { isLoading: isSubmitting }] = useSubmitProjectProductDescriptionMutation();
     const [approveSubmission, { isLoading: isApproving }] = useApproveProjectProductDescriptionMutation();
     const [rejectSubmission, { isLoading: isRejecting }] = useRejectProjectProductDescriptionMutation();
-    const fileInputsRef = useRef({});
 
     const hasPendingSubmission = submissions.some((submission) => submission?.status === 'PENDING_REVIEW');
     const isAssignedPm = user?.role === 'PM' && project?.team?.members?.some((member) =>
@@ -373,8 +321,6 @@ const ProductDescriptionSection = ({ project }) => {
     const [loadedSubmissionId, setLoadedSubmissionId] = useState(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState({});
-    const [isUploading, setIsUploading] = useState(false);
     const activeSubmission = useMemo(() => (
         submissions.find((submission) => submission?.id === loadedSubmissionId) || null
     ), [loadedSubmissionId, submissions]);
@@ -403,30 +349,31 @@ const ProductDescriptionSection = ({ project }) => {
         setProducts((prev) => prev.length === 1 ? prev : prev.filter((_, idx) => idx !== index));
     };
 
-    const handleFileChange = (index, file) => {
-        if (!file) return;
-        try {
-            validateProductDescriptionFile(file);
-        } catch (error) {
-            toast.error(error.message);
-            if (fileInputsRef.current[index]) {
-                fileInputsRef.current[index].value = '';
-            }
-            return;
-        }
+    const updateSpec = (productIndex, specIndex, patch) => {
+        setProducts((prev) => prev.map((item, idx) => {
+            if (idx !== productIndex) return item;
+            const specs = item.specs.map((spec, sIdx) => sIdx === specIndex ? { ...spec, ...patch } : spec);
+            return { ...item, specs };
+        }));
+    };
 
-        updateProduct(index, {
-            sourceType: 'FILE',
-            file,
-            existingFile: null,
-            link: '',
-        });
+    const addSpec = (productIndex) => {
+        setProducts((prev) => prev.map((item, idx) => (
+            idx === productIndex ? { ...item, specs: [...item.specs, { key: '', value: '' }] } : item
+        )));
+    };
+
+    const removeSpec = (productIndex, specIndex) => {
+        setProducts((prev) => prev.map((item, idx) => {
+            if (idx !== productIndex) return item;
+            if (item.specs.length === 1) return item;
+            return { ...item, specs: item.specs.filter((_, sIdx) => sIdx !== specIndex) };
+        }));
     };
 
     const openCreateForm = () => {
         setProducts([emptyProduct()]);
         setLoadedSubmissionId(null);
-        setUploadProgress({});
         setIsFormOpen(true);
     };
 
@@ -434,60 +381,46 @@ const ProductDescriptionSection = ({ project }) => {
         const editableItems = Array.isArray(submission.items) ? submission.items : [];
         setProducts(editableItems.length ? editableItems.map(toEditableProduct) : [emptyProduct()]);
         setLoadedSubmissionId(submission.id);
-        setUploadProgress({});
         setIsFormOpen(true);
     };
 
     const closeForm = () => {
         setProducts([emptyProduct()]);
         setLoadedSubmissionId(null);
-        setUploadProgress({});
         setIsFormOpen(false);
     };
 
-    const buildPayload = async () => {
-        const normalized = [];
-
-        for (let index = 0; index < products.length; index += 1) {
-            const product = products[index];
+    const buildPayload = () => {
+        const normalized = products.map((product, index) => {
             const productName = product.productName.trim();
 
             if (!productName) {
                 throw new Error(`Vui lòng nhập tên sản phẩm ở dòng ${index + 1}`);
             }
 
-            let source = getProductSource(product);
-            if (product.sourceType === 'FILE' && product.file) {
-                validateProductDescriptionFile(product.file);
-                setIsUploading(true);
-                const uploadedFile = await uploadToCloudinary(
-                    product.file,
-                    `GETVINI/ERP/projects/${projectId}/product-descriptions`,
-                    (progress) => setUploadProgress((prev) => ({ ...prev, [index]: progress }))
-                );
-                source = {
-                    sourceType: 'FILE',
-                    sourceName: uploadedFile.name,
-                    sourceUrl: uploadedFile.url,
-                    size: uploadedFile.size,
-                    publicId: uploadedFile.publicId,
-                };
+            const specs = product.specs
+                .map((spec) => ({ key: spec.key.trim(), value: spec.value.trim() }))
+                .filter((spec) => spec.key && spec.value);
+
+            if (specs.length === 0) {
+                throw new Error(`Vui lòng nhập ít nhất một thông tin chuẩn (key:value) cho sản phẩm ${productName}`);
             }
 
-            if (!source?.sourceUrl) {
-                throw new Error(`Vui lòng chọn file hoặc nhập link cho sản phẩm ${productName}`);
-            }
-
-            normalized.push({ id: product.id, productName, ...source });
-        }
+            return {
+                id: product.id,
+                productName,
+                specs,
+                note: product.note.trim() || null,
+                docUrl: product.docUrl.trim() || null,
+            };
+        });
 
         return { items: normalized };
     };
 
     const saveDraft = async () => {
         try {
-            setUploadProgress({});
-            const payload = await buildPayload();
+            const payload = buildPayload();
             if (activeSubmission?.status === 'REJECTED') {
                 const created = await createSubmission({ projectId, ...payload }).unwrap();
                 setLoadedSubmissionId(created.id);
@@ -502,15 +435,12 @@ const ProductDescriptionSection = ({ project }) => {
             }
         } catch (err) {
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi lưu bản mô tả sản phẩm');
-        } finally {
-            setIsUploading(false);
         }
     };
 
     const submitForReview = async () => {
         try {
-            setUploadProgress({});
-            const payload = await buildPayload();
+            const payload = buildPayload();
             if (activeSubmission?.status === 'REJECTED') {
                 const saved = await createSubmission({ projectId, ...payload }).unwrap();
                 await submitSubmission({ projectId, submissionId: saved.id }).unwrap();
@@ -524,8 +454,6 @@ const ProductDescriptionSection = ({ project }) => {
             closeForm();
         } catch (err) {
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi gửi duyệt');
-        } finally {
-            setIsUploading(false);
         }
     };
 
@@ -547,7 +475,7 @@ const ProductDescriptionSection = ({ project }) => {
         }
     };
 
-    const isSaving = isCreating || isUpdating || isSubmitting || isUploading;
+    const isSaving = isCreating || isUpdating || isSubmitting;
     const isReviewing = isApproving || isRejecting;
 
     return (
@@ -647,30 +575,14 @@ const ProductDescriptionSection = ({ project }) => {
                         {products.map((product, index) => (
                             <div key={index} className="rounded-xl border border-gray-200 bg-white p-4">
                                 <div className="flex items-start justify-between gap-3">
-                                    <div className="grid flex-1 gap-3 md:grid-cols-[1fr_180px]">
-                                        <input
-                                            type="text"
-                                            value={product.productName}
-                                            onChange={(event) => updateProduct(index, { productName: event.target.value })}
-                                            disabled={!canEdit || isSaving}
-                                            placeholder="Tên sản phẩm"
-                                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold outline-none focus:border-blue-400 disabled:bg-gray-50"
-                                        />
-                                        <select
-                                            value={product.sourceType}
-                                            onChange={(event) => updateProduct(index, {
-                                                sourceType: event.target.value,
-                                                link: '',
-                                                file: null,
-                                                existingFile: null,
-                                            })}
-                                            disabled={!canEdit || isSaving}
-                                            className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold outline-none focus:border-blue-400 disabled:bg-gray-50"
-                                        >
-                                            <option value="LINK">Link tham khảo</option>
-                                            <option value="FILE">File đính kèm</option>
-                                        </select>
-                                    </div>
+                                    <input
+                                        type="text"
+                                        value={product.productName}
+                                        onChange={(event) => updateProduct(index, { productName: event.target.value })}
+                                        disabled={!canEdit || isSaving}
+                                        placeholder="Tên sản phẩm"
+                                        className="w-full flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                    />
 
                                     <button
                                         type="button"
@@ -682,46 +594,68 @@ const ProductDescriptionSection = ({ project }) => {
                                     </button>
                                 </div>
 
-                                <div className="mt-3">
-                                    {product.sourceType === 'LINK' ? (
-                                        <div className="relative">
-                                            <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                <div className="mt-3 space-y-2">
+                                    <p className="text-xs font-bold uppercase text-gray-400">Thông tin chuẩn (key : value)</p>
+                                    {product.specs.map((spec, specIndex) => (
+                                        <div key={specIndex} className="flex items-center gap-2">
                                             <input
-                                                type="url"
-                                                value={product.link}
-                                                onChange={(event) => updateProduct(index, { link: event.target.value })}
+                                                type="text"
+                                                value={spec.key}
+                                                onChange={(event) => updateSpec(index, specIndex, { key: event.target.value })}
                                                 disabled={!canEdit || isSaving}
-                                                placeholder="https://..."
-                                                className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                                placeholder="Key (vd: Giá, Trọng lượng...)"
+                                                className="w-1/3 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
                                             />
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                             <input
-                                                type="file"
-                                                accept={PRODUCT_DESCRIPTION_ACCEPT}
-                                                ref={(node) => { fileInputsRef.current[index] = node; }}
-                                                className="hidden"
-                                                onChange={(event) => handleFileChange(index, event.target.files?.[0])}
+                                                type="text"
+                                                value={spec.value}
+                                                onChange={(event) => updateSpec(index, specIndex, { value: event.target.value })}
                                                 disabled={!canEdit || isSaving}
+                                                placeholder="Value"
+                                                className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
                                             />
                                             <button
                                                 type="button"
-                                                onClick={() => fileInputsRef.current[index]?.click()}
-                                                disabled={!canEdit || isSaving}
-                                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600 hover:border-blue-300 hover:text-blue-600 disabled:opacity-50"
+                                                onClick={() => removeSpec(index, specIndex)}
+                                                disabled={!canEdit || isSaving || product.specs.length === 1}
+                                                className="rounded-lg p-2 text-gray-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
                                             >
-                                                <Upload className="h-4 w-4" />
-                                                Chọn file
+                                                <Trash2 className="h-4 w-4" />
                                             </button>
-                                            <span className="min-w-0 truncate text-sm font-medium text-gray-500">
-                                                {product.file?.name || product.existingFile?.name || 'Chưa chọn file'}
-                                            </span>
-                                            {isUploading && uploadProgress[index] !== undefined && (
-                                                <span className="text-xs font-bold text-blue-600">{uploadProgress[index]}%</span>
-                                            )}
                                         </div>
-                                    )}
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => addSpec(index)}
+                                        disabled={!canEdit || isSaving}
+                                        className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 disabled:opacity-40"
+                                    >
+                                        <Plus className="h-3.5 w-3.5" />
+                                        Thêm thông tin
+                                    </button>
+                                </div>
+
+                                <div className="mt-3">
+                                    <textarea
+                                        rows="2"
+                                        value={product.note}
+                                        onChange={(event) => updateProduct(index, { note: event.target.value })}
+                                        disabled={!canEdit || isSaving}
+                                        placeholder="Ghi chú (không bắt buộc)"
+                                        className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                    />
+                                </div>
+
+                                <div className="mt-3 relative">
+                                    <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        type="url"
+                                        value={product.docUrl}
+                                        onChange={(event) => updateProduct(index, { docUrl: event.target.value })}
+                                        disabled={!canEdit || isSaving}
+                                        placeholder="Link tài liệu (không bắt buộc)"
+                                        className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                    />
                                 </div>
                             </div>
                         ))}

@@ -168,7 +168,7 @@ export const NotificationsPage = () => {
                             </span>
                           )}
                         </div>
-                        <p className={`text-sm leading-relaxed mb-3 ${!notification.isRead ? 'text-gray-700 font-medium' : 'text-gray-500'}`}>
+                        <p className={`text-sm leading-relaxed mb-3 whitespace-pre-line ${!notification.isRead ? 'text-gray-700 font-medium' : 'text-gray-500'}`}>
                           {notification.content}
                         </p>
                         <div className="flex items-center gap-4">

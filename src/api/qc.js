@@ -24,7 +24,7 @@ export const qcApi = api.injectEndpoints({
       }),
     }),
     runQc: builder.mutation({
-      query: ({ file, fileUrl, fileName, sheetNames, projectId, extractModel, verifyModel }) => {
+      query: ({ file, fileUrl, fileName, sheetNames, projectId, extractModel, verifyModel, scenarioIds }) => {
         const formData = new FormData();
         if (file) formData.append('file', file);
         if (fileUrl) formData.append('fileUrl', fileUrl);
@@ -33,6 +33,7 @@ export const qcApi = api.injectEndpoints({
         formData.append('projectId', projectId);
         if (extractModel) formData.append('extractModel', extractModel);
         if (verifyModel) formData.append('verifyModel', verifyModel);
+        if (scenarioIds?.length) formData.append('scenarioIds', scenarioIds.join(','));
         return {
           url: '/qc/run',
           method: 'POST',

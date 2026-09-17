@@ -26,7 +26,7 @@ export const QcProductInfoPanel = ({ projectId }) => {
       </button>
 
       {isOpen && (
-        <div className="p-2 border border-slate-200 rounded-xl bg-white space-y-1.5 max-h-40 overflow-y-auto">
+        <div className="p-2 border border-slate-200 rounded-xl bg-white space-y-1.5 max-h-64 overflow-y-auto">
           {isFetching && (
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Đang tải thông tin sản phẩm...
@@ -46,21 +46,31 @@ export const QcProductInfoPanel = ({ projectId }) => {
           {!isFetching && items.length > 0 && (
             <div className="divide-y divide-slate-100">
               {items.map((item, idx) => (
-                <div key={idx} className="py-1.5 text-xs space-y-0.5">
-                  <div className="font-bold text-slate-700">{item.productName}</div>
-                  <div className="flex items-center justify-between gap-2 text-slate-500">
-                    <span className="truncate">{item.sourceName || 'Không rõ nguồn'}</span>
-                    {item.sourceUrl && (
+                <div key={idx} className="py-1.5 text-xs space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-bold text-slate-700">{item.productName}</div>
+                    {item.docUrl && (
                       <a
-                        href={item.sourceUrl}
+                        href={item.docUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-blue-600 hover:underline shrink-0"
                       >
-                        <ExternalLink className="w-3 h-3" /> Nguồn
+                        <ExternalLink className="w-3 h-3" /> Tài liệu
                       </a>
                     )}
                   </div>
+                  {Array.isArray(item.specs) && item.specs.length > 0 && (
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+                      {item.specs.map((spec, specIdx) => (
+                        <div key={specIdx} className="flex gap-1 text-slate-500">
+                          <span className="font-medium text-slate-600">{spec.key}:</span>
+                          <span className="truncate">{spec.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {item.note && <div className="text-slate-400 italic">{item.note}</div>}
                 </div>
               ))}
             </div>
