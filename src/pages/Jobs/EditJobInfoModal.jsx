@@ -16,6 +16,8 @@ const jobInfoSchema = z.object({
     costPrice: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     vinicoin: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     timeToComplete: z.string().transform((val) => val.replace(/[^0-9.]/g, '')).optional().default('0'),
+    isBriefVideo: z.boolean().optional().default(false),
+    isQuotationItem: z.boolean().optional().default(true),
 });
 
 export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
@@ -37,6 +39,8 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
             costPrice: '',
             vinicoin: '',
             timeToComplete: '',
+            isBriefVideo: false,
+            isQuotationItem: true,
         },
     });
 
@@ -49,6 +53,8 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
                 costPrice: String(job.costPrice || '0'),
                 vinicoin: String(job.vinicoin || '0'),
                 timeToComplete: String(job.timeToComplete || '0'),
+                isBriefVideo: Boolean(job.isBriefVideo),
+                isQuotationItem: job.isQuotationItem !== false,
             });
         }
     }, [isOpen, job, reset]);
@@ -133,6 +139,17 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
                         error={errors.timeToComplete?.message}
                         placeholder="Số giờ dự kiến để hoàn thành"
                     />
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">
+                        <input type="checkbox" {...register('isBriefVideo')} className="h-4 w-4 accent-blue-600" />
+                        Yêu cầu nhập brief video
+                    </label>
+                    <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">
+                        <input type="checkbox" {...register('isQuotationItem')} className="h-4 w-4 accent-blue-600" />
+                        Được tính vào báo giá
+                    </label>
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4 border-t mt-6">

@@ -18,6 +18,8 @@ const jobSchema = z.object({
     vinicoin: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     timeToComplete: z.string().transform((val) => val.replace(/[^0-9.]/g, '')).optional().default('0'),
     defaultPerformerType: z.enum(['INTERNAL', 'EXTERNAL']).default('INTERNAL'),
+    isBriefVideo: z.boolean().optional().default(false),
+    isQuotationItem: z.boolean().optional().default(true),
     criteria: z.array(z.object({
         name: z.string().min(1, 'Tên tiêu chí không được để trống'),
         description: z.string().optional()
@@ -45,6 +47,8 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
             vinicoin: '',
             timeToComplete: '',
             defaultPerformerType: 'INTERNAL',
+            isBriefVideo: false,
+            isQuotationItem: true,
             criteria: [],
         },
     });
@@ -140,6 +144,17 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                         error={errors.timeToComplete?.message}
                         placeholder="Số giờ dự kiến để hoàn thành"
                     />
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">
+                        <input type="checkbox" {...register('isBriefVideo')} className="h-4 w-4 accent-blue-600" />
+                        Yêu cầu nhập brief video
+                    </label>
+                    <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">
+                        <input type="checkbox" {...register('isQuotationItem')} className="h-4 w-4 accent-blue-600" />
+                        Được tính vào báo giá
+                    </label>
                 </div>
 
                 {/* Criteria Section */}

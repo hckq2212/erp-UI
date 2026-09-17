@@ -15,6 +15,7 @@ const serviceSchema = z.object({
     description: z.string().optional(),
     unit: z.string().min(1, 'Đơn vị tính là bắt buộc'),
     jobIds: z.array(z.string()).optional().default([]),
+    isAI: z.boolean().optional().default(false),
 });
 
 export const EditServiceModal = ({ isOpen, onClose, service }) => {
@@ -39,6 +40,7 @@ export const EditServiceModal = ({ isOpen, onClose, service }) => {
             description: '',
             unit: '',
             jobIds: [],
+            isAI: false,
         },
     });
 
@@ -49,6 +51,7 @@ export const EditServiceModal = ({ isOpen, onClose, service }) => {
                 description: service.description || '',
                 unit: service.unit || '',
                 jobIds: service.serviceJobs?.map(sj => sj.jobId) || [],
+                isAI: Boolean(service.isAI),
             });
         }
     }, [service, isOpen, reset]);
@@ -117,6 +120,11 @@ export const EditServiceModal = ({ isOpen, onClose, service }) => {
                     error={errors.name?.message}
                     placeholder="Ví dụ: Quay phim, Thiết kế..."
                 />
+
+                <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">
+                    <input type="checkbox" {...register('isAI')} className="h-4 w-4 accent-blue-600" />
+                    Đây là dịch vụ AI
+                </label>
 
                 <Input
                     label="Đơn vị tính *"
