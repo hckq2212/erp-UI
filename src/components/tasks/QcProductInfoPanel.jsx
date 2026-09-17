@@ -61,11 +61,17 @@ export const QcProductInfoPanel = ({ projectId }) => {
                     )}
                   </div>
                   {Array.isArray(item.specs) && item.specs.length > 0 && (
-                    <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+                    <div className="flex flex-col gap-y-0.5">
                       {item.specs.map((spec, specIdx) => (
                         <div key={specIdx} className="flex gap-1 text-slate-500">
                           <span className="font-medium text-slate-600">{spec.key}:</span>
-                          <span className="truncate">{spec.value}</span>
+                          {Array.isArray(spec.subKeys) && spec.subKeys.length > 0 ? (
+                            <span className="truncate">
+                              {spec.subKeys.map((sk) => `${sk.key}: ${sk.value}`).join('; ')}
+                            </span>
+                          ) : (
+                            <span className="truncate">{spec.value}</span>
+                          )}
                         </div>
                       ))}
                     </div>
