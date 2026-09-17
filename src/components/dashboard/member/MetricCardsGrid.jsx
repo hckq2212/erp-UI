@@ -4,37 +4,7 @@ import { Clock, CheckCircle2, Layers, AlertCircle, RotateCcw, ClipboardCheck, Ba
 import { ProjectSelector } from '../ProjectSelector';
 import { formatWorkloadLabel, getWorkloadColor, getWorkloadDisplayPercent } from '../../../utils/workload';
 
-const WorkloadMetricCard = ({ workload }) => {
-    const displayPercent = getWorkloadDisplayPercent(workload);
-    const color = getWorkloadColor(displayPercent);
-    const pendingVinicoin = Number(workload?.pendingVinicoin || 0);
-    const kpi = Number(workload?.kpi || 2500);
 
-    return (
-        <div className="relative overflow-hidden rounded-[0.75rem] border border-slate-100 bg-white p-4 shadow-sm">
-            <div className="mb-3 flex items-start gap-3">
-                <div className="mr-4 rounded-lg p-3 text-white" style={{ backgroundColor: color }}>
-                    <Gauge size={20} strokeWidth={2.5} />
-                </div>
-                <div className="flex min-w-0 flex-col items-baseline gap-2 text-left">
-                    <p className="text-[12px] font-black uppercase tracking-widest text-slate-400">Workload tháng</p>
-                    <h3 className="text-2xl font-black tracking-tighter text-slate-900">{formatWorkloadLabel(workload)}</h3>
-                </div>
-            </div>
-            <div className="space-y-2">
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                        className="h-full rounded-full transition-all"
-                        style={{ width: `${Math.min(displayPercent, 200) / 2}%`, backgroundColor: color }}
-                    />
-                </div>
-                <p className="truncate text-[10px] font-bold text-slate-400">
-                    {pendingVinicoin.toLocaleString()} / {kpi.toLocaleString()} Vinicoin
-                </p>
-            </div>
-        </div>
-    );
-};
 
 export const MetricCardsGrid = ({
     member,
@@ -177,7 +147,6 @@ export const MetricCardsGrid = ({
                     sparklineData={[]}
                 />
 
-                <WorkloadMetricCard workload={member?.workload} />
 
                 <MetricCard
                     title="Tổng số Task"
