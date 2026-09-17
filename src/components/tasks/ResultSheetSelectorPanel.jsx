@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ListChecks, Loader2, Search } from 'lucide-react';
+import { ChevronDown, ChevronUp, ListChecks, Loader2, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { SpellCheckWhitelist } from './SpellCheckWhitelist';
 import { QcProductInfoPanel } from './QcProductInfoPanel';
@@ -20,12 +20,18 @@ export const ResultSheetSelectorPanel = ({
   projectId,
   selectedSheets,
   onSelectedSheetsChange,
+  selectedScenarios,
+  onSelectedScenariosChange,
+  onSelectedScenarioLabelsChange,
   whitelist,
   onWhitelistChange,
+  onLoadingChange,
 }) => {
   const [sheets, setSheets] = useState(null);
+  const [scenarios, setScenarios] = useState({});
   const [sheetSearch, setSheetSearch] = useState('');
   const [checkedKey, setCheckedKey] = useState(null);
+  const [expandedSheet, setExpandedSheet] = useState(null);
 
   const [listSheets, { isLoading: isLoadingSheetsFile }] = useListSpellCheckSheetsMutation();
   const [listSheetsFromUrl, { isLoading: isLoadingSheetsUrl }] = useListSpellCheckSheetsFromUrlMutation();
@@ -34,6 +40,21 @@ export const ResultSheetSelectorPanel = ({
   const displayName = file?.name || fileName || '';
   const currentKey = file ? `${file.name}:${file.size}` : fileUrl ? fileUrl : null;
 
+  useEffect(() => {
+    onLoadingChange?.(Boolean(currentKey) && hasSheets(displayName) && isLoadingSheets);
+  }, [currentKey, displayName, isLoadingSheets]);
+
+  useEffect(() => () => onLoadingChange?.(false), []);
+
+  useEffect(() => {
+    if (!onSelectedScenarioLabelsChange) return;
+    const labelMap = {};
+    Object.entries(scenarios).forEach(([sheet, list]) => {
+      (list || []).forEach((s) => { labelMap[s.id] = `${sheet} / ${s.scenarioLabel}`; });
+    });
+    onSelectedScenarioLabelsChange((selectedScenarios || []).map((id) => labelMap[id]).filter(Boolean));
+  }, [selectedScenarios, scenarios]);
+
   const filteredSheets = useMemo(() => {
     if (!sheets) return [];
     const q = sheetSearch.trim().toLowerCase();
@@ -41,12 +62,18 @@ export const ResultSheetSelectorPanel = ({
     return sheets.filter((name) => name.toLowerCase().includes(q));
   }, [sheets, sheetSearch]);
 
+  const allScenarioIds = (scenarioMap) => Object.values(scenarioMap).flat().map((s) => s.id);
+  const sheetScenarioIds = (name) => (scenarios[name] || []).map((s) => s.id);
+
   useEffect(() => {
     if (currentKey && checkedKey && currentKey !== checkedKey) {
       setCheckedKey(null);
       setSheets(null);
+      setScenarios({});
       setSheetSearch('');
+      setExpandedSheet(null);
       onSelectedSheetsChange([]);
+      onSelectedScenariosChange?.([]);
     }
   }, [currentKey, checkedKey]);
 
@@ -58,7 +85,9 @@ export const ResultSheetSelectorPanel = ({
           ? await listSheets({ file }).unwrap()
           : await listSheetsFromUrl({ fileUrl, fileName }).unwrap();
         setSheets(res.sheets || []);
+        setScenarios(res.scenarios || {});
         onSelectedSheetsChange(res.sheets || []);
+        onSelectedScenariosChange?.(allScenarioIds(res.scenarios || {}));
         setCheckedKey(currentKey);
       } catch (err) {
         const status = err?.status;
@@ -75,13 +104,43 @@ export const ResultSheetSelectorPanel = ({
   }, [currentKey]);
 
   const toggleSheet = (name) => {
-    onSelectedSheetsChange(
-      selectedSheets.includes(name) ? selectedSheets.filter((s) => s !== name) : [...selectedSheets, name]
-    );
+    const ids = sheetScenarioIds(name);
+    if (selectedSheets.includes(name)) {
+      onSelectedSheetsChange(selectedSheets.filter((s) => s !== name));
+      onSelectedScenariosChange?.((selectedScenarios || []).filter((id) => !ids.includes(id)));
+    } else {
+      onSelectedSheetsChange([...selectedSheets, name]);
+      onSelectedScenariosChange?.([...new Set([...(selectedScenarios || []), ...ids])]);
+    }
   };
 
   const toggleSelectAll = () => {
-    onSelectedSheetsChange(selectedSheets.length === sheets.length ? [] : [...sheets]);
+    if (selectedSheets.length === sheets.length) {
+      onSelectedSheetsChange([]);
+      onSelectedScenariosChange?.([]);
+    } else {
+      onSelectedSheetsChange([...sheets]);
+      onSelectedScenariosChange?.(allScenarioIds(scenarios));
+    }
+  };
+
+  const toggleScenario = (scenarioId) => {
+    const isSelected = (selectedScenarios || []).includes(scenarioId);
+    onSelectedScenariosChange?.(
+      isSelected
+        ? (selectedScenarios || []).filter((id) => id !== scenarioId)
+        : [...(selectedScenarios || []), scenarioId]
+    );
+    if (!isSelected) {
+      const owningSheet = Object.entries(scenarios).find(([, list]) => (list || []).some((s) => s.id === scenarioId))?.[0];
+      if (owningSheet && !selectedSheets.includes(owningSheet)) {
+        onSelectedSheetsChange([...selectedSheets, owningSheet]);
+      }
+    }
+  };
+
+  const toggleExpandSheet = (name) => {
+    setExpandedSheet((prev) => (prev === name ? null : name));
   };
 
   if (!currentKey) return null;
@@ -134,16 +193,57 @@ export const ResultSheetSelectorPanel = ({
             {filteredSheets.length === 0 && (
               <div className="text-xs text-slate-400 py-1">Không tìm thấy sheet phù hợp</div>
             )}
-            {filteredSheets.map((name) => (
-              <label key={name} className="flex items-center gap-2 text-xs text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={selectedSheets.includes(name)}
-                  onChange={() => toggleSheet(name)}
-                />
-                {name}
-              </label>
-            ))}
+            {filteredSheets.map((name) => {
+              const sheetScenarios = scenarios[name] || [];
+              const isExpanded = expandedSheet === name;
+              const selectedCount = sheetScenarios.filter((s) => (selectedScenarios || []).includes(s.id)).length;
+              return (
+                <div key={name} className="text-xs text-slate-700">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedSheets.includes(name)}
+                      onChange={() => toggleSheet(name)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleExpandSheet(name)}
+                      className="flex items-center gap-1.5 flex-1 text-left"
+                    >
+                      <span>{name}</span>
+                      {sheetScenarios.length > 0 && (
+                        <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">
+                          {selectedCount}/{sheetScenarios.length} kịch bản
+                        </span>
+                      )}
+                      {sheetScenarios.length > 0 && (
+                        isExpanded
+                          ? <ChevronUp className="w-3 h-3 text-slate-400" />
+                          : <ChevronDown className="w-3 h-3 text-slate-400" />
+                      )}
+                    </button>
+                  </div>
+                  {isExpanded && sheetScenarios.length > 0 && (
+                    <ul className="ml-6 mt-1 mb-1 space-y-1">
+                      {sheetScenarios.map((s) => (
+                        <li key={s.id} className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                          <input
+                            type="checkbox"
+                            className="shrink-0"
+                            checked={(selectedScenarios || []).includes(s.id)}
+                            onChange={() => toggleScenario(s.id)}
+                          />
+                          <span className="text-slate-700 font-medium">{s.scenarioLabel}</span>
+                          <span className="text-slate-400">
+                            (dòng {s.startRow}–{s.endRow})
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

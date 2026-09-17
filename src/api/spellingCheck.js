@@ -21,12 +21,13 @@ export const spellingCheckApi = api.injectEndpoints({
       }),
     }),
     startSpellCheck: builder.mutation({
-      query: ({ file, lang, sheetNames, whitelist }) => {
+      query: ({ file, lang, sheetNames, whitelist, scenarioIds }) => {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('lang', lang || 'both');
         if (sheetNames?.length) formData.append('sheetNames', sheetNames.join(','));
         if (whitelist?.length) formData.append('whitelist', whitelist.join(','));
+        if (scenarioIds?.length) formData.append('scenarioIds', scenarioIds.join(','));
         return {
           url: '/spelling-check/start',
           method: 'POST',
@@ -35,7 +36,7 @@ export const spellingCheckApi = api.injectEndpoints({
       },
     }),
     startSpellCheckFromUrl: builder.mutation({
-      query: ({ fileUrl, fileName, lang, sheetNames, whitelist }) => ({
+      query: ({ fileUrl, fileName, lang, sheetNames, whitelist, scenarioIds }) => ({
         url: '/spelling-check/start-from-url',
         method: 'POST',
         body: {
@@ -44,6 +45,7 @@ export const spellingCheckApi = api.injectEndpoints({
           lang: lang || 'both',
           sheetNames: sheetNames?.length ? sheetNames.join(',') : undefined,
           whitelist: whitelist?.length ? whitelist.join(',') : undefined,
+          scenarioIds: scenarioIds?.length ? scenarioIds.join(',') : undefined,
         },
       }),
     }),

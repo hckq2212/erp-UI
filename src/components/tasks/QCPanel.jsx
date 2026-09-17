@@ -11,16 +11,24 @@ import {
 
 const SHEET_EXTENSIONS = ['xlsx', 'xlsm'];
 
+const VERIFY_MODEL_OPTIONS = [
+  { value: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B (mạnh, khuyên dùng)' },
+  { value: 'qwen/qwen3.6-27b', label: 'Qwen3.6 27B (mạnh nhất)' },
+  { value: 'openai/gpt-oss-20b', label: 'GPT-OSS 20B (nhanh, rẻ)' },
+];
+
 export const getFileExtension = (name = '') => name.split('.').pop()?.toLowerCase() || '';
 
 export const isQcSupported = (name = '') => SHEET_EXTENSIONS.includes(getFileExtension(name));
 
 export const QCPanel = ({ file, fileUrl, fileName, projectId, onStatusChange }) => {
   const [sheets, setSheets] = useState(null);
+  const [scenarios, setScenarios] = useState({});
   const [selectedSheets, setSelectedSheets] = useState([]);
   const [sheetSearch, setSheetSearch] = useState('');
   const [checkedKey, setCheckedKey] = useState(null);
   const [report, setReport] = useState(null);
+  const [verifyModel, setVerifyModel] = useState(VERIFY_MODEL_OPTIONS[0].value);
 
   const [listSheets, { isLoading: isLoadingSheetsFile }] = useListQcSheetsMutation();
   const [listSheetsFromUrl, { isLoading: isLoadingSheetsUrl }] = useListQcSheetsFromUrlMutation();
@@ -56,6 +64,7 @@ export const QCPanel = ({ file, fileUrl, fileName, projectId, onStatusChange }) 
           ? await listSheets({ file }).unwrap()
           : await listSheetsFromUrl({ fileUrl, fileName }).unwrap();
         setSheets(res.sheets || []);
+        setScenarios(res.scenarios || {});
         setSelectedSheets(res.sheets || []);
       } catch (err) {
         const status = err?.status;
@@ -89,8 +98,8 @@ export const QCPanel = ({ file, fileUrl, fileName, projectId, onStatusChange }) 
     if (!currentKey || selectedSheets.length === 0 || !projectId) return;
     try {
       const res = file
-        ? await runQc({ file, sheetNames: selectedSheets, projectId }).unwrap()
-        : await runQc({ fileUrl, fileName, sheetNames: selectedSheets, projectId }).unwrap();
+        ? await runQc({ file, sheetNames: selectedSheets, projectId, verifyModel }).unwrap()
+        : await runQc({ fileUrl, fileName, sheetNames: selectedSheets, projectId, verifyModel }).unwrap();
       setReport(res);
       setCheckedKey(currentKey);
     } catch (err) {
@@ -151,22 +160,47 @@ export const QCPanel = ({ file, fileUrl, fileName, projectId, onStatusChange }) 
                 {filteredSheets.length === 0 && (
                   <div className="text-xs text-slate-400 py-1">Không tìm thấy sheet phù hợp</div>
                 )}
-                {filteredSheets.map((name) => (
-                  <label key={name} className="flex items-center gap-2 text-xs text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={selectedSheets.includes(name)}
-                      onChange={() => toggleSheet(name)}
-                    />
-                    {name}
-                  </label>
-                ))}
+                {filteredSheets.map((name) => {
+                  const sheetScenarios = scenarios[name] || [];
+                  return (
+                    <label key={name} className="flex items-center gap-2 text-xs text-slate-700" title={sheetScenarios.map((s) => s.scenarioLabel).join(', ')}>
+                      <input
+                        type="checkbox"
+                        checked={selectedSheets.includes(name)}
+                        onChange={() => toggleSheet(name)}
+                      />
+                      {name}
+                      {sheetScenarios.length > 0 && (
+                        <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">
+                          {sheetScenarios.length} kịch bản
+                        </span>
+                      )}
+                    </label>
+                  );
+                })}
               </div>
             </>
           )}
           {sheets?.length === 0 && (
             <div className="text-xs text-slate-400">File này không có sheet để chạy QC</div>
           )}
+        </div>
+      )}
+
+      {!report && !isLoadingSheets && sheets?.length > 0 && (
+        <div className="grid grid-cols-2 gap-2">
+          <label className="space-y-1 text-xs">
+            <span className="block text-slate-500 font-medium">Model đối chiếu</span>
+            <select
+              value={verifyModel}
+              onChange={(e) => setVerifyModel(e.target.value)}
+              className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              {VERIFY_MODEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </label>
         </div>
       )}
 
@@ -185,6 +219,11 @@ export const QCPanel = ({ file, fileUrl, fileName, projectId, onStatusChange }) 
 
       {report && (
         <div className="space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            <span className="px-2 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 rounded-full">
+              Đối chiếu: {report.models?.verify || verifyModel}
+            </span>
+          </div>
           <div className={`text-xs font-bold ${mismatches.length > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
             {mismatches.length > 0 ? `Phát hiện ${mismatches.length} điểm chưa khớp` : 'Không phát hiện điểm chưa khớp'}
           </div>
@@ -194,7 +233,7 @@ export const QCPanel = ({ file, fileUrl, fileName, projectId, onStatusChange }) 
                 <div key={idx} className="px-3 py-1.5 text-xs space-y-0.5">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-slate-700 font-medium truncate">
-                      {m.sheet_name ? `${m.sheet_name} · ` : ''}{m.product_ref || 'Không rõ sản phẩm'} · {m.attribute}
+                      {m.sheet_name ? `${m.sheet_name}${m.scenario ? ` / ${m.scenario}` : ''} · ` : ''}{m.product_ref || 'Không rõ sản phẩm'} · {m.attribute}
                     </span>
                     <span className="text-slate-400 font-mono shrink-0">
                       R{m.row_range?.[0]}-{m.row_range?.[1]}

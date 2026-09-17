@@ -21,6 +21,15 @@ import { TaskDelegationPanel } from '../../components/tasks/TaskDelegationPanel'
 
 const COMPLETED_SUBTASK_STATUSES = new Set(['INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED']);
 
+const groupIterationSpellErrors = (items) => {
+    const map = new Map();
+    (items || []).forEach((item) => {
+        if (!map.has(item.token)) map.set(item.token, { token: item.token, sheetName: item.sheetName, scenarioLabel: item.scenarioLabel, locations: [] });
+        map.get(item.token).locations.push(item.location);
+    });
+    return Array.from(map.values());
+};
+
 export const TaskDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -65,7 +74,10 @@ export const TaskDetailPage = () => {
     const [spellCheckUrl, setSpellCheckUrl] = useState(null);
     const [spellCheckFileName, setSpellCheckFileName] = useState(null);
     const [selectedSheets, setSelectedSheets] = useState([]);
+    const [selectedScenarios, setSelectedScenarios] = useState([]);
+    const [selectedScenarioLabels, setSelectedScenarioLabels] = useState([]);
     const [whitelist, setWhitelist] = useState([]);
+    const [isLoadingResultSheets, setIsLoadingResultSheets] = useState(false);
 
     const isTaskAssigned = Boolean(task?.assigneeId || task?.assignee?.id || task?.vendorId);
     const canAssignUnassignedTask = canManageProjectTask &&
@@ -84,7 +96,10 @@ export const TaskDetailPage = () => {
             setSpellCheckUrl(null);
             setSpellCheckFileName(null);
             setSelectedSheets([]);
+            setSelectedScenarios([]);
+            setSelectedScenarioLabels([]);
             setWhitelist([]);
+            setIsLoadingResultSheets(false);
         }
     }, [isResultModalOpen, task?.id]);
 
@@ -142,6 +157,8 @@ export const TaskDetailPage = () => {
         setSpellCheckFileName(null);
         setIsSpellCheckStage(false);
         setSelectedSheets([]);
+        setSelectedScenarios([]);
+        setSelectedScenarioLabels([]);
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
@@ -204,13 +221,14 @@ export const TaskDetailPage = () => {
     };
 
     const handleSubmitAfterSpellCheck = async () => {
+        if (isLoadingResultSheets) return;
         try {
             let resultData = null;
 
             if (submissionType === 'file' && resultFile) {
                 setIsUploading(true);
 
-                await submitResultFile({ id, file: resultFile, projectId: task.project?.id, sheetNames: selectedSheets, whitelist }).unwrap();
+                await submitResultFile({ id, file: resultFile, projectId: task.project?.id, sheetNames: selectedSheets, whitelist, scenarioIds: selectedScenarios, scenarioLabels: selectedScenarioLabels }).unwrap();
 
                 setIsUploading(false);
                 toast.success('Gửi kết quả thành công!');
@@ -220,6 +238,8 @@ export const TaskDetailPage = () => {
                 setSpellCheckUrl(null);
                 setSpellCheckFileName(null);
                 setSelectedSheets([]);
+                setSelectedScenarios([]);
+                setSelectedScenarioLabels([]);
                 setWhitelist([]);
                 setResultFile(null);
                 setResultLink('');
@@ -239,6 +259,8 @@ export const TaskDetailPage = () => {
                 projectId: task.project?.id,
                 sheetNames: selectedSheets,
                 whitelist,
+                scenarioIds: selectedScenarios,
+                scenarioLabels: selectedScenarioLabels,
                 checkFileUrl: submissionType === 'link' ? spellCheckUrl : undefined,
                 checkFileName: submissionType === 'link' ? spellCheckFileName : undefined
             }).unwrap();
@@ -250,6 +272,8 @@ export const TaskDetailPage = () => {
             setSpellCheckUrl(null);
             setSpellCheckFileName(null);
             setSelectedSheets([]);
+            setSelectedScenarios([]);
+            setSelectedScenarioLabels([]);
             setWhitelist([]);
             setResultFile(null);
             setResultLink('');
@@ -795,6 +819,34 @@ export const TaskDetailPage = () => {
                                                 </p>
                                             </div>
 
+                                            {((iteration.confirmedSpellErrors && iteration.confirmedSpellErrors.length > 0) || (iteration.confirmedQcMismatches && iteration.confirmedQcMismatches.length > 0)) && (
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2 text-gray-400">
+                                                        <AlertCircle className="w-3.5 h-3.5" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">Lỗi đã chốt ở bản nộp trước</span>
+                                                    </div>
+                                                    <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+                                                        {groupIterationSpellErrors(iteration.confirmedSpellErrors).map((g, gIdx) => (
+                                                            <div key={`spell-${gIdx}`} className="px-3 py-2 text-xs flex items-center justify-between gap-2">
+                                                                <span className="font-bold text-red-600">{g.token}</span>
+                                                                <span className="text-gray-400 font-mono">
+                                                                    {g.sheetName ? `${g.sheetName}!` : ''}{g.locations.join(', ')}
+                                                                    {g.scenarioLabel ? ` (${g.scenarioLabel})` : ''}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                        {(iteration.confirmedQcMismatches || []).map((m, mIdx) => (
+                                                            <div key={`qc-${mIdx}`} className="px-3 py-2 text-xs space-y-0.5">
+                                                                <div className="font-bold text-orange-600">
+                                                                    {m.sheet_name ? `${m.sheet_name}${m.scenario ? ` / ${m.scenario}` : ''} · ` : ''}{m.product_ref || 'Không rõ sản phẩm'} · {m.attribute}
+                                                                </div>
+                                                                <div className="text-gray-500">{m.claimed_value} → {m.expected_value ?? 'không tìm thấy'}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {iteration.feedbackAttachments && iteration.feedbackAttachments.length > 0 && (
                                                 <div className="space-y-2">
                                                     <div className="flex items-center gap-2 text-gray-400">
@@ -1045,9 +1097,9 @@ export const TaskDetailPage = () => {
                                         />
                                     </div>
 
-                                    <p className="text-[10px] text-gray-400 italic ml-2">
-                                        Link phải cho phép tải file trực tiếp để kiểm tra chính tả
-                                    </p>
+                                    <div className="ml-2 mt-2 px-3 py-2 rounded-md bg-red-50 border border-red-200 text-red-600 text-[11px] font-semibold">
+                                        ⚠️ Link file phải để ở chế độ <span className="font-bold">Public</span> để hệ thống có thể kiểm định.
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -1086,8 +1138,12 @@ export const TaskDetailPage = () => {
                                 projectId={task?.project?.id}
                                 selectedSheets={selectedSheets}
                                 onSelectedSheetsChange={setSelectedSheets}
+                                selectedScenarios={selectedScenarios}
+                                onSelectedScenariosChange={setSelectedScenarios}
+                                onSelectedScenarioLabelsChange={setSelectedScenarioLabels}
                                 whitelist={whitelist}
                                 onWhitelistChange={setWhitelist}
+                                onLoadingChange={setIsLoadingResultSheets}
                             />
                         </PanelErrorBoundary>
 
@@ -1101,7 +1157,10 @@ export const TaskDetailPage = () => {
                                     setSpellCheckUrl(null);
                                     setSpellCheckFileName(null);
                                     setSelectedSheets([]);
+                                    setSelectedScenarios([]);
+                                    setSelectedScenarioLabels([]);
                                     setWhitelist([]);
+                                    setIsLoadingResultSheets(false);
                                 }}
                             >
                                 Quay lại
@@ -1111,9 +1170,9 @@ export const TaskDetailPage = () => {
                                 className="flex-1 rounded-2xl py-4 shadow-lg shadow-blue-200"
                                 onClick={handleSubmitAfterSpellCheck}
                                 isLoading={isSubmittingResult || isSubmittingResultFile || isUploading}
-                                disabled={isSubmittingResult || isSubmittingResultFile || isUploading}
+                                disabled={isSubmittingResult || isSubmittingResultFile || isUploading || isLoadingResultSheets}
                             >
-                                {isUploading ? 'Đang tải lên...' : 'Nộp kết quả'}
+                                {isUploading ? 'Đang tải lên...' : isLoadingResultSheets ? 'Đang đọc danh sách sheet...' : 'Nộp kết quả'}
                             </Button>
                         </div>
                     </div>

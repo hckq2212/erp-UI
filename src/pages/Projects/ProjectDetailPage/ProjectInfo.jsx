@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
+    AlertTriangle,
     Briefcase,
     Calendar,
     CheckCircle2,
     FileText,
     History,
     Link as LinkIcon,
+    Loader2,
     PackageCheck,
     Plus,
     Send,
@@ -41,9 +43,6 @@ const STATUS_COLORS = {
 };
 
 const MAIN_STATUSES = ['APPROVED', 'PENDING_REVIEW', 'DRAFT'];
-const PRODUCT_DESCRIPTION_ALLOWED_EXTENSIONS = ['pdf', 'docx', 'xlsx'];
-const PRODUCT_DESCRIPTION_ACCEPT = '.pdf,.docx,.xlsx';
-const PRODUCT_DESCRIPTION_MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const formatDateTime = (value) => {
     if (!value) return 'Chưa có';
@@ -57,98 +56,92 @@ const formatDateTime = (value) => {
     });
 };
 
+const SPEC_TYPE_OPTIONS = [
+    { value: 'text', label: 'Chữ tự do', inputType: 'text' },
+    { value: 'number', label: 'Số', inputType: 'number' },
+    { value: 'percent', label: 'Phần trăm', inputType: 'number' },
+    { value: 'currency', label: 'Tiền tệ', inputType: 'number' },
+    { value: 'date', label: 'Ngày', inputType: 'date' },
+    { value: 'url', label: 'Link', inputType: 'url' },
+];
+
+const getSpecInputType = (type) => SPEC_TYPE_OPTIONS.find((opt) => opt.value === type)?.inputType || 'text';
+
+const emptySpec = () => ({ key: '', value: '', type: 'text', useSubKeys: false, subKeys: [{ key: '', value: '' }] });
+
 const emptyProduct = () => ({
     id: null,
     productName: '',
-    sourceType: 'LINK',
-    link: '',
-    file: null,
-    existingFile: null,
+    specs: [emptySpec()],
+    note: '',
+    docUrl: '',
+    docMethod: 'LINK',
+    docUploading: false,
+    docUploadProgress: 0,
 });
 
 const toEditableProduct = (item) => ({
     id: item?.id || null,
     productName: item?.productName || '',
-    sourceType: item?.sourceType || 'LINK',
-    link: item?.sourceType === 'LINK' ? item?.sourceUrl || '' : '',
-    file: null,
-    existingFile: item?.sourceType === 'FILE'
-        ? {
-            name: item?.sourceName || item?.sourceUrl || 'File đính kèm',
-            url: item?.sourceUrl || '',
-            size: item?.size,
-            publicId: item?.publicId,
-        }
-        : null,
+    specs: Array.isArray(item?.specs) && item.specs.length > 0
+        ? item.specs.map((spec) => ({
+            key: spec.key || '',
+            value: spec.value || '',
+            type: spec.type || 'text',
+            useSubKeys: Array.isArray(spec.subKeys) && spec.subKeys.length > 0,
+            subKeys: Array.isArray(spec.subKeys) && spec.subKeys.length > 0
+                ? spec.subKeys.map((sk) => ({ key: sk.key || '', value: sk.value || '' }))
+                : [{ key: '', value: '' }],
+        }))
+        : [emptySpec()],
+    note: item?.note || '',
+    docUrl: item?.docUrl || '',
+    docMethod: 'LINK',
+    docUploading: false,
+    docUploadProgress: 0,
 });
 
-const getProductSource = (product) => {
-    if (product.sourceType === 'LINK') {
-        return product.link?.trim()
-            ? {
-                sourceType: 'LINK',
-                sourceName: product.link.trim(),
-                sourceUrl: product.link.trim(),
-            }
-            : null;
-    }
-
-    if (product.existingFile?.url) {
-        return {
-            sourceType: 'FILE',
-            sourceName: product.existingFile.name,
-            sourceUrl: product.existingFile.url,
-            size: product.existingFile.size,
-            publicId: product.existingFile.publicId,
-        };
-    }
-
-    return null;
-};
-
-const getFileExtension = (fileName = '') => {
-    const cleanName = fileName.split('?')[0].split('#')[0];
-    const extension = cleanName.includes('.') ? cleanName.split('.').pop() : '';
-    return extension.toLowerCase();
-};
-
-const validateProductDescriptionFile = (file) => {
-    if (!file) return;
-
-    const extension = getFileExtension(file.name);
-    if (!PRODUCT_DESCRIPTION_ALLOWED_EXTENSIONS.includes(extension)) {
-        throw new Error('Chỉ được upload file .pdf, .docx hoặc .xlsx');
-    }
-
-    if (file.size >= PRODUCT_DESCRIPTION_MAX_FILE_SIZE) {
-        throw new Error('Dung lượng mỗi file mô tả sản phẩm phải dưới 10MB');
-    }
-};
-
-const ProductSourceLink = ({ item }) => {
-    const sourceUrl = item?.sourceUrl || '';
-    const sourceType = item?.sourceType || 'LINK';
-    const sourceName = item?.sourceName || sourceUrl || 'Không có nguồn';
-
-    if (!sourceUrl) {
-        return (
-            <span className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-gray-400">
-                <FileText className="w-4 h-4 shrink-0" />
-                <span className="truncate">{sourceName}</span>
-            </span>
-        );
-    }
+const ProductSpecsView = ({ item }) => {
+    const specs = Array.isArray(item?.specs) ? item.specs : [];
 
     return (
-        <a
-            href={getFilePreviewUrl(sourceUrl, sourceType)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
-        >
-            {sourceType === 'LINK' ? <LinkIcon className="w-4 h-4 shrink-0" /> : <FileText className="w-4 h-4 shrink-0" />}
-            <span className="truncate">{sourceName}</span>
-        </a>
+        <div className="min-w-0 space-y-1">
+            {specs.length > 0 && (
+                <div className="flex flex-col gap-y-1">
+                    {specs.map((spec, idx) => (
+                        <div key={idx} className="text-xs text-gray-600">
+                            {Array.isArray(spec.subKeys) && spec.subKeys.length > 0 ? (
+                                <div>
+                                    <span className="font-bold text-gray-700">{spec.key}:</span>
+                                    <ul className="ml-3 mt-0.5 list-disc space-y-0.5">
+                                        {spec.subKeys.map((sk, skIdx) => (
+                                            <li key={skIdx}><span className="font-semibold text-gray-600">{sk.key}:</span> {sk.value}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ) : (
+                                <>
+                                    <span className="font-bold text-gray-700">{spec.key}:</span> {spec.value}
+                                    {spec.type === 'percent' ? '%' : ''}
+                                </>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+            {item?.note && <p className="text-xs italic text-gray-400">{item.note}</p>}
+            {item?.docUrl && (
+                <a
+                    href={getFilePreviewUrl(item.docUrl, 'LINK')}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                >
+                    <LinkIcon className="w-3 h-3 shrink-0" />
+                    <span className="truncate">Tài liệu</span>
+                </a>
+            )}
+        </div>
     );
 };
 
@@ -256,9 +249,9 @@ const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onRe
 
             <div className="mt-4 space-y-2">
                 {(Array.isArray(submission.items) ? submission.items : []).map((item, index) => (
-                    <div key={item?.id || index} className="flex flex-col gap-1 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="min-w-0 text-sm font-bold text-gray-800">{item?.productName || 'Chưa có tên sản phẩm'}</p>
-                        <ProductSourceLink item={item} />
+                    <div key={item?.id || index} className="flex flex-col gap-2 rounded-lg bg-white p-3">
+                        <p className="min-w-0 shrink-0 text-sm font-bold text-gray-800">{item?.productName || 'Chưa có tên sản phẩm'}</p>
+                        <ProductSpecsView item={item} />
                     </div>
                 ))}
             </div>
@@ -325,9 +318,9 @@ const ProductDescriptionHistoryModal = ({ isOpen, onClose, submissions, canEditS
                             <div className="mt-4 space-y-2">
                                 {Array.isArray(submission.items) && submission.items.length > 0 ? (
                                     submission.items.map((item, index) => (
-                                        <div key={item?.id || index} className="flex flex-col gap-1 rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
-                                            <p className="min-w-0 text-sm font-bold text-gray-800">{item?.productName || 'Chưa có tên sản phẩm'}</p>
-                                            <ProductSourceLink item={item} />
+                                        <div key={item?.id || index} className="flex flex-col gap-2 rounded-lg bg-white p-3">
+                                            <p className="min-w-0 shrink-0 text-sm font-bold text-gray-800">{item?.productName || 'Chưa có tên sản phẩm'}</p>
+                                            <ProductSpecsView item={item} />
                                         </div>
                                     ))
                                 ) : (
@@ -360,7 +353,6 @@ const ProductDescriptionSection = ({ project }) => {
     const [submitSubmission, { isLoading: isSubmitting }] = useSubmitProjectProductDescriptionMutation();
     const [approveSubmission, { isLoading: isApproving }] = useApproveProjectProductDescriptionMutation();
     const [rejectSubmission, { isLoading: isRejecting }] = useRejectProjectProductDescriptionMutation();
-    const fileInputsRef = useRef({});
 
     const hasPendingSubmission = submissions.some((submission) => submission?.status === 'PENDING_REVIEW');
     const isAssignedPm = user?.role === 'PM' && project?.team?.members?.some((member) =>
@@ -373,8 +365,6 @@ const ProductDescriptionSection = ({ project }) => {
     const [loadedSubmissionId, setLoadedSubmissionId] = useState(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState({});
-    const [isUploading, setIsUploading] = useState(false);
     const activeSubmission = useMemo(() => (
         submissions.find((submission) => submission?.id === loadedSubmissionId) || null
     ), [loadedSubmissionId, submissions]);
@@ -403,30 +393,93 @@ const ProductDescriptionSection = ({ project }) => {
         setProducts((prev) => prev.length === 1 ? prev : prev.filter((_, idx) => idx !== index));
     };
 
-    const handleFileChange = (index, file) => {
-        if (!file) return;
-        try {
-            validateProductDescriptionFile(file);
-        } catch (error) {
-            toast.error(error.message);
-            if (fileInputsRef.current[index]) {
-                fileInputsRef.current[index].value = '';
-            }
-            return;
-        }
+    const updateSpec = (productIndex, specIndex, patch) => {
+        setProducts((prev) => prev.map((item, idx) => {
+            if (idx !== productIndex) return item;
+            const specs = item.specs.map((spec, sIdx) => sIdx === specIndex ? { ...spec, ...patch } : spec);
+            return { ...item, specs };
+        }));
+    };
 
-        updateProduct(index, {
-            sourceType: 'FILE',
-            file,
-            existingFile: null,
-            link: '',
-        });
+    const addSpec = (productIndex) => {
+        setProducts((prev) => prev.map((item, idx) => (
+            idx === productIndex ? { ...item, specs: [...item.specs, emptySpec()] } : item
+        )));
+    };
+
+    const toggleSpecSubKeys = (productIndex, specIndex) => {
+        setProducts((prev) => prev.map((item, idx) => {
+            if (idx !== productIndex) return item;
+            const specs = item.specs.map((spec, sIdx) => sIdx === specIndex ? { ...spec, useSubKeys: !spec.useSubKeys } : spec);
+            return { ...item, specs };
+        }));
+    };
+
+    const updateSubKey = (productIndex, specIndex, subIndex, patch) => {
+        setProducts((prev) => prev.map((item, idx) => {
+            if (idx !== productIndex) return item;
+            const specs = item.specs.map((spec, sIdx) => {
+                if (sIdx !== specIndex) return spec;
+                const subKeys = spec.subKeys.map((sk, skIdx) => skIdx === subIndex ? { ...sk, ...patch } : sk);
+                return { ...spec, subKeys };
+            });
+            return { ...item, specs };
+        }));
+    };
+
+    const addSubKey = (productIndex, specIndex) => {
+        setProducts((prev) => prev.map((item, idx) => {
+            if (idx !== productIndex) return item;
+            const specs = item.specs.map((spec, sIdx) => sIdx === specIndex
+                ? { ...spec, subKeys: [...spec.subKeys, { key: '', value: '' }] }
+                : spec);
+            return { ...item, specs };
+        }));
+    };
+
+    const removeSubKey = (productIndex, specIndex, subIndex) => {
+        setProducts((prev) => prev.map((item, idx) => {
+            if (idx !== productIndex) return item;
+            const specs = item.specs.map((spec, sIdx) => {
+                if (sIdx !== specIndex) return spec;
+                if (spec.subKeys.length === 1) return spec;
+                return { ...spec, subKeys: spec.subKeys.filter((_, skIdx) => skIdx !== subIndex) };
+            });
+            return { ...item, specs };
+        }));
+    };
+
+    const setProductDocMethod = (productIndex, method) => {
+        updateProduct(productIndex, { docMethod: method, docUrl: method === 'FILE' ? '' : products[productIndex].docUrl });
+    };
+
+    const handleDocFileChange = async (productIndex, file) => {
+        if (!file) return;
+        updateProduct(productIndex, { docUploading: true, docUploadProgress: 0 });
+        try {
+            const uploaded = await uploadToCloudinary(
+                file,
+                'GETVINI/ERP/product-description',
+                (progress) => updateProduct(productIndex, { docUploadProgress: progress })
+            );
+            updateProduct(productIndex, { docUrl: uploaded.url, docUploading: false, docUploadProgress: 0 });
+        } catch (err) {
+            toast.error(err?.message || 'Tải file lên thất bại');
+            updateProduct(productIndex, { docUploading: false, docUploadProgress: 0 });
+        }
+    };
+
+    const removeSpec = (productIndex, specIndex) => {
+        setProducts((prev) => prev.map((item, idx) => {
+            if (idx !== productIndex) return item;
+            if (item.specs.length === 1) return item;
+            return { ...item, specs: item.specs.filter((_, sIdx) => sIdx !== specIndex) };
+        }));
     };
 
     const openCreateForm = () => {
         setProducts([emptyProduct()]);
         setLoadedSubmissionId(null);
-        setUploadProgress({});
         setIsFormOpen(true);
     };
 
@@ -434,60 +487,56 @@ const ProductDescriptionSection = ({ project }) => {
         const editableItems = Array.isArray(submission.items) ? submission.items : [];
         setProducts(editableItems.length ? editableItems.map(toEditableProduct) : [emptyProduct()]);
         setLoadedSubmissionId(submission.id);
-        setUploadProgress({});
         setIsFormOpen(true);
     };
 
     const closeForm = () => {
         setProducts([emptyProduct()]);
         setLoadedSubmissionId(null);
-        setUploadProgress({});
         setIsFormOpen(false);
     };
 
-    const buildPayload = async () => {
-        const normalized = [];
-
-        for (let index = 0; index < products.length; index += 1) {
-            const product = products[index];
+    const buildPayload = () => {
+        const normalized = products.map((product, index) => {
             const productName = product.productName.trim();
 
             if (!productName) {
                 throw new Error(`Vui lòng nhập tên sản phẩm ở dòng ${index + 1}`);
             }
 
-            let source = getProductSource(product);
-            if (product.sourceType === 'FILE' && product.file) {
-                validateProductDescriptionFile(product.file);
-                setIsUploading(true);
-                const uploadedFile = await uploadToCloudinary(
-                    product.file,
-                    `GETVINI/ERP/projects/${projectId}/product-descriptions`,
-                    (progress) => setUploadProgress((prev) => ({ ...prev, [index]: progress }))
-                );
-                source = {
-                    sourceType: 'FILE',
-                    sourceName: uploadedFile.name,
-                    sourceUrl: uploadedFile.url,
-                    size: uploadedFile.size,
-                    publicId: uploadedFile.publicId,
-                };
+            const specs = product.specs
+                .map((spec) => {
+                    const key = spec.key.trim();
+                    const type = spec.type || 'text';
+                    if (type === 'text' && spec.useSubKeys) {
+                        const subKeys = spec.subKeys
+                            .map((sk) => ({ key: sk.key.trim(), value: sk.value.trim() }))
+                            .filter((sk) => sk.key && sk.value);
+                        return { key, type, value: '', subKeys };
+                    }
+                    return { key, type, value: spec.value.trim() };
+                })
+                .filter((spec) => spec.key && (spec.value || (spec.subKeys && spec.subKeys.length > 0)));
+
+            if (specs.length === 0) {
+                throw new Error(`Vui lòng nhập ít nhất một thông tin chuẩn (key:value) cho sản phẩm ${productName}`);
             }
 
-            if (!source?.sourceUrl) {
-                throw new Error(`Vui lòng chọn file hoặc nhập link cho sản phẩm ${productName}`);
-            }
-
-            normalized.push({ id: product.id, productName, ...source });
-        }
+            return {
+                id: product.id,
+                productName,
+                specs,
+                note: product.note.trim() || null,
+                docUrl: product.docUrl.trim() || null,
+            };
+        });
 
         return { items: normalized };
     };
 
     const saveDraft = async () => {
         try {
-            setUploadProgress({});
-            const payload = await buildPayload();
+            const payload = buildPayload();
             if (activeSubmission?.status === 'REJECTED') {
                 const created = await createSubmission({ projectId, ...payload }).unwrap();
                 setLoadedSubmissionId(created.id);
@@ -502,15 +551,12 @@ const ProductDescriptionSection = ({ project }) => {
             }
         } catch (err) {
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi lưu bản mô tả sản phẩm');
-        } finally {
-            setIsUploading(false);
         }
     };
 
     const submitForReview = async () => {
         try {
-            setUploadProgress({});
-            const payload = await buildPayload();
+            const payload = buildPayload();
             if (activeSubmission?.status === 'REJECTED') {
                 const saved = await createSubmission({ projectId, ...payload }).unwrap();
                 await submitSubmission({ projectId, submissionId: saved.id }).unwrap();
@@ -524,8 +570,6 @@ const ProductDescriptionSection = ({ project }) => {
             closeForm();
         } catch (err) {
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi gửi duyệt');
-        } finally {
-            setIsUploading(false);
         }
     };
 
@@ -547,7 +591,7 @@ const ProductDescriptionSection = ({ project }) => {
         }
     };
 
-    const isSaving = isCreating || isUpdating || isSubmitting || isUploading;
+    const isSaving = isCreating || isUpdating || isSubmitting;
     const isReviewing = isApproving || isRejecting;
 
     return (
@@ -625,15 +669,6 @@ const ProductDescriptionSection = ({ project }) => {
                         <div className="flex gap-2">
                             <button
                                 type="button"
-                                onClick={addProduct}
-                                disabled={!canEdit || isSaving}
-                                className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-blue-600 shadow-sm ring-1 ring-gray-200 hover:bg-blue-50 disabled:opacity-50"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Thêm sản phẩm
-                            </button>
-                            <button
-                                type="button"
                                 onClick={closeForm}
                                 disabled={isSaving}
                                 className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-gray-600 shadow-sm ring-1 ring-gray-200 hover:bg-gray-100 disabled:opacity-50"
@@ -643,34 +678,25 @@ const ProductDescriptionSection = ({ project }) => {
                         </div>
                     </div>
 
+                    <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                        <p className="text-xs font-medium text-amber-700">
+                            Đây là các thông tin sẽ được dùng để đối chiếu khi chạy QC. Vui lòng ghi đầy đủ các thông tin quan trọng (giá, dung tích/trọng lượng, số lượng, deal, tính năng, thành phần, vị, hạn dùng...) để QC đối chiếu chính xác.
+                        </p>
+                    </div>
+
                     <div className="space-y-3">
                         {products.map((product, index) => (
                             <div key={index} className="rounded-xl border border-gray-200 bg-white p-4">
                                 <div className="flex items-start justify-between gap-3">
-                                    <div className="grid flex-1 gap-3 md:grid-cols-[1fr_180px]">
-                                        <input
-                                            type="text"
-                                            value={product.productName}
-                                            onChange={(event) => updateProduct(index, { productName: event.target.value })}
-                                            disabled={!canEdit || isSaving}
-                                            placeholder="Tên sản phẩm"
-                                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold outline-none focus:border-blue-400 disabled:bg-gray-50"
-                                        />
-                                        <select
-                                            value={product.sourceType}
-                                            onChange={(event) => updateProduct(index, {
-                                                sourceType: event.target.value,
-                                                link: '',
-                                                file: null,
-                                                existingFile: null,
-                                            })}
-                                            disabled={!canEdit || isSaving}
-                                            className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold outline-none focus:border-blue-400 disabled:bg-gray-50"
-                                        >
-                                            <option value="LINK">Link tham khảo</option>
-                                            <option value="FILE">File đính kèm</option>
-                                        </select>
-                                    </div>
+                                    <input
+                                        type="text"
+                                        value={product.productName}
+                                        onChange={(event) => updateProduct(index, { productName: event.target.value })}
+                                        disabled={!canEdit || isSaving}
+                                        placeholder="Tên sản phẩm"
+                                        className="w-full flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                    />
 
                                     <button
                                         type="button"
@@ -682,49 +708,221 @@ const ProductDescriptionSection = ({ project }) => {
                                     </button>
                                 </div>
 
+                                <div className="mt-3 space-y-3">
+                                    <p className="text-xs font-bold uppercase text-gray-400">Thông tin chuẩn (key : value)</p>
+                                    {product.specs.map((spec, specIndex) => {
+                                        const isText = (spec.type || 'text') === 'text';
+                                        return (
+                                            <div key={specIndex} className="rounded-lg border border-gray-100 bg-gray-50/60 p-2.5">
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={spec.key}
+                                                        onChange={(event) => updateSpec(index, specIndex, { key: event.target.value })}
+                                                        disabled={!canEdit || isSaving}
+                                                        placeholder="Key (vd: Giá, Trọng lượng...)"
+                                                        className={`rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50 ${isText ? 'w-1/3' : 'w-1/4'}`}
+                                                    />
+                                                    <select
+                                                        value={spec.type || 'text'}
+                                                        onChange={(event) => updateSpec(index, specIndex, { type: event.target.value })}
+                                                        disabled={!canEdit || isSaving}
+                                                        className="w-32 shrink-0 rounded-lg border border-gray-200 px-2 py-2 text-xs outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                                    >
+                                                        {SPEC_TYPE_OPTIONS.map((opt) => (
+                                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                        ))}
+                                                    </select>
+
+                                                    {!isText && (
+                                                        <input
+                                                            type={getSpecInputType(spec.type)}
+                                                            step={getSpecInputType(spec.type) === 'number' ? 'any' : undefined}
+                                                            value={spec.value}
+                                                            onChange={(event) => updateSpec(index, specIndex, { value: event.target.value })}
+                                                            disabled={!canEdit || isSaving}
+                                                            placeholder="Value"
+                                                            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                                        />
+                                                    )}
+
+                                                    {isText && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleSpecSubKeys(index, specIndex)}
+                                                            disabled={!canEdit || isSaving}
+                                                            className="shrink-0 rounded-lg border border-blue-200 px-2 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 disabled:opacity-40"
+                                                        >
+                                                            {spec.useSubKeys ? 'Dùng văn bản tự do' : 'Cấu trúc subkey'}
+                                                        </button>
+                                                    )}
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeSpec(index, specIndex)}
+                                                        disabled={!canEdit || isSaving || product.specs.length === 1}
+                                                        className="shrink-0 rounded-lg p-2 text-gray-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+
+                                                {isText && !spec.useSubKeys && (
+                                                    <textarea
+                                                        rows="3"
+                                                        value={spec.value}
+                                                        onChange={(event) => updateSpec(index, specIndex, { value: event.target.value })}
+                                                        disabled={!canEdit || isSaving}
+                                                        placeholder="Nhập nội dung chi tiết (vd: mô tả thành phần, tính năng, ưu đãi...)"
+                                                        className="mt-2 w-full resize-y rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                                    />
+                                                )}
+
+                                                {isText && spec.useSubKeys && (
+                                                    <div className="mt-2 space-y-2 rounded-lg border border-dashed border-gray-200 bg-white p-2">
+                                                        {spec.subKeys.map((sk, subIndex) => (
+                                                            <div key={subIndex} className="flex items-center gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={sk.key}
+                                                                    onChange={(event) => updateSubKey(index, specIndex, subIndex, { key: event.target.value })}
+                                                                    disabled={!canEdit || isSaving}
+                                                                    placeholder="Subkey (vd: Vitamin C)"
+                                                                    className="w-1/3 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                                                />
+                                                                <input
+                                                                    type="text"
+                                                                    value={sk.value}
+                                                                    onChange={(event) => updateSubKey(index, specIndex, subIndex, { value: event.target.value })}
+                                                                    disabled={!canEdit || isSaving}
+                                                                    placeholder="Giá trị (vd: 500mg)"
+                                                                    className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeSubKey(index, specIndex, subIndex)}
+                                                                    disabled={!canEdit || isSaving || spec.subKeys.length === 1}
+                                                                    className="rounded-lg p-2 text-gray-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => addSubKey(index, specIndex)}
+                                                            disabled={!canEdit || isSaving}
+                                                            className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 disabled:opacity-40"
+                                                        >
+                                                            <Plus className="h-3.5 w-3.5" />
+                                                            Thêm subkey
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                    <button
+                                        type="button"
+                                        onClick={() => addSpec(index)}
+                                        disabled={!canEdit || isSaving}
+                                        className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 disabled:opacity-40"
+                                    >
+                                        <Plus className="h-3.5 w-3.5" />
+                                        Thêm thông tin
+                                    </button>
+                                </div>
+
                                 <div className="mt-3">
-                                    {product.sourceType === 'LINK' ? (
+                                    <textarea
+                                        rows="2"
+                                        value={product.note}
+                                        onChange={(event) => updateProduct(index, { note: event.target.value })}
+                                        disabled={!canEdit || isSaving}
+                                        placeholder="Ghi chú (không bắt buộc)"
+                                        className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                    />
+                                </div>
+
+                                <div className="mt-3">
+                                    <div className="mb-2 flex gap-3">
+                                        <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
+                                            <input
+                                                type="radio"
+                                                name={`docMethod-${index}`}
+                                                checked={product.docMethod !== 'FILE'}
+                                                onChange={() => setProductDocMethod(index, 'LINK')}
+                                                disabled={!canEdit || isSaving}
+                                            />
+                                            Dán link
+                                        </label>
+                                        <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
+                                            <input
+                                                type="radio"
+                                                name={`docMethod-${index}`}
+                                                checked={product.docMethod === 'FILE'}
+                                                onChange={() => setProductDocMethod(index, 'FILE')}
+                                                disabled={!canEdit || isSaving}
+                                            />
+                                            Upload file
+                                        </label>
+                                    </div>
+
+                                    {product.docMethod === 'FILE' ? (
+                                        <div>
+                                            <div className="relative">
+                                                <Upload className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                                <input
+                                                    type="file"
+                                                    onChange={(event) => handleDocFileChange(index, event.target.files?.[0])}
+                                                    disabled={!canEdit || isSaving || product.docUploading}
+                                                    className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm outline-none file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700 focus:border-blue-400 disabled:bg-gray-50"
+                                                />
+                                            </div>
+                                            {product.docUploading && (
+                                                <div className="mt-2 flex items-center gap-2 text-xs text-blue-600">
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    Đang tải lên... {product.docUploadProgress}%
+                                                </div>
+                                            )}
+                                            {!product.docUploading && product.docUrl && (
+                                                <a
+                                                    href={product.docUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                                                >
+                                                    <FileText className="h-3.5 w-3.5" />
+                                                    Xem file đã upload
+                                                </a>
+                                            )}
+                                        </div>
+                                    ) : (
                                         <div className="relative">
                                             <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                             <input
                                                 type="url"
-                                                value={product.link}
-                                                onChange={(event) => updateProduct(index, { link: event.target.value })}
+                                                value={product.docUrl}
+                                                onChange={(event) => updateProduct(index, { docUrl: event.target.value })}
                                                 disabled={!canEdit || isSaving}
-                                                placeholder="https://..."
+                                                placeholder="Link tài liệu (không bắt buộc)"
                                                 className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
                                             />
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                            <input
-                                                type="file"
-                                                accept={PRODUCT_DESCRIPTION_ACCEPT}
-                                                ref={(node) => { fileInputsRef.current[index] = node; }}
-                                                className="hidden"
-                                                onChange={(event) => handleFileChange(index, event.target.files?.[0])}
-                                                disabled={!canEdit || isSaving}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => fileInputsRef.current[index]?.click()}
-                                                disabled={!canEdit || isSaving}
-                                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-sm font-semibold text-gray-600 hover:border-blue-300 hover:text-blue-600 disabled:opacity-50"
-                                            >
-                                                <Upload className="h-4 w-4" />
-                                                Chọn file
-                                            </button>
-                                            <span className="min-w-0 truncate text-sm font-medium text-gray-500">
-                                                {product.file?.name || product.existingFile?.name || 'Chưa chọn file'}
-                                            </span>
-                                            {isUploading && uploadProgress[index] !== undefined && (
-                                                <span className="text-xs font-bold text-blue-600">{uploadProgress[index]}%</span>
-                                            )}
                                         </div>
                                     )}
                                 </div>
                             </div>
                         ))}
+
+                        <button
+                            type="button"
+                            onClick={addProduct}
+                            disabled={!canEdit || isSaving}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-white px-3 py-3 text-xs font-bold text-blue-600 hover:border-blue-300 hover:bg-blue-50 disabled:opacity-50"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Thêm sản phẩm
+                        </button>
                     </div>
 
                     <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
