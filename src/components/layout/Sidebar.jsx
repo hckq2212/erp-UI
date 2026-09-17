@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Users, Briefcase, FileText,
   FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store,
   CheckCircle2, Package, User, Handshake, FolderOpenDotIcon , Video, BookText,
+  Archive,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useGetMeQuery } from '../../api/auth';
@@ -25,6 +26,7 @@ const menuItems = [
   { path: '/referral-partners', icon: Handshake, label: 'Đối tác', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
   { path: '/create-video-ai', icon: Video, label: 'Tạo Video AI'},
   { path: '/library-video-ai', icon: BookText, label: 'Thư viện Video AI'},
+  { path: '/document-library', icon: Archive, label: 'Kho tài liệu' },
 ];
 
 export const Sidebar = ({ isCollapsed }) => {
