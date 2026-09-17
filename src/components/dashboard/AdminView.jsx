@@ -196,7 +196,6 @@ const StaffWorkloadPanel = ({ workloads = [], onSelectMember }) => {
     return (
         <SectionPanel
             title="Workload nhân sự"
-            count={sorted.length}
             icon={Users}
             accentClass="bg-emerald-50 text-emerald-600"
         >

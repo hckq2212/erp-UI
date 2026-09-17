@@ -24,7 +24,7 @@ export const HotProjectList = ({
                         <Flame size={18} />
                     </div>
                     <div>
-                        <h3 className="text-sm font-black text-slate-900 tracking-tight">{title} {`(${projects.length})`}</h3>
+                        <h3 className="text-sm font-black text-slate-900 tracking-tight">{title}</h3>
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{subtitle}</p>
                     </div>
                 </div>
