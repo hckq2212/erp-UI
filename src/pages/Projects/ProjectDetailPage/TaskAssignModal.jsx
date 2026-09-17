@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { X, Upload, Link as LinkIcon, Calendar, User, Users, FileText, Trash2, Plus, Info, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGetTeamMembersQuery, useGetTeamsQuery, useLazyGetTeamsQuery, useLazyGetTeamMembersQuery } from '../../../api/teams';
@@ -8,6 +8,33 @@ import { useGetVendorsByJobQuery } from '../../../api/vendors';
 import { uploadToCloudinary } from '../../../utils/cloudinary';
 import { toast } from 'react-toastify';
 import { getTaskDisplayName } from '../../../utils/taskName';
+import { formatWorkloadLabel, getWorkloadColor, getWorkloadDisplayPercent } from '../../../utils/workload';
+
+const WorkloadPill = ({ workload }) => {
+    const percent = getWorkloadDisplayPercent(workload);
+
+    return (
+        <span
+            className="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-black text-white shadow-sm"
+            style={{ backgroundColor: getWorkloadColor(percent) }}
+        >
+            {formatWorkloadLabel(workload)}
+        </span>
+    );
+};
+
+const WorkloadBar = ({ workload }) => {
+    const percent = getWorkloadDisplayPercent(workload);
+
+    return (
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+            <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${Math.min(percent, 200) / 2}%`, backgroundColor: getWorkloadColor(percent) }}
+            />
+        </div>
+    );
+};
 
 export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     const isBulk = Array.isArray(task);
@@ -18,9 +45,21 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     const projectId = project?.id;
     const teamId = project?.team?.id;
     const fileInputRef = useRef(null);
+    const [plannedEndDate, setPlannedEndDate] = useState(formatDateTimeISO(representativeTask?.plannedEndDate) || '');
+    const workloadDate = useMemo(() => {
+        const date = plannedEndDate ? new Date(plannedEndDate) : new Date();
+        const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
+        return {
+            month: safeDate.getMonth() + 1,
+            year: safeDate.getFullYear()
+        };
+    }, [plannedEndDate]);
 
     // Normal members
-    const { data: members = [] } = useGetTeamMembersQuery(teamId, { skip: !teamId });
+    const { data: members = [] } = useGetTeamMembersQuery(
+        teamId ? { teamId, ...workloadDate } : undefined,
+        { skip: !teamId }
+    );
 
     // Lazy fetch for support teams
     const [fetchTeams, { data: allTeams = [], isLoading: isLoadingTeams }] = useLazyGetTeamsQuery();
@@ -43,7 +82,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
         selectedTeamId: '',
         isTeamAssignment: false
     });
-    const [plannedEndDate, setPlannedEndDate] = useState(formatDateTimeISO(representativeTask?.plannedEndDate) || '');
+    const [isAssigneeOpen, setIsAssigneeOpen] = useState(false);
 
     const jobId = representativeTask?.jobId || representativeTask?.job?.id;
     const { data: vendorsResult, isLoading: isLoadingVendors } = useGetVendorsByJobQuery(jobId, {
@@ -56,9 +95,12 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
 
     useEffect(() => {
         if (isSupportMode && representativeTask?.supportTeamId) {
-            fetchSupportMembers(representativeTask.supportTeamId);
+            fetchSupportMembers({ teamId: representativeTask.supportTeamId, ...workloadDate });
         }
-    }, [isSupportMode, representativeTask?.supportTeamId, fetchSupportMembers]);
+    }, [isSupportMode, representativeTask?.supportTeamId, fetchSupportMembers, workloadDate]);
+
+    const internalMembers = isSupportMode && representativeTask?.supportTeamId ? supportMembers : members;
+    const selectedMember = internalMembers.find(m => m.user?.id === formData.assigneeId);
 
     const handleAddLink = useCallback(() => {
         setFormData(prev => ({ ...prev, links: [...prev.links, ''] }));
@@ -109,6 +151,17 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
 
         if (formData.isTeamAssignment && !formData.selectedTeamId) {
             toast.error('Vui lòng chọn team hỗ trợ');
+            return;
+        }
+
+        if (!plannedEndDate) {
+            toast.error('Vui lòng nhập deadline');
+            return;
+        }
+
+        const parsedDeadline = new Date(plannedEndDate);
+        if (Number.isNaN(parsedDeadline.getTime())) {
+            toast.error('Deadline không hợp lệ');
             return;
         }
 
@@ -320,53 +373,101 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                     )}
                                 </div>
                                 <div className="relative group">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
+                                    <div className="absolute left-4 top-1/2 z-10 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
                                         {formData.isTeamAssignment ? <Users className="w-full h-full" /> : <User className="w-full h-full" />}
                                     </div>
-                                    <select
-                                        className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer text-slate-700 font-medium"
-                                        value={formData.isTeamAssignment ? formData.selectedTeamId : formData.assigneeId}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            if (formData.isTeamAssignment) {
-                                                setFormData({ ...formData, selectedTeamId: val });
-                                                if (val) fetchSupportMembers(val);
-                                            } else {
-                                                setFormData({ ...formData, assigneeId: val });
-                                            }
-                                        }}
-                                        onFocus={() => {
-                                            if (formData.isTeamAssignment && allTeams.length === 0) fetchTeams();
-                                        }}
-                                    >
-                                        <option value="">
-                                            {formData.isTeamAssignment
-                                                ? (isLoadingTeams ? 'Đang tải danh sách team...' : 'Chọn team hỗ trợ')
-                                                : (formData.performerType === 'VENDOR' && isLoadingVendors
-                                                    ? 'Đang tải danh sách...'
-                                                    : `Chọn ${formData.performerType === 'INTERNAL' ? 'người thực hiện' : 'vendor'}`)}
-                                        </option>
-                                        {formData.isTeamAssignment ? (
-                                            allTeams.map(t => (
-                                                <option key={t.id} value={t.id}>{t.name} (Lead: {t.teamLead?.fullName})</option>
-                                            ))
-                                        ) : (
-                                            formData.performerType === 'INTERNAL' ? (
-                                                (isSupportMode && representativeTask.supportTeamId ? supportMembers : members).map(m => (
-                                                    <option key={m.user.id} value={m.user.id}>{m.user.fullName}</option>
-                                                ))
-                                            ) : (
-                                                vendors.map(v => (
-                                                    <option key={v.id} value={v.id}>{v.name}</option>
-                                                ))
-                                            )
-                                        )}
-                                    </select>
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                        <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </div>
+
+                                    {!formData.isTeamAssignment && formData.performerType === 'INTERNAL' ? (
+                                        <>
+                                            <button
+                                                type="button"
+                                                className="flex w-full items-center gap-3 rounded-2xl border-2 border-slate-100 bg-white py-4 pl-12 pr-11 text-left font-medium text-slate-700 outline-none transition-all hover:border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50"
+                                                onClick={() => setIsAssigneeOpen(prev => !prev)}
+                                            >
+                                                {selectedMember ? (
+                                                    <>
+                                                        <span className="min-w-0 flex-1 truncate">
+                                                            {selectedMember.user.fullName} - {selectedMember.role}
+                                                        </span>
+                                                        <WorkloadPill workload={selectedMember.user.workload} />
+                                                    </>
+                                                ) : (
+                                                    <span className="text-slate-400">Chọn người thực hiện</span>
+                                                )}
+                                            </button>
+
+                                            {isAssigneeOpen && (
+                                                <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-72 overflow-y-auto rounded-2xl border border-slate-100 bg-white p-2 shadow-2xl shadow-slate-200/80">
+                                                    {internalMembers.length > 0 ? (
+                                                        internalMembers.map(m => {
+                                                            const workload = m.user?.workload;
+                                                            return (
+                                                                <button
+                                                                    key={m.user.id}
+                                                                    type="button"
+                                                                    className={`w-full rounded-xl p-3 text-left transition hover:bg-blue-50 ${formData.assigneeId === m.user.id ? 'bg-blue-50 ring-1 ring-blue-100' : ''}`}
+                                                                    onClick={() => {
+                                                                        setFormData({ ...formData, assigneeId: m.user.id });
+                                                                        setIsAssigneeOpen(false);
+                                                                    }}
+                                                                >
+                                                                    <div className="mb-2 flex items-center justify-between gap-3">
+                                                                        <div className="min-w-0">
+                                                                            <p className="truncate text-sm font-black text-slate-800">{m.user.fullName}</p>
+                                                                            <p className="truncate text-[10px] font-bold uppercase tracking-wider text-slate-400">{m.role}</p>
+                                                                        </div>
+                                                                        <WorkloadPill workload={workload} />
+                                                                    </div>
+                                                                    <WorkloadBar workload={workload} />
+                                                                </button>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <p className="px-3 py-8 text-center text-xs font-bold uppercase tracking-widest text-slate-300">Không có nhân sự</p>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <select
+                                                className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer text-slate-700 font-medium"
+                                                value={formData.isTeamAssignment ? formData.selectedTeamId : formData.assigneeId}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (formData.isTeamAssignment) {
+                                                        setFormData({ ...formData, selectedTeamId: val });
+                                                        if (val) fetchSupportMembers({ teamId: val, ...workloadDate });
+                                                    } else {
+                                                        setFormData({ ...formData, assigneeId: val });
+                                                    }
+                                                }}
+                                                onFocus={() => {
+                                                    if (formData.isTeamAssignment && allTeams.length === 0) fetchTeams();
+                                                }}
+                                            >
+                                                <option value="">
+                                                    {formData.isTeamAssignment
+                                                        ? (isLoadingTeams ? 'Đang tải danh sách team...' : 'Chọn team hỗ trợ')
+                                                        : (isLoadingVendors ? 'Đang tải danh sách...' : 'Chọn vendor')}
+                                                </option>
+                                                {formData.isTeamAssignment ? (
+                                                    allTeams.map(t => (
+                                                        <option key={t.id} value={t.id}>{t.name} (Lead: {t.teamLead?.fullName})</option>
+                                                    ))
+                                                ) : (
+                                                    vendors.map(v => (
+                                                        <option key={v.id} value={v.id}>{v.name}</option>
+                                                    ))
+                                                )}
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                                 {formData.performerType === 'VENDOR' && vendors.length === 0 && !isLoadingVendors && (
                                     <div className="flex items-center gap-2 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold ring-1 ring-red-100 animate-in fade-in slide-in-from-top-1">
@@ -382,6 +483,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                     <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                     <input
                                         type="datetime-local"
+                                        required
                                         className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all text-slate-700 font-medium"
                                         value={plannedEndDate}
                                         onChange={(e) => setPlannedEndDate(e.target.value)}

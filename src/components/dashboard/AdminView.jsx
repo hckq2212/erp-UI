@@ -18,6 +18,7 @@ import { formatCurrency } from '../../utils/format';
 import { PROJECT_STATUS_COLORS } from '../../utils/enums';
 import { MetricCard } from './member/MetricCard';
 import { HotProjectList } from './member/HotProjectList';
+import { formatWorkloadLabel, getWorkloadColor, getWorkloadDisplayPercent } from '../../utils/workload';
 
 const PROJECT_STATUS_LABELS = {
     PENDING_CONFIRMATION: 'Chờ xác nhận',
@@ -189,6 +190,67 @@ const EmptyState = ({ icon: Icon, text }) => (
     </div>
 );
 
+const StaffWorkloadPanel = ({ workloads = [], onSelectMember }) => {
+    const sorted = [...workloads].sort((a, b) => Number(b.percent || 0) - Number(a.percent || 0));
+
+    return (
+        <SectionPanel
+            title="Workload nhân sự"
+            count={sorted.length}
+            icon={Users}
+            accentClass="bg-emerald-50 text-emerald-600"
+        >
+            {sorted.length > 0 ? (
+                <div className="max-h-[520px] space-y-2 overflow-y-auto pr-1">
+                    {sorted.map((item) => {
+                        const displayPercent = getWorkloadDisplayPercent(item);
+                        const color = getWorkloadColor(displayPercent);
+                        return (
+                            <button
+                                key={item.userId}
+                                type="button"
+                                onClick={() => onSelectMember?.(item.userId)}
+                                className="group w-full rounded-lg border border-slate-100 bg-white p-3 text-left transition hover:border-emerald-100 hover:bg-emerald-50/40"
+                            >
+                                <div className="mb-2 flex items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <h4 className="truncate text-sm font-black text-slate-900 group-hover:text-emerald-700">
+                                            {item.fullName}
+                                        </h4>
+                                        <p className="truncate text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                            {item.role}
+                                        </p>
+                                    </div>
+                                    <span
+                                        className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black text-white shadow-sm"
+                                        style={{ backgroundColor: color }}
+                                    >
+                                        {formatWorkloadLabel(item)}
+                                    </span>
+                                </div>
+                                <div className="mb-1.5 h-2 overflow-hidden rounded-full bg-slate-100">
+                                    <div
+                                        className="h-full rounded-full transition-all"
+                                        style={{ width: `${Math.min(displayPercent, 200) / 2}%`, backgroundColor: color }}
+                                    />
+                                </div>
+                                <p className="text-[10px] font-bold text-slate-400">
+                                    {Number(item.pendingVinicoin || 0).toLocaleString()} / {Number(item.kpi || 2500).toLocaleString()} Vinicoin
+                                </p>
+                            </button>
+                        );
+                    })}
+                </div>
+            ) : (
+                <EmptyState
+                    icon={Users}
+                    text="Chưa có dữ liệu workload nhân sự"
+                />
+            )}
+        </SectionPanel>
+    );
+};
+
 const ApprovalItem = ({ item, navigate }) => {
     const isQuotation = item.type === 'QUOTATION';
     const Icon = isQuotation ? FileText : FileSignature;
@@ -293,7 +355,7 @@ const ProjectProgressCard = ({ project, navigate }) => {
     );
 };
 
-export const AdminView = ({ dashboard, navigate }) => {
+export const AdminView = ({ dashboard, navigate, onSelectMember }) => {
     const admin = dashboard?.admin || {};
     const quotations = admin?.approvalQueue?.quotations || [];
     const contracts = admin?.approvalQueue?.contracts || [];
@@ -331,7 +393,7 @@ export const AdminView = ({ dashboard, navigate }) => {
                 averageProgress={averageProgress}
             />
 
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(360px,0.85fr)_minmax(0,1.4fr)]">
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(320px,0.8fr)_minmax(320px,0.85fr)_minmax(0,1.3fr)]">
                 <SectionPanel
                     title="Danh sách cần duyệt"
                     count={approvalItems.length}
@@ -351,6 +413,10 @@ export const AdminView = ({ dashboard, navigate }) => {
                         />
                     )}
                 </SectionPanel>
+                <StaffWorkloadPanel
+                    workloads={admin?.staffWorkloads || []}
+                    onSelectMember={onSelectMember}
+                />
                 {currentProjects.length > 0 ? (
                     <HotProjectList
                         projects={projectProgressItems}

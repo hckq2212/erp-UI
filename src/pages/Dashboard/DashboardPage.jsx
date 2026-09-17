@@ -203,6 +203,7 @@ export const DashboardPage = () => {
                             <AdminView
                                 dashboard={dashboard}
                                 navigate={navigate}
+                                onSelectMember={setSelectedMemberId}
                             />
                         )}
 

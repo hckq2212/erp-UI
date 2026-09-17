@@ -11,6 +11,7 @@ import {
 } from '../../../api/teams';
 import { TEAM_MEMBER_ROLE, TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../../utils/enums';
 import { getCurrentUserId, getUserAccountRole, isSameUser } from '../../../utils/authUser';
+import { formatWorkloadLabel, getWorkloadColor, getWorkloadDisplayPercent } from '../../../utils/workload';
 
 const prioritizeLeadRole = (roles) => [
     TEAM_MEMBER_ROLE.ACCOUNT,
@@ -25,10 +26,33 @@ const getRoleSelectClassName = (role, baseClassName) => {
 const getRoleOptionClassName = (role) =>
     role === TEAM_MEMBER_ROLE.ACCOUNT ? 'bg-emerald-50 font-bold text-emerald-700' : '';
 
+const WorkloadBadge = ({ workload }) => {
+    const displayPercent = getWorkloadDisplayPercent(workload);
+
+    return (
+        <span
+            className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black text-white shadow-sm"
+            style={{ backgroundColor: getWorkloadColor(displayPercent) }}
+        >
+            {formatWorkloadLabel(workload)}
+        </span>
+    );
+};
+
 export const TeamInfo = ({ team }) => {
     const { data: currentUser } = useGetMeQuery();
-    const { data: users = [] } = useGetUsersQuery();
-    const { data: members = [] } = useGetTeamMembersQuery(team?.id, { skip: !team?.id });
+    const workloadDate = useMemo(() => {
+        const now = new Date();
+        return {
+            month: now.getMonth() + 1,
+            year: now.getFullYear()
+        };
+    }, []);
+    const { data: users = [] } = useGetUsersQuery(workloadDate);
+    const { data: members = [] } = useGetTeamMembersQuery(
+        team?.id ? { teamId: team.id, ...workloadDate } : undefined,
+        { skip: !team?.id }
+    );
     const [addMember, { isLoading: isAdding }] = useAddTeamMemberMutation();
     const [updateMember] = useUpdateTeamMemberMutation();
     const [removeMember] = useRemoveTeamMemberMutation();
@@ -130,11 +154,15 @@ export const TeamInfo = ({ team }) => {
                             const isLead = isSameUser(member.user?.id, team.teamLead?.id);
                             const isProjectManager = member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER;
                             const accountRole = getUserAccountRole(member.user);
+                            const memberRoleLabel = TEAM_MEMBER_ROLE_LABELS[member.role] || member.role;
                             return (
                                 <div key={member.id} className="flex items-center gap-2 rounded-xl border border-gray-100 bg-white p-2">
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-1.5">
-                                            <p className="truncate text-sm font-bold text-gray-900">{member.user?.fullName}</p>
+                                            <p className="truncate text-sm font-bold text-gray-900">
+                                                {member.user?.fullName} - {memberRoleLabel}
+                                            </p>
+                                            <WorkloadBadge workload={member.user?.workload} />
                                             {member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER && (
                                                 <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-blue-700">PM</span>
                                             )}
@@ -192,7 +220,7 @@ export const TeamInfo = ({ team }) => {
                                 <option value="">{availableUsers.length ? 'Chọn nhân sự' : 'Tất cả nhân sự đã có trong project'}</option>
                                 {availableUsers.map((item) => (
                                     <option key={item.id} value={item.id}>
-                                        {item.fullName} - {USER_ROLE[getUserAccountRole(item)] || getUserAccountRole(item) || 'Nhân sự'}
+                                        {item.fullName} - {USER_ROLE[getUserAccountRole(item)] || getUserAccountRole(item) || 'Nhân sự'} - {formatWorkloadLabel(item.workload)}
                                     </option>
                                 ))}
                             </select>

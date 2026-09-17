@@ -17,11 +17,23 @@ export const teamsApi = api.injectEndpoints({
       providesTags: (result, error, id) => [{ type: 'Teams', id }],
     }),
     getTeamMembers: builder.query({
-      query: (teamId) => `/teams/${teamId}/members`,
-      providesTags: (result, error, teamId) => [
+      query: (arg) => {
+        const teamId = typeof arg === 'object' ? arg.teamId : arg;
+        const params = new URLSearchParams();
+        if (typeof arg === 'object') {
+          if (arg.month) params.append('month', arg.month);
+          if (arg.year) params.append('year', arg.year);
+        }
+        const queryString = params.toString();
+        return `/teams/${teamId}/members${queryString ? `?${queryString}` : ''}`;
+      },
+      providesTags: (result, error, arg) => {
+        const teamId = typeof arg === 'object' ? arg.teamId : arg;
+        return [
         { type: 'Teams', id: teamId },
         { type: 'Teams', id: 'LIST' },
-      ],
+      ];
+      },
     }),
     createTeam: builder.mutation({
       query: (data) => ({
