@@ -20,8 +20,13 @@ export const HotProjectList = ({
         <div className="bg-white p-4  rounded-[1rem] border border-slate-100 shadow-sm h-full">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-rose-50 text-rose-500 rounded-lg">
+                    <div className="p-2 bg-rose-50 text-rose-500 rounded-lg relative">
                         <Flame size={18} />
+                        {projects.length > 0 && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[8px] font-black flex items-center justify-center rounded-full animate-bounce">
+                                {projects.length}
+                            </span>
+                        )}
                     </div>
                     <div>
                         <h3 className="text-sm font-black text-slate-900 tracking-tight">{title}</h3>
@@ -33,9 +38,9 @@ export const HotProjectList = ({
                 </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4 max-h-[220px] overflow-y-auto scrollbar-hide pr-2">
                 {projects.length > 0 ? (
-                    projects.slice(0, 5).map((project, index) => {
+                    projects.map((project, index) => {
                         // Use project.progress if available, else 0
                         const progress = project.progress || 0;
                         const roleLabel = TEAM_MEMBER_ROLE_LABELS[project.role] || USER_ROLE[project.role] || project.role;

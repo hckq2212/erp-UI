@@ -12,18 +12,28 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Tailwind v4: utilities are generated via @import "tailwindcss" */
+/* Tailwind v4 utility for hiding scrollbars */
+@utility scrollbar-hide {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  &::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+}
 
-/* Ẩn thanh cuộn */
 .scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
-main:has(.flex.flex-col.overflow-hidden) {
+/* main:has(.flex.flex-col.overflow-hidden) {
   padding: 0;
-}
+}  */
