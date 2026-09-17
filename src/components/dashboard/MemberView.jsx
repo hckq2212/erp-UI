@@ -136,7 +136,7 @@ export const MemberView = ({
     const filteredTimelineTasks = selectedProjectId
         ? rawTimelineTasks.filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
         : rawTimelineTasks;
-    const timelineTasks = filteredTimelineTasks.slice(0, 10);
+    const timelineTasks = filteredTimelineTasks;
 
     const teamLeadReviewTasks = awaitingReviewTasks?.data?.filter(task =>
         (isSameUser(currentUserId, task.assignerId) || isSameUser(currentUserId, task.project?.team?.teamLead?.id)) &&
@@ -155,7 +155,7 @@ export const MemberView = ({
 
     return (
         <>
-            <div className="space-y-3 pb-20">
+            <div className="space-y-3 pb-2">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-2">
                     <div className="lg:col-span-7">
                         <TodayFocusCard

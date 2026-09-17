@@ -11,11 +11,17 @@ export const TimelineList = ({ tasks = [], navigate }) => {
         <div className="bg-white p-4 rounded-[1rem] border border-slate-100 shadow-sm h-full">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-50 text-amber-500 rounded-lg">
+                    <div className="p-2 bg-amber-50 text-amber-500 rounded-lg relative">
                         <Clock size={18} />
+                        {tasks.length > 0 && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[8px] font-black flex items-center justify-center rounded-full animate-bounce">
+                                {tasks.length}
+                            </span>
+                        )}
                     </div>
                     <div>
-                        <h3 className="text-sm font-black text-slate-900 tracking-tight">Deadline sắp tới {`(${tasks.length})`}</h3>
+                        <h3 className="text-sm font-black text-slate-900 tracking-tight">Deadline sắp tới</h3>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Các task sắp tới hạn</p>
                     </div>
                 </div>
                 <button
@@ -26,9 +32,9 @@ export const TimelineList = ({ tasks = [], navigate }) => {
                 </button>
             </div>
 
-            <div className="relative space-y-6 before:absolute before:left-[35px] before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-100">
+            <div className="relative space-y-6 max-h-[220px] overflow-y-auto scrollbar-hide pr-2 before:absolute before:left-[35px] before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-100">
                 {sortedTasks.length > 0 ? (
-                    sortedTasks.slice(0, 10).map((task, index) => {
+                    sortedTasks.map((task, index) => {
                         const dateObj = new Date(task.deadline);
                         const time = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
                         const date = dateObj.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });

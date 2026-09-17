@@ -128,7 +128,7 @@ export const DashboardPage = () => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ delay: 0.4 }}
-                        className="space-y-6 pb-12"
+                        className="space-y-3 pb-2"
                     >
                         {!isViewingMember && !isAdminOrBod && !isTeamLead && (
                             <ReviewQueueView

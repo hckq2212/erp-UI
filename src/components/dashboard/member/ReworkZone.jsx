@@ -26,7 +26,7 @@ export const ReworkZone = ({ tasks = [], navigate }) => {
                 </button>
             </div>
 
-            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 scrollbar-hide">
                 {tasks.length > 0 ? (
                     tasks.map((task, index) => (
                         <motion.div

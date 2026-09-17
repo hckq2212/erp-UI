@@ -34,6 +34,6 @@
   height: 0 !important;
 }
 
-main:has(.flex.flex-col.overflow-hidden) {
+/* main:has(.flex.flex-col.overflow-hidden) {
   padding: 0;
-} 
+}  */
