@@ -32,7 +32,7 @@ export const MetricCardsGrid = ({
     const pendingVal = roleStats?.pendingCount ?? pendingCount ?? 0;
 
     return (
-        <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5 shadow-sm space-y-4">
+        <div>
             {/* Single Row 5 Metric Cards Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 <MetricCard

@@ -166,7 +166,7 @@ export const MemberView = ({
                             onViewDetail={() => navigate('/tasks')}
                         />
                     </div>
-                    <div className="lg:col-span-5 h-fit">
+                    <div className="lg:col-span-5 min-h-0">
                         <TaskCalendar tasks={filteredCalendarTasks} />
                     </div>
                 </div>
