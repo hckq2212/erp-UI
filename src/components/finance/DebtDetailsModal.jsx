@@ -27,6 +27,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
     const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
     const [paymentNote, setPaymentNote] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
+    const [fileError, setFileError] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [selectedPaymentForDetail, setSelectedPaymentForDetail] = useState(null);
 
@@ -38,6 +39,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
             setPaymentAmount(Math.max(0, remaining).toString());
             setPaymentNote('');
             setSelectedFile(null);
+            setFileError(false);
             setIsUploading(false);
         }
     }, [isOpen, debt]);
@@ -62,6 +64,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
         }
 
         setSelectedFile(file);
+        setFileError(false);
         e.target.value = '';
     };
 
@@ -72,8 +75,9 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
         const currentTotalPaid = debt.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0;
         const remaining = Math.round(Number(debt.amount || 0) - currentTotalPaid);
         const amount = Number(paymentAmount);
-        if (amount <= 0) {
-            toast.error('Số tiền thanh toán phải lớn hơn 0');
+        
+        if (!paymentAmount || isNaN(amount) || amount <= 0) {
+            toast.error('Vui lòng nhập số tiền thanh toán hợp lệ (lớn hơn 0)');
             return;
         }
 
@@ -82,26 +86,35 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
             return;
         }
 
+        if (!paymentDate) {
+            toast.error('Vui lòng chọn ngày thanh toán');
+            return;
+        }
+
+        if (!selectedFile) {
+            setFileError(true);
+            toast.error('Vui lòng đính kèm chứng từ thanh toán (Ảnh hoặc PDF)');
+            return;
+        }
+
         try {
+            setIsUploading(true);
             let attachments = [];
-            if (selectedFile) {
-                setIsUploading(true);
-                try {
-                    const uploaded = await uploadToCloudinary(selectedFile, 'GETVINI/ERP/debts/proofs');
-                    attachments.push({
-                        name: selectedFile.name,
-                        url: uploaded.url,
-                        type: selectedFile.type.includes('pdf') || selectedFile.name.toLowerCase().endsWith('.pdf') ? 'PDF' : 'IMAGE',
-                        size: selectedFile.size,
-                        publicId: uploaded.publicId
-                    });
-                } catch (uploadErr) {
-                    toast.error('Lỗi khi tải chứng từ lên: ' + (uploadErr.message || 'Thất bại'));
-                    setIsUploading(false);
-                    return;
-                }
+            try {
+                const uploaded = await uploadToCloudinary(selectedFile, 'GETVINI/ERP/debts/proofs');
+                attachments.push({
+                    name: selectedFile.name,
+                    url: uploaded.url,
+                    type: selectedFile.type.includes('pdf') || selectedFile.name.toLowerCase().endsWith('.pdf') ? 'PDF' : 'IMAGE',
+                    size: selectedFile.size,
+                    publicId: uploaded.publicId
+                });
+            } catch (uploadErr) {
+                toast.error('Lỗi khi tải chứng từ lên: ' + (uploadErr.message || 'Thất bại'));
                 setIsUploading(false);
+                return;
             }
+            setIsUploading(false);
 
             await createPayment({
                 debtId: debt.id,
@@ -114,6 +127,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
             toast.success('Ghi nhận thanh toán thành công');
             setPaymentNote('');
             setSelectedFile(null);
+            setFileError(false);
 
             // Suggest next remaining based on current list + new payment
             const nextRemaining = remaining - amount;
@@ -143,7 +157,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
                             <form onSubmit={handleCreatePayment} className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
-                                        Số tiền
+                                        Số tiền <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
                                         <Input
@@ -161,7 +175,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
 
                                 <div>
                                     <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
-                                        Ngày thanh toán
+                                        Ngày thanh toán <span className="text-red-500">*</span>
                                     </label>
                                     <Input
                                         type="date"
@@ -178,7 +192,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
                                     </label>
                                     <textarea
                                         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm min-h-[60px]"
-                                        placeholder="Nhập ghi chú..."
+                                        placeholder="Nhập ghi chú (không bắt buộc)..."
                                         value={paymentNote}
                                         onChange={(e) => setPaymentNote(e.target.value)}
                                     />
@@ -186,25 +200,32 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
 
                                 <div>
                                     <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
-                                        Chứng từ thanh toán (Ảnh / PDF)
+                                        Chứng từ thanh toán (Ảnh / PDF) <span className="text-red-500">*</span>
                                     </label>
                                     {!selectedFile ? (
-                                        <label className="flex flex-col items-center justify-center p-3 border-2 border-dashed border-gray-200 hover:border-blue-400 bg-white hover:bg-blue-50/30 rounded-xl cursor-pointer transition-all group">
-                                            <input
-                                                type="file"
-                                                accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf"
-                                                className="hidden"
-                                                onChange={handleFileChange}
-                                                disabled={isUploading}
-                                            />
-                                            <div className="flex items-center gap-2 text-xs font-medium text-gray-500 group-hover:text-blue-600">
-                                                <Upload className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
-                                                <span>Chọn tệp hoặc kéo thả</span>
-                                            </div>
-                                            <span className="text-[10px] text-gray-400 mt-0.5">
-                                                Chỉ nhận PDF, JPG, PNG, WEBP (Tối đa 20MB)
-                                            </span>
-                                        </label>
+                                        <div>
+                                            <label className={`flex flex-col items-center justify-center p-3 border-2 border-dashed ${fileError ? 'border-red-400 bg-red-50/30' : 'border-gray-200 hover:border-blue-400 bg-white hover:bg-blue-50/30'} rounded-xl cursor-pointer transition-all group`}>
+                                                <input
+                                                    type="file"
+                                                    accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf"
+                                                    className="hidden"
+                                                    onChange={handleFileChange}
+                                                    disabled={isUploading}
+                                                />
+                                                <div className={`flex items-center gap-2 text-xs font-medium ${fileError ? 'text-red-500' : 'text-gray-500 group-hover:text-blue-600'}`}>
+                                                    <Upload className={`w-4 h-4 ${fileError ? 'text-red-400' : 'text-gray-400 group-hover:text-blue-500'}`} />
+                                                    <span>Chọn tệp hoặc kéo thả</span>
+                                                </div>
+                                                <span className={`text-[10px] ${fileError ? 'text-red-400' : 'text-gray-400'} mt-0.5`}>
+                                                    Chỉ nhận PDF, JPG, PNG, WEBP (Tối đa 20MB)
+                                                </span>
+                                            </label>
+                                            {fileError && (
+                                                <p className="mt-1 text-[11px] text-red-500 font-medium">
+                                                    * Vui lòng đính kèm chứng từ thanh toán (Ảnh hoặc PDF)
+                                                </p>
+                                            )}
+                                        </div>
                                     ) : (
                                         <div className="flex items-center justify-between p-2.5 bg-blue-50/50 border border-blue-200 rounded-xl">
                                             <div className="flex items-center gap-2.5 min-w-0 pr-2">
@@ -240,7 +261,6 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
                                 <Button
                                     type="submit"
                                     variant="primary"
-                                    onClick={handleCreatePayment}
                                     disabled={debt.paidAmount >= debt.amount || isUploading}
                                     className="w-full flex items-center justify-center gap-2"
                                 >
