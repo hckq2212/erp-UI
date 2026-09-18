@@ -75,6 +75,7 @@ export const opportunitiesApi = api.injectEndpoints({
 export const {
   useGetOpportunitiesQuery,
   useGetOpportunityQuery,
+  useLazyGetOpportunityQuery,
   useCreateOpportunityMutation,
   useUpdateOpportunityMutation,
   useDeleteOpportunityMutation,

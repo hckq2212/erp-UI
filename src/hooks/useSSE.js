@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
 import { BASE_URL, api } from '../store/api';
 import { selectIsAuthenticated } from '../store/authSlice';
 import { notificationsApi } from '../api/notifications';
@@ -73,15 +72,8 @@ export const useSSE = () => {
         }
 
         // Handle Standard Notifications (Persistent)
+        // Không hiện popup toast nữa — chỉ cập nhật số lượng/danh sách ở icon chuông
         console.log('[SSE] New notification received:', payload);
-        toast.info(payload.content || payload.title, {
-          title: payload.title,
-          onClick: () => {
-            if (payload.link) {
-              window.location.href = payload.link;
-            }
-          }
-        });
 
         // Invalidate RTK Query cache for notifications
         dispatch(notificationsApi.util.invalidateTags(['Notifications']));

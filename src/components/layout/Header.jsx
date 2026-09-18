@@ -7,6 +7,7 @@ import { selectCurrentUser, logout as logoutAction } from '../../store/authSlice
 import { useGetMyNotificationsQuery, useMarkAsReadMutation } from '../../api/notifications';
 import { useLogoutMutation } from '../../api/auth';
 import { formatDate } from '../../utils/format';
+import { htmlToPlainText } from '../../utils/html';
 import logo from '../../assets/logo.png';
 import { clearSessionMarker } from '../../utils/authSession';
 
@@ -18,7 +19,9 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
   const dispatch = useDispatch();
   const [showNotifications, setShowNotifications] = useState(false);
 
-  const { data: notifications = [] } = useGetMyNotificationsQuery();
+  const { data: notifications = [] } = useGetMyNotificationsQuery(undefined, {
+    pollingInterval: 15000, // dự phòng: tự làm mới mỗi 15s nếu SSE bị proxy chặn/mất kết nối
+  });
   const [markAsRead] = useMarkAsReadMutation();
   const [logoutApi] = useLogoutMutation();
 
@@ -58,6 +61,12 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
       await markAsRead(n.id).unwrap();
     }
     setShowNotifications(false);
+
+    if (n.relatedEntityType === 'ANNOUNCEMENT' && n.relatedEntityId) {
+      navigate(`/announcements/${n.relatedEntityId}`);
+      return;
+    }
+
     navigate(n.link || '/notifications');
   };
 
@@ -133,7 +142,7 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                               {n.title}
                             </p>
                             <p className="text-[11px] text-gray-500 line-clamp-2 mt-1 leading-relaxed whitespace-pre-line">
-                              {n.content}
+                              {htmlToPlainText(n.content)}
                             </p>
                             <div className="flex items-center gap-2 mt-2">
                               <Clock className="w-3 h-3 text-gray-400" />

@@ -161,7 +161,7 @@ const PackageItem = memo(({ pkg, index, availableServices, onRemove, onServiceCh
   );
 });
 
-export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
+export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = null }) => {
   const [createOpportunity, { isLoading }] = useCreateOpportunityMutation();
   const { data: servicesData } = useGetServicesQuery();
   const services = useMemo(() => Array.isArray(servicesData) ? servicesData : (servicesData?.data || []), [servicesData]);
@@ -260,9 +260,68 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
   const [documentLinks, setDocumentLinks] = useState(Array(LINK_PLACEHOLDERS.length).fill(''));
   const [files, setFiles] = useState([]);
+  const [existingAttachments, setExistingAttachments] = useState([]);
   const [uploadProgress, setUploadProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (!isOpen || !initialData) return;
+
+    setOpportunityNameParts({
+      customerName: initialData.customer?.name || initialData.leadName || '',
+      brandName: '',
+      monthYear: '',
+    });
+
+    setFormData({
+      description: initialData.description || '',
+      field: initialData.field || '',
+      expectedRevenue: Number(initialData.expectedRevenue) || 0,
+      budget: Number(initialData.budget) || 0,
+      startDate: initialData.startDate ? String(initialData.startDate).slice(0, 10) : '',
+      endDate: initialData.endDate ? String(initialData.endDate).slice(0, 10) : '',
+      priority: initialData.priority || 'Medium',
+      successChance: Number(initialData.successChance) || 0,
+      region: Array.isArray(initialData.region) ? initialData.region : [],
+      durationMonths: Number(initialData.durationMonths) || 1,
+      customerRequirements: initialData.customerRequirements || '',
+    });
+
+    const standaloneServices = (initialData.services || [])
+      .filter(s => !s.isPackageService)
+      .map(s => ({ serviceId: s.serviceId || s.service?.id || '', quantity: s.quantity || 1 }));
+    setSelectedServices(standaloneServices.length > 0 ? standaloneServices : [{ serviceId: '', quantity: 1 }]);
+
+    const packages = (initialData.packages || []).map(pkg => ({
+      servicePackageId: pkg.servicePackageId || '',
+      name: pkg.name || '',
+      description: pkg.description || '',
+      quantity: pkg.quantity || 1,
+      services: (pkg.services || []).map(s => ({
+        serviceId: s.serviceId || s.service?.id || '',
+        quantity: s.quantity || 1,
+        sellingPrice: Number(s.sellingPrice) || 0,
+      })),
+    }));
+    setSelectedPackages(packages.length > 0 ? packages : [{ servicePackageId: '', services: [], quantity: 1 }]);
+
+    const attachments = initialData.attachments || [];
+    const links = attachments.filter(a => a.type === 'LINK').map(a => a.url);
+    const otherAttachments = attachments.filter(a => a.type !== 'LINK');
+    const newDocumentLinks = Array(LINK_PLACEHOLDERS.length).fill('');
+    links.forEach((url, idx) => {
+      if (idx < newDocumentLinks.length) {
+        newDocumentLinks[idx] = url;
+      } else {
+        newDocumentLinks.push(url);
+      }
+    });
+    setDocumentLinks(newDocumentLinks);
+    setExistingAttachments(otherAttachments);
+    setFiles([]);
+    setErrors({});
+  }, [isOpen, initialData]);
 
   const handlePackageTemplateChange = useCallback((index, templateId) => {
     if (!templateId) {
@@ -546,6 +605,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
         .filter(l => l.trim())
         .map(url => ({ type: 'LINK', name: url, url }));
       attachments.push(...validLinks);
+      attachments.push(...existingAttachments);
 
       // 2. Upload files to Cloudinary
       if (files.length > 0) {
@@ -617,6 +677,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       setSelectedPackages([{ servicePackageId: '', services: [] }]);
       setDocumentLinks(Array(LINK_PLACEHOLDERS.length).fill(''));
       setFiles([]);
+      setExistingAttachments([]);
     } catch (err) {
       setIsUploading(false);
       setErrors({ submit: err?.data?.message || err?.message || 'Có lỗi xảy ra' });
@@ -637,7 +698,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
           <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 flex items-center justify-between z-10">
             <div className="flex items-center gap-3">
               <div>
-                <h2 className="text-xl font-bold text-white">Tạo Cơ Hội Mới</h2>
+                <h2 className="text-xl font-bold text-white">{initialData ? 'Tạo Cơ Hội Tương Tự' : 'Tạo Cơ Hội Mới'}</h2>
                 <p className="text-blue-100 text-sm">Điền thông tin chi tiết của cơ hội </p>
               </div>
             </div>
@@ -1122,6 +1183,30 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                 {/* Tệp đính kèm */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Tệp đính kèm</label>
+                  {existingAttachments.length > 0 && (
+                    <div className="mb-4 space-y-2">
+                      <p className="text-sm font-medium text-gray-700">Tệp từ cơ hội gốc ({existingAttachments.length}):</p>
+                      <div className="grid grid-cols-1 gap-2">
+                        {existingAttachments.map((att, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <div className="flex items-center gap-3 overflow-hidden">
+                              <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                                <FileText className="w-4 h-4" />
+                              </div>
+                              <p className="text-sm font-medium text-gray-900 truncate">{att.name}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setExistingAttachments(prev => prev.filter((_, i) => i !== index))}
+                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer">
                     <label className="cursor-pointer">
                       <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />

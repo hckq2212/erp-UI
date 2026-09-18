@@ -6,10 +6,10 @@ export const Modal = ({ isOpen, onClose, title, children, className }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden bg-black/50 p-4 md:inset-0 h-modal md:h-full">
-      <div className={cn("relative w-full max-w-2xl h-full md:h-auto", className)}>
-        <div className="relative bg-white rounded-lg shadow-xl">
-          <div className="flex items-start justify-between p-4 border-b rounded-t">
+    <div className="fixed inset-0 z-50 overflow-y-auto overflow-x-hidden bg-black/50 p-4">
+      <div className={cn("relative w-full max-w-2xl mx-auto my-6 md:my-10", className)}>
+        <div className="relative bg-white rounded-lg shadow-xl flex flex-col max-h-[85vh]">
+          <div className="flex items-start justify-between p-4 border-b rounded-t shrink-0">
             <h3 className="text-xl font-semibold text-gray-900">
               {title}
             </h3>
@@ -22,7 +22,7 @@ export const Modal = ({ isOpen, onClose, title, children, className }) => {
               <span className="sr-only">Close modal</span>
             </button>
           </div>
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6 overflow-y-auto">
             {children}
           </div>
         </div>

@@ -24,6 +24,8 @@ import { VendorDetailPage } from './pages/Vendors/VendorDetailPage';
 import { LoginPage } from './pages/Auth/LoginPage';
 import ContractDetailPage from './pages/Contracts/ContractDetailPage/ContractDetailPage';
 import { NotificationsPage } from './pages/Notifications/NotificationsPage';
+import { AnnouncementsPage } from './pages/Announcements/AnnouncementsPage';
+import { AnnouncementDetailPage } from './pages/Announcements/AnnouncementDetailPage';
 import { ReferralPartnersPage } from './pages/ReferralPartners/ReferralPartnersPage';
 import { PartnerDetailPage } from './pages/ReferralPartners/PartnerDetailPage';
 import { TeamsPage } from './pages/Teams/TeamsPage';
@@ -299,6 +301,26 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <NotificationsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/announcements'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AnnouncementsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/announcements/:id'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AnnouncementDetailPage />
               </Layout>
             </ProtectedRoute>
           }
