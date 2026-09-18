@@ -34,9 +34,10 @@ export const opportunityServiceApi = api.injectEndpoints({
         method: 'PATCH',
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [
+      invalidatesTags: (result, error, { id, opportunityId }) => [
         { type: 'OpportunityServices', id },
         { type: 'OpportunityServices', id: 'LIST' },
+        ...(opportunityId ? [{ type: 'Opportunities', id: opportunityId }] : []),
       ],
     }),
     deleteOpportunityService: builder.mutation({

@@ -7,14 +7,15 @@ import {
 
 function buildVideoFormData(params) {
   const {
-    projectId, taskId,
+    projectId, opportunityId, taskId,
     modelId, resolution, ratio, duration, mode, prompt, negativePrompt,
     startImageFile, endImageFile, startImageAssetId, endImageAssetId,
     sound = 'off', cost = 0, multiShot = false, shotType, multiPrompt,
   } = params
 
   const formData = new FormData()
-  formData.append('projectId', String(projectId))
+  if (projectId) formData.append('projectId', String(projectId))
+  if (opportunityId) formData.append('opportunityId', String(opportunityId))
   if (taskId) formData.append('taskId', String(taskId))
   formData.append('modelId', String(modelId))
   formData.append('resolution', resolution)

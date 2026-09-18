@@ -4,8 +4,9 @@ import CustomSettingVideoMotion from "../Motion-video/CustomSettingVideoMotion"
 import AssetPickerModal from "../AssetPickerModal"
 import { useGetAiModelsQuery } from "../../../api/aiModels"
 import { calcMotionControlPrice } from "../../../utils/videoPricing"
-import { useGetMyProjectsQuery } from '../../../api/projects'
 import { useGetTasksQuery } from '../../../api/tasks'
+import { useGetMeQuery } from '../../../api/auth'
+import { getCurrentUserId } from '../../../utils/authUser'
 
 export default function FromCreateVideoMotionControl({ createMotionControlHook }) {
   const { submitCreateMotionControl, isSubmitting, status } = createMotionControlHook
@@ -39,17 +40,37 @@ export default function FromCreateVideoMotionControl({ createMotionControlHook }
     el.style.height = `${el.scrollHeight}px`
   }
 
-  const [projectId, setProjectId] = useState('')
-  const { data: myProjects = [], isFetching: projectsLoading } = useGetMyProjectsQuery()
-  const hasNoProject = !projectsLoading && myProjects.length === 0
-
+  const [sourceType, setSourceType] = useState('project')
+  const [contextId, setContextId] = useState('')
   const [taskId, setTaskId] = useState('')
-  const { data: tasksData, isFetching: tasksLoading } = useGetTasksQuery(
-    { projectId, excludeStatus: 'PENDING,ACCEPTED,COMPLETED', limit: 100 },
-    { skip: !projectId },
+  const { data: currentUser, isLoading: currentUserLoading } = useGetMeQuery()
+  const currentUserId = getCurrentUserId(currentUser)
+  const { data: tasksData, isFetching: isFetchingTasks, isError: isTasksError } = useGetTasksQuery(
+    {
+      assigneeId: currentUserId,
+      excludeStatus: 'ACCEPTED,AWAITING_REVIEW,INTERNAL_COMPLETED,COMPLETED',
+      limit: 500,
+    },
+    { skip: !currentUserId },
   )
-  const projectTasks = tasksData?.data ?? []
-  const hasNoTask = !!projectId && !tasksLoading && projectTasks.length === 0
+  const tasksLoading = currentUserLoading || isFetchingTasks
+  const assignedTasks = tasksData?.data ?? []
+  const contexts = useMemo(() => {
+    const byId = new Map()
+    assignedTasks.forEach(task => {
+      const context = sourceType === 'project' ? task.project : task.opportunity
+      if (context?.id) byId.set(context.id, context)
+    })
+    return [...byId.values()]
+  }, [assignedTasks, sourceType])
+  const contextTasks = assignedTasks.filter(task =>
+    sourceType === 'project' ? task.project?.id === contextId : task.opportunity?.id === contextId
+  )
+  const projectId = sourceType === 'project' ? contextId : ''
+  const opportunityId = sourceType === 'opportunity' ? contextId : ''
+  const hasNoContext = !isTasksError && !tasksLoading && contexts.length === 0
+  const hasNoTask = !!contextId && !tasksLoading && contextTasks.length === 0
+  const selectedTask = contextTasks.find(task => String(task.id) === String(taskId))
 
   const selectedModelCode = models.find((m) => String(m.id) === modelId)?.code ?? ""
   const resolution = mode === "pro" ? "1080p" : "720p"
@@ -85,7 +106,7 @@ export default function FromCreateVideoMotionControl({ createMotionControlHook }
       URL.revokeObjectURL(characterImagePreview)
     }
     if (textareaRef.current) textareaRef.current.style.height = "auto"
-    setProjectId('')
+    setContextId('')
     setTaskId('')
     setReferenceVideo(null)
     setReferenceVideoPreview(null)
@@ -206,7 +227,7 @@ export default function FromCreateVideoMotionControl({ createMotionControlHook }
   )
 
   const handleSubmit = () => {
-    if (!projectId) { alert('Vui lòng chọn dự án'); return }
+    if (!contextId) { alert('Vui lòng chọn cơ hội hoặc dự án'); return }
     if (!taskId) return alert('Vui lòng chọn công việc')
     if (!modelId) return alert("Vui lòng chọn model")
     if (!characterImage && !characterAssetId) return alert("Vui lòng chọn hình ảnh nhân vật")
@@ -215,6 +236,7 @@ export default function FromCreateVideoMotionControl({ createMotionControlHook }
     submittedBlobsRef.current = { char: characterImagePreview, video: referenceVideoPreview }
     submitCreateMotionControl({
       projectId,
+      opportunityId,
       taskId,
       modelId,
       modelName: selectedModel?.name ?? "",
@@ -239,22 +261,29 @@ export default function FromCreateVideoMotionControl({ createMotionControlHook }
       <div className="flex h-full min-h-0 flex-col">
         <div className="scrollbar-hide flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-5">
 
-          {/* ── Project selector ── */}
+          <div className="grid shrink-0 grid-cols-2 gap-2">
+            <button type="button" onClick={() => { setSourceType('project'); setContextId(''); setTaskId('') }} className={`rounded-lg border px-3 py-2 text-sm font-medium ${sourceType === 'project' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-600'}`}>Dự án</button>
+            <button type="button" onClick={() => { setSourceType('opportunity'); setContextId(''); setTaskId('') }} className={`rounded-lg border px-3 py-2 text-sm font-medium ${sourceType === 'opportunity' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-600'}`}>Cơ hội</button>
+          </div>
           <div className="shrink-0">
-            {hasNoProject ? (
+            {isTasksError ? (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                Không thể tải danh sách công việc được phân công. Vui lòng thử lại.
+              </div>
+            ) : hasNoContext ? (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
-                Bạn chưa tham gia dự án nào.
+                Bạn chưa có {sourceType === 'project' ? 'dự án' : 'cơ hội'} nào được phân công.
               </div>
             ) : (
               <div className="relative">
                 <select
-                  value={projectId}
-                  onChange={(e) => setProjectId(e.target.value)}
-                  disabled={projectsLoading}
+                  value={contextId}
+                  onChange={(e) => { setContextId(e.target.value); setTaskId('') }}
+                  disabled={tasksLoading}
                   className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <option value="">{projectsLoading ? 'Đang tải...' : '-- Chọn dự án --'}</option>
-                  {myProjects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  <option value="">{tasksLoading ? 'Đang tải...' : `-- Chọn ${sourceType === 'project' ? 'dự án' : 'cơ hội'} --`}</option>
+                  {contexts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
               </div>
@@ -262,11 +291,11 @@ export default function FromCreateVideoMotionControl({ createMotionControlHook }
           </div>
 
           {/* ── Task selector ── */}
-          {projectId && (
+          {contextId && (
             <div className="shrink-0">
               {hasNoTask ? (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
-                  Dự án chưa có công việc nào đang thực hiện.
+                  Không có công việc nào đang thực hiện.
                 </div>
               ) : (
                 <div className="relative">
@@ -277,7 +306,7 @@ export default function FromCreateVideoMotionControl({ createMotionControlHook }
                     className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <option value="">{tasksLoading ? 'Đang tải...' : '-- Chọn công việc --'}</option>
-                    {projectTasks.map((t) => (
+                    {contextTasks.map((t) => (
                       <option key={t.id} value={t.id}>
                         {(t.nickname || t.name)}{t.code ? ` (${t.code})` : ''}
                       </option>
@@ -286,6 +315,12 @@ export default function FromCreateVideoMotionControl({ createMotionControlHook }
                   <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
                 </div>
               )}
+            </div>
+          )}
+          {selectedTask?.opportunityServiceJob?.briefVideo && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+              <p className="mb-1 font-semibold">Brief khách hàng</p>
+              <p className="whitespace-pre-wrap">{selectedTask.opportunityServiceJob.briefVideo}</p>
             </div>
           )}
 
@@ -447,7 +482,7 @@ export default function FromCreateVideoMotionControl({ createMotionControlHook }
               onClick={handleSubmit}
               disabled={
                 isSubmitting || isProcessing || modelsLoading ||
-                !projectId || hasNoProject ||
+                !contextId || hasNoContext ||
                 !taskId ||
                 !modelId ||
                 (!characterImage && !characterAssetId) ||

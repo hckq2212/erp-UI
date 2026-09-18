@@ -35,6 +35,7 @@ const WorkloadBar = ({ workload }) => {
         </div>
     );
 };
+import { useGetUsersQuery } from '../../../api/users';
 
 export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     const isBulk = Array.isArray(task);
@@ -44,6 +45,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
     const isSupportMode = !isBulk && task?.isSupportRequested;
     const projectId = project?.id;
     const teamId = project?.team?.id;
+    const isVideoDemoTask = Boolean(representativeTask?.opportunityServiceJob?.isBriefVideo);
     const fileInputRef = useRef(null);
     const [plannedEndDate, setPlannedEndDate] = useState(formatDateTimeISO(representativeTask?.plannedEndDate) || '');
     const workloadDate = useMemo(() => {
@@ -60,6 +62,10 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
         teamId ? { teamId, ...workloadDate } : undefined,
         { skip: !teamId }
     );
+    const { data: allEmployees = [], isLoading: isLoadingEmployees } = useGetUsersQuery(undefined, {
+        skip: !isVideoDemoTask
+    });
+    const activeEmployees = allEmployees.filter(employee => employee.account?.isActive === true);
 
     // Lazy fetch for support teams
     const [fetchTeams, { data: allTeams = [], isLoading: isLoadingTeams }] = useLazyGetTeamsQuery();
@@ -307,7 +313,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                             }}
                         >
                             {/* Performer Type Selector */}
-                            {!formData.isTeamAssignment && (
+                            {!formData.isTeamAssignment && !isVideoDemoTask && (
                                 <div className="space-y-4">
                                     <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">Hình thức thực hiện</label>
                                     <div className="flex p-1.5 bg-slate-100/80 rounded-2xl relative">
@@ -343,7 +349,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                     <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">
                                         {formData.isTeamAssignment ? 'Team hỗ trợ' : (formData.performerType === 'INTERNAL' ? 'Người thực hiện' : 'Đối tác Vendor')}
                                     </label>
-                                    {!isBulk && ((isSupportMode || (representativeTask?.status === 'DOING' || representativeTask?.status === 'REWORKING') && !representativeTask?.isSupportRequested) && !representativeTask?.supportTeamId) && (
+                                    {!isVideoDemoTask && !isBulk && ((isSupportMode || (representativeTask?.status === 'DOING' || representativeTask?.status === 'REWORKING') && !representativeTask?.isSupportRequested) && !representativeTask?.supportTeamId) && (
                                         <label className="flex items-center gap-2 cursor-pointer group/check">
                                             <div className="relative flex items-center justify-center">
                                                 <input
@@ -376,98 +382,238 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                     <div className="absolute left-4 top-1/2 z-10 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
                                         {formData.isTeamAssignment ? <Users className="w-full h-full" /> : <User className="w-full h-full" />}
                                     </div>
-
-                                    {!formData.isTeamAssignment && formData.performerType === 'INTERNAL' ? (
-                                        <>
-                                            <button
-                                                type="button"
-                                                className="flex w-full items-center gap-3 rounded-2xl border-2 border-slate-100 bg-white py-4 pl-12 pr-11 text-left font-medium text-slate-700 outline-none transition-all hover:border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50"
-                                                onClick={() => setIsAssigneeOpen(prev => !prev)}
-                                            >
-                                                {selectedMember ? (
-                                                    <>
-                                                        <span className="min-w-0 flex-1 truncate">
-                                                            {selectedMember.user.fullName} - {selectedMember.role}
-                                                        </span>
-                                                        <WorkloadPill workload={selectedMember.user.workload} />
-                                                    </>
-                                                ) : (
-                                                    <span className="text-slate-400">Chọn người thực hiện</span>
-                                                )}
-                                            </button>
-
-                                            {isAssigneeOpen && (
-                                                <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-72 overflow-y-auto rounded-2xl border border-slate-100 bg-white p-2 shadow-2xl shadow-slate-200/80">
-                                                    {internalMembers.length > 0 ? (
-                                                        internalMembers.map(m => {
-                                                            const workload = m.user?.workload;
-                                                            return (
-                                                                <button
-                                                                    key={m.user.id}
-                                                                    type="button"
-                                                                    className={`w-full rounded-xl p-3 text-left transition hover:bg-blue-50 ${formData.assigneeId === m.user.id ? 'bg-blue-50 ring-1 ring-blue-100' : ''}`}
-                                                                    onClick={() => {
-                                                                        setFormData({ ...formData, assigneeId: m.user.id });
-                                                                        setIsAssigneeOpen(false);
-                                                                    }}
-                                                                >
-                                                                    <div className="mb-2 flex items-center justify-between gap-3">
-                                                                        <div className="min-w-0">
-                                                                            <p className="truncate text-sm font-black text-slate-800">{m.user.fullName}</p>
-                                                                            <p className="truncate text-[10px] font-bold uppercase tracking-wider text-slate-400">{m.role}</p>
-                                                                        </div>
-                                                                        <WorkloadPill workload={workload} />
-                                                                    </div>
-                                                                    <WorkloadBar workload={workload} />
-                                                                </button>
-                                                            );
-                                                        })
+                                    
+                                    {!isVideoDemoTask &&
+                                        !formData.isTeamAssignment &&
+                                        formData.performerType === 'INTERNAL' ? (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    className="flex w-full items-center gap-3 rounded-2xl border-2 border-slate-100 bg-white py-4 pl-12 pr-11 text-left font-medium text-slate-700 outline-none transition-all hover:border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50"
+                                                    onClick={() => setIsAssigneeOpen(prev => !prev)}
+                                                >
+                                                    {selectedMember ? (
+                                                        <>
+                                                            <span className="min-w-0 flex-1 truncate">
+                                                                {selectedMember.user.fullName} - {selectedMember.role}
+                                                            </span>
+                                                            <WorkloadPill workload={selectedMember.user.workload} />
+                                                        </>
                                                     ) : (
-                                                        <p className="px-3 py-8 text-center text-xs font-bold uppercase tracking-widest text-slate-300">Không có nhân sự</p>
+                                                        <span className="text-slate-400">
+                                                            Chọn người thực hiện
+                                                        </span>
                                                     )}
-                                                </div>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <select
-                                                className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer text-slate-700 font-medium"
-                                                value={formData.isTeamAssignment ? formData.selectedTeamId : formData.assigneeId}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    if (formData.isTeamAssignment) {
-                                                        setFormData({ ...formData, selectedTeamId: val });
-                                                        if (val) fetchSupportMembers({ teamId: val, ...workloadDate });
-                                                    } else {
-                                                        setFormData({ ...formData, assigneeId: val });
-                                                    }
-                                                }}
-                                                onFocus={() => {
-                                                    if (formData.isTeamAssignment && allTeams.length === 0) fetchTeams();
-                                                }}
-                                            >
-                                                <option value="">
-                                                    {formData.isTeamAssignment
-                                                        ? (isLoadingTeams ? 'Đang tải danh sách team...' : 'Chọn team hỗ trợ')
-                                                        : (isLoadingVendors ? 'Đang tải danh sách...' : 'Chọn vendor')}
-                                                </option>
-                                                {formData.isTeamAssignment ? (
-                                                    allTeams.map(t => (
-                                                        <option key={t.id} value={t.id}>{t.name} (Lead: {t.teamLead?.fullName})</option>
-                                                    ))
-                                                ) : (
-                                                    vendors.map(v => (
-                                                        <option key={v.id} value={v.id}>{v.name}</option>
-                                                    ))
+                                                </button>
+
+                                                {isAssigneeOpen && (
+                                                    <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-72 overflow-y-auto rounded-2xl border border-slate-100 bg-white p-2 shadow-2xl shadow-slate-200/80">
+                                                        {internalMembers.length > 0 ? (
+                                                            internalMembers.map(member => {
+                                                                const workload = member.user?.workload;
+
+                                                                return (
+                                                                    <button
+                                                                        key={member.user.id}
+                                                                        type="button"
+                                                                        className={`w-full rounded-xl p-3 text-left transition hover:bg-blue-50 ${
+                                                                            formData.assigneeId === member.user.id
+                                                                                ? 'bg-blue-50 ring-1 ring-blue-100'
+                                                                                : ''
+                                                                        }`}
+                                                                        onClick={() => {
+                                                                            setFormData({
+                                                                                ...formData,
+                                                                                assigneeId: member.user.id
+                                                                            });
+                                                                            setIsAssigneeOpen(false);
+                                                                        }}
+                                                                    >
+                                                                        <div className="mb-2 flex items-center justify-between gap-3">
+                                                                            <div className="min-w-0">
+                                                                                <p className="truncate text-sm font-black text-slate-800">
+                                                                                    {member.user.fullName}
+                                                                                </p>
+                                                                                <p className="truncate text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                                                                    {member.role}
+                                                                                </p>
+                                                                            </div>
+
+                                                                            <WorkloadPill workload={workload} />
+                                                                        </div>
+
+                                                                        <WorkloadBar workload={workload} />
+                                                                    </button>
+                                                                );
+                                                            })
+                                                        ) : (
+                                                            <p className="px-3 py-8 text-center text-xs font-bold uppercase tracking-widest text-slate-300">
+                                                                Không có nhân sự
+                                                            </p>
+                                                        )}
+                                                    </div>
                                                 )}
-                                            </select>
-                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                                <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </div>
-                                        </>
-                                    )}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <select
+                                                    className="w-full cursor-pointer appearance-none rounded-2xl border-2 border-slate-100 bg-white py-4 pl-12 pr-4 font-medium text-slate-700 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50"
+                                                    value={
+                                                        formData.isTeamAssignment
+                                                            ? formData.selectedTeamId
+                                                            : formData.assigneeId
+                                                    }
+                                                    onChange={event => {
+                                                        const value = event.target.value;
+
+                                                        if (formData.isTeamAssignment) {
+                                                            setFormData({
+                                                                ...formData,
+                                                                selectedTeamId: value
+                                                            });
+
+                                                            if (value) {
+                                                                fetchSupportMembers({
+                                                                    teamId: value,
+                                                                    ...workloadDate
+                                                                });
+                                                            }
+                                                        } else {
+                                                            setFormData({
+                                                                ...formData,
+                                                                assigneeId: value
+                                                            });
+                                                        }
+                                                    }}
+                                                    onFocus={() => {
+                                                        if (
+                                                            formData.isTeamAssignment &&
+                                                            allTeams.length === 0
+                                                        ) {
+                                                            fetchTeams();
+                                                        }
+                                                    }}
+                                                >
+                                                    <option value="">
+                                                        {formData.isTeamAssignment
+                                                            ? isLoadingTeams
+                                                                ? 'Đang tải danh sách team...'
+                                                                : 'Chọn team hỗ trợ'
+                                                            : isVideoDemoTask && isLoadingEmployees
+                                                            ? 'Đang tải danh sách nhân viên...'
+                                                            : formData.performerType === 'VENDOR' &&
+                                                                isLoadingVendors
+                                                                ? 'Đang tải danh sách...'
+                                                                : `Chọn ${
+                                                                    formData.performerType === 'INTERNAL'
+                                                                        ? 'người thực hiện'
+                                                                        : 'vendor'
+                                                                }`}
+                                                    </option>
+
+                                                    {formData.isTeamAssignment
+                                                        ? allTeams.map(team => (
+                                                            <option key={team.id} value={team.id}>
+                                                                {team.name} (Lead: {team.teamLead?.fullName})
+                                                            </option>
+                                                        ))
+                                                        : formData.performerType === 'INTERNAL'
+                                                        ? isVideoDemoTask
+                                                            ? activeEmployees.map(employee => (
+                                                                    <option
+                                                                        key={employee.id}
+                                                                        value={employee.id}
+                                                                    >
+                                                                        {employee.fullName}
+                                                                    </option>
+                                                                ))
+                                                            : (
+                                                                    isSupportMode &&
+                                                                    representativeTask.supportTeamId
+                                                                        ? supportMembers
+                                                                        : members
+                                                                ).map(member => (
+                                                                    <option
+                                                                        key={member.user.id}
+                                                                        value={member.user.id}
+                                                                    >
+                                                                        {member.user.fullName}
+                                                                    </option>
+                                                                ))
+                                                        : vendors.map(vendor => (
+                                                                <option key={vendor.id} value={vendor.id}>
+                                                                    {vendor.name}
+                                                                </option>
+                                                            ))}
+                                                </select>
+
+                                                <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+                                                    <svg
+                                                        className="h-5 w-5 text-slate-400"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M19 9l-7 7-7-7"
+                                                        />
+                                                    </svg>
+                                                </div>
+                                            </>
+                                        )}
+                                    {/* <select
+                                        className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer text-slate-700 font-medium"
+                                        value={formData.isTeamAssignment ? formData.selectedTeamId : formData.assigneeId}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (formData.isTeamAssignment) {
+                                                setFormData({ ...formData, selectedTeamId: val });
+                                                if (val) fetchSupportMembers(val);
+                                            } else {
+                                                setFormData({ ...formData, assigneeId: val });
+                                            }
+                                        }}
+                                        onFocus={() => {
+                                            if (formData.isTeamAssignment && allTeams.length === 0) fetchTeams();
+                                        }}
+                                    >
+                                        <option value="">
+                                            {formData.isTeamAssignment
+                                                ? (isLoadingTeams ? 'Đang tải danh sách team...' : 'Chọn team hỗ trợ')
+                                                : (isVideoDemoTask && isLoadingEmployees
+                                                    ? 'Đang tải danh sách nhân viên...'
+                                                    : formData.performerType === 'VENDOR' && isLoadingVendors
+                                                    ? 'Đang tải danh sách...'
+                                                    : `Chọn ${formData.performerType === 'INTERNAL' ? 'người thực hiện' : 'vendor'}`)}
+                                        </option>
+                                        {formData.isTeamAssignment ? (
+                                            allTeams.map(t => (
+                                                <option key={t.id} value={t.id}>{t.name} (Lead: {t.teamLead?.fullName})</option>
+                                            ))
+                                        ) : (
+                                            formData.performerType === 'INTERNAL' ? (
+                                                isVideoDemoTask
+                                                    ? activeEmployees.map(employee => (
+                                                        <option key={employee.id} value={employee.id}>{employee.fullName}</option>
+                                                    ))
+                                                    : (isSupportMode && representativeTask.supportTeamId ? supportMembers : members).map(m => (
+                                                        <option key={m.user.id} value={m.user.id}>{m.user.fullName}</option>
+                                                    ))
+                                            ) : (
+                                                vendors.map(v => (
+                                                    <option key={v.id} value={v.id}>{v.name}</option>
+                                                ))
+                                            )
+                                        )}
+                                    </select> */}
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                        <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
                                 </div>
                                 {formData.performerType === 'VENDOR' && vendors.length === 0 && !isLoadingVendors && (
                                     <div className="flex items-center gap-2 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold ring-1 ring-red-100 animate-in fade-in slide-in-from-top-1">
