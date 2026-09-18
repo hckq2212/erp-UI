@@ -340,6 +340,17 @@ export const tasksApi = api.injectEndpoints({
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
+    markCustomerNotPurchased: builder.mutation({
+      query: ({ id }) => ({
+        url: `/tasks/${id}/customer-not-purchase`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
+    }),
     bulkAssignTasks: builder.mutation({
       query: (data) => ({
         url: '/tasks/bulk-assign',
@@ -404,6 +415,7 @@ export const {
   useRequestReturnSupportMutation,
   useRequestReworkMutation,
   useApproveByCustomerMutation,
+  useMarkCustomerNotPurchasedMutation,
   useBulkAssignTasksMutation,
   useBulkUnassignTasksMutation,
   useSendTaskReminderMutation,
