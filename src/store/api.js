@@ -83,7 +83,8 @@ export const api = createApi({
     'ContractAddendums', 'Dashboard', 'Acceptance', 'ServicePackages', 'Chat',
     'ProjectProductDescriptions', 'TaskResultChecks',
     'ProjectProductDescriptions', 'ProjectSpellCheckWhitelist',
-    'VideoGenerations', 'AiModels', 'Assets', 'Elements', 'Announcements',
+    'VideoGenerations', 'AiModels', 'Assets', 'Elements',
+    'Documents', 'DocumentVersions','Announcements'
   ],
   endpoints: () => ({}),
 });
