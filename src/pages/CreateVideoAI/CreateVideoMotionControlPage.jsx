@@ -1,14 +1,18 @@
 import { useState, useMemo, useCallback } from "react"
-import { Video, AlertCircle } from 'lucide-react'
+import { Video, AlertCircle, Send } from 'lucide-react'
+import { toast } from 'react-toastify'
 import FromCreateVideoMotionControl from "../../components/createVideo/Motion-video/FromCreateVideoMotionControl"
 import VideoHistoryPanel from "../../components/createVideo/VideoHistoryPanel"
 import CopyButton from "../../components/createVideo/CopyButton"
 import HeaderCreateVideo from "../../components/createVideo/HeaderCreateVideo"
 import { useCreateMotionControlFlow } from "../../hooks/useCreateMotionControlFlow"
 import { useGetMotionControlHistoryQuery } from "../../api/videoGenerations"
+import { useSubmitTaskResultMutation } from '../../api/tasks'
 
 export function CreateVideoMotionControlPage() {
   const [selectedVideo, setSelectedVideo] = useState(null)
+  const [submittedTaskId, setSubmittedTaskId] = useState(null)
+  const [submitTaskResult, { isLoading: isSubmittingResult }] = useSubmitTaskResultMutation()
 
   const { data: history = [], isFetching: historyLoading, refetch } = useGetMotionControlHistoryQuery()
 
@@ -31,6 +35,20 @@ export function CreateVideoMotionControlPage() {
     : result
 
   const handleSelectHistory = (item) => setSelectedVideo(item)
+
+  const handleSubmitResult = async () => {
+    if (!result?.taskId || !videoUrl) return
+    try {
+      await submitTaskResult({
+        id: result.taskId,
+        result: { type: 'LINK', name: 'Motion Video AI', url: videoUrl, note: 'Kết quả tạo từ màn hình Motion Control' },
+      }).unwrap()
+      setSubmittedTaskId(result.taskId)
+      toast.success('Đã nộp kết quả cho PM duyệt')
+    } catch (submitError) {
+      toast.error(submitError?.data?.message || 'Không thể nộp kết quả')
+    }
+  }
 
   const wrappedSubmit = useCallback(
     async (params) => {
@@ -109,6 +127,14 @@ export function CreateVideoMotionControlPage() {
 
                 <CopyButton text={displayResult.promptSent} />
               </div>
+            </div>
+          )}
+
+          {!selectedVideo && status === 'succeeded' && result?.taskId && (
+            <div className="mb-4 flex w-full max-w-5xl justify-end">
+              <button type="button" onClick={handleSubmitResult} disabled={isSubmittingResult || submittedTaskId === result.taskId} className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                <Send className="h-4 w-4" /> {submittedTaskId === result.taskId ? 'Đã nộp kết quả' : isSubmittingResult ? 'Đang nộp...' : 'Nộp kết quả'}
+              </button>
             </div>
           )}
 

@@ -74,7 +74,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
       const standaloneItems = servicesData
         .filter(service => !service.opportunityPackageId)
         .map(service => {
-          const costPrice = parseFloat(service.service?.costPrice || service.costPrice) || 0;
+          const costPrice = parseFloat(service.costAtSale) || 0;
+          const configuredSellingPrice = parseFloat(service.sellingPrice) || 0;
           const minPrice = roundToTenThousands(costPrice / 0.8);
           const recommendedPrice = roundToTenThousands(costPrice / 0.6);
 
@@ -85,9 +86,9 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             costPrice: costPrice,
             minPrice: minPrice,
             recommendedPrice: recommendedPrice,
-            customPrice: recommendedPrice,
-            selectedPrice: recommendedPrice,
-            profitMargin: calculateProfitMargin(recommendedPrice, costPrice),
+            customPrice: configuredSellingPrice || recommendedPrice,
+            selectedPrice: configuredSellingPrice || recommendedPrice,
+            profitMargin: calculateProfitMargin(configuredSellingPrice || recommendedPrice, costPrice),
             packageName: 'STANDALONE',
             unit: service.service?.unit || service.unit || ''
           };
@@ -96,7 +97,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
       // Package services
       const packageItems = (opportunity?.packages || []).flatMap(pkg =>
         (pkg.services || []).map(ps => {
-          const costPrice = parseFloat(ps.service?.costPrice || ps.sellingPrice) || 0;
+          const costPrice = parseFloat(ps.costAtSale) || 0;
+          const configuredSellingPrice = parseFloat(ps.sellingPrice) || 0;
           const minPrice = roundToTenThousands(costPrice / 0.8);
           const recommendedPrice = roundToTenThousands(costPrice / 0.6);
 
@@ -107,9 +109,9 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             costPrice: costPrice,
             minPrice: minPrice,
             recommendedPrice: recommendedPrice,
-            customPrice: recommendedPrice,
-            selectedPrice: recommendedPrice,
-            profitMargin: calculateProfitMargin(recommendedPrice, costPrice),
+            customPrice: configuredSellingPrice || recommendedPrice,
+            selectedPrice: configuredSellingPrice || recommendedPrice,
+            profitMargin: calculateProfitMargin(configuredSellingPrice || recommendedPrice, costPrice),
             packageName: pkg.name,
             packageQuantity: pkg.quantity || 1,
             norm: ps.quantity / (pkg.quantity || 1),

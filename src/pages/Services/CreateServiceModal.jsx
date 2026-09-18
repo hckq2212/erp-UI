@@ -16,6 +16,7 @@ const serviceSchema = z.object({
     unit: z.string().min(1, 'Đơn vị tính là bắt buộc'),
     // outputJobId: z.string().min(1, 'Vui lòng chọn công việc đầu ra'),
     jobIds: z.array(z.string()).optional().default([]),
+    isAI: z.boolean().optional().default(false),
 });
 
 export const CreateServiceModal = ({ isOpen, onClose }) => {
@@ -42,6 +43,7 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
             unit: '',
             outputJobId: '',
             jobIds: [],
+            isAI: false,
         },
     });
 
@@ -115,6 +117,11 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
                     error={errors.name?.message}
                     placeholder="Ví dụ: Quay phim, Thiết kế..."
                 />
+
+                <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">
+                    <input type="checkbox" {...register('isAI')} className="h-4 w-4 accent-blue-600" />
+                    Đây là dịch vụ AI
+                </label>
 
 
 

@@ -115,6 +115,7 @@ export const DashboardPage = () => {
                                     selectedId={selectedMemberId}
                                     onSelect={handleSelectMember}
                                     currentUserId={currentUserId}
+                                    workloads={dashboard?.staffWorkloads || dashboard?.admin?.staffWorkloads}
                                 />
                             </div>
                         )}

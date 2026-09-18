@@ -50,7 +50,7 @@ export const useSSE = () => {
             'quotation_rejected': ['Quotations', 'Opportunities'],
             'task_created': ['Tasks', 'Projects'],
             'task_updated': ['Tasks', 'Projects'],
-            'task_status_changed': ['Tasks', 'Projects', 'TaskReviews'],
+            'task_status_changed': ['Tasks', 'Projects', 'TaskReviews', 'Opportunities'],
             'task_deleted': ['Tasks', 'Projects'],
             'contract_created': ['Contracts', 'Opportunities'],
             'contract_updated': ['Contracts'],
@@ -85,6 +85,9 @@ export const useSSE = () => {
 
         // Invalidate RTK Query cache for notifications
         dispatch(notificationsApi.util.invalidateTags(['Notifications']));
+        if (payload.type === 'TASK_COMPLETED') {
+          dispatch(api.util.invalidateTags(['Opportunities']));
+        }
       } catch (error) {
         console.error('[SSE] Error parsing event data:', error);
       }

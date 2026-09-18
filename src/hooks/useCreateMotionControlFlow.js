@@ -48,7 +48,7 @@ export function useCreateMotionControlFlow({ onDone } = {}) {
   const submitCreateMotionControl = useCallback(
     async (params) => {
       const {
-        projectId, taskId,
+        projectId, opportunityId, taskId,
         modelId, modelName, prompt, characterOrientation, keepOriginalSound, mode,
         characterImageFile, referenceVideoFile,
         characterImageAssetId, referenceVideoAssetId,
@@ -63,7 +63,8 @@ export function useCreateMotionControlFlow({ onDone } = {}) {
 
       try {
         const formData = new FormData()
-        formData.append('projectId', String(projectId))
+        if (projectId) formData.append('projectId', String(projectId))
+        if (opportunityId) formData.append('opportunityId', String(opportunityId))
         if (taskId) formData.append('taskId', String(taskId))
         formData.append('modelId', String(modelId))
         formData.append('prompt', prompt || '')
