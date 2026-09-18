@@ -470,6 +470,8 @@ export const TaskDetailPage = () => {
                             </Button>
                         )}
 
+                    {/* Deprecated cross-team support buttons */}
+                    {/*
                     {task.status === 'SUPPORT_PENDING' && isSameUser(task.supportLeadId, currentUserId) && (
                         <div className="flex gap-3">
                             <Button
@@ -525,6 +527,7 @@ export const TaskDetailPage = () => {
                                 </Button>
                             </div>
                         )}
+                    */}
 
                     {canManageProjectTask &&
                         (task.assigneeId || task.helperId) &&

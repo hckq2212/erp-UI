@@ -23,8 +23,8 @@ const emptySubtaskForm = {
     description: '',
 };
 
-const SPLITTABLE_TASK_STATUSES = new Set(['PENDING', 'DOING', 'REWORKING', 'OVERDUE']);
-const SPLITTABLE_STATUS_TEXT = 'Chờ thực hiện, Đang thực hiện, Đang làm lại hoặc Quá hạn';
+const SPLITTABLE_TASK_STATUSES = new Set(['PENDING', 'DOING', 'REWORKING', 'OVERDUE', 'AWAITING_SUPPORT']);
+const SPLITTABLE_STATUS_TEXT = 'Chờ thực hiện, Đang thực hiện, Đang làm lại, Quá hạn, Đang nhờ hỗ trợ';
 
 const getAllocationPercent = subtask => {
     const percent = Number(subtask?.allocationPercent || 0);
@@ -59,7 +59,8 @@ export const TaskDelegationPanel = ({
     const isPM = currentMembership?.role === 'PROJECT_MANAGER' || isSameUser(task?.project?.projectManager?.id, currentUserId);
     const isAccount = isSameUser(team?.teamLead?.id, currentUserId) || currentMembership?.role === 'ACCOUNT';
     const isAdminOverride = ['ADMIN', 'BOD'].includes(userRole);
-    const canDelegate = isAccount || isPM || isAdminOverride;
+    const isTeamLead = isSameUser(team?.teamLead?.id, currentUserId);
+    const canDelegate = isAccount || isPM || isAdminOverride || isTeamLead;
     const isStaffRole = !userRole ||
         userRole.startsWith('STAFF') ||
         ['STAFF', 'STAFF_A', 'STAFF_B', 'STAFF_C', 'STAFF_D', 'EMPLOYEE', 'USER'].includes(userRole);
@@ -91,7 +92,7 @@ export const TaskDelegationPanel = ({
         subtask?.rewardVinicoin != null ||
         subtask?.reviews?.length ||
         subtask?.iterations?.length ||
-        ['AWAITING_REVIEW', 'INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED', 'REWORKING'].includes(subtask?.status)
+        ['AWAITING_REVIEW', 'INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED', 'AWAITING_SUPPORT'].includes(subtask?.status)
     );
     const isSplittableStatus = SPLITTABLE_TASK_STATUSES.has(task?.status);
     const projectManager = team?.members?.find(member =>
@@ -107,9 +108,6 @@ export const TaskDelegationPanel = ({
         sharedActionBlockedReason = 'Task chưa thuộc đội dự án.';
     }
 
-    const staffingBlockedReason = sharedActionBlockedReason || (
-        !projectManager ? 'Dự án chưa có PM phụ trách để nhận yêu cầu.' : ''
-    );
     const subtaskBlockedReason = sharedActionBlockedReason || (
         !task?.job
             ? 'Task chưa có hạng mục để xác định quỹ Vinicoin.'

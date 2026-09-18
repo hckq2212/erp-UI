@@ -471,7 +471,8 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                             </button>
                                                         )}
 
-                                                        {/* Support Team Lead Actions (Pending) */}
+                                                        {/* Deprecated cross-team support buttons */}
+                                                        {/*
                                                         {task.status === 'SUPPORT_PENDING' && isSameUser(task.supportLeadId, currentUserId) && (
                                                             <div className="flex items-center gap-2">
                                                                 <button
@@ -489,7 +490,6 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                             </div>
                                                         )}
 
-                                                        {/* Support Team Lead Actions (Accepted) */}
                                                         {task.isSupportAccepted && isSameUser(task.supportLeadId, currentUserId) && task.isSupportReturnRequested &&
                                                             (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'SUPPORT_AWAITING_RETURN') && (
                                                                 <div className="flex items-center gap-2">
@@ -507,6 +507,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                                     </button>
                                                                 </div>
                                                             )}
+                                                        */}
 
                                                         {isProjectInProgress && (isProjectLead || isAdminOrBOD) && task.status === 'INTERNAL_COMPLETED' && (
                                                             <button
