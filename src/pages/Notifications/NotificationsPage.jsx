@@ -95,7 +95,7 @@ export const NotificationsPage = () => {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
           <div>
-            <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">Tin tức nội bộ</h1>
+            <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">Thông báo</h1>
             <p className="text-sm text-gray-400 font-bold mt-1 uppercase tracking-wide">
               {notifications.filter(n => !n.isRead).length} tin nhắn chưa đọc
             </p>
