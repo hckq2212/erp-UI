@@ -213,7 +213,7 @@ const PackageItem = memo(({ pkg, index, availableServices, onRemove, onServiceCh
   );
 });
 
-export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
+export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = null }) => {
   const [createOpportunity, { isLoading }] = useCreateOpportunityMutation();
   const { data: servicesData } = useGetServicesQuery();
   const services = useMemo(() => Array.isArray(servicesData) ? servicesData : (servicesData?.data || []), [servicesData]);
@@ -312,9 +312,103 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
 
   const [documentLinks, setDocumentLinks] = useState(Array(LINK_PLACEHOLDERS.length).fill(''));
   const [files, setFiles] = useState([]);
+  const [existingAttachments, setExistingAttachments] = useState([]);
   const [uploadProgress, setUploadProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (!initialData) {
+      // Mở modal ở chế độ "Tạo Cơ Hội Mới": reset sạch state để không dính
+      // dữ liệu còn sót lại từ lần mở "Tạo Cơ Hội Tương Tự" (copy) trước đó.
+      setOpportunityNameParts({ customerName: '', brandName: '', monthYear: '' });
+      setFormData({
+        description: '',
+        field: '',
+        expectedRevenue: 0,
+        budget: 0,
+        startDate: '',
+        endDate: '',
+        priority: 'Medium',
+        successChance: 0,
+        region: [],
+        durationMonths: 1,
+        customerRequirements: '',
+      });
+      setSelectedServices([{ serviceId: '', quantity: 1 }]);
+      setSelectedPackages([{ servicePackageId: '', services: [], quantity: 1 }]);
+      setDocumentLinks(Array(LINK_PLACEHOLDERS.length).fill(''));
+      setFiles([]);
+      setExistingAttachments([]);
+      setErrors({});
+      return;
+    }
+
+    // Tên cơ hội được lưu dạng "KhachHang_Brand_MM/YY" (xem opportunityName ở trên).
+    // Tách lại để copy đầy đủ cả 3 phần thay vì chỉ lấy tên khách hàng.
+    const rawNameParts = String(initialData.name || '').split('_');
+    const parsedCustomerName = rawNameParts.length > 1 ? rawNameParts[0].trim() : '';
+    const parsedMonthYear = rawNameParts.length > 1 ? rawNameParts[rawNameParts.length - 1].trim() : '';
+    const parsedBrandName = rawNameParts.length > 2 ? rawNameParts.slice(1, -1).join('_').trim() : '';
+
+    setOpportunityNameParts({
+      customerName: parsedCustomerName || initialData.customer?.name || initialData.leadName || '',
+      brandName: parsedBrandName,
+      monthYear: parsedMonthYear,
+    });
+
+    setFormData({
+      description: initialData.description || '',
+      field: initialData.field || '',
+      expectedRevenue: Number(initialData.expectedRevenue) || 0,
+      budget: Number(initialData.budget) || 0,
+      startDate: initialData.startDate ? String(initialData.startDate).slice(0, 10) : '',
+      endDate: initialData.endDate ? String(initialData.endDate).slice(0, 10) : '',
+      priority: initialData.priority || 'Medium',
+      successChance: Number(initialData.successChance) || 0,
+      region: Array.isArray(initialData.region) ? initialData.region : [],
+      durationMonths: Number(initialData.durationMonths) || 1,
+      customerRequirements: initialData.customerRequirements || '',
+    });
+
+    const standaloneServices = (initialData.services || [])
+      .filter(s => !s.isPackageService)
+      .map(s => ({ serviceId: s.serviceId || s.service?.id || '', quantity: s.quantity || 1 }));
+    // Copy: nếu cơ hội gốc không có dịch vụ lẻ/gói nào thì để trống hẳn,
+    // không tự thêm dòng placeholder trống (tránh vướng lỗi validate hoặc gây rối mắt).
+    setSelectedServices(standaloneServices);
+
+    const packages = (initialData.packages || []).map(pkg => ({
+      servicePackageId: pkg.servicePackageId || '',
+      name: pkg.name || '',
+      description: pkg.description || '',
+      quantity: pkg.quantity || 1,
+      services: (pkg.services || []).map(s => ({
+        serviceId: s.serviceId || s.service?.id || '',
+        quantity: s.quantity || 1,
+        sellingPrice: Number(s.sellingPrice) || 0,
+      })),
+    }));
+    setSelectedPackages(packages);
+
+    const attachments = initialData.attachments || [];
+    const links = attachments.filter(a => a.type === 'LINK').map(a => a.url);
+    const otherAttachments = attachments.filter(a => a.type !== 'LINK');
+    const newDocumentLinks = Array(LINK_PLACEHOLDERS.length).fill('');
+    links.forEach((url, idx) => {
+      if (idx < newDocumentLinks.length) {
+        newDocumentLinks[idx] = url;
+      } else {
+        newDocumentLinks.push(url);
+      }
+    });
+    setDocumentLinks(newDocumentLinks);
+    setExistingAttachments(otherAttachments);
+    setFiles([]);
+    setErrors({});
+  }, [isOpen, initialData]);
 
   const handlePackageTemplateChange = useCallback((index, templateId) => {
     if (!templateId) {
@@ -543,26 +637,62 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     });
   }, []);
 
-  const handleFileChange = useCallback((e) => {
-    const selectedFiles = Array.from(e.target.files);
-    const totalSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
+  const addFiles = useCallback((incomingFiles) => {
+    setFiles(prev => {
+      // Cộng dồn với các file đã chọn trước đó (thay vì ghi đè), loại trùng theo tên+kích thước
+      const existingKeys = new Set(prev.map(f => `${f.name}_${f.size}`));
+      const uniqueIncoming = incomingFiles.filter(f => !existingKeys.has(`${f.name}_${f.size}`));
+      const merged = [...prev, ...uniqueIncoming];
 
-    if (selectedFiles.length > 5) {
-      setErrors(prev => ({ ...prev, files: 'Tối đa 5 file' }));
-      return;
-    }
+      const totalSize = merged.reduce((acc, file) => acc + file.size, 0);
 
-    if (totalSize > 25 * 1024 * 1024) {
-      setErrors(prev => ({ ...prev, files: 'Tổng dung lượng không quá 25MB' }));
-      return;
-    }
+      if (merged.length > 5) {
+        setErrors(prevErrors => ({ ...prevErrors, files: 'Tối đa 5 file' }));
+        return prev;
+      }
 
-    setFiles(selectedFiles);
-    setErrors(prev => ({ ...prev, files: null }));
+      if (totalSize > 25 * 1024 * 1024) {
+        setErrors(prevErrors => ({ ...prevErrors, files: 'Tổng dung lượng không quá 25MB' }));
+        return prev;
+      }
+
+      setErrors(prevErrors => (prevErrors.files ? { ...prevErrors, files: null } : prevErrors));
+      return merged;
+    });
   }, []);
+
+  const handleFileChange = useCallback((e) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    addFiles(selectedFiles);
+    // Reset input value để có thể chọn lại đúng file đó lần nữa nếu cần
+    e.target.value = '';
+  }, [addFiles]);
+
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+
+  const handleFileDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(true);
+  }, []);
+
+  const handleFileDragLeave = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+  }, []);
+
+  const handleFileDrop = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+    const droppedFiles = Array.from(e.dataTransfer?.files || []);
+    if (droppedFiles.length > 0) addFiles(droppedFiles);
+  }, [addFiles]);
 
   const removeFile = useCallback((index) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
+    setErrors(prev => (prev.files ? { ...prev, files: null } : prev));
   }, []);
 
   const totalValue = useMemo(() => {
@@ -621,8 +751,10 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     // Validate selected services & packages
     const hasSelectedPackage = selectedPackages.some(pkg => !!pkg.servicePackageId);
     const hasSelectedService = selectedServices.some(s => !!s.serviceId);
-    const hasIncompleteService = selectedServices.some(s => !s.serviceId);
-    const hasIncompletePackage = selectedPackages.some(pkg => !pkg.servicePackageId);
+    // Chỉ coi là "thiếu thông tin" khi có nhiều hơn 1 dòng và còn dòng trống -
+    // dòng trống mặc định (duy nhất) chỉ là placeholder để thêm mới, không phải lỗi.
+    const hasIncompleteService = selectedServices.length > 1 && selectedServices.some(s => !s.serviceId);
+    const hasIncompletePackage = selectedPackages.length > 1 && selectedPackages.some(pkg => !pkg.servicePackageId);
 
     if (!hasSelectedPackage && !hasSelectedService) {
       newErrors.services = 'Vui lòng chọn ít nhất một gói dịch vụ hoặc dịch vụ đề xuất';
@@ -663,6 +795,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
         .filter(l => l.trim())
         .map(url => ({ type: 'LINK', name: url, url }));
       attachments.push(...validLinks);
+      attachments.push(...existingAttachments);
 
       // 2. Upload files to Cloudinary
       if (files.length > 0) {
@@ -736,6 +869,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
       setSelectedPackages([{ servicePackageId: '', services: [] }]);
       setDocumentLinks(Array(LINK_PLACEHOLDERS.length).fill(''));
       setFiles([]);
+      setExistingAttachments([]);
     } catch (err) {
       setIsUploading(false);
       setErrors({ submit: err?.data?.message || err?.message || 'Có lỗi xảy ra' });
@@ -756,7 +890,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
           <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 flex items-center justify-between z-10">
             <div className="flex items-center gap-3">
               <div>
-                <h2 className="text-xl font-bold text-white">Tạo Cơ Hội Mới</h2>
+                <h2 className="text-xl font-bold text-white">{initialData ? 'Tạo Cơ Hội Tương Tự' : 'Tạo Cơ Hội Mới'}</h2>
                 <p className="text-blue-100 text-sm">Điền thông tin chi tiết của cơ hội </p>
               </div>
             </div>
@@ -1243,7 +1377,36 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                 {/* Tệp đính kèm */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Tệp đính kèm</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer">
+                  {existingAttachments.length > 0 && (
+                    <div className="mb-4 space-y-2">
+                      <p className="text-sm font-medium text-gray-700">Tệp từ cơ hội gốc ({existingAttachments.length}):</p>
+                      <div className="grid grid-cols-1 gap-2">
+                        {existingAttachments.map((att, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <div className="flex items-center gap-3 overflow-hidden">
+                              <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                                <FileText className="w-4 h-4" />
+                              </div>
+                              <p className="text-sm font-medium text-gray-900 truncate">{att.name}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setExistingAttachments(prev => prev.filter((_, i) => i !== index))}
+                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div
+                    onDragOver={handleFileDragOver}
+                    onDragLeave={handleFileDragLeave}
+                    onDrop={handleFileDrop}
+                    className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${isDraggingFile ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/50'}`}
+                  >
                     <label className="cursor-pointer">
                       <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-600 font-medium">Kéo thả file hoặc click để chọn</p>

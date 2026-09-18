@@ -7,6 +7,7 @@ import {
   Trash2,
   CheckCircle,
   FileText,
+  Copy,
 } from 'lucide-react';
 import { selectCurrentUser } from '../../../store/authSlice';
 import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation, useApproveOpportunityMutation } from '../../../api/opportunities';
@@ -14,6 +15,7 @@ import { useGetCustomersQuery } from '../../../api/customers';
 import { useGetQuotationsByOpportunityQuery, useCreateQuotationMutation, useUpdateQuotationMutation } from '../../../api/quotations';
 import { useGetReferralPartnersQuery, useGetReferralPartnerQuery } from '../../../api/referralPartners';
 import { QuotationModal } from './QuotationModal';
+import { OpportunityModal } from '../OpportunityModal';
 import { toast } from 'react-toastify';
 import { FinancialInfo } from './FinancialInfo';
 import { TimeLocationInfo } from './TimeLocationInfo';
@@ -58,6 +60,7 @@ export const OpportunityDetailPage = () => {
   const [showContactModal, setShowContactModal] = useState(false);
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [showQuotationsListModal, setShowQuotationsListModal] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [editingQuotation, setEditingQuotation] = useState(null);
   const [customerType, setCustomerType] = useState('DIRECT');
   const [customerStatus, setCustomerStatus] = useState('');
@@ -250,6 +253,15 @@ export const OpportunityDetailPage = () => {
           </div>
 
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowDuplicateModal(true)}
+              disabled={opportunity.status === 'QUOTATION_DRAFTING'}
+              title={opportunity.status === 'QUOTATION_DRAFTING' ? 'Không thể sao chép khi cơ hội đang làm báo giá' : undefined}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
+            >
+              <Copy className="w-4 h-4" />
+              Sao chép cơ hội
+            </button>
             {(opportunity.customer || opportunity.leadName) && (
               <>
                 {opportunity.quotations.length > 0 && (
@@ -356,6 +368,13 @@ export const OpportunityDetailPage = () => {
         customers={displayCustomers}
         onSave={handleSaveContact}
         isUpdating={isUpdating || isLoadingPartnerDetails}
+      />
+
+      <OpportunityModal
+        isOpen={showDuplicateModal}
+        initialData={showDuplicateModal ? opportunity : null}
+        onClose={() => setShowDuplicateModal(false)}
+        onSuccess={() => setShowDuplicateModal(false)}
       />
 
       <QuotationsListModal

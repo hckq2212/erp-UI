@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Edit, Eye, Phone, Mail, User, DollarSign, Briefcase, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Edit, Eye, Phone, Mail, User, DollarSign, Briefcase, ArrowUp, ArrowDown, ArrowUpDown, Copy } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { OPPORTUNITY_STATUS_LABELS, OPPORTUNITY_STATUS_COLORS } from '../../utils/enums';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
@@ -11,7 +11,8 @@ export const OpportunityTable = ({
     onPageChange,
     onSortChange,
     currentSort,
-    onEdit
+    onEdit,
+    onDuplicate
 }) => {
     const navigate = useNavigate();
     const {
@@ -134,12 +135,25 @@ export const OpportunityTable = ({
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right align-middle">
-                                        <div className="flex justify-end items-center gap-1">
+                                        <div className="flex justify-end items-center gap-2">
                                             <button
                                                 onClick={() => navigate(`/opportunities/${opp.id}`)}
                                                 className="px-4 py-2 text-white bg-blue-600 rounded-xl transition-all font-bold whitespace-nowrap"
                                             >
                                                 Xem chi tiết
+                                            </button>
+                                            <button
+                                                onClick={() => opp.status !== 'QUOTATION_DRAFTING' && onDuplicate?.(opp)}
+                                                disabled={opp.status === 'QUOTATION_DRAFTING'}
+                                                title={opp.status === 'QUOTATION_DRAFTING' ? 'Không thể tạo cơ hội tương tự khi đang làm báo giá' : 'Tạo cơ hội tương tự'}
+                                                className={cn(
+                                                    "p-2 rounded-xl transition-all font-bold whitespace-nowrap border",
+                                                    opp.status === 'QUOTATION_DRAFTING'
+                                                        ? "text-gray-300 border-gray-100 cursor-not-allowed"
+                                                        : "text-blue-600 border-blue-200 hover:bg-blue-50"
+                                                )}
+                                            >
+                                                <Copy className="w-4 h-4" />
                                             </button>
                                         </div>
                                     </td>
