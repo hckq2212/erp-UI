@@ -15,7 +15,6 @@ import { AdminView } from '../../components/dashboard/AdminView';
 import { TeamLeadView } from '../../components/dashboard/TeamLeadView';
 import { BDView } from '../../components/dashboard/BDView';
 import { MemberView } from '../../components/dashboard/MemberView';
-import { ReviewQueueView } from '../../components/dashboard/ReviewQueueView';
 import { getCurrentUserId } from '../../utils/authUser';
 
 export const DashboardPage = () => {
@@ -131,13 +130,13 @@ export const DashboardPage = () => {
                         transition={{ delay: 0.4 }}
                         className="space-y-3 pb-2"
                     >
-                        {!isViewingMember && !isAdminOrBod && !isTeamLead && (
+                        {/* {!isViewingMember && !isAdminOrBod && !isTeamLead && (
                             <ReviewQueueView
                                 awaitingReviewTasks={awaitingReviewTasks}
                                 user={user}
                                 navigate={navigate}
                             />
-                        )}
+                        )} */}
 
                         {!isViewingMember && isAdminOrBod && (
                             <AdminView
@@ -170,6 +169,7 @@ export const DashboardPage = () => {
                                     currentUserId={currentUserId}
                                     awaitingReviewTasks={awaitingReviewTasks}
                                     user={user}
+                                    selectedDate={selectedDate}
                                 />
                             </div>
                         )}

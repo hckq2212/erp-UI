@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowUpRight, ClipboardCheck, UserRound } from 'lucide-react';
 import { useGetMyNotificationsQuery } from '../../api/notifications';
-import { TASK_STATUS } from '../../utils/enums';
+import { TASK_STATUS, PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
 import { getTaskDisplayName } from '../../utils/taskName';
 import { Modal } from '../ui/Modal';
 import { getCurrentUserId, isSameUser } from '../../utils/authUser';
@@ -14,64 +14,56 @@ import { TimelineList } from './member/TimelineList';
 import { HotProjectList } from './member/HotProjectList';
 import { TaskCalendar } from './TaskCalendar';
 
-const ReviewSummaryCard = ({ tasks = [], onOpen }) => (
-    <button
-        type="button"
-        onClick={onOpen}
-        className="group relative w-full overflow-hidden rounded-[0.75rem] border border-amber-100 bg-white p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-amber-200 hover:shadow-xl hover:shadow-amber-50"
-    >
-        <div className="mb-3 flex items-start gap-3">
-            <div className="mr-4 flex shrink-0 items-center justify-center rounded-lg bg-amber-50 p-3 text-amber-500">
-                <ClipboardCheck size={20} strokeWidth={2.5} />
-            </div>
-            <div className="flex min-w-0 flex-col items-baseline gap-2 text-left">
-                <p className="text-[12px] font-black uppercase tracking-widest text-slate-400">Việc cần duyệt</p>
-                <h3 className="text-2xl font-black tracking-tighter text-slate-900">{tasks.length}</h3>
-            </div>
-            <ArrowUpRight size={16} className="ml-auto shrink-0 text-slate-300 transition group-hover:text-amber-500" />
-        </div>
-    </button>
-);
-
 const TeamLeadReviewModal = ({ isOpen, onClose, tasks = [], navigate }) => (
     <Modal isOpen={isOpen} onClose={onClose} title="Việc cần duyệt" className="max-w-4xl">
-        <div className="max-h-[65vh] space-y-2 overflow-y-auto pr-1">
-            {tasks.length > 0 ? (
-                tasks.map((task) => (
-                    <button
-                        type="button"
-                        key={task.id}
-                        onClick={() => {
-                            onClose();
-                            navigate(`/tasks/${task.id}/review`);
-                        }}
-                        className="group grid w-full grid-cols-[1fr_auto] items-center gap-3 rounded-lg border border-slate-100 bg-white p-3 text-left transition hover:border-amber-100 hover:bg-amber-50/30"
-                    >
-                        <div className="min-w-0">
-                            <div className="mb-1 flex min-w-0 items-center gap-2">
-                                <span className="shrink-0 rounded bg-amber-50 px-2 py-0.5 text-[9px] font-black uppercase text-amber-600">
+        <div className="space-y-3">
+            <div className="max-h-[65vh] space-y-3 overflow-y-auto pr-1">
+                {tasks.length > 0 ? (
+                    tasks.map((task) => (
+                        <div
+                            key={task.id}
+                            onClick={() => {
+                                onClose();
+                                navigate(`/tasks/${task.id}/review`);
+                            }}
+                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-amber-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-500/10"
+                        >
+                            <div className="flex items-start justify-between gap-3 mb-2">
+                                <span className="inline-flex items-center rounded-lg bg-amber-50 px-2.5 py-1 text-[10px] font-black uppercase text-amber-600 border border-amber-100 tracking-tight">
                                     {task.code}
                                 </span>
-                                <span className="truncate text-[10px] font-bold text-slate-400">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate max-w-[240px]">
                                     {task.project?.name || 'Dự án nội bộ'}
                                 </span>
                             </div>
-                            <h4 className="truncate text-sm font-black text-slate-900 group-hover:text-amber-600">
+                            <h4 className="text-base font-black text-slate-900 group-hover:text-amber-600 transition-colors mb-4">
                                 {getTaskDisplayName(task)}
                             </h4>
-                            <div className="mt-1 flex min-w-0 items-center gap-2 text-[11px] font-bold text-slate-500">
-                                <UserRound size={13} className="shrink-0 text-slate-300" />
-                                <span className="truncate">{task.assignee?.fullName || 'N/A'}</span>
+                            <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-slate-100 to-slate-50 flex items-center justify-center text-[10px] font-black text-slate-400 border border-white shadow-sm shrink-0 uppercase">
+                                        {task.assignee?.fullName?.charAt(0) || 'U'}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-[9px] font-black uppercase text-slate-400 leading-none mb-1">Thành viên</p>
+                                        <p className="text-xs font-bold text-slate-800 truncate">{task.assignee?.fullName || 'N/A'}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-200 group-hover:scale-105 transition-transform shrink-0"
+                                >
+                                    <ArrowUpRight size={20} />
+                                </button>
                             </div>
                         </div>
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white shadow-lg shadow-amber-100 transition group-hover:scale-105">
-                            <ArrowUpRight size={16} />
-                        </div>
-                    </button>
-                ))
-            ) : (
-                <p className="py-10 text-center text-xs font-bold uppercase tracking-widest text-slate-300">Không có việc cần duyệt</p>
-            )}
+                    ))
+                ) : (
+                    <div className="py-12 text-center">
+                        <p className="text-xs font-bold uppercase tracking-widest text-slate-300">Không có việc cần duyệt</p>
+                    </div>
+                )}
+            </div>
         </div>
     </Modal>
 );
@@ -86,10 +78,31 @@ export const MemberView = ({
     selectedProjectId,
     onSelectProject,
     availableProjects = [],
+    selectedDate,
 }) => {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const member = dashboard?.member || {};
     const { data: notifications = [] } = useGetMyNotificationsQuery();
+    const currentUserId = getCurrentUserId(user);
+
+    const canManageProjectTasks = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
+    const teamLeadReviewTasks = useMemo(() => {
+        return awaitingReviewTasks?.data?.filter(task => {
+            const matchesRole = canManageProjectTasks || isSameUser(currentUserId, task.assignerId) || isSameUser(currentUserId, task.project?.team?.teamLead?.id);
+            const matchesProject = !selectedProjectId || task.projectId === selectedProjectId || task.project?.id === selectedProjectId;
+
+            let matchesDate = true;
+            if (selectedDate?.month && selectedDate?.year) {
+                const targetDateStr = task.plannedEndDate || task.actualEndDate || task.createdAt;
+                if (targetDateStr) {
+                    const d = new Date(targetDateStr);
+                    matchesDate = (d.getMonth() + 1 === selectedDate.month) && (d.getFullYear() === selectedDate.year);
+                }
+            }
+
+            return matchesRole && matchesProject && matchesDate;
+        }) || [];
+    }, [awaitingReviewTasks, canManageProjectTasks, currentUserId, selectedProjectId, selectedDate]);
 
     const stats = useMemo(() => {
         const todayStr = new Date().toISOString().split('T')[0];
@@ -126,22 +139,16 @@ export const MemberView = ({
         return {
             overdue: overdueCount,
             today: todayCount,
-            pending: Number(statusCounts[TASK_STATUS.AWAITING_REVIEW] || 0) + Number(statusCounts.WAITING_APPROVAL || 0),
+            pending: teamLeadReviewTasks.length,
             progress
         };
-    }, [member, selectedProjectId]);
+    }, [member, selectedProjectId, teamLeadReviewTasks]);
 
-    const currentUserId = getCurrentUserId(user);
     const rawTimelineTasks = member?.upcomingDeadlines || [];
     const filteredTimelineTasks = selectedProjectId
         ? rawTimelineTasks.filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
         : rawTimelineTasks;
     const timelineTasks = filteredTimelineTasks;
-
-    const teamLeadReviewTasks = awaitingReviewTasks?.data?.filter(task =>
-        (isSameUser(currentUserId, task.assignerId) || isSameUser(currentUserId, task.project?.team?.teamLead?.id)) &&
-        (!selectedProjectId || task.projectId === selectedProjectId || task.project?.id === selectedProjectId)
-    ) || [];
 
     const filteredReworkTasks = selectedProjectId
         ? (member?.reworkTasks || []).filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
@@ -150,8 +157,6 @@ export const MemberView = ({
     const filteredCalendarTasks = selectedProjectId
         ? (member?.calendarTasks || []).filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
         : member?.calendarTasks;
-
-    const shouldReplaceProjectMetric = isTeamLead && !isViewingMember;
 
     return (
         <>
@@ -187,12 +192,7 @@ export const MemberView = ({
                         isTeamLead={isTeamLead}
                         isViewingMember={isViewingMember}
                         dashboard={dashboard}
-                        projectMetricOverride={shouldReplaceProjectMetric ? (
-                            <ReviewSummaryCard
-                                tasks={teamLeadReviewTasks}
-                                onOpen={() => setIsReviewModalOpen(true)}
-                            />
-                        ) : null}
+                        onOpenReviewModal={() => setIsReviewModalOpen(true)}
                     />
                 </div>
 

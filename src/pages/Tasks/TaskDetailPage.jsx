@@ -51,6 +51,12 @@ export const TaskDetailPage = () => {
     const currentUserId = getCurrentUserId(user);
     const isProjectLead = isSameUser(currentUserId, task?.project?.team?.teamLead?.id);
     const canManageProjectTask = PROJECT_MANAGEMENT_ROLES.includes(user?.role) || isProjectLead;
+    const isAssigneeOrHelper = isSameUser(currentUserId, task?.assigneeId) ||
+        isSameUser(currentUserId, task?.assignee?.id) ||
+        isSameUser(currentUserId, task?.helperId) ||
+        isSameUser(currentUserId, task?.helper?.id);
+    const isAssigner = isSameUser(currentUserId, task?.assignerId) || isSameUser(currentUserId, task?.assigner?.id);
+    const canSubmitResult = isAssigneeOrHelper || isAssigner || canManageProjectTask || ['ADMIN', 'BOD'].includes(user?.role);
     const canEditDescription = canManageProjectTask;
     const incompleteSubtasks = (task?.subtasks || []).filter(
         subtask => !COMPLETED_SUBTASK_STATUSES.has(subtask.status)
@@ -702,11 +708,11 @@ export const TaskDetailPage = () => {
                             </div>
 
                             {(task.status === 'DOING' || task.status === 'REJECTED' || task.status === 'REWORKING' || task.status === 'OVERDUE') &&
-                                task.assigneeId !== null &&
+                                canSubmitResult &&
                                 !isParentBlockedBySubtasks && (
                                     <button
                                         onClick={() => setIsResultModalOpen(true)}
-                                        className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors"
+                                        className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors cursor-pointer"
                                     >
                                         {task.result ? 'Cập nhật kết quả' : 'Thêm kết quả'}
                                     </button>

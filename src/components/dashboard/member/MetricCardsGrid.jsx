@@ -12,6 +12,7 @@ export const MetricCardsGrid = ({
     pendingCount = 0,
     todayCount = 0,
     totalTasksCount = 0,
+    onOpenReviewModal,
     projectMetricOverride,
     userRole,
     isTeamLead,
@@ -50,6 +51,7 @@ export const MetricCardsGrid = ({
                         icon={ClipboardCheck}
                         color="indigo"
                         sparklineData={[]}
+                        onClick={onOpenReviewModal}
                     />
                 )}
 

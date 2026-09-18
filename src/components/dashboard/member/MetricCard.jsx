@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { ArrowUpRight } from 'lucide-react';
 
 export const MetricCard = ({
     title,
@@ -8,7 +9,8 @@ export const MetricCard = ({
     icon: Icon,
     color = 'blue',
     sparklineData = [10, 40, 30, 50, 40, 70, 60], // Dummy path data
-    trendColor = 'text-emerald-500'
+    trendColor = 'text-emerald-500',
+    onClick
 }) => {
     const colorStyles = {
         blue: {
@@ -55,55 +57,31 @@ export const MetricCard = ({
 
     const style = colorStyles[color] || colorStyles.blue;
 
-    // Generate a simple SVG path for sparkline
-    const generatePath = (data) => {
-        if (!data || data.length === 0) return "";
-        const width = 100;
-        const height = 30;
-        const step = width / (data.length - 1);
-        return data.map((val, i) => `${i === 0 ? 'M' : 'L'} ${i * step} ${height - (val / 100) * height}`).join(' ');
-    };
-
     return (
         <motion.div
             whileHover={{ y: -5 }}
-            className="bg-white p-4 rounded-[0.75rem] border border-slate-100 shadow-sm overflow-hidden relative group"
+            onClick={onClick}
+            className={`bg-white p-4 rounded-[0.75rem] border border-slate-100 shadow-sm overflow-hidden relative group ${
+                onClick ? 'cursor-pointer hover:border-amber-300 hover:shadow-md transition-all' : ''
+            }`}
         >
             <div className="flex items-start mb-3 gap-3">
-                <div className={`p-3 rounded-lg ${style.bg} ${style.icon} mr-4`}>
+                <div className={`p-3 rounded-lg ${style.bg} ${style.icon} mr-4 shrink-0`}>
                     <Icon size={20} strokeWidth={2.5} />
-
                 </div>
-                <div className="flex flex-col text-left items-baseline gap-2">
-                    <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
+                <div className="flex flex-col text-left items-baseline gap-2 min-w-0">
+                    <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 min-w-0">
+                        <span className="truncate">{title}</span>
+                        {onClick && (
+                            <ArrowUpRight
+                                size={14}
+                                className="shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-slate-600"
+                            />
+                        )}
+                    </p>
                     <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{value}</h3>
                 </div>
             </div>
-
-            {/* <div className="space-y-1 relative z-10">
-
-                <div className="flex items-baseline gap-2">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{value}</h3>
-                </div>
-                {subValue && (
-                    <p className={`text-[10px] font-bold ${trendColor}`}>
-                        {subValue}
-                    </p>
-                )}
-            </div> */}
-
-            {/* Sparkline */}
-            {/* <div className="absolute bottom-0 left-0 right-0 h-10 opacity-30 group-hover:opacity-60 transition-opacity">
-                <svg width="100%" height="100%" viewBox="0 0 100 30" preserveAspectRatio="none">
-                    <path
-                        d={generatePath(sparklineData)}
-                        fill="none"
-                        stroke={style.stroke}
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                    />
-                </svg>
-            </div> */}
         </motion.div>
     );
 };
