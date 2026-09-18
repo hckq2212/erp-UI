@@ -81,10 +81,10 @@ export const contractAddendumsApi = api.injectEndpoints({
             ],
         }),
         saleApproveAddendum: builder.mutation({
-            query: ({ id, note }) => ({
+            query: ({ id, note, selectedItems }) => ({
                 url: `/contract-addendums/${id}/sale-approve`,
                 method: 'POST',
-                body: { note },
+                body: { note, selectedItems },
             }),
             invalidatesTags: (result, error, { id }) => getAddendumInvalidationTags(result, id),
         }),
@@ -93,6 +93,14 @@ export const contractAddendumsApi = api.injectEndpoints({
                 url: `/contract-addendums/${id}/sale-reject`,
                 method: 'POST',
                 body: { note },
+            }),
+            invalidatesTags: (result, error, { id }) => getAddendumInvalidationTags(result, id),
+        }),
+        resubmitAddendum: builder.mutation({
+            query: ({ id, ...data }) => ({
+                url: `/contract-addendums/${id}/resubmit`,
+                method: 'POST',
+                body: data,
             }),
             invalidatesTags: (result, error, { id }) => getAddendumInvalidationTags(result, id),
         }),
@@ -124,6 +132,7 @@ export const {
     useScaleDownAddendumMutation,
     useSaleApproveAddendumMutation,
     useSaleRejectAddendumMutation,
+    useResubmitAddendumMutation,
     useBodApproveAddendumMutation,
     useBodRejectAddendumMutation,
 } = contractAddendumsApi;

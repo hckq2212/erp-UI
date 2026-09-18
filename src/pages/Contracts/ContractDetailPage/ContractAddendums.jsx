@@ -1,10 +1,11 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Calendar, Check, ChevronDown, ChevronRight, Eye, FileText, X, XCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { formatCurrency, formatNumber } from '../../../utils/format';
 import {
     useBodApproveAddendumMutation,
     useBodRejectAddendumMutation,
+    useResubmitAddendumMutation,
     useSaleApproveAddendumMutation,
     useSaleRejectAddendumMutation,
 } from '../../../api/contractAddendums';
@@ -39,6 +40,21 @@ const TYPE_LABELS = {
 
 const STANDALONE = 'STANDALONE';
 
+const PRICE_TYPES = {
+    RECOMMENDED: 'recommended',
+    MINIMUM: 'minimum',
+    CUSTOM: 'custom',
+};
+
+const roundToTenThousands = (value) => Math.ceil(Number(value || 0) / 10000) * 10000;
+
+const calculatePriceByType = (item, priceType) => {
+    const cost = Number(item.cost || 0);
+    if (priceType === PRICE_TYPES.MINIMUM) return roundToTenThousands(cost / 0.8);
+    if (priceType === PRICE_TYPES.RECOMMENDED) return roundToTenThousands(cost / 0.6);
+    return Number(item.sellingPrice || 0);
+};
+
 const getServiceKey = (item, index) =>
     item.serviceId || item.sourceContractServiceId || item.serviceName || `service-${index}`;
 
@@ -47,11 +63,19 @@ const buildGroupedItems = (selectedItems = []) => {
     const standaloneMap = {};
 
     selectedItems.forEach((item, index) => {
+        const quantity = Number(item.quantity || 1);
+        const sellingPrice = Number(item.sellingPrice || 0);
+        const cost = Number(item.cost || 0);
         const normalizedItem = {
             ...item,
-            quantity: Number(item.quantity || 1),
-            sellingPrice: Number(item.sellingPrice || 0),
-            cost: Number(item.cost || 0),
+            itemIndexes: [index],
+            quantity,
+            sellingPrice,
+            cost,
+            lineSellingPrice: sellingPrice * quantity,
+            lineCost: cost * quantity,
+            lineVat: sellingPrice * quantity * 0.08,
+            lineTotalWithVat: sellingPrice * quantity * 1.08,
             unit: item.unit || '',
             description: item.description || item.service?.description || '',
         };
@@ -64,11 +88,21 @@ const buildGroupedItems = (selectedItems = []) => {
                     count: 0,
                     sellingPrice: 0,
                     cost: 0,
+                    lineSellingPrice: 0,
+                    lineCost: 0,
+                    lineVat: 0,
+                    lineTotalWithVat: 0,
+                    itemIndexes: [],
                 };
             }
             standaloneMap[serviceKey].count += normalizedItem.quantity;
-            standaloneMap[serviceKey].sellingPrice += normalizedItem.sellingPrice;
-            standaloneMap[serviceKey].cost += normalizedItem.cost;
+            standaloneMap[serviceKey].sellingPrice = normalizedItem.sellingPrice;
+            standaloneMap[serviceKey].cost = normalizedItem.cost;
+            standaloneMap[serviceKey].lineSellingPrice += normalizedItem.lineSellingPrice;
+            standaloneMap[serviceKey].lineCost += normalizedItem.lineCost;
+            standaloneMap[serviceKey].lineVat += normalizedItem.lineVat;
+            standaloneMap[serviceKey].lineTotalWithVat += normalizedItem.lineTotalWithVat;
+            standaloneMap[serviceKey].itemIndexes.push(index);
             return;
         }
 
@@ -80,6 +114,8 @@ const buildGroupedItems = (selectedItems = []) => {
                 services: {},
                 sellingPrice: 0,
                 cost: 0,
+                vat: 0,
+                totalWithVat: 0,
             };
         }
 
@@ -90,14 +126,26 @@ const buildGroupedItems = (selectedItems = []) => {
                 count: 0,
                 sellingPrice: 0,
                 cost: 0,
+                lineSellingPrice: 0,
+                lineCost: 0,
+                lineVat: 0,
+                lineTotalWithVat: 0,
+                itemIndexes: [],
             };
         }
 
         packages[packageKey].services[serviceKey].count += normalizedItem.quantity;
-        packages[packageKey].services[serviceKey].sellingPrice += normalizedItem.sellingPrice;
-        packages[packageKey].services[serviceKey].cost += normalizedItem.cost;
-        packages[packageKey].sellingPrice += normalizedItem.sellingPrice;
-        packages[packageKey].cost += normalizedItem.cost;
+        packages[packageKey].services[serviceKey].sellingPrice = normalizedItem.sellingPrice;
+        packages[packageKey].services[serviceKey].cost = normalizedItem.cost;
+        packages[packageKey].services[serviceKey].lineSellingPrice += normalizedItem.lineSellingPrice;
+        packages[packageKey].services[serviceKey].lineCost += normalizedItem.lineCost;
+        packages[packageKey].services[serviceKey].lineVat += normalizedItem.lineVat;
+        packages[packageKey].services[serviceKey].lineTotalWithVat += normalizedItem.lineTotalWithVat;
+        packages[packageKey].services[serviceKey].itemIndexes.push(index);
+        packages[packageKey].sellingPrice += normalizedItem.lineSellingPrice;
+        packages[packageKey].cost += normalizedItem.lineCost;
+        packages[packageKey].vat += normalizedItem.lineVat;
+        packages[packageKey].totalWithVat += normalizedItem.lineTotalWithVat;
     });
 
     return {
@@ -131,6 +179,7 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
     const [rejectReason, setRejectReason] = useState('');
     const [saleApprove, { isLoading: isSaleApproving }] = useSaleApproveAddendumMutation();
     const [saleReject, { isLoading: isSaleRejecting }] = useSaleRejectAddendumMutation();
+    const [resubmitAddendum, { isLoading: isResubmitting }] = useResubmitAddendumMutation();
     const [bodApprove, { isLoading: isBodApproving }] = useBodApproveAddendumMutation();
     const [bodReject, { isLoading: isBodRejecting }] = useBodRejectAddendumMutation();
 
@@ -147,9 +196,9 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
         return new Date(dateString).toLocaleDateString('vi-VN');
     };
 
-    const handleAction = async (action, id, successMessage, note = '') => {
+    const handleAction = async (action, id, successMessage, note = '', extraBody = {}) => {
         try {
-            await action({ id, note }).unwrap();
+            await action({ id, note, ...extraBody }).unwrap();
             toast.success(successMessage);
             setSelectedAddendum(null);
             setRejectRequest(null);
@@ -176,7 +225,8 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
     const userRole = getUserRole(currentUser);
     const isSale = ['BD', 'ADMIN'].includes(userRole);
     const isBod = ['BOD', 'ADMIN'].includes(userRole);
-    const isMutating = isSaleApproving || isSaleRejecting || isBodApproving || isBodRejecting;
+    const isPmOrAdmin = ['PM', 'ADMIN'].includes(userRole);
+    const isMutating = isSaleApproving || isSaleRejecting || isResubmitting || isBodApproving || isBodRejecting;
 
     return (
         <>
@@ -244,11 +294,13 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
                     addendum={selectedAddendum}
                     isSale={isSale}
                     isBod={isBod}
+                    isPmOrAdmin={isPmOrAdmin}
                     isMutating={isMutating}
                     formatDate={formatDate}
                     onClose={() => setSelectedAddendum(null)}
-                    onSaleApprove={() => handleAction(saleApprove, selectedAddendum.id, 'Đã duyệt phụ lục')}
+                    onSaleApprove={(selectedItems) => handleAction(saleApprove, selectedAddendum.id, 'Đã duyệt phụ lục', '', { selectedItems })}
                     onSaleReject={() => openRejectModal(saleReject, selectedAddendum.id, 'Đã không duyệt phụ lục')}
+                    onResubmit={(selectedItems) => handleAction(resubmitAddendum, selectedAddendum.id, 'Đã gửi lại phụ lục', '', { selectedItems })}
                     onBodApprove={() => handleAction(bodApprove, selectedAddendum.id, 'Đã duyệt và sinh công việc')}
                     onBodReject={() => openRejectModal(bodReject, selectedAddendum.id, 'Đã không duyệt phụ lục')}
                 />
@@ -314,26 +366,96 @@ const AddendumDetailModal = ({
     addendum,
     isSale,
     isBod,
+    isPmOrAdmin,
     isMutating,
     formatDate,
     onClose,
     onSaleApprove,
     onSaleReject,
+    onResubmit,
     onBodApprove,
     onBodReject,
 }) => {
     const [expandedPackages, setExpandedPackages] = useState({});
     const [expandedServices, setExpandedServices] = useState({});
-    const sellingPrice = parseFloat(addendum.sellingPrice || 0);
-    const cost = parseFloat(addendum.cost || 0);
-    const profit = sellingPrice - cost;
-    const profitMargin = sellingPrice > 0 ? ((profit / sellingPrice) * 100).toFixed(1) : 0;
+    const [priceType, setPriceType] = useState(PRICE_TYPES.CUSTOM);
     const selectedItems = Array.isArray(addendum.selectedItems) ? addendum.selectedItems : [];
-    const groupedItems = useMemo(() => buildGroupedItems(selectedItems), [selectedItems]);
+    const [editableItems, setEditableItems] = useState(selectedItems);
     const addendumStatus = getAddendumStatus(addendum);
     const canSaleReview = isSale && addendumStatus === 'PENDING_SALE';
     const canBodReview = isBod && addendumStatus === 'PENDING_BOD';
+    const canResubmit = isPmOrAdmin && ['SALE_REJECTED', 'BOD_REJECTED'].includes(addendumStatus);
     const canReview = canSaleReview || canBodReview;
+    const canEditPrices = canSaleReview || canResubmit;
+    const canEditCustomPrices = canEditPrices && priceType === PRICE_TYPES.CUSTOM;
+    const groupedItems = useMemo(() => buildGroupedItems(editableItems), [editableItems]);
+    const sellingPrice = useMemo(() => editableItems.reduce((sum, item) =>
+        sum + Number(item.sellingPrice || 0) * Number(item.quantity || 1), 0), [editableItems]);
+    const cost = useMemo(() => editableItems.reduce((sum, item) =>
+        sum + Number(item.cost || 0) * Number(item.quantity || 1), 0), [editableItems]);
+    const vat = sellingPrice * 0.08;
+    const totalWithVat = sellingPrice + vat;
+    const profit = sellingPrice - cost;
+    const profitMargin = sellingPrice > 0 ? ((profit / sellingPrice) * 100).toFixed(1) : 0;
+
+    useEffect(() => {
+        setEditableItems(selectedItems);
+        setPriceType(PRICE_TYPES.CUSTOM);
+    }, [addendum.id]);
+
+    const handlePriceTypeChange = (type) => {
+        setPriceType(type);
+        if (type === PRICE_TYPES.CUSTOM) return;
+
+        setEditableItems((prev) => prev.map((item) => ({
+            ...item,
+            sellingPrice: calculatePriceByType(item, type),
+        })));
+    };
+
+    const updateItemSellingPrice = (itemIndexes = [], value) => {
+        setEditableItems((prev) => prev.map((item, index) => (
+            itemIndexes.includes(index)
+                ? { ...item, sellingPrice: value }
+                : item
+        )));
+    };
+
+    const updatePackageSellingPrice = (pkg, value) => {
+        const packageIndexes = pkg.items.flatMap((item) => item.itemIndexes || []);
+        const packageIndexSet = new Set(packageIndexes);
+        const newTotal = Number(value || 0);
+
+        setEditableItems((prev) => {
+            const currentTotal = packageIndexes.reduce((sum, index) => {
+                const item = prev[index];
+                return sum + Number(item?.sellingPrice || 0) * Number(item?.quantity || 1);
+            }, 0);
+            const totalCost = packageIndexes.reduce((sum, index) => {
+                const item = prev[index];
+                return sum + Number(item?.cost || 0) * Number(item?.quantity || 1);
+            }, 0);
+
+            return prev.map((item, index) => {
+                if (!packageIndexSet.has(index)) return item;
+
+                const quantity = Number(item.quantity || 1);
+                const currentLinePrice = Number(item.sellingPrice || 0) * quantity;
+                const costLine = Number(item.cost || 0) * quantity;
+                const fallbackShare = packageIndexes.length > 0 ? newTotal / packageIndexes.length : 0;
+                const newLinePrice = currentTotal > 0
+                    ? currentLinePrice * (newTotal / currentTotal)
+                    : totalCost > 0
+                        ? newTotal * (costLine / totalCost)
+                        : fallbackShare;
+
+                return {
+                    ...item,
+                    sellingPrice: quantity > 0 ? newLinePrice / quantity : newLinePrice,
+                };
+            });
+        });
+    };
 
     const togglePackage = (packageKey) => {
         setExpandedPackages((prev) => ({
@@ -385,36 +507,6 @@ const AddendumDetailModal = ({
 
                 <div className="flex-1 overflow-y-auto p-6">
                     <div className="space-y-6">
-                        {canReview && (
-                            <div className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                    <p className="font-bold text-amber-900">
-                                        Đến lượt duyệt phụ lục
-                                    </p>
-                                    <p className="mt-1 text-sm text-amber-700">
-                                        Kiểm tra thông tin dịch vụ/gói dịch vụ trước khi duyệt hoặc không duyệt.
-                                    </p>
-                                </div>
-                                <div className="flex flex-col gap-2 md:flex-row">
-                                    <button
-                                        disabled={isMutating}
-                                        onClick={canSaleReview ? onSaleReject : onBodReject}
-                                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-red-700 shadow-sm hover:bg-red-50 disabled:opacity-50"
-                                    >
-                                        <XCircle className="h-4 w-4" />
-                                        Không duyệt
-                                    </button>
-                                    <button
-                                        disabled={isMutating}
-                                        onClick={canSaleReview ? onSaleApprove : onBodApprove}
-                                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
-                                    >
-                                        <Check className="h-4 w-4" />
-                                        Duyệt
-                                    </button>
-                                </div>
-                            </div>
-                        )}
 
                         {addendum.description && (
                             <div className="rounded-xl bg-purple-50 p-4">
@@ -423,10 +515,14 @@ const AddendumDetailModal = ({
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        {/* <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                             <div className="rounded-xl border border-gray-100/50 bg-gray-50/50 p-3">
                                 <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">Giá trị phụ lục</p>
                                 <p className="text-lg font-black text-blue-600">{formatCurrency(sellingPrice)}</p>
+                            </div>
+                            <div className="rounded-xl border border-gray-100/50 bg-gray-50/50 p-3">
+                                <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">VAT (8%)</p>
+                                <p className="text-lg font-bold text-gray-700">{formatCurrency(vat)}</p>
                             </div>
                             <div className="rounded-xl border border-gray-100/50 bg-gray-50/50 p-3">
                                 <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">Giá vốn</p>
@@ -439,10 +535,11 @@ const AddendumDetailModal = ({
                                     <span className="text-xs font-bold text-purple-500">({profitMargin}%)</span>
                                 </div>
                             </div>
-                        </div>
+                        </div> */}
 
                         <div>
                             <h4 className="mb-3 font-semibold text-gray-900">Chi tiết dịch vụ</h4>
+
                             <div className="overflow-x-auto rounded-xl border border-gray-200">
                                 <table className="w-full">
                                     <thead>
@@ -451,6 +548,7 @@ const AddendumDetailModal = ({
                                             <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Số lượng</th>
                                             <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Đơn giá</th>
                                             <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá vốn</th>
+                                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">VAT (8%)</th>
                                             <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Thành tiền</th>
                                         </tr>
                                     </thead>
@@ -487,13 +585,28 @@ const AddendumDetailModal = ({
                                                             </div>
                                                         </td>
                                                         <td className="px-4 py-3 text-right text-sm font-bold text-blue-900">
-                                                            {formatNumber(Math.round(pkg.sellingPrice))}
+                                                            {canEditCustomPrices ? (
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="1000"
+                                                                    value={Math.round(pkg.sellingPrice)}
+                                                                    onClick={(event) => event.stopPropagation()}
+                                                                    onChange={(event) => updatePackageSellingPrice(pkg, event.target.value)}
+                                                                    className="h-9 w-40 rounded-lg border border-blue-200 bg-white px-3 text-right text-sm font-bold text-blue-900 outline-none focus:border-blue-500"
+                                                                />
+                                                            ) : (
+                                                                formatNumber(Math.round(pkg.sellingPrice))
+                                                            )}
                                                         </td>
                                                         <td className="px-4 py-3 text-right text-sm italic text-blue-700">
                                                             {formatNumber(Math.round(pkg.cost))}
                                                         </td>
+                                                        <td className="px-4 py-3 text-right text-sm font-bold text-blue-900">
+                                                            {formatNumber(Math.round(pkg.vat))}
+                                                        </td>
                                                         <td className="px-4 py-3 text-right text-sm font-black italic text-blue-900">
-                                                            {formatNumber(Math.round(pkg.sellingPrice))}
+                                                            {formatNumber(Math.round(pkg.totalWithVat))}
                                                         </td>
                                                     </tr>
 
@@ -527,17 +640,20 @@ const AddendumDetailModal = ({
                                                                             {formatNumber(Math.round(item.sellingPrice))}
                                                                         </td>
                                                                         <td className="px-4 py-2 text-right text-xs font-medium italic text-gray-400">
-                                                                            {formatNumber(Math.round(item.cost))}
+                                                                            {formatNumber(Math.round(item.lineCost))}
                                                                         </td>
                                                                         <td className="px-4 py-2 text-right text-xs font-medium italic text-gray-400">
-                                                                            {formatNumber(Math.round(item.sellingPrice))}
+                                                                            {formatNumber(Math.round(item.lineVat))}
+                                                                        </td>
+                                                                        <td className="px-4 py-2 text-right text-xs font-medium italic text-gray-400">
+                                                                            {formatNumber(Math.round(item.lineTotalWithVat))}
                                                                         </td>
                                                                     </tr>
 
                                                                     {isServiceExpanded && (
                                                                         <tr className="border-b border-gray-50/50 bg-blue-50/10">
                                                                             <td
-                                                                                colSpan={5}
+                                                                                colSpan={6}
                                                                                 className="px-4 py-3 pl-16 text-[11px] leading-relaxed text-gray-500"
                                                                             >
                                                                                 <p className="whitespace-pre-wrap">
@@ -557,7 +673,7 @@ const AddendumDetailModal = ({
                                             <>
                                                 <tr className="border-b border-gray-100 bg-gray-50">
                                                     <td
-                                                        colSpan={5}
+                                                        colSpan={6}
                                                         className="bg-gray-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-400"
                                                     >
                                                         Dịch vụ lẻ
@@ -590,20 +706,35 @@ const AddendumDetailModal = ({
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-4 py-3 text-right text-sm text-gray-700">
-                                                                    {formatNumber(Math.round(item.sellingPrice))}
+                                                                    {canEditCustomPrices ? (
+                                                                        <input
+                                                                            type="number"
+                                                                            min="0"
+                                                                            step="1000"
+                                                                            value={item.sellingPrice}
+                                                                            onClick={(event) => event.stopPropagation()}
+                                                                            onChange={(event) => updateItemSellingPrice(item.itemIndexes, event.target.value)}
+                                                                            className="h-9 w-36 rounded-lg border border-gray-200 px-3 text-right text-sm outline-none focus:border-blue-500"
+                                                                        />
+                                                                    ) : (
+                                                                        formatNumber(Math.round(item.sellingPrice))
+                                                                    )}
                                                                 </td>
                                                                 <td className="px-4 py-3 text-right text-sm italic text-gray-500">
-                                                                    {formatNumber(Math.round(item.cost))}
+                                                                    {formatNumber(Math.round(item.lineCost))}
                                                                 </td>
                                                                 <td className="px-4 py-3 text-right text-sm font-black italic text-gray-900">
-                                                                    {formatNumber(Math.round(item.sellingPrice))}
+                                                                    {formatNumber(Math.round(item.lineVat))}
+                                                                </td>
+                                                                <td className="px-4 py-3 text-right text-sm font-black italic text-gray-900">
+                                                                    {formatNumber(Math.round(item.lineTotalWithVat))}
                                                                 </td>
                                                             </tr>
 
                                                             {isServiceExpanded && (
                                                                 <tr className="border-b border-gray-100 bg-gray-50/70">
                                                                     <td
-                                                                        colSpan={5}
+                                                                        colSpan={6}
                                                                         className="px-4 py-3 pl-10 text-xs leading-relaxed text-gray-500"
                                                                     >
                                                                         <p className="whitespace-pre-wrap">{item.description || 'Không có mô tả'}</p>
@@ -616,9 +747,9 @@ const AddendumDetailModal = ({
                                             </>
                                         )}
 
-                                        {selectedItems.length === 0 && (
+                                        {editableItems.length === 0 && (
                                             <tr>
-                                                <td colSpan={5} className="px-4 py-10 text-center text-sm italic text-gray-400">
+                                                <td colSpan={6} className="px-4 py-10 text-center text-sm italic text-gray-400">
                                                     Chưa có dịch vụ nào trong phụ lục.
                                                 </td>
                                             </tr>
@@ -626,11 +757,11 @@ const AddendumDetailModal = ({
                                     </tbody>
                                     <tfoot>
                                         <tr className="bg-gray-50 font-semibold">
-                                            <td colSpan="4" className="px-4 py-3 text-right text-sm text-gray-700">
-                                                Tổng cộng:
+                                            <td colSpan="5" className="px-4 py-3 text-right text-sm text-gray-700">
+                                                Tổng cộng (có VAT):
                                             </td>
                                             <td className="px-4 py-3 text-right text-sm font-black text-gray-900">
-                                                {formatNumber(Math.round(sellingPrice))} VNĐ
+                                                {formatNumber(Math.round(totalWithVat))} VNĐ
                                             </td>
                                         </tr>
                                     </tfoot>
@@ -645,6 +776,50 @@ const AddendumDetailModal = ({
                             </div>
                         )}
                     </div>
+                    {canEditPrices && (
+                        <div className="mb-4 flex flex-col gap-3 rounded-xl border border-blue-100 bg-blue-50/40 p-4 mt-3">
+                            {canResubmit && (
+                                <p className="text-sm font-medium text-blue-900">
+                                    Phụ lục đã bị từ chối. PM có thể chỉnh đơn giá rồi gửi lại để duyệt từ bước Sale.
+                                </p>
+                            )}
+                            <div className="flex flex-wrap gap-4">
+                                <label className="flex cursor-pointer items-center gap-2">
+                                    <input
+                                        type="radio"
+                                        name={`priceType-${addendum.id}`}
+                                        value={PRICE_TYPES.RECOMMENDED}
+                                        checked={priceType === PRICE_TYPES.RECOMMENDED}
+                                        onChange={(event) => handlePriceTypeChange(event.target.value)}
+                                        className="h-4 w-4 text-blue-600"
+                                    />
+                                    <span className="text-sm font-medium text-gray-700">Chọn giá bán đề xuất</span>
+                                </label>
+                                <label className="flex cursor-pointer items-center gap-2">
+                                    <input
+                                        type="radio"
+                                        name={`priceType-${addendum.id}`}
+                                        value={PRICE_TYPES.MINIMUM}
+                                        checked={priceType === PRICE_TYPES.MINIMUM}
+                                        onChange={(event) => handlePriceTypeChange(event.target.value)}
+                                        className="h-4 w-4 text-blue-600"
+                                    />
+                                    <span className="text-sm font-medium text-gray-700">Chọn giá bán tối thiểu</span>
+                                </label>
+                                <label className="flex cursor-pointer items-center gap-2">
+                                    <input
+                                        type="radio"
+                                        name={`priceType-${addendum.id}`}
+                                        value={PRICE_TYPES.CUSTOM}
+                                        checked={priceType === PRICE_TYPES.CUSTOM}
+                                        onChange={(event) => handlePriceTypeChange(event.target.value)}
+                                        className="h-4 w-4 text-blue-600"
+                                    />
+                                    <span className="text-sm font-medium text-gray-700">Chọn giá bán tùy chỉnh</span>
+                                </label>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex flex-col gap-3 border-t border-gray-100 bg-gray-50/50 px-6 py-4 md:flex-row md:justify-end">
@@ -654,6 +829,16 @@ const AddendumDetailModal = ({
                     >
                         Đóng
                     </button>
+                    {canResubmit && (
+                        <button
+                            disabled={isMutating}
+                            onClick={() => onResubmit(editableItems)}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                        >
+                            <Check className="h-4 w-4" />
+                            Gửi lại
+                        </button>
+                    )}
                     {canReview && (
                         <>
                             <button
@@ -666,7 +851,7 @@ const AddendumDetailModal = ({
                             </button>
                             <button
                                 disabled={isMutating}
-                                onClick={canSaleReview ? onSaleApprove : onBodApprove}
+                                onClick={canSaleReview ? () => onSaleApprove(editableItems) : onBodApprove}
                                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
                             >
                                 <Check className="h-4 w-4" />
