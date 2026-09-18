@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Briefcase, CheckCircle2, ExternalLink, Package, Save } from 'lucide-react';
+import { Briefcase, CheckCircle2, ExternalLink, Package, Save, UserPlus } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { formatNumber, parseNumber } from '../../../utils/format';
 import { useUpdateOpportunityServiceMutation } from '../../../api/opportunityService';
@@ -10,7 +10,7 @@ const normalizeMoneyInput = value => {
     return digits.replace(/^0+(?=\d)/, '');
 };
 
-const JobPrices = ({ service, opportunityId }) => {
+const JobPrices = ({ service, opportunityId, canEditPrices }) => {
     const [drafts, setDrafts] = useState({});
     const [updateOpportunityService, { isLoading }] = useUpdateOpportunityServiceMutation();
     const visibleJobs = (service.jobs || []).filter(job =>
@@ -37,6 +37,11 @@ const JobPrices = ({ service, opportunityId }) => {
     };
 
     const save = async () => {
+        if (!canEditPrices) {
+            toast.info('Vui lòng chọn khách hàng trước khi điền giá vốn dịch vụ');
+            return;
+        }
+
         try {
             await updateOpportunityService({
                 id: service.id,
@@ -79,7 +84,9 @@ const JobPrices = ({ service, opportunityId }) => {
                                     value={formatNumber(drafts[job.id]?.costAtSale || '0')}
                                     onFocus={event => event.target.select()}
                                     onChange={event => changePrice(job.id, 'costAtSale', event.target.value)}
-                                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900"
+                                    disabled={!canEditPrices}
+                                    title={!canEditPrices ? 'Vui lòng chọn khách hàng trước khi điền giá vốn' : undefined}
+                                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                                 />
                             </label>
                         </div>
@@ -123,7 +130,7 @@ const JobPrices = ({ service, opportunityId }) => {
             })}
             {editableJobs.length > 0 && (
                 <div className="flex justify-end">
-                    <button type="button" onClick={save} disabled={isLoading} className="flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                    <button type="button" onClick={save} disabled={isLoading || !canEditPrices} className="flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
                         <Save className="h-4 w-4" /> {isLoading ? 'Đang lưu...' : 'Lưu giá vốn hạng mục'}
                     </button>
                 </div>
@@ -132,7 +139,7 @@ const JobPrices = ({ service, opportunityId }) => {
     );
 };
 
-const ServiceCard = ({ service, opportunityId, packageQuantity = 1 }) => (
+const ServiceCard = ({ service, opportunityId, canEditPrices, packageQuantity = 1 }) => (
     <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
         <div className="flex items-center justify-between gap-3">
             <div>
@@ -143,13 +150,15 @@ const ServiceCard = ({ service, opportunityId, packageQuantity = 1 }) => (
                 <p>Giá vốn: <strong>{formatNumber(service.costAtSale)} VNĐ</strong></p>
             </div>
         </div>
-        <JobPrices service={service} opportunityId={opportunityId} />
+        <JobPrices service={service} opportunityId={opportunityId} canEditPrices={canEditPrices} />
     </div>
 );
 
-export const OpportunityServicesInfo = ({ opportunity }) => {
+export const OpportunityServicesInfo = ({ opportunity, onAddCustomer }) => {
     const standaloneServices = opportunity.services?.filter(service => !service.opportunityPackageId) || [];
     const packages = opportunity.packages || [];
+    const hasServices = packages.length > 0 || standaloneServices.length > 0;
+    const canEditPrices = Boolean(opportunity.customer || opportunity.leadName?.trim());
 
     return (
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -157,6 +166,19 @@ export const OpportunityServicesInfo = ({ opportunity }) => {
                 <Package className="h-5 w-5 text-indigo-600" />
                 <h2 className="font-semibold text-gray-900">Dịch vụ & Gói dịch vụ</h2>
             </div>
+            {!canEditPrices && hasServices && (
+                <div className="mb-6 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 sm:flex-row sm:items-center sm:justify-between">
+                    <p>Vui lòng chọn khách hàng trước khi điền giá vốn dịch vụ.</p>
+                    <button
+                        type="button"
+                        onClick={onAddCustomer}
+                        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-amber-600 px-3 py-2 font-semibold text-white hover:bg-amber-700"
+                    >
+                        <UserPlus className="h-4 w-4" />
+                        Chọn khách hàng
+                    </button>
+                </div>
+            )}
             <div className="space-y-6">
                 {packages.map(pkg => (
                     <div key={pkg.id} className="rounded-xl border border-blue-100 bg-blue-50/40 p-4">
@@ -164,13 +186,13 @@ export const OpportunityServicesInfo = ({ opportunity }) => {
                             <div className="rounded-lg bg-blue-600 p-2 text-white"><Briefcase className="h-4 w-4" /></div>
                             <h3 className="font-bold text-blue-900">Gói: {pkg.name} <span className="ml-2 text-blue-500">x{pkg.quantity || 1}</span></h3>
                         </div>
-                        <div className="space-y-3">{pkg.services?.map(service => <ServiceCard key={service.id} service={service} opportunityId={opportunity.id} packageQuantity={pkg.quantity} />)}</div>
+                        <div className="space-y-3">{pkg.services?.map(service => <ServiceCard key={service.id} service={service} opportunityId={opportunity.id} canEditPrices={canEditPrices} packageQuantity={pkg.quantity} />)}</div>
                     </div>
                 ))}
                 {standaloneServices.length > 0 && (
                     <div className="space-y-3">
                         <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-400">Dịch vụ lẻ</h3>
-                        {standaloneServices.map(service => <ServiceCard key={service.id} service={service} opportunityId={opportunity.id} />)}
+                        {standaloneServices.map(service => <ServiceCard key={service.id} service={service} opportunityId={opportunity.id} canEditPrices={canEditPrices} />)}
                     </div>
                 )}
                 {!packages.length && !standaloneServices.length && <p className="py-4 text-center italic text-gray-400">Chưa có dịch vụ nào được chọn</p>}
