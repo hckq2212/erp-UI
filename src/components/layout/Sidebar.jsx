@@ -9,7 +9,7 @@ import { useGetMeQuery } from '../../api/auth';
 
 const menuItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/notifications', icon: Bell, label: 'Tin tức nội bộ' },
+  { path: '/notifications', icon: Bell, label: 'Thông báo' },
   { path: '/opportunities', icon: Briefcase, label: 'Cơ Hội', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
   { path: '/contracts', icon: FileSignature, label: 'Hợp Đồng', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
   { path: '/customers', icon: Users, label: 'Khách Hàng', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
@@ -24,7 +24,7 @@ const menuItems = [
   { path: '/users', icon: User, label: 'Nhân sự', roles: ['ADMIN', 'BOD'] },
   { path: '/vendors', icon: Store, label: 'Vendor', roles: ['ADMIN', 'BOD'] },
   { path: '/referral-partners', icon: Handshake, label: 'Đối tác', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
-  { path: '/announcements', icon: Megaphone, label: 'Thông báo nội bộ' },
+  { path: '/announcements', icon: Megaphone, label: 'Tin tức nội bộ' },
   { path: '/create-video-ai', icon: Video, label: 'Tạo Video AI'},
   { path: '/library-video-ai', icon: BookText, label: 'Thư viện Video AI'},
 ];
