@@ -1,14 +1,219 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Calendar, MapPin, Paperclip, CheckCircle2, Circle, ChevronDown } from 'lucide-react';
-import { useGetAnnouncementQuery, useMarkAnnouncementAsReadMutation } from '../../api/announcements';
+import { ArrowLeft, Calendar, MapPin, Paperclip, CheckCircle2, Circle, ChevronDown, Megaphone, X, ChevronLeft, ChevronRight, Send, Trash2, MessageCircle } from 'lucide-react';
+import {
+  useGetAnnouncementQuery,
+  useMarkAnnouncementAsReadMutation,
+  useGetAnnouncementCommentsQuery,
+  useAddAnnouncementCommentMutation,
+  useDeleteAnnouncementCommentMutation,
+} from '../../api/announcements';
+import { selectCurrentUser } from '../../store/authSlice';
 import { formatDateTime } from '../../utils/format';
+import { toast } from 'react-toastify';
 import { sanitizeHtml } from '../../utils/html';
+
+const CATEGORY_LABELS = {
+  GENERAL: 'Chung',
+  HR: 'Nhân sự',
+  POLICY: 'Chính sách',
+  EVENT: 'Sự kiện',
+  URGENT: 'Khẩn',
+  FINANCE: 'Tài chính',
+  SYSTEM: 'Hệ thống',
+};
+
+const CATEGORY_COLORS = {
+  GENERAL: 'bg-gray-100 text-gray-600',
+  HR: 'bg-purple-100 text-purple-600',
+  POLICY: 'bg-amber-100 text-amber-600',
+  EVENT: 'bg-emerald-100 text-emerald-600',
+  URGENT: 'bg-red-100 text-red-600',
+  FINANCE: 'bg-blue-100 text-blue-600',
+  SYSTEM: 'bg-slate-100 text-slate-600',
+};
+
+const MediaGallery = ({ media }) => {
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+
+  if (!Array.isArray(media) || media.length === 0) return null;
+
+  const gridClass = media.length === 1
+    ? 'grid-cols-1'
+    : media.length === 2
+      ? 'grid-cols-2'
+      : 'grid-cols-2 sm:grid-cols-3';
+
+  const closeLightbox = () => setLightboxIndex(null);
+  const showPrev = (e) => { e.stopPropagation(); setLightboxIndex(prev => (prev - 1 + media.length) % media.length); };
+  const showNext = (e) => { e.stopPropagation(); setLightboxIndex(prev => (prev + 1) % media.length); };
+
+  return (
+    <>
+      <div className={`grid gap-2 ${gridClass}`}>
+        {media.map((item, index) => (
+          <div
+            key={item.url + index}
+            onClick={() => setLightboxIndex(index)}
+            className={`relative bg-gray-100 rounded-2xl overflow-hidden cursor-pointer ${media.length === 1 ? 'aspect-video' : 'aspect-square'}`}
+          >
+            {item.type === 'video' ? (
+              <video src={item.url} className="w-full h-full object-cover" muted />
+            ) : (
+              <img src={item.url} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+            )}
+          </div>
+        ))}
+      </div>
+
+      <AnimatePresence>
+        {lightboxIndex !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeLightbox}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-6"
+          >
+            <button
+              onClick={closeLightbox}
+              className="absolute top-5 right-5 p-2.5 bg-white/10 hover:bg-white/20 rounded-full text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {media.length > 1 && (
+              <button
+                onClick={showPrev}
+                className="absolute left-4 p-2.5 bg-white/10 hover:bg-white/20 rounded-full text-white"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+
+            <div className="max-w-4xl max-h-[85vh] w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              {media[lightboxIndex].type === 'video' ? (
+                <video src={media[lightboxIndex].url} controls autoPlay className="max-w-full max-h-[85vh] rounded-xl" />
+              ) : (
+                <img src={media[lightboxIndex].url} alt="" className="max-w-full max-h-[85vh] rounded-xl object-contain" />
+              )}
+            </div>
+
+            {media.length > 1 && (
+              <button
+                onClick={showNext}
+                className="absolute right-4 p-2.5 bg-white/10 hover:bg-white/20 rounded-full text-white"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+
+const MANAGE_ROLES = ['BOD', 'ADMIN', 'PM'];
+
+const CommentsSection = ({ announcementId, currentUser }) => {
+  const { data: comments = [], isLoading } = useGetAnnouncementCommentsQuery(announcementId, { skip: !announcementId });
+  const [addComment, { isLoading: isSubmitting }] = useAddAnnouncementCommentMutation();
+  const [deleteComment] = useDeleteAnnouncementCommentMutation();
+  const [content, setContent] = useState('');
+
+  const isManager = MANAGE_ROLES.includes(currentUser?.role);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!content.trim()) return;
+    try {
+      await addComment({ id: announcementId, content: content.trim() }).unwrap();
+      setContent('');
+    } catch (error) {
+      toast.error(error?.data?.message || 'Không thể gửi bình luận');
+    }
+  };
+
+  const handleDelete = async (commentId) => {
+    if (!window.confirm('Xoá bình luận này?')) return;
+    try {
+      await deleteComment({ id: announcementId, commentId }).unwrap();
+    } catch (error) {
+      toast.error(error?.data?.message || 'Không thể xoá bình luận');
+    }
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+      <div className="flex items-center gap-2 text-xs font-black text-gray-500 uppercase">
+        <MessageCircle className="w-4 h-4" /> Bình luận ({comments.length})
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex items-center gap-2">
+        <input
+          type="text"
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="Viết bình luận..."
+          className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-50 font-medium text-sm"
+        />
+        <button
+          type="submit"
+          disabled={isSubmitting || !content.trim()}
+          className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-40 shrink-0"
+        >
+          <Send className="w-4 h-4" />
+        </button>
+      </form>
+
+      {isLoading ? (
+        <div className="py-6 text-center">
+          <div className="w-6 h-6 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin mx-auto" />
+        </div>
+      ) : comments.length === 0 ? (
+        <p className="text-xs text-gray-400 font-bold text-center py-4">Chưa có bình luận nào</p>
+      ) : (
+        <div className="space-y-3">
+          {comments.map((comment) => {
+            const canDelete = isManager || comment.author?.id === currentUser?.id;
+            return (
+              <div key={comment.id} className="flex items-start gap-3 group">
+                <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 font-black text-xs shrink-0">
+                  {(comment.author?.fullName || '?').charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="bg-gray-50 rounded-2xl px-4 py-2.5">
+                    <p className="text-xs font-black text-gray-800">{comment.author?.fullName || 'N/A'}</p>
+                    <p className="text-sm text-gray-700 font-medium break-words">{comment.content}</p>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1 px-1">
+                    <span className="text-[10px] text-gray-400 font-bold">{formatDateTime(comment.createdAt)}</span>
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(comment.id)}
+                        className="text-[10px] text-gray-300 hover:text-red-500 font-bold opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" /> Xoá
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const AnnouncementDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const currentUser = useSelector(selectCurrentUser);
   const { data, isLoading, error } = useGetAnnouncementQuery(id, { skip: !id });
   const [markAsRead] = useMarkAnnouncementAsReadMutation();
   const [isRecipientsOpen, setIsRecipientsOpen] = useState(false);
@@ -54,6 +259,21 @@ export const AnnouncementDetailPage = () => {
         </button>
 
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center text-white shrink-0">
+              <Megaphone className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-gray-900 text-sm truncate">{data.createdBy?.fullName || 'N/A'}</p>
+              <p className="text-[11px] text-gray-400 font-bold">{formatDateTime(data.createdAt)}</p>
+            </div>
+            {data.category && (
+              <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase ${CATEGORY_COLORS[data.category] || 'bg-gray-100 text-gray-600'}`}>
+                {CATEGORY_LABELS[data.category] || data.category}
+              </span>
+            )}
+          </div>
+
           <div>
             <h1 className="text-2xl font-black text-gray-900">{data.title}</h1>
             <div
@@ -61,6 +281,8 @@ export const AnnouncementDetailPage = () => {
               dangerouslySetInnerHTML={{ __html: sanitizeHtml(data.content) }}
             />
           </div>
+
+          <MediaGallery media={(data.mediaUrls || []).filter(m => !(data.content || '').includes(m.url))} />
 
           {data.eventStartAt && (
             <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 space-y-1">
@@ -86,11 +308,6 @@ export const AnnouncementDetailPage = () => {
               <Paperclip className="w-4 h-4" /> Xem tài liệu đính kèm
             </a>
           )}
-
-          <div className="flex items-center gap-4 text-[10px] text-gray-400 font-black uppercase pt-2 border-t border-gray-50">
-            <span>{data.createdBy?.fullName || 'N/A'}</span>
-            <span>{formatDateTime(data.createdAt)}</span>
-          </div>
 
           {Array.isArray(data.recipients) && (
             <div>
@@ -161,6 +378,8 @@ export const AnnouncementDetailPage = () => {
             </div>
           )}
         </div>
+
+        <CommentsSection announcementId={id} currentUser={currentUser} />
       </div>
     </div>
   );

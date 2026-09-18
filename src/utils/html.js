@@ -1,10 +1,13 @@
 const ALLOWED_TAGS = new Set([
   'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'P', 'BR',
-  'UL', 'OL', 'LI', 'A', 'BLOCKQUOTE', 'DIV', 'SPAN',
+  'UL', 'OL', 'LI', 'A', 'BLOCKQUOTE', 'DIV', 'SPAN', 'IMG', 'VIDEO',
 ]);
 
 const ALLOWED_ATTRS = {
   A: ['href', 'target', 'rel'],
+  IMG: ['src', 'alt', 'class', 'data-media-type'],
+  VIDEO: ['src', 'controls', 'muted', 'class', 'data-media-type'],
+  SPAN: ['class', 'data-mention', 'data-mention-id', 'contenteditable'],
 };
 
 export const sanitizeHtml = (html) => {
@@ -52,3 +55,32 @@ export const htmlToPlainText = (html) => {
 };
 
 export const isHtmlEmpty = (html) => htmlToPlainText(html).length === 0;
+
+export const extractMediaFromHtml = (html) => {
+  if (!html) return [];
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const nodes = [...doc.querySelectorAll('img.editor-media, video.editor-media')];
+  return nodes.map((node) => ({
+    url: node.getAttribute('src') || '',
+    type: node.getAttribute('data-media-type') === 'video' || node.tagName === 'VIDEO' ? 'video' : 'image',
+    name: node.getAttribute('alt') || '',
+  })).filter((m) => m.url);
+};
+
+export const extractMentionsFromHtml = (html) => {
+  if (!html) return { userIds: [], hasEveryone: false };
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const nodes = [...doc.querySelectorAll('span[data-mention]')];
+  const userIds = [];
+  let hasEveryone = false;
+  nodes.forEach((node) => {
+    const id = node.getAttribute('data-mention-id');
+    if (!id) return;
+    if (id === 'everyone') {
+      hasEveryone = true;
+    } else {
+      userIds.push(id);
+    }
+  });
+  return { userIds: [...new Set(userIds)], hasEveryone };
+};
