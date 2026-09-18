@@ -60,6 +60,30 @@
   min-height: 120px;
   outline: none;
 }
+.rich-content .editor-media, .rich-editor .editor-media {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  border-radius: 0.75rem;
+  margin: 0.5em 0;
+}
+.rich-content .mention-chip, .rich-editor .mention-chip {
+  display: inline-block;
+  padding: 0.1em 0.5em;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.85em;
+  margin: 0 0.1em;
+}
+.rich-content .mention-chip-user, .rich-editor .mention-chip-user {
+  background: #eef2ff;
+  color: #4338ca;
+}
+.rich-content .mention-chip-everyone, .rich-editor .mention-chip-everyone {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
 
 /* main:has(.flex.flex-col.overflow-hidden) {
   padding: 0;
