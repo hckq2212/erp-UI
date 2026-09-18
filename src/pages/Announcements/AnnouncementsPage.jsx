@@ -131,7 +131,7 @@ export const AnnouncementsPage = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
           <div>
             <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight flex items-center gap-3">
-              <Megaphone className="w-8 h-8 text-blue-600" /> Thông báo nội bộ
+              <Megaphone className="w-8 h-8 text-blue-600" /> Tin tức nội bộ
             </h1>
             <p className="text-sm text-gray-400 font-bold mt-1 uppercase tracking-wide">
               {data?.total || 0} thông báo
