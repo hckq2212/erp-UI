@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Briefcase, FileText,
   FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store,
-  CheckCircle2, Package, User, Handshake, FolderOpenDotIcon , Video, BookText, Megaphone, Bell,
+  CheckCircle2, Package, User, Handshake, FolderOpenDotIcon , Video, BookText, Megaphone, Bell, Archive
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useGetMeQuery } from '../../api/auth';
@@ -27,6 +27,7 @@ const menuItems = [
   { path: '/announcements', icon: Megaphone, label: 'Tin tức nội bộ' },
   { path: '/create-video-ai', icon: Video, label: 'Tạo Video AI'},
   { path: '/library-video-ai', icon: BookText, label: 'Thư viện Video AI'},
+  { path: '/document-library', icon: Archive, label: 'Kho tài liệu' },
 ];
 
 export const Sidebar = ({ isCollapsed }) => {
