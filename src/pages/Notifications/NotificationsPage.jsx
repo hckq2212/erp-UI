@@ -13,9 +13,7 @@ export const NotificationsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const { data: notifications = [], isLoading, error } = useGetMyNotificationsQuery(undefined, {
-    pollingInterval: 15000,
-  });
+  const { data: notifications = [], isLoading, error } = useGetMyNotificationsQuery();
   const [markAsRead] = useMarkAsReadMutation();
 
   const handleMarkAsRead = async (notification) => {

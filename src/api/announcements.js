@@ -60,6 +60,28 @@ export const announcementsApi = api.injectEndpoints({
         { type: 'Announcements', id: 'LIST' },
       ],
     }),
+
+    getAnnouncementComments: builder.query({
+      query: (id) => `/announcements/${id}/comments`,
+      providesTags: (result, error, id) => [{ type: 'AnnouncementComments', id }],
+    }),
+
+    addAnnouncementComment: builder.mutation({
+      query: ({ id, content }) => ({
+        url: `/announcements/${id}/comments`,
+        method: 'POST',
+        body: { content },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'AnnouncementComments', id }],
+    }),
+
+    deleteAnnouncementComment: builder.mutation({
+      query: ({ id, commentId }) => ({
+        url: `/announcements/${id}/comments/${commentId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'AnnouncementComments', id }],
+    }),
   }),
 });
 
@@ -70,4 +92,7 @@ export const {
   useUpdateAnnouncementMutation,
   useDeleteAnnouncementMutation,
   useMarkAnnouncementAsReadMutation,
+  useGetAnnouncementCommentsQuery,
+  useAddAnnouncementCommentMutation,
+  useDeleteAnnouncementCommentMutation,
 } = announcementsApi;

@@ -1,14 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Megaphone, Search, Plus, Calendar, MapPin, Users as UsersIcon, ChevronLeft, ChevronRight, ChevronDown, Inbox, Eye, Trash2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Megaphone, Search, Plus, Calendar, MapPin, Users as UsersIcon, ChevronLeft, ChevronRight, Inbox, Eye, Trash2, PlayCircle, Images } from 'lucide-react';
 import { useGetAnnouncementsQuery, useDeleteAnnouncementMutation, useMarkAnnouncementAsReadMutation } from '../../api/announcements';
 import { selectCurrentUser } from '../../store/authSlice';
 import { formatDateTime } from '../../utils/format';
 import { AnnouncementComposeModal } from './AnnouncementComposeModal';
 import { toast } from 'react-toastify';
-import { sanitizeHtml, htmlToPlainText } from '../../utils/html';
+import { htmlToPlainText } from '../../utils/html';
 
 const MANAGE_ROLES = ['ADMIN', 'BOD', 'PM'];
 
@@ -46,6 +45,42 @@ const SCOPE_LABELS = {
   USER: 'Chọn riêng người dùng',
 };
 
+const MediaPreviewGrid = ({ media, onClick }) => {
+  if (!Array.isArray(media) || media.length === 0) return null;
+  const visible = media.slice(0, 4);
+  const extraCount = media.length - visible.length;
+
+  return (
+    <div
+      onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+      className={`grid gap-1.5 mb-3 rounded-2xl overflow-hidden ${visible.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}
+    >
+      {visible.map((item, index) => {
+        const isLast = index === visible.length - 1 && extraCount > 0;
+        return (
+          <div key={item.url + index} className={`relative bg-gray-100 ${visible.length === 1 ? 'aspect-video' : 'aspect-square'} overflow-hidden`}>
+            {item.type === 'video' ? (
+              <video src={item.url} className="w-full h-full object-cover" muted />
+            ) : (
+              <img src={item.url} alt="" className="w-full h-full object-cover" />
+            )}
+            {item.type === 'video' && !isLast && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                <PlayCircle className="w-8 h-8 text-white drop-shadow" />
+              </div>
+            )}
+            {isLast && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <span className="text-white text-lg font-black">+{extraCount}</span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export const AnnouncementsPage = () => {
   const navigate = useNavigate();
   const user = useSelector(selectCurrentUser);
@@ -56,13 +91,12 @@ export const AnnouncementsPage = () => {
   const [scopeType, setScopeType] = useState('');
   const [page, setPage] = useState(1);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
-  const [expandedId, setExpandedId] = useState(null);
 
   const [markAsRead] = useMarkAnnouncementAsReadMutation();
 
-  const handleToggleExpand = (item) => {
-    setExpandedId(prev => (prev === item.id ? null : item.id));
-    markAsRead(item.id);
+  const handleOpenDetail = (item) => {
+    if (!item.isRead) markAsRead(item.id);
+    navigate(`/announcements/${item.id}`);
   };
 
   const queryParams = useMemo(() => ({
@@ -178,100 +212,71 @@ export const AnnouncementsPage = () => {
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
-              {announcements.map((item) => {
-                const isExpanded = expandedId === item.id;
-                return (
-                  <div key={item.id} className="transition-all group">
-                    <div
-                      onClick={() => handleToggleExpand(item)}
-                      className="p-6 hover:bg-gray-50/80 cursor-pointer flex items-start justify-between gap-4"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase ${CATEGORY_COLORS[item.category] || 'bg-gray-100 text-gray-600'}`}>
-                            {CATEGORY_LABELS[item.category] || item.category}
+              {announcements.map((item) => (
+                <div key={item.id} className="transition-all group">
+                  <div
+                    onClick={() => handleOpenDetail(item)}
+                    className="p-6 hover:bg-gray-50/80 cursor-pointer flex items-start justify-between gap-4"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase ${CATEGORY_COLORS[item.category] || 'bg-gray-100 text-gray-600'}`}>
+                          {CATEGORY_LABELS[item.category] || item.category}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase bg-gray-100 text-gray-500">
+                          {STATUS_LABELS[item.status] || item.status}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase bg-indigo-50 text-indigo-500 flex items-center gap-1">
+                          <UsersIcon className="w-3 h-3" /> {SCOPE_LABELS[item.scopeType] || item.scopeType}
+                        </span>
+                        {item.eventStartAt && (
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" /> {formatDateTime(item.eventStartAt)}
                           </span>
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase bg-gray-100 text-gray-500">
-                            {STATUS_LABELS[item.status] || item.status}
-                          </span>
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase bg-indigo-50 text-indigo-500 flex items-center gap-1">
-                            <UsersIcon className="w-3 h-3" /> {SCOPE_LABELS[item.scopeType] || item.scopeType}
-                          </span>
-                          {item.eventStartAt && (
-                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 flex items-center gap-1">
-                              <Calendar className="w-3 h-3" /> {formatDateTime(item.eventStartAt)}
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="text-base font-black text-gray-900 tracking-tight mb-1">{item.title}</h3>
-                        {isExpanded ? (
-                          <div
-                            className="rich-content mb-2"
-                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.content) }}
-                          />
-                        ) : (
-                          <p className="text-sm text-gray-500 font-medium mb-2 line-clamp-2">
-                            {htmlToPlainText(item.content)}
-                          </p>
                         )}
-                        {item.eventLocation && (
-                          <p className="text-xs text-gray-400 font-bold flex items-center gap-1 mb-2">
-                            <MapPin className="w-3 h-3" /> {item.eventLocation}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-4 text-[10px] text-gray-400 font-black uppercase">
-                          <span>{item.createdBy?.fullName || 'N/A'}</span>
-                          <span>{formatDateTime(item.createdAt)}</span>
-                          <span>{item.recipientCount || 0} người nhận</span>
-                        </div>
                       </div>
-
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); navigate(`/announcements/${item.id}`); }}
-                          className="p-2.5 text-gray-300 hover:text-blue-600 hover:bg-white rounded-xl shadow-sm border border-transparent hover:border-blue-100 opacity-0 group-hover:opacity-100 transition-all"
-                          title="Xem chi tiết"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        {isManager && item.status !== 'CANCELLED' && (
-                          <button
-                            onClick={(e) => handleDelete(item.id, e)}
-                            className="p-2.5 text-gray-300 hover:text-red-600 hover:bg-white rounded-xl shadow-sm border border-transparent hover:border-red-100 opacity-0 group-hover:opacity-100 transition-all"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                        <div className="p-2.5 text-gray-300">
-                          <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                        </div>
+                      <h3 className="text-base font-black text-gray-900 tracking-tight mb-1">{item.title}</h3>
+                      <p className="text-sm text-gray-500 font-medium mb-2 line-clamp-2">
+                        {htmlToPlainText(item.content)}
+                      </p>
+                      <MediaPreviewGrid media={item.mediaUrls} onClick={() => navigate(`/announcements/${item.id}`)} />
+                      {item.mediaUrls?.length > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-black text-gray-400 uppercase mb-2">
+                          <Images className="w-3 h-3" /> {item.mediaUrls.length} tệp đính kèm
+                        </span>
+                      )}
+                      {item.eventLocation && (
+                        <p className="text-xs text-gray-400 font-bold flex items-center gap-1 mb-2">
+                          <MapPin className="w-3 h-3" /> {item.eventLocation}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-4 text-[10px] text-gray-400 font-black uppercase">
+                        <span>{item.createdBy?.fullName || 'N/A'}</span>
+                        <span>{formatDateTime(item.createdAt)}</span>
+                        <span>{item.recipientCount || 0} người nhận</span>
                       </div>
                     </div>
 
-                    <AnimatePresence initial={false}>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2, ease: 'easeOut' }}
-                          className="overflow-hidden bg-gray-50/60 border-t border-gray-100"
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleOpenDetail(item); }}
+                        className="p-2.5 text-gray-300 hover:text-blue-600 hover:bg-white rounded-xl shadow-sm border border-transparent hover:border-blue-100 opacity-0 group-hover:opacity-100 transition-all"
+                        title="Xem chi tiết"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      {isManager && item.status !== 'CANCELLED' && (
+                        <button
+                          onClick={(e) => handleDelete(item.id, e)}
+                          className="p-2.5 text-gray-300 hover:text-red-600 hover:bg-white rounded-xl shadow-sm border border-transparent hover:border-red-100 opacity-0 group-hover:opacity-100 transition-all"
                         >
-                          <div className="p-6 flex items-center gap-4 text-xs font-black text-gray-500 uppercase">
-                            <span>{item.recipientCount || 0} người nhận</span>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); navigate(`/announcements/${item.id}`); }}
-                              className="text-blue-600 hover:underline normal-case font-bold"
-                            >
-                              Xem chi tiết đầy đủ
-                            </button>
-                          </div>
-                        </motion.div>
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       )}
-                    </AnimatePresence>
+                    </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </div>

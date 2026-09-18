@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import { Calendar, MapPin, Search, Paperclip, X } from 'lucide-react';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import { RichTextEditor } from '../../components/ui/RichTextEditor';
-import { isHtmlEmpty } from '../../utils/html';
+import { isHtmlEmpty, extractMediaFromHtml, extractMentionsFromHtml } from '../../utils/html';
 
 const CATEGORY_OPTIONS = [
   { value: 'GENERAL', label: 'Chung' },
@@ -59,14 +59,15 @@ export const AnnouncementComposeModal = ({ isOpen, onClose }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const [createAnnouncement, { isLoading }] = useCreateAnnouncementMutation();
-  const { data: users = [] } = useGetUsersQuery(undefined, { skip: form.scopeType !== 'USER' });
+  const { data: users = [] } = useGetUsersQuery();
   const { data: teams = [] } = useGetTeamsQuery(undefined, { skip: form.scopeType !== 'TEAM' });
 
   const filteredUsers = useMemo(() => {
+    if (form.scopeType !== 'USER') return [];
     if (!userSearch) return users;
     const lower = userSearch.toLowerCase();
     return users.filter(u => u.fullName?.toLowerCase().includes(lower));
-  }, [users, userSearch]);
+  }, [users, userSearch, form.scopeType]);
 
   const handleClose = () => {
     setForm(initialForm);
@@ -130,6 +131,12 @@ export const AnnouncementComposeModal = ({ isOpen, onClose }) => {
       return;
     }
 
+    const mediaUrls = extractMediaFromHtml(form.content);
+    const mentions = extractMentionsFromHtml(form.content);
+    const ccUserIds = mentions.hasEveryone
+      ? users.map(u => u.id)
+      : mentions.userIds;
+
     try {
       await createAnnouncement({
         title: form.title,
@@ -144,6 +151,8 @@ export const AnnouncementComposeModal = ({ isOpen, onClose }) => {
         eventEndAt: form.hasEvent && form.eventEndAt ? form.eventEndAt : undefined,
         eventLocation: form.hasEvent ? form.eventLocation : undefined,
         attachmentUrl: form.attachmentUrl || undefined,
+        mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
+        ccUserIds: ccUserIds.length > 0 ? ccUserIds : undefined,
         status,
       }).unwrap();
 
@@ -173,7 +182,7 @@ export const AnnouncementComposeModal = ({ isOpen, onClose }) => {
           <RichTextEditor
             value={form.content}
             onChange={(html) => setForm(prev => ({ ...prev, content: html }))}
-            placeholder="Nhập nội dung thông báo..."
+            placeholder="Nhập nội dung thông báo... dùng nút ảnh/video để chèn, gõ @ để gắn thẻ"
           />
         </div>
 
