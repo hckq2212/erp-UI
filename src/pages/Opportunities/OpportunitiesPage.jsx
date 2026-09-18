@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { OpportunityTable } from './OpportunityTable';
 import { Button } from '../../components/ui/Button';
 import { Plus } from 'lucide-react';
-import { useGetOpportunitiesQuery } from '../../api/opportunities';
+import { useGetOpportunitiesQuery, useLazyGetOpportunityQuery } from '../../api/opportunities';
 import { OpportunityModal } from './OpportunityModal';
 import { TableFilters } from '../../components/ui/TableFilters';
 
@@ -33,6 +33,18 @@ export const OpportunitiesPage = () => {
     const { data, isLoading } = useGetOpportunitiesQuery(filters);
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [duplicateData, setDuplicateData] = useState(null);
+    const [triggerGetOpportunity] = useLazyGetOpportunityQuery();
+
+    const handleDuplicate = async (opp) => {
+        try {
+            const fullOpportunity = await triggerGetOpportunity(opp.id).unwrap();
+            setDuplicateData(fullOpportunity);
+        } catch (err) {
+            setDuplicateData(opp);
+        }
+        setIsModalOpen(true);
+    };
 
     const opportunities = data?.data || [];
     const meta = data?.meta || { total: 0, page: 1, limit: 10, totalPages: 0 };
@@ -75,7 +87,7 @@ export const OpportunitiesPage = () => {
                 <div className="flex items-center space-x-6">
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Quản Lý Cơ Hội</h1>
                 </div>
-                <Button onClick={() => setIsModalOpen(true)} className="shadow-lg shadow-blue-500/20">
+                <Button onClick={() => { setDuplicateData(null); setIsModalOpen(true); }} className="shadow-lg shadow-blue-500/20">
                     <Plus className="h-5 w-5 mr-2" />
                     Tạo Cơ Hội Mới
                 </Button>
@@ -93,9 +105,14 @@ export const OpportunitiesPage = () => {
 
             <OpportunityModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                initialData={duplicateData}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setDuplicateData(null);
+                }}
                 onSuccess={(data) => {
                     setIsModalOpen(false);
+                    setDuplicateData(null);
                     if (data?.id) {
                         navigate(`/opportunities/${data.id}`);
                     }
@@ -113,6 +130,7 @@ export const OpportunitiesPage = () => {
                         onEdit={(opp) => {
                             console.log('Editing:', opp.name);
                         }}
+                        onDuplicate={handleDuplicate}
                     />
                 </div>
             </div>
