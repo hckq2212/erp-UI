@@ -152,29 +152,46 @@ const FileItem = memo(({ file, index, onRemove, progress, isUploading }) => (
   </div>
 ));
 
-const PackageItem = memo(({ pkg, index, availableServices, onRemove, onServiceChange, onRemoveService, onAddService, onQuantityChange }) => {
-  const briefJobs = (pkg.services || []).flatMap((service, serviceIndex) =>
-    (service.jobs || []).filter(job => job.isBriefVideo).map(job => ({ ...job, serviceIndex }))
-  );
+const updatedPackageExists = (packages, index) =>
+  Array.isArray(packages) &&
+  index >= 0 &&
+  index < packages.length &&
+  packages[index];
+
+const PackageItem = memo(({
+  pkg,
+  index,
+  availableServices,
+  onRemove,
+  onServiceChange,
+  onRemoveService,
+  onAddService,
+  onQuantityChange
+}) => {
   return (
     <div className="bg-blue-50/40 border-2 border-blue-100 rounded-2xl p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div>
-            <h4 className="font-bold text-blue-900">{pkg.name}</h4>
-            <p className="text-[10px] font-black uppercase tracking-wider text-blue-600 opacity-70">Gói dịch vụ</p>
-          </div>
+        <div>
+          <h4 className="font-bold text-blue-900">
+            {pkg.name || 'Gói dịch vụ'}
+          </h4>
+          <p className="text-[10px] font-black uppercase tracking-wider text-blue-600 opacity-70">
+            Gói dịch vụ
+          </p>
         </div>
+
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm">
+            <span className="text-xs text-gray-500">SL</span>
             <input
               type="number"
               min="1"
               className="w-12 text-center font-bold text-blue-900 bg-transparent outline-none"
-              value={pkg.quantity}
+              value={pkg.quantity || 1}
               onChange={(e) => onQuantityChange(index, e.target.value)}
             />
           </div>
+
           <button
             type="button"
             onClick={() => onRemove(index)}
@@ -184,31 +201,161 @@ const PackageItem = memo(({ pkg, index, availableServices, onRemove, onServiceCh
           </button>
         </div>
       </div>
-      {briefJobs.map(job => (
-        <div key={`${job.serviceIndex}-${job.jobId}`} className="space-y-2">
-          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-blue-900">
-            <input
-              type="checkbox"
-              checked={Boolean(job.included)}
-              onChange={(e) => onServiceChange(index, job.serviceIndex, 'jobIncluded', { jobId: job.jobId, value: e.target.checked })}
-              className="h-4 w-4 rounded border-blue-200 accent-blue-600"
-            />
-            Thêm công việc: {job.name}
-          </label>
-          {job.included && (
-            <div>
-              <label className="mb-1 block text-sm font-medium text-blue-900">Brief cho {job.name} *</label>
-              <textarea
-                value={job.briefVideo || ''}
-                onChange={(e) => onServiceChange(index, job.serviceIndex, 'briefVideo', { jobId: job.jobId, value: e.target.value })}
-                rows={3}
-                className="w-full resize-y rounded-lg border-2 border-blue-100 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none"
-                placeholder="Nhập brief khách hàng để thực hiện video AI demo..."
-              />
-            </div>
-          )}
+
+      {pkg.description && (
+        <p className="text-sm text-gray-500 bg-white/70 rounded-xl px-3 py-2">
+          {pkg.description}
+        </p>
+      )}
+
+      {/* Services inside package */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-bold text-blue-700 uppercase tracking-widest">
+            Dịch vụ trong gói
+          </p>
+
+          <button
+            type="button"
+            onClick={() => onAddService(index)}
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Thêm dịch vụ
+          </button>
         </div>
-      ))}
+
+        {(pkg.services || []).map((serviceItem, serviceIndex) => {
+          const selectedIds = (pkg.services || [])
+            .filter((_, i) => i !== serviceIndex)
+            .map(s => String(s.serviceId))
+            .filter(Boolean);
+
+          const packageAvailableServices = availableServices.filter(
+            service => !selectedIds.includes(String(service.id))
+          );
+
+          const briefJobs = (serviceItem.jobs || []).filter(
+            job => job.isBriefVideo
+          );
+
+          return (
+            <div
+              key={`${index}-${serviceIndex}`}
+              className="bg-white border border-blue-100 rounded-xl p-3 space-y-3"
+            >
+              <div className="flex items-center gap-3">
+                <select
+                  value={serviceItem.serviceId || ''}
+                  onChange={(e) =>
+                    onServiceChange(
+                      index,
+                      serviceIndex,
+                      'serviceId',
+                      e.target.value
+                    )
+                  }
+                  className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all text-sm"
+                >
+                  <option value="">-- Chọn dịch vụ --</option>
+                  {packageAvailableServices.map(service => (
+                    <option key={service.id} value={service.id}>
+                      {service.name}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  type="number"
+                  min="1"
+                  value={serviceItem.quantity || 1}
+                  onChange={(e) =>
+                    onServiceChange(
+                      index,
+                      serviceIndex,
+                      'quantity',
+                      e.target.value
+                    )
+                  }
+                  className="w-20 px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-center"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => onRemoveService(index, serviceIndex)}
+                  className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+
+              {serviceItem.serviceId && (
+                <div className="text-xs text-gray-500">
+                  Giá vốn:{" "}
+                  <span className="font-semibold text-gray-700">
+                    {Number(serviceItem.sellingPrice || 0).toLocaleString('vi-VN')} VNĐ
+                  </span>
+                </div>
+              )}
+
+              {briefJobs.map(job => (
+                <div key={job.jobId} className="space-y-2">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-blue-900">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(job.included)}
+                      onChange={(e) =>
+                        onServiceChange(
+                          index,
+                          serviceIndex,
+                          'jobIncluded',
+                          {
+                            jobId: job.jobId,
+                            value: e.target.checked
+                          }
+                        )
+                      }
+                      className="h-4 w-4 rounded border-blue-200 accent-blue-600"
+                    />
+                    Thêm công việc: {job.name}
+                  </label>
+
+                  {job.included && (
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-blue-900">
+                        Brief cho {job.name} *
+                      </label>
+                      <textarea
+                        value={job.briefVideo || ''}
+                        onChange={(e) =>
+                          onServiceChange(
+                            index,
+                            serviceIndex,
+                            'briefVideo',
+                            {
+                              jobId: job.jobId,
+                              value: e.target.value
+                            }
+                          )
+                        }
+                        rows={3}
+                        className="w-full resize-y rounded-lg border-2 border-blue-100 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none"
+                        placeholder="Nhập brief khách hàng để thực hiện video AI demo..."
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+
+        {(!pkg.services || pkg.services.length === 0) && (
+          <p className="text-sm text-gray-400 italic text-center py-3 bg-white/70 rounded-xl border border-dashed border-blue-200">
+            Gói này chưa có dịch vụ
+          </p>
+        )}
+      </div>
     </div>
   );
 });
@@ -249,6 +396,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
     'endDate',
     'durationMonths',
     'successChance',
+    'services',
   ];
 
   const [formData, setFormData] = useState({
@@ -355,9 +503,21 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
 
 
     setOpportunityNameParts({
-      customerName: initialData.customer?.name || initialData.leadName || '',
-      brandName: '',
-      monthYear: '',
+      customerName:
+        initialData.customer?.name ||
+        initialData.leadName ||
+        initialData.customerName ||
+        parsedCustomerName ||
+        '',
+      brandName:
+        initialData.brandName ||
+        initialData.brand?.name ||
+        parsedBrandName ||
+        '',
+      monthYear:
+        initialData.monthYear ||
+        parsedMonthYear ||
+        '',
     });
 
     setFormData({
@@ -376,21 +536,69 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
 
     const standaloneServices = (initialData.services || [])
       .filter(s => !s.isPackageService)
-      .map(s => ({ serviceId: s.serviceId || s.service?.id || '', quantity: s.quantity || 1 }));
-    setSelectedServices(standaloneServices.length > 0 ? standaloneServices : [{ serviceId: '', quantity: 1 }]);
+      .map(s => ({
+        serviceId: s.serviceId || s.service?.id || '',
+        quantity: Number(s.quantity) || 1,
+        jobs: (s.jobs || s.service?.serviceJobs || []).map(serviceJob => ({
+          jobId: serviceJob.job?.id || serviceJob.jobId,
+          name: serviceJob.job?.name || serviceJob.name || 'Hạng mục',
+          isBriefVideo: Boolean(
+            serviceJob.job?.isBriefVideo ?? serviceJob.isBriefVideo
+          ),
+          included:
+            serviceJob.included !== undefined
+              ? Boolean(serviceJob.included)
+              : !Boolean(serviceJob.job?.isBriefVideo ?? serviceJob.isBriefVideo),
+          briefVideo: serviceJob.briefVideo || ''
+        }))
+      }));
+    // COPY MODE:
+    // Chỉ hiển thị những dịch vụ thực sự tồn tại trong cơ hội gốc.
+    // Nếu cơ hội gốc không có dịch vụ lẻ -> để [] để không xuất hiện
+    // một dòng "Chọn dịch vụ" trống.
+    setSelectedServices(standaloneServices);
 
     const packages = (initialData.packages || []).map(pkg => ({
-      servicePackageId: pkg.servicePackageId || '',
-      name: pkg.name || '',
-      description: pkg.description || '',
-      quantity: pkg.quantity || 1,
-      services: (pkg.services || []).map(s => ({
+      servicePackageId:
+        pkg.servicePackageId ||
+        pkg.servicePackage?.id ||
+        pkg.package?.id ||
+        '',
+      name:
+        pkg.name ||
+        pkg.servicePackage?.name ||
+        pkg.package?.name ||
+        '',
+      description:
+        pkg.description ||
+        pkg.servicePackage?.description ||
+        pkg.package?.description ||
+        '',
+      quantity: Number(pkg.quantity) || 1,
+      services: (pkg.services || pkg.items || []).map(s => ({
         serviceId: s.serviceId || s.service?.id || '',
-        quantity: s.quantity || 1,
-        sellingPrice: Number(s.sellingPrice) || 0,
-      })),
+        quantity: Number(s.quantity) || 1,
+        sellingPrice: Number(
+          s.sellingPrice ?? s.service?.costPrice ?? 0
+        ),
+        jobs: (s.jobs || s.service?.serviceJobs || []).map(serviceJob => ({
+          jobId: serviceJob.job?.id || serviceJob.jobId,
+          name: serviceJob.job?.name || serviceJob.name || 'Hạng mục',
+          isBriefVideo: Boolean(
+            serviceJob.job?.isBriefVideo ?? serviceJob.isBriefVideo
+          ),
+          included:
+            serviceJob.included !== undefined
+              ? Boolean(serviceJob.included)
+              : !Boolean(serviceJob.job?.isBriefVideo ?? serviceJob.isBriefVideo),
+          briefVideo: serviceJob.briefVideo || ''
+        }))
+      }))
     }));
-    setSelectedPackages(packages.length > 0 ? packages : [{ servicePackageId: '', services: [], quantity: 1 }]);
+    // COPY MODE:
+    // Tương tự package: nếu cơ hội gốc không có package thì không tạo
+    // package placeholder.
+    setSelectedPackages(packages);
 
     const attachments = initialData.attachments || [];
     const links = attachments.filter(a => a.type === 'LINK').map(a => a.url);
@@ -413,7 +621,13 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
     if (!templateId) {
       setSelectedPackages(prev => {
         const updated = [...prev];
-        updated[index] = { servicePackageId: '', services: [] };
+        updated[index] = {
+          servicePackageId: '',
+          name: '',
+          description: '',
+          services: [],
+          quantity: 1
+        };
         return updated;
       });
       return;
@@ -459,16 +673,21 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
   const handlePackageQuantityChange = useCallback((index, value) => {
     setSelectedPackages(prev => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], quantity: Number(value) || 1 };
+      updated[index] = {
+        ...updated[index],
+        quantity: Math.max(1, Number(value) || 1)
+      };
       return updated;
     });
   }, []);
 
   const handlePackageServiceChange = useCallback((pkgIndex, sIndex, field, value) => {
     setSelectedPackages(prev => {
+      if (!updatedPackageExists(prev, pkgIndex)) return prev;
+
       const updated = [...prev];
       const pkg = { ...updated[pkgIndex] };
-      const pkgServices = [...pkg.services];
+      const pkgServices = [...(pkg.services || [])];
       if (field === 'briefVideo' || field === 'jobIncluded') {
         pkgServices[sIndex] = {
           ...pkgServices[sIndex],
@@ -484,7 +703,12 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
           )
         };
       } else {
-        pkgServices[sIndex] = { ...pkgServices[sIndex], [field]: field === 'quantity' ? Number(value) : value };
+        pkgServices[sIndex] = {
+          ...pkgServices[sIndex],
+          [field]: field === 'quantity'
+            ? Math.max(1, Number(value) || 1)
+            : value
+        };
       }
 
       if (field === 'serviceId') {
@@ -509,8 +733,9 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
   const removePackageService = useCallback((pkgIndex, sIndex) => {
     setSelectedPackages(prev => {
       const updated = [...prev];
+      if (!updated[pkgIndex]) return prev;
       const pkg = { ...updated[pkgIndex] };
-      pkg.services = pkg.services.filter((_, i) => i !== sIndex);
+      pkg.services = (pkg.services || []).filter((_, i) => i !== sIndex);
       updated[pkgIndex] = pkg;
       return updated;
     });
@@ -519,8 +744,12 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
   const addPackageService = useCallback((pkgIndex) => {
     setSelectedPackages(prev => {
       const updated = [...prev];
+      if (!updated[pkgIndex]) return prev;
       const pkg = { ...updated[pkgIndex] };
-      pkg.services = [...pkg.services, { serviceId: '', quantity: 1, sellingPrice: 0 }];
+      pkg.services = [
+        ...(pkg.services || []),
+        { serviceId: '', quantity: 1, sellingPrice: 0, jobs: [] }
+      ];
       updated[pkgIndex] = pkg;
       return updated;
     });
@@ -571,7 +800,12 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
   const handleServiceChange = useCallback((index, field, value) => {
     setSelectedServices(prev => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: field === 'quantity' ? Number(value) : value };
+      updated[index] = {
+        ...updated[index],
+        [field]: field === 'quantity'
+          ? Math.max(1, Number(value) || 1)
+          : value
+      };
       if (field === 'serviceId') {
         const service = services.find(s => String(s.id) === String(value));
         updated[index].jobs = (service?.serviceJobs || []).map(serviceJob => ({
@@ -703,8 +937,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
 
     const packagesTotal = selectedPackages.reduce((total, pkg) => {
       const pkgQuantity = Number(pkg.quantity) || 1;
-      return total + pkg.services.reduce((pTotal, s) => {
-        return pTotal + (s.sellingPrice || 0) * s.quantity * pkgQuantity;
+      return total + (pkg.services || []).reduce((pTotal, s) => {
+        return pTotal + (Number(s.sellingPrice) || 0) * (Number(s.quantity) || 1) * pkgQuantity;
       }, 0);
     }, 0);
 
@@ -787,6 +1021,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
 
     try {
       setIsUploading(true);
+      setUploadProgress({});
       let attachments = [];
 
       // 1. Add document links
@@ -824,7 +1059,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
           name: pkg.name,
           description: pkg.description,
           quantity: Number(pkg.quantity) || 1,
-          services: pkg.services.filter(s => s.serviceId).map(s => ({
+          services: (pkg.services || []).filter(s => s.serviceId).map(s => ({
             serviceId: s.serviceId,
             quantity: s.quantity,
             sellingPrice: s.sellingPrice,
@@ -856,7 +1091,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
         priority: 'Medium',
         successChance: 0,
         region: [],
-        durationMonths: 0,
+        durationMonths: 1,
         customerRequirements: '',
       });
       setOpportunityNameParts({
@@ -865,10 +1100,12 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
         monthYear: '',
       });
       setSelectedServices([{ serviceId: '', quantity: 1 }]);
-      setSelectedPackages([{ servicePackageId: '', services: [] }]);
+      setSelectedPackages([{ servicePackageId: '', services: [], quantity: 1 }]);
       setDocumentLinks(Array(LINK_PLACEHOLDERS.length).fill(''));
       setFiles([]);
       setExistingAttachments([]);
+      setUploadProgress({});
+      setErrors({});
     } catch (err) {
       setIsUploading(false);
       setErrors({ submit: err?.data?.message || err?.message || 'Có lỗi xảy ra' });
@@ -1406,8 +1643,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
                     onDrop={handleFileDrop}
                     className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${isDraggingFile ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/50'}`}
                   >
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer">
-                    <label className="cursor-pointer">
+                    <label className="block cursor-pointer">
                       <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-600 font-medium">Kéo thả file hoặc click để chọn</p>
                       <p className="text-xs text-gray-400 mt-1">Tối đa 5 file, tổng dung lượng 25MB</p>
@@ -1420,7 +1656,6 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
                         accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
                       />
                     </label>
-                  </div>
                   {files.length > 0 && (
                     <div className="mt-4 space-y-2">
                       <p className="text-sm font-medium text-gray-700">Tệp đã chọn ({files.length}):</p>
