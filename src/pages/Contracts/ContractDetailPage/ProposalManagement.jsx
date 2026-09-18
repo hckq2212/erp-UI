@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { FileText, Upload, CheckCircle, FileCheck, Loader2, X, Send, Link2, FileSpreadsheet } from 'lucide-react';
+import { FileText, Upload, CheckCircle, FileCheck, Loader2, X, Send, Link2, FileSpreadsheet, Eye } from 'lucide-react';
 import { getFilePreviewUrl } from '../../../utils/cloudinary';
+import { DocumentCard, DocumentPreviewModal } from '../../../components/common';
 
 export const ProposalManagement = ({
   contract,
@@ -24,6 +25,7 @@ export const ProposalManagement = ({
   const [quotationMethod, setQuotationMethod] = useState('');
   const [quotationFile, setQuotationFile] = useState(null);
   const [quotationLink, setQuotationLink] = useState('');
+  const [previewModalFile, setPreviewModalFile] = useState(null);
 
   const openProposalEditor = () => {
     setUploadMethod('');
@@ -103,17 +105,6 @@ export const ProposalManagement = ({
             <div className="flex gap-2">
               {contract.proposal_contract ? (
                 <>
-                  {!isRejecting && (
-                    <a
-                      href={proposalViewUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Xem
-                    </a>
-                  )}
                   {contract.status === 'PROPOSAL_UPLOADED' && !isRejecting && (currentUser.role === 'ADMIN' || currentUser.role === 'BOD') && (
                     <div className="flex gap-2">
                       <button
@@ -172,16 +163,28 @@ export const ProposalManagement = ({
             </div>
           </div>
 
+          {/* Thẻ xem trước Hợp đồng dự thảo */}
+          {contract.proposal_contract && !isEditingProposal && (
+            <div className="mt-3.5 pt-3 border-t border-gray-100">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tệp hợp đồng đính kèm:</p>
+              <DocumentCard
+                url={contract.proposal_contract}
+                fileName={`Hợp đồng dự thảo - ${contract.contractCode || contract.name || 'Proposal'}`}
+                onPreview={(file) => setPreviewModalFile(file)}
+              />
+            </div>
+          )}
+
+          {/* Thẻ xem trước Link báo giá */}
           {contract.quotation_link && !isEditingProposal && (
-            <a
-              href={contract.quotation_link.includes('res.cloudinary.com') ? getFilePreviewUrl(contract.quotation_link) : contract.quotation_link}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 flex w-fit items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
-            >
-              {contract.quotation_link.includes('res.cloudinary.com') ? <FileSpreadsheet className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
-              Xem link báo giá
-            </a>
+            <div className="mt-3.5 pt-3 border-t border-gray-100">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Báo giá liên kết:</p>
+              <DocumentCard
+                url={contract.quotation_link}
+                fileName={`Báo giá liên kết - ${contract.contractCode || contract.name || 'Quotation'}`}
+                onPreview={(file) => setPreviewModalFile(file)}
+              />
+            </div>
           )}
 
           {isEditingProposal && (
@@ -362,15 +365,19 @@ export const ProposalManagement = ({
             </div>
             <div>
               {contract.signed_contract ? (
-                <a
-                  href={getFilePreviewUrl(contract.signed_contract)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                <button
+                  onClick={onUploadSigned}
+                  disabled={isUploadingSigned || isUploadingProposal}
+                  className={`flex items-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-all text-sm font-medium ${(isUploadingSigned || isUploadingProposal) ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                 >
-                  <FileCheck className="w-4 h-4" />
-                  Xem
-                </a>
+                  {isUploadingSigned ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )}
+                  {isUploadingSigned ? 'Đang upload...' : 'Upload bản mới'}
+                </button>
               ) : (
                 <button
                   onClick={onUploadSigned}
@@ -388,9 +395,30 @@ export const ProposalManagement = ({
               )}
             </div>
           </div>
+
+          {/* Thẻ xem trước Hợp đồng đã ký */}
+          {contract.signed_contract && (
+            <div className="mt-3.5 pt-3 border-t border-gray-100">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tệp hợp đồng đã ký:</p>
+              <DocumentCard
+                url={contract.signed_contract}
+                fileName={`Hợp đồng đã ký - ${contract.contractCode || contract.name || 'Signed'}.pdf`}
+                onPreview={(file) => setPreviewModalFile(file)}
+              />
+            </div>
+          )}
+
           {isUploadingSigned && <ProgressBar progress={uploadProgress} />}
         </div>
       </div>
+
+      {/* Modal xem trước tài liệu đa năng */}
+      <DocumentPreviewModal
+        isOpen={Boolean(previewModalFile)}
+        onClose={() => setPreviewModalFile(null)}
+        url={previewModalFile?.url}
+        fileName={previewModalFile?.fileName}
+      />
     </div>
   );
 };
