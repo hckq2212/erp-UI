@@ -352,7 +352,7 @@ export const ContractDetailPage = () => {
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="mb-6">
             <h2 className="text-xl font-bold text-gray-900">Phụ lục hợp đồng</h2>
-            <p className="text-gray-500 text-sm">Theo dõi các phụ lục phát sinh và yêu cầu tạo công việc tháng mới</p>
+            <p className="text-gray-500 text-sm">Theo dõi các phụ lục phát sinh</p>
           </div>
           <ContractAddendums addendums={addendums} currentUser={currentUser} />
         </div>

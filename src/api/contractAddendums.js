@@ -1,5 +1,21 @@
 import { api } from '../store/api';
 
+const getAddendumPayload = (result) => result?.addendum || result;
+
+const getAddendumInvalidationTags = (result, id) => {
+    const addendum = getAddendumPayload(result);
+
+    return [
+        { type: 'ContractAddendums', id },
+        { type: 'ContractAddendums', id: 'LIST' },
+        addendum?.contract?.id ? { type: 'Contracts', id: addendum.contract.id } : null,
+        { type: 'Contracts', id: 'LIST' },
+        addendum?.project?.id ? { type: 'Projects', id: addendum.project.id } : null,
+        addendum?.project?.id ? { type: 'Projects', id: 'LIST' } : null,
+        addendum?.project?.id ? { type: 'Tasks', id: 'LIST' } : null,
+    ].filter(Boolean);
+};
+
 export const contractAddendumsApi = api.injectEndpoints({
     endpoints: (builder) => ({
         getContractAddendums: builder.query({
@@ -70,11 +86,7 @@ export const contractAddendumsApi = api.injectEndpoints({
                 method: 'POST',
                 body: { note },
             }),
-            invalidatesTags: (result, error, { id }) => [
-                { type: 'ContractAddendums', id },
-                { type: 'ContractAddendums', id: 'LIST' },
-                { type: 'Contracts', id: 'LIST' },
-            ],
+            invalidatesTags: (result, error, { id }) => getAddendumInvalidationTags(result, id),
         }),
         saleRejectAddendum: builder.mutation({
             query: ({ id, note }) => ({
@@ -82,11 +94,7 @@ export const contractAddendumsApi = api.injectEndpoints({
                 method: 'POST',
                 body: { note },
             }),
-            invalidatesTags: (result, error, { id }) => [
-                { type: 'ContractAddendums', id },
-                { type: 'ContractAddendums', id: 'LIST' },
-                { type: 'Contracts', id: 'LIST' },
-            ],
+            invalidatesTags: (result, error, { id }) => getAddendumInvalidationTags(result, id),
         }),
         bodApproveAddendum: builder.mutation({
             query: ({ id, note }) => ({
@@ -94,14 +102,7 @@ export const contractAddendumsApi = api.injectEndpoints({
                 method: 'POST',
                 body: { note },
             }),
-            invalidatesTags: (result, error, { id }) => [
-                { type: 'ContractAddendums', id },
-                { type: 'ContractAddendums', id: 'LIST' },
-                { type: 'Contracts', id: 'LIST' },
-                result?.addendum?.project?.id ? { type: 'Projects', id: result.addendum.project.id } : null,
-                { type: 'Projects', id: 'LIST' },
-                { type: 'Tasks', id: 'LIST' },
-            ].filter(Boolean),
+            invalidatesTags: (result, error, { id }) => getAddendumInvalidationTags(result, id),
         }),
         bodRejectAddendum: builder.mutation({
             query: ({ id, note }) => ({
@@ -109,11 +110,7 @@ export const contractAddendumsApi = api.injectEndpoints({
                 method: 'POST',
                 body: { note },
             }),
-            invalidatesTags: (result, error, { id }) => [
-                { type: 'ContractAddendums', id },
-                { type: 'ContractAddendums', id: 'LIST' },
-                { type: 'Contracts', id: 'LIST' },
-            ],
+            invalidatesTags: (result, error, { id }) => getAddendumInvalidationTags(result, id),
         }),
     }),
 });

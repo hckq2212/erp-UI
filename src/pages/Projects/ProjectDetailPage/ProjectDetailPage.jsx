@@ -45,8 +45,7 @@ export const ProjectDetailPage = () => {
   const isCoreMember = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
     project?.team?.members?.some(m => isSameUser(m.user?.id, currentUserId)) ||
     PROJECT_MANAGEMENT_ROLES.includes(user?.role);
-  const canCreateMonthlyWork = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
-    PROJECT_MANAGEMENT_ROLES.includes(user?.role);
+  const canCreateProjectWork = user?.role === 'PM' || user?.role === 'ADMIN';
 
 
   const handleConfirm = async () => {
@@ -145,7 +144,7 @@ export const ProjectDetailPage = () => {
           </div>
 
           <div className="flex gap-3">
-            {canCreateMonthlyWork && (
+            {canCreateProjectWork && (
               <button
                 onClick={() => setIsMonthlyWorkModalOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-sm transition-all active:scale-95"

@@ -35,6 +35,7 @@ export const TaskTable = ({ tasks = [], project }) => {
 
     const canSeeTable = isAdminOrBOD || isProjectLead || isSupportLead || isHelper;
     const canAddTask = isAdminOrBOD || isProjectLead;
+    const canCreateProjectWork = user?.role === 'PM' || user?.role === 'ADMIN';
     const isProjectInProgress = project?.status === 'IN_PROGRESS' || project?.status === 'CONFIRMED';
 
     const [filter, setFilter] = useState({
@@ -288,7 +289,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                         <span>{selectionMode === 'unassign' ? 'Huỷ xoá phân công' : 'Xoá phân công'}</span>
                     </button>
                 )}
-                {canAddTask && (
+                {canCreateProjectWork && (
                     <button
                         onClick={() => setShowAddServiceModal(true)}
                         className={cn(

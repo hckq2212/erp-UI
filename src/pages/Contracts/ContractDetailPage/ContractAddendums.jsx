@@ -174,7 +174,7 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
     };
 
     const userRole = getUserRole(currentUser);
-    const isSale = ['BD', 'ADMIN_SALE'].includes(userRole);
+    const isSale = ['BD', 'ADMIN'].includes(userRole);
     const isBod = ['BOD', 'ADMIN'].includes(userRole);
     const isMutating = isSaleApproving || isSaleRejecting || isBodApproving || isBodRejecting;
 
@@ -247,10 +247,10 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
                     isMutating={isMutating}
                     formatDate={formatDate}
                     onClose={() => setSelectedAddendum(null)}
-                    onSaleApprove={() => handleAction(saleApprove, selectedAddendum.id, 'Sale đã duyệt phụ lục')}
-                    onSaleReject={() => openRejectModal(saleReject, selectedAddendum.id, 'Sale đã không duyệt phụ lục')}
-                    onBodApprove={() => handleAction(bodApprove, selectedAddendum.id, 'BOD đã duyệt và sinh công việc')}
-                    onBodReject={() => openRejectModal(bodReject, selectedAddendum.id, 'BOD đã không duyệt phụ lục')}
+                    onSaleApprove={() => handleAction(saleApprove, selectedAddendum.id, 'Đã duyệt phụ lục')}
+                    onSaleReject={() => openRejectModal(saleReject, selectedAddendum.id, 'Đã không duyệt phụ lục')}
+                    onBodApprove={() => handleAction(bodApprove, selectedAddendum.id, 'Đã duyệt và sinh công việc')}
+                    onBodReject={() => openRejectModal(bodReject, selectedAddendum.id, 'Đã không duyệt phụ lục')}
                 />
             )}
 
@@ -389,7 +389,7 @@ const AddendumDetailModal = ({
                             <div className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 md:flex-row md:items-center md:justify-between">
                                 <div>
                                     <p className="font-bold text-amber-900">
-                                        {canSaleReview ? 'Đến lượt Sale duyệt phụ lục' : 'Đến lượt BOD duyệt phụ lục'}
+                                        Đến lượt duyệt phụ lục
                                     </p>
                                     <p className="mt-1 text-sm text-amber-700">
                                         Kiểm tra thông tin dịch vụ/gói dịch vụ trước khi duyệt hoặc không duyệt.
@@ -402,7 +402,7 @@ const AddendumDetailModal = ({
                                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-red-700 shadow-sm hover:bg-red-50 disabled:opacity-50"
                                     >
                                         <XCircle className="h-4 w-4" />
-                                        {canSaleReview ? 'Sale không duyệt' : 'BOD không duyệt'}
+                                        Không duyệt
                                     </button>
                                     <button
                                         disabled={isMutating}
@@ -410,7 +410,7 @@ const AddendumDetailModal = ({
                                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
                                     >
                                         <Check className="h-4 w-4" />
-                                        {canSaleReview ? 'Sale duyệt' : 'BOD duyệt'}
+                                        Duyệt
                                     </button>
                                 </div>
                             </div>
@@ -662,7 +662,7 @@ const AddendumDetailModal = ({
                                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-50"
                             >
                                 <XCircle className="h-4 w-4" />
-                                {canSaleReview ? 'Sale không duyệt' : 'BOD không duyệt'}
+                                Không duyệt
                             </button>
                             <button
                                 disabled={isMutating}
@@ -670,7 +670,7 @@ const AddendumDetailModal = ({
                                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
                             >
                                 <Check className="h-4 w-4" />
-                                {canSaleReview ? 'Sale duyệt' : 'BOD duyệt'}
+                                Duyệt
                             </button>
                         </>
                     )}

@@ -129,7 +129,11 @@ const ProductSpecsView = ({ item }) => {
                     ))}
                 </div>
             )}
-            {item?.note && <p className="text-xs italic text-gray-400">{item.note}</p>}
+            {item?.note && (
+                <p className="text-xs italic text-gray-500">
+                    <span className="font-semibold not-italic text-gray-600">Ghi chú:</span> {item.note}
+                </p>
+            )}
             {item?.docUrl && (
                 <a
                     href={getFilePreviewUrl(item.docUrl, 'LINK')}
@@ -834,12 +838,15 @@ const ProductDescriptionSection = ({ project }) => {
                                 </div>
 
                                 <div className="mt-3">
+                                    <label className="mb-1 block text-xs font-bold uppercase text-gray-400">
+                                        Ghi chú
+                                    </label>
                                     <textarea
                                         rows="2"
                                         value={product.note}
                                         onChange={(event) => updateProduct(index, { note: event.target.value })}
                                         disabled={!canEdit || isSaving}
-                                        placeholder="Ghi chú (không bắt buộc)"
+                                        placeholder="Nhập ghi chú cho sản phẩm (không bắt buộc)"
                                         className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
                                     />
                                 </div>
