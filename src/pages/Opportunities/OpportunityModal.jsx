@@ -353,10 +353,11 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
     const parsedMonthYear = rawNameParts.length > 1 ? rawNameParts[rawNameParts.length - 1].trim() : '';
     const parsedBrandName = rawNameParts.length > 2 ? rawNameParts.slice(1, -1).join('_').trim() : '';
 
+
     setOpportunityNameParts({
-      customerName: parsedCustomerName || initialData.customer?.name || initialData.leadName || '',
-      brandName: parsedBrandName,
-      monthYear: parsedMonthYear,
+      customerName: initialData.customer?.name || initialData.leadName || '',
+      brandName: '',
+      monthYear: '',
     });
 
     setFormData({
@@ -376,9 +377,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
     const standaloneServices = (initialData.services || [])
       .filter(s => !s.isPackageService)
       .map(s => ({ serviceId: s.serviceId || s.service?.id || '', quantity: s.quantity || 1 }));
-    // Copy: nếu cơ hội gốc không có dịch vụ lẻ/gói nào thì để trống hẳn,
-    // không tự thêm dòng placeholder trống (tránh vướng lỗi validate hoặc gây rối mắt).
-    setSelectedServices(standaloneServices);
+    setSelectedServices(standaloneServices.length > 0 ? standaloneServices : [{ serviceId: '', quantity: 1 }]);
 
     const packages = (initialData.packages || []).map(pkg => ({
       servicePackageId: pkg.servicePackageId || '',
@@ -391,7 +390,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
         sellingPrice: Number(s.sellingPrice) || 0,
       })),
     }));
-    setSelectedPackages(packages);
+    setSelectedPackages(packages.length > 0 ? packages : [{ servicePackageId: '', services: [], quantity: 1 }]);
 
     const attachments = initialData.attachments || [];
     const links = attachments.filter(a => a.type === 'LINK').map(a => a.url);
@@ -1407,6 +1406,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
                     onDrop={handleFileDrop}
                     className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer ${isDraggingFile ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/50'}`}
                   >
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer">
                     <label className="cursor-pointer">
                       <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-600 font-medium">Kéo thả file hoặc click để chọn</p>
@@ -1441,6 +1441,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
                   {errors.files && <p className="mt-2 text-sm text-red-500">{errors.files}</p>}
                 </div>
               </div>
+            </div>
             </div>
 
             {/* Submit Button */}

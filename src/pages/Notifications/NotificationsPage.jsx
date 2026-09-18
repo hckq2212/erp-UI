@@ -2,6 +2,7 @@ import { Bell, Check, Clock, Search, Filter, ChevronLeft, ChevronRight, Inbox } 
 import { useState, useMemo } from 'react';
 import { useGetMyNotificationsQuery, useMarkAsReadMutation } from '../../api/notifications';
 import { formatDate } from '../../utils/format';
+import { htmlToPlainText } from '../../utils/html';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -12,7 +13,9 @@ export const NotificationsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const { data: notifications = [], isLoading, error } = useGetMyNotificationsQuery();
+  const { data: notifications = [], isLoading, error } = useGetMyNotificationsQuery(undefined, {
+    pollingInterval: 15000,
+  });
   const [markAsRead] = useMarkAsReadMutation();
 
   const handleMarkAsRead = async (notification) => {
@@ -26,6 +29,12 @@ export const NotificationsPage = () => {
 
   const handleNotificationClick = async (notification) => {
     await handleMarkAsRead(notification);
+
+    if (notification.relatedEntityType === 'ANNOUNCEMENT' && notification.relatedEntityId) {
+      navigate(`/announcements/${notification.relatedEntityId}`);
+      return;
+    }
+
     if (notification.link) {
       navigate(notification.link);
     }
@@ -88,7 +97,7 @@ export const NotificationsPage = () => {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
           <div>
-            <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">Thông báo</h1>
+            <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">Tin tức nội bộ</h1>
             <p className="text-sm text-gray-400 font-bold mt-1 uppercase tracking-wide">
               {notifications.filter(n => !n.isRead).length} tin nhắn chưa đọc
             </p>
@@ -168,8 +177,8 @@ export const NotificationsPage = () => {
                             </span>
                           )}
                         </div>
-                        <p className={`text-sm leading-relaxed mb-3 whitespace-pre-line ${!notification.isRead ? 'text-gray-700 font-medium' : 'text-gray-500'}`}>
-                          {notification.content}
+                        <p className={`text-sm leading-relaxed mb-3 line-clamp-2 ${!notification.isRead ? 'text-gray-700 font-medium' : 'text-gray-500'}`}>
+                          {htmlToPlainText(notification.content)}
                         </p>
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-100 rounded-lg">
