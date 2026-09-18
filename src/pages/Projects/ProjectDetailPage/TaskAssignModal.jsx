@@ -349,7 +349,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                     <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">
                                         {formData.isTeamAssignment ? 'Team hỗ trợ' : (formData.performerType === 'INTERNAL' ? 'Người thực hiện' : 'Đối tác Vendor')}
                                     </label>
-                                    {!isVideoDemoTask && !isBulk && ((isSupportMode || (representativeTask?.status === 'DOING' || representativeTask?.status === 'REWORKING') && !representativeTask?.isSupportRequested) && !representativeTask?.supportTeamId) && (
+                                    {/* {!isVideoDemoTask && !isBulk && ((isSupportMode || (representativeTask?.status === 'DOING' || representativeTask?.status === 'REWORKING') && !representativeTask?.isSupportRequested) && !representativeTask?.supportTeamId) && (
                                         <label className="flex items-center gap-2 cursor-pointer group/check">
                                             <div className="relative flex items-center justify-center">
                                                 <input
@@ -376,7 +376,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                                                 Nhờ hỗ trợ từ team khác
                                             </span>
                                         </label>
-                                    )}
+                                    )} */}
                                 </div>
                                 <div className="relative group">
                                     <div className="absolute left-4 top-1/2 z-10 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
