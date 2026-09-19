@@ -58,6 +58,7 @@ export const TaskDetailPage = () => {
         isSameUser(currentUserId, task?.helper?.id);
     const isAssigner = isSameUser(currentUserId, task?.assignerId) || isSameUser(currentUserId, task?.assigner?.id);
     const canSubmitResult = isAssigneeOrHelper || isAssigner || canManageProjectTask || ['ADMIN', 'BOD'].includes(user?.role);
+    const isReviewerForThisTask = canManageProjectTask && !isAssigneeOrHelper;
     const canEditDescription = canManageProjectTask;
     const incompleteSubtasks = (task?.subtasks || []).filter(
         subtask => !COMPLETED_SUBTASK_STATUSES.has(subtask.status)
@@ -423,7 +424,7 @@ export const TaskDetailPage = () => {
                             Phân công
                         </Button>
                     )}
-                    {task.status === 'AWAITING_REVIEW' && canManageProjectTask && (
+                    {task.status === 'AWAITING_REVIEW' && isReviewerForThisTask && (
                         <div className="flex gap-3">
                             <Button
                                 variant="outline"
