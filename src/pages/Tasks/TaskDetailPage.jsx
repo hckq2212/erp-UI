@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, Ban, ListChecks, Bell, History, MessageSquare, Paperclip } from 'lucide-react';
-import { useGetTaskQuery, useSubmitTaskResultMutation, useSubmitTaskResultFileMutation, useRequestReworkMutation, useApproveByCustomerMutation, useMarkCustomerNotPurchasedMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation } from '../../api/tasks';
+import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip } from 'lucide-react';
+import { useGetTaskQuery, useSubmitTaskResultMutation, useSubmitTaskResultFileMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetMeQuery } from '../../api/auth';
 import { formatDate, formatDateTime } from '../../utils/format';
@@ -40,7 +40,6 @@ export const TaskDetailPage = () => {
     const [submitResultFile, { isLoading: isSubmittingResultFile }] = useSubmitTaskResultFileMutation();
     const [requestRework, { isLoading: isRequestingRework }] = useRequestReworkMutation();
     const [approveByCustomer, { isLoading: isApprovingByCustomer }] = useApproveByCustomerMutation();
-    const [markCustomerNotPurchased, { isLoading: isMarkingCustomerNotPurchased }] = useMarkCustomerNotPurchasedMutation();
     const [sendReminder, { isLoading: isSendingReminder }] = useSendTaskReminderMutation();
     const [updateTask, { isLoading: isUpdatingTask }] = useUpdateTaskMutation();
     const [requestSupport] = useRequestSupportMutation();
@@ -306,20 +305,6 @@ export const TaskDetailPage = () => {
         }
     };
 
-    const handleCustomerNotPurchased = async () => {
-        const confirmed = window.confirm(
-            'Xác nhận khách hàng không mua? Demo vẫn được nghiệm thu 0 đồng và người thực hiện được cộng Vinicoin.'
-        );
-        if (!confirmed) return;
-
-        try {
-            await markCustomerNotPurchased({ id, projectId: task.project?.id }).unwrap();
-            toast.success('Đã ghi nhận khách hàng không mua, nghiệm thu demo 0 đồng và cộng Vinicoin!');
-        } catch (err) {
-            toast.error(err?.data?.message || 'Lỗi khi xác nhận khách hàng không mua');
-        }
-    };
-
     const handleRequestSupport = async () => {
         try {
             await requestSupport({ id, note: 'Yêu cầu hỗ trợ từ thành viên', projectId: task.project?.id }).unwrap();
@@ -461,11 +446,11 @@ export const TaskDetailPage = () => {
                         </div>
                     )}
 
-                    {task.status === 'INTERNAL_COMPLETED' && canManageProjectTask && (
+                    {task.status === 'INTERNAL_COMPLETED' && canManageProjectTask && !isVideoDemoTask && (
                         <Button
                             onClick={handleCustomerApprove}
                             isLoading={isApprovingByCustomer}
-                            disabled={isParentBlockedBySubtasks || isMarkingCustomerNotPurchased}
+                            disabled={isParentBlockedBySubtasks}
                             title={isParentBlockedBySubtasks ? 'Cần hoàn tất tất cả subtask trước khi hoàn thành task chính' : undefined}
                             className="rounded-2xl py-3 px-6 shadow-lg shadow-emerald-100 bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2"
                         >
@@ -474,21 +459,7 @@ export const TaskDetailPage = () => {
                         </Button>
                     )}
 
-                    {task.status === 'INTERNAL_COMPLETED' && canManageProjectTask && isVideoDemoTask && (
-                        <Button
-                            variant="outline"
-                            onClick={handleCustomerNotPurchased}
-                            isLoading={isMarkingCustomerNotPurchased}
-                            disabled={isParentBlockedBySubtasks || isApprovingByCustomer}
-                            title={isParentBlockedBySubtasks ? 'Cần hoàn tất tất cả subtask trước khi nghiệm thu demo' : undefined}
-                            className="rounded-2xl py-3 px-6 shadow-sm border-amber-300 text-amber-700 hover:bg-amber-50 flex items-center gap-2"
-                        >
-                            <Ban className="w-5 h-5" />
-                            Khách hàng không mua
-                        </Button>
-                    )}
-
-                    {(task.status === 'DONE' || task.status === 'COMPLETED' || task.status === 'INTERNAL_COMPLETED') && canManageProjectTask && (
+                    {(task.status === 'DONE' || task.status === 'COMPLETED' || task.status === 'INTERNAL_COMPLETED') && canManageProjectTask && !isVideoDemoTask && (
                         <Button
                             variant="outline"
                             onClick={() => setIsReworkModalOpen(true)}

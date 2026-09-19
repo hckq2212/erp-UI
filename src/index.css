@@ -88,3 +88,7 @@
 /* main:has(.flex.flex-col.overflow-hidden) {
   padding: 0;
 }  */
+
+main:has(> .flex.flex-col.overflow-hidden > header.flex.h-14.w-full) {
+  padding: 0;
+}
