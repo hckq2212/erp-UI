@@ -318,15 +318,16 @@ export const tasksApi = api.injectEndpoints({
       ].filter(Boolean),
     }),
     requestRework: builder.mutation({
-      query: ({ id, ...data }) => ({
+      query: ({ id, projectId, opportunityId, ...data }) => ({
         url: `/tasks/${id}/rework`,
         method: 'PATCH',
         body: data,
       }),
-      invalidatesTags: (result, error, { id, projectId }) => [
+      invalidatesTags: (result, error, { id, projectId, opportunityId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
-        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' },
+        opportunityId ? { type: 'Opportunities', id: opportunityId } : null
       ].filter(Boolean),
     }),
     approveByCustomer: builder.mutation({
@@ -334,10 +335,11 @@ export const tasksApi = api.injectEndpoints({
         url: `/tasks/${id}/customer-approve`,
         method: 'PATCH',
       }),
-      invalidatesTags: (result, error, { id, projectId }) => [
+      invalidatesTags: (result, error, { id, projectId, opportunityId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
-        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' },
+        opportunityId ? { type: 'Opportunities', id: opportunityId } : null
       ].filter(Boolean),
     }),
     markCustomerNotPurchased: builder.mutation({
@@ -345,10 +347,11 @@ export const tasksApi = api.injectEndpoints({
         url: `/tasks/${id}/customer-not-purchase`,
         method: 'PATCH',
       }),
-      invalidatesTags: (result, error, { id, projectId }) => [
+      invalidatesTags: (result, error, { id, projectId, opportunityId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
-        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' },
+        opportunityId ? { type: 'Opportunities', id: opportunityId } : null
       ].filter(Boolean),
     }),
     bulkAssignTasks: builder.mutation({

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Briefcase, CheckCircle2, ExternalLink, Package, Save, UserPlus } from 'lucide-react';
+import { Ban, Briefcase, CheckCircle2, ExternalLink, Package, RotateCcw, Save, UserPlus } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { formatNumber, parseNumber } from '../../../utils/format';
 import { useUpdateOpportunityServiceMutation } from '../../../api/opportunityService';
+import { useApproveByCustomerMutation, useMarkCustomerNotPurchasedMutation, useRequestReworkMutation } from '../../../api/tasks';
+import { ReworkTaskModal } from '../../../components/tasks/ReworkTaskModal';
 
 const normalizeMoneyInput = value => {
     const digits = String(value ?? '').replace(/\D/g, '');
@@ -10,15 +12,25 @@ const normalizeMoneyInput = value => {
     return digits.replace(/^0+(?=\d)/, '');
 };
 
-const JobPrices = ({ service, opportunityId, canEditPrices }) => {
+const JobPrices = ({ service, opportunityId, canEditPrices, canHandleDemo }) => {
     const [drafts, setDrafts] = useState({});
+    const [reworkTask, setReworkTask] = useState(null);
     const [updateOpportunityService, { isLoading }] = useUpdateOpportunityServiceMutation();
+    const [approveByCustomer, { isLoading: isApproving }] = useApproveByCustomerMutation();
+    const [markCustomerNotPurchased, { isLoading: isRejecting }] = useMarkCustomerNotPurchasedMutation();
+    const [requestRework, { isLoading: isRequestingRework }] = useRequestReworkMutation();
     const visibleJobs = (service.jobs || []).filter(job =>
         job.isBriefVideo || Number(job.job?.costPrice || 0) <= 0
     );
     const editableJobs = visibleJobs.filter(job =>
         !job.isBriefVideo && job.isQuotationItem && Number(job.job?.costPrice || 0) <= 0
     );
+    const demoTasks = (service.jobs || [])
+        .filter(job => job.isBriefVideo)
+        .flatMap(job => job.tasks || []);
+    const requiresCustomerApproval = demoTasks.length > 0;
+    const customerApproved = demoTasks.some(task => task.customerDecision === 'APPROVED');
+    const canEnterCost = canEditPrices && (!requiresCustomerApproval || customerApproved);
 
     useEffect(() => {
         setDrafts(Object.fromEntries(editableJobs.map(job => [job.id, {
@@ -37,8 +49,10 @@ const JobPrices = ({ service, opportunityId, canEditPrices }) => {
     };
 
     const save = async () => {
-        if (!canEditPrices) {
-            toast.info('Vui lòng chọn khách hàng trước khi điền giá vốn dịch vụ');
+        if (!canEnterCost) {
+            toast.info(requiresCustomerApproval
+                ? 'Chỉ được nhập giá vốn sau khi BD xác nhận khách hàng duyệt mua'
+                : 'Vui lòng chọn khách hàng trước khi điền giá vốn dịch vụ');
             return;
         }
 
@@ -54,6 +68,29 @@ const JobPrices = ({ service, opportunityId, canEditPrices }) => {
             toast.success('Đã cập nhật giá vốn các hạng mục');
         } catch (error) {
             toast.error(error?.data?.message || 'Không thể cập nhật giá hạng mục');
+        }
+    };
+
+    const decide = async (task, decision) => {
+        if (decision === 'NOT_PURCHASED' && !window.confirm('Xác nhận khách hàng không mua video AI này?')) return;
+        try {
+            const mutation = decision === 'APPROVED' ? approveByCustomer : markCustomerNotPurchased;
+            await mutation({ id: task.id, opportunityId }).unwrap();
+            toast.success(decision === 'APPROVED'
+                ? 'Đã ghi nhận khách hàng duyệt mua. Bạn có thể nhập giá vốn để bán.'
+                : 'Đã ghi nhận khách hàng không mua.');
+        } catch (error) {
+            toast.error(error?.data?.message || 'Không thể cập nhật quyết định của khách hàng');
+        }
+    };
+
+    const submitRework = async data => {
+        try {
+            await requestRework({ id: reworkTask.id, opportunityId, ...data }).unwrap();
+            toast.success('Đã gửi yêu cầu làm lại video AI');
+            setReworkTask(null);
+        } catch (error) {
+            toast.error(error?.data?.message || 'Không thể gửi yêu cầu làm lại');
         }
     };
 
@@ -74,7 +111,7 @@ const JobPrices = ({ service, opportunityId, canEditPrices }) => {
                         </div>
                         {job.isBriefVideo && <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700">Không tính vào giá vốn báo giá</span>}
                     </div>
-                    {canEditCost ? (
+                    {canEditCost && canEnterCost ? (
                         <div>
                             <label className="text-xs text-gray-500">Giá vốn
                                 <input
@@ -84,12 +121,15 @@ const JobPrices = ({ service, opportunityId, canEditPrices }) => {
                                     value={formatNumber(drafts[job.id]?.costAtSale || '0')}
                                     onFocus={event => event.target.select()}
                                     onChange={event => changePrice(job.id, 'costAtSale', event.target.value)}
-                                    disabled={!canEditPrices}
-                                    title={!canEditPrices ? 'Vui lòng chọn khách hàng trước khi điền giá vốn' : undefined}
+                                    disabled={!canEnterCost}
                                     className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                                 />
                             </label>
                         </div>
+                    ) : canEditCost && requiresCustomerApproval ? (
+                        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+                            Giá vốn chỉ được nhập sau khi BD chọn “Khách hàng duyệt”.
+                        </p>
                     ) : (
                         <p className="text-xs text-gray-600">Chi phí thực tế: <strong>{formatNumber(job.costAtSale)} VNĐ</strong></p>
                     )}
@@ -121,6 +161,25 @@ const JobPrices = ({ service, opportunityId, canEditPrices }) => {
                                         </a>
                                     </div>
                                     {task.result.note && <p className="mt-1 text-xs text-gray-500">{task.result.note}</p>}
+                                    {task.customerDecision === 'APPROVED' && (
+                                        <p className="mt-3 rounded-lg bg-emerald-100 px-3 py-2 text-xs font-bold text-emerald-700">Khách hàng đã duyệt mua</p>
+                                    )}
+                                    {task.customerDecision === 'NOT_PURCHASED' && (
+                                        <p className="mt-3 rounded-lg bg-amber-100 px-3 py-2 text-xs font-bold text-amber-700">Khách hàng không mua</p>
+                                    )}
+                                    {task.status === 'INTERNAL_COMPLETED' && !task.customerDecision && canHandleDemo && (
+                                        <div className="mt-3 grid gap-2 border-t border-emerald-100 pt-3 sm:grid-cols-3">
+                                            <button type="button" onClick={() => decide(task, 'APPROVED')} disabled={isApproving || isRejecting} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50">
+                                                <CheckCircle2 className="h-4 w-4" /> Khách hàng duyệt
+                                            </button>
+                                            <button type="button" onClick={() => decide(task, 'NOT_PURCHASED')} disabled={isApproving || isRejecting} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-300 px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 disabled:opacity-50">
+                                                <Ban className="h-4 w-4" /> Không mua
+                                            </button>
+                                            <button type="button" onClick={() => setReworkTask(task)} disabled={isApproving || isRejecting} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-purple-300 px-3 py-2 text-xs font-bold text-purple-700 hover:bg-purple-50 disabled:opacity-50">
+                                                <RotateCcw className="h-4 w-4" /> Yêu cầu làm lại
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -128,18 +187,25 @@ const JobPrices = ({ service, opportunityId, canEditPrices }) => {
                 </div>
                 );
             })}
-            {editableJobs.length > 0 && (
+            {editableJobs.length > 0 && canEnterCost && (
                 <div className="flex justify-end">
-                    <button type="button" onClick={save} disabled={isLoading || !canEditPrices} className="flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
+                    <button type="button" onClick={save} disabled={isLoading || !canEnterCost} className="flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
                         <Save className="h-4 w-4" /> {isLoading ? 'Đang lưu...' : 'Lưu giá vốn hạng mục'}
                     </button>
                 </div>
             )}
+            <ReworkTaskModal
+                isOpen={Boolean(reworkTask)}
+                onClose={() => setReworkTask(null)}
+                onSubmit={submitRework}
+                isLoading={isRequestingRework}
+                taskName={reworkTask?.nickname || reworkTask?.name || 'Video AI demo'}
+            />
         </div>
     );
 };
 
-const ServiceCard = ({ service, opportunityId, canEditPrices, packageQuantity = 1 }) => (
+const ServiceCard = ({ service, opportunityId, canEditPrices, canHandleDemo, packageQuantity = 1 }) => (
     <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
         <div className="flex items-center justify-between gap-3">
             <div>
@@ -150,15 +216,17 @@ const ServiceCard = ({ service, opportunityId, canEditPrices, packageQuantity = 
                 <p>Giá vốn: <strong>{formatNumber(service.costAtSale)} VNĐ</strong></p>
             </div>
         </div>
-        <JobPrices service={service} opportunityId={opportunityId} canEditPrices={canEditPrices} />
+        <JobPrices service={service} opportunityId={opportunityId} canEditPrices={canEditPrices} canHandleDemo={canHandleDemo} />
     </div>
 );
 
-export const OpportunityServicesInfo = ({ opportunity, onAddCustomer }) => {
+export const OpportunityServicesInfo = ({ opportunity, currentUser, onAddCustomer }) => {
     const standaloneServices = opportunity.services?.filter(service => !service.opportunityPackageId) || [];
     const packages = opportunity.packages || [];
     const hasServices = packages.length > 0 || standaloneServices.length > 0;
     const canEditPrices = Boolean(opportunity.customer || opportunity.leadName?.trim());
+    const isSalesOwner = ['BD', 'ADMIN_SALE'].includes(currentUser?.role) && currentUser?.id === opportunity.createdBy?.id;
+    const canHandleDemo = isSalesOwner || ['ADMIN', 'BOD'].includes(currentUser?.role);
 
     return (
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -186,13 +254,13 @@ export const OpportunityServicesInfo = ({ opportunity, onAddCustomer }) => {
                             <div className="rounded-lg bg-blue-600 p-2 text-white"><Briefcase className="h-4 w-4" /></div>
                             <h3 className="font-bold text-blue-900">Gói: {pkg.name} <span className="ml-2 text-blue-500">x{pkg.quantity || 1}</span></h3>
                         </div>
-                        <div className="space-y-3">{pkg.services?.map(service => <ServiceCard key={service.id} service={service} opportunityId={opportunity.id} canEditPrices={canEditPrices} packageQuantity={pkg.quantity} />)}</div>
+                        <div className="space-y-3">{pkg.services?.map(service => <ServiceCard key={service.id} service={service} opportunityId={opportunity.id} canEditPrices={canEditPrices} canHandleDemo={canHandleDemo} packageQuantity={pkg.quantity} />)}</div>
                     </div>
                 ))}
                 {standaloneServices.length > 0 && (
                     <div className="space-y-3">
                         <h3 className="px-1 text-xs font-bold uppercase tracking-widest text-gray-400">Dịch vụ lẻ</h3>
-                        {standaloneServices.map(service => <ServiceCard key={service.id} service={service} opportunityId={opportunity.id} canEditPrices={canEditPrices} />)}
+                        {standaloneServices.map(service => <ServiceCard key={service.id} service={service} opportunityId={opportunity.id} canEditPrices={canEditPrices} canHandleDemo={canHandleDemo} />)}
                     </div>
                 )}
                 {!packages.length && !standaloneServices.length && <p className="py-4 text-center italic text-gray-400">Chưa có dịch vụ nào được chọn</p>}

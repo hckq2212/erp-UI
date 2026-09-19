@@ -347,7 +347,7 @@ export const OpportunityDetailPage = () => {
           <FinancialInfo opportunity={opportunity} formatDate={formatDate} />
           <TimeLocationInfo opportunity={opportunity} formatDate={formatDate} />
           <OpportunityEvaluation opportunity={opportunity} />
-          <OpportunityServicesInfo opportunity={opportunity} onAddCustomer={handleOpenContactModal} />
+          <OpportunityServicesInfo opportunity={opportunity} currentUser={currentUser} onAddCustomer={handleOpenContactModal} />
           <AttachmentsList attachments={opportunity.attachments} />
         </div>
 
