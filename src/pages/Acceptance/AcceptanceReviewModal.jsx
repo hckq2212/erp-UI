@@ -93,7 +93,10 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
     if (!isOpen) return null;
 
     const toggleService = (serviceId) => {
-        setExpandedServices(prev => ({ ...prev, [serviceId]: !prev[serviceId] }));
+        setExpandedServices(prev => {
+            const current = prev[serviceId] !== undefined ? prev[serviceId] : true;
+            return { ...prev, [serviceId]: !current };
+        });
     };
 
     const handleServiceDecision = (serviceId, status) => {
@@ -231,7 +234,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
                     )}
 
                     {/* Basic Info */}
-                    <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
                         <div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Người yêu cầu</p>
                             <p className="text-sm font-bold text-gray-900">{request.requester?.fullName || 'Team Lead'}</p>
@@ -240,12 +243,18 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Ngày yêu cầu</p>
                             <p className="text-sm font-bold text-gray-900">{new Date(request.createdAt).toLocaleDateString('vi-VN')}</p>
                         </div>
-                        <div className="col-span-2 text-theme-900">
+                        {request.approver && (
+                            <div>
+                                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Người nghiệm thu</p>
+                                <p className="text-sm font-bold text-emerald-800">{request.approver.fullName}</p>
+                            </div>
+                        )}
+                        <div className="col-span-full text-theme-900">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Ghi chú từ Team Lead</p>
                             <p className="text-sm text-gray-700 italic px-3 py-2 bg-white rounded-lg border border-gray-100">{request.note || 'Không có ghi chú'}</p>
                         </div>
                         {request.feedback && (
-                            <div className="col-span-2">
+                            <div className="col-span-full">
                                 <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">Phản hồi từ người duyệt</p>
                                 <p className="text-sm text-red-700 italic px-3 py-2 bg-red-50 rounded-lg border border-red-100">{request.feedback}</p>
                             </div>
@@ -264,19 +273,24 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
                                 const isClosed = isReadOnly || svcData?.isServiceClosed;
                                 const isRejected = service.status === 'ACCEPTANCE_REJECTED' || svcData?.rejectedCount > 0;
                                 const isCompleted = service.status === 'COMPLETED' || (svcData?.allResults?.length > 0 && svcData?.approvedCount === svcData?.allResults?.length);
+                                const isExpanded = expandedServices[service.id] !== undefined ? expandedServices[service.id] : true;
 
                                 return (
                                     <div key={service.id} className="p-5 bg-white border border-gray-200 rounded-xl space-y-4">
                                         <div className="flex items-center justify-between gap-4">
-                                            <div className="flex items-center gap-3">
+                                            <div 
+                                                className="flex items-center gap-3 cursor-pointer select-none"
+                                                onClick={() => toggleService(service.id)}
+                                            >
                                                 <button
-                                                    onClick={() => toggleService(service.id)}
-                                                    className="p-1.5 hover:bg-gray-50 rounded-lg text-gray-400"
+                                                    type="button"
+                                                    className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
+                                                    title={isExpanded ? 'Thu gọn' : 'Mở rộng'}
                                                 >
-                                                    {expandedServices[service.id] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                                                 </button>
                                                 <div>
-                                                    <p className="text-sm font-bold text-gray-900">
+                                                    <p className="text-sm font-bold text-gray-900 hover:text-blue-600 transition-colors">
                                                         {service.service?.name || service.name}
                                                     </p>
                                                     <div className="flex flex-col gap-0.5 mt-0.5">
@@ -365,7 +379,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
                                         )}
 
                                         {/* Granular Results List */}
-                                        <div className={`space-y-4 pl-8 border-l-2 border-gray-50 ${expandedServices[service.id] ? 'block' : 'hidden md:block'}`}>
+                                        <div className={`space-y-4 pl-8 border-l-2 border-gray-50 ${isExpanded ? 'block' : 'hidden'}`}>
                                             {(() => {
                                                 const allResults = svcData?.allResults || [];
 

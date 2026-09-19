@@ -96,6 +96,9 @@ export const AcceptanceInboxPage = () => {
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-bold text-gray-900 leading-tight">{req.name}</p>
+                                                    {req.approver?.fullName && (
+                                                        <p className="text-[11px] text-emerald-600 font-medium mt-0.5">Duyệt bởi: {req.approver.fullName}</p>
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>
