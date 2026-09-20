@@ -567,9 +567,7 @@ export const TaskDetailPage = () => {
                     {task?.performerType === 'INTERNAL' &&
                         ['PENDING', 'DOING', 'REWORKING', 'OVERDUE'].includes(task?.status) &&
                         task?.project?.team &&
-                        (isSameUser(task?.project?.team?.teamLead?.id, getCurrentUserId(user)) ||
-                            task?.project?.team?.members?.some(m => isSameUser(m.user?.id, getCurrentUserId(user)) && m.role === 'ACCOUNT') ||
-                            ['ADMIN', 'BOD'].includes(user?.role)) && (
+                        (isProjectLead || isTeamLead) && (
                             <Button
                                 variant="outline"
                                 onClick={() => setIsStaffingModalOpen(true)}
