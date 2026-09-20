@@ -35,7 +35,6 @@ export const ProjectDetailPage = () => {
   const [activeTab, setActiveTab] = useState('MAIN');
   const user = useSelector(selectCurrentUser);
   const currentUserId = getCurrentUserId(user);
-  const canSyncServiceJobs = user?.role === 'ADMIN' || user?.role === 'PM';
   const projectManagerMember = project?.team?.members?.find(member => member.role === 'PROJECT_MANAGER');
   const hasProjectManager = Boolean(projectManagerMember?.user?.id);
   const canAssignPm = (user?.role === 'ADMIN' || user?.role === 'BOD') && !hasProjectManager;
@@ -48,6 +47,7 @@ export const ProjectDetailPage = () => {
     isSameUser(project?.projectManager?.id, currentUserId) ||
     Boolean(project?.team?.members?.some(m => m.role === 'PROJECT_MANAGER' && isSameUser(m.user?.id, currentUserId)));
   const isAdminOrBOD = ['ADMIN', 'BOD'].includes(user?.role);
+  const canSyncServiceJobs = (user?.role === 'ADMIN' || user?.role === 'PM') && !isProjectLead;
   const canSeeAllProjectTasks = isAdminOrBOD || isProjectLead || isProjectManager;
 
   const isUserTask = (task) => {
@@ -165,15 +165,6 @@ export const ProjectDetailPage = () => {
           </div>
 
           <div className="flex gap-3">
-            {canCreateProjectWork && (
-              <button
-                onClick={() => setIsMonthlyWorkModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-sm transition-all active:scale-95"
-              >
-                <CalendarPlus className="w-4 h-4" />
-                <span>Tạo công việc cho tháng mới</span>
-              </button>
-            )}
             {canSyncServiceJobs && (
               <button
                 onClick={handleSyncServiceJobs}

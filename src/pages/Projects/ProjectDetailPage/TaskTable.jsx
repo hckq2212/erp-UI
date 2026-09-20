@@ -4,7 +4,8 @@ import { TaskAssignModal } from './TaskAssignModal';
 import { AddProjectServiceModal } from './AddProjectServiceModal';
 import { useNavigate } from 'react-router-dom';
 import { useGetTeamMembersQuery } from '../../../api/teams';
-import { useApproveByCustomerMutation, useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation } from '../../../api/tasks';
+import { useRequestProjectStaffingMutation } from '../../../api/projects';
+import { useApproveByCustomerMutation, useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useRequestTaskStaffingMutation } from '../../../api/tasks';
 import { cn } from '../../../utils/cn';
 import { PROJECT_MANAGEMENT_ROLES, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../../utils/enums';
 import { toast } from 'react-toastify';
@@ -13,6 +14,8 @@ import { useGetMeQuery } from '../../../api/auth';
 import { InlineTaskNickname } from '../../../components/tasks/InlineTaskNickname';
 import { ResolveStaffingRequestModal } from '../../../components/tasks/ResolveStaffingRequestModal';
 import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
+import { Modal } from '../../../components/ui/Modal';
+import { Button } from '../../../components/ui/Button';
 
 export const TaskTable = ({ tasks = [], project }) => {
     const navigate = useNavigate();
@@ -25,6 +28,8 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [requestReturnSupport] = useRequestReturnSupportMutation();
     const [bulkUnassignTasks, { isLoading: isUnassigning }] = useBulkUnassignTasksMutation();
     const [approveByCustomer, { isLoading: isApprovingByCustomer }] = useApproveByCustomerMutation();
+    const [requestTaskStaffing, { isLoading: isRequestingStaffing }] = useRequestTaskStaffingMutation();
+    const [requestProjectStaffing, { isLoading: isRequestingProjectStaffing }] = useRequestProjectStaffingMutation();
 
     const currentUserId = getCurrentUserId(user);
     const isAdminOrBOD = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
@@ -53,6 +58,10 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [staffingTask, setStaffingTask] = useState(null);
     const [isStaffingResolutionOpen, setIsStaffingResolutionOpen] = useState(false);
     const [showAddServiceModal, setShowAddServiceModal] = useState(false);
+    const [isStaffingModalOpen, setIsStaffingModalOpen] = useState(false);
+    const [staffingTaskId, setStaffingTaskId] = useState('');
+    const [isRowSpecificStaffing, setIsRowSpecificStaffing] = useState(false);
+    const [staffingNote, setStaffingNote] = useState('');
     const [selectedTasks, setSelectedTasks] = useState([]);
     const [selectionMode, setSelectionMode] = useState('assign');
     const [expandedGroups, setExpandedGroups] = useState({});
@@ -63,6 +72,45 @@ export const TaskTable = ({ tasks = [], project }) => {
             ...prev,
             [groupId]: !prev[groupId]
         }));
+    };
+
+    const handleOpenStaffingModal = () => {
+        if (selectedTasks.length === 1) {
+            setStaffingTaskId(selectedTasks[0]);
+        } else {
+            setStaffingTaskId('');
+        }
+        setIsRowSpecificStaffing(false);
+        setStaffingNote('');
+        setIsStaffingModalOpen(true);
+    };
+
+    const handleSendStaffingRequest = async () => {
+        if (!staffingNote.trim()) {
+            toast.error('Vui lòng nhập lý do hoặc vị trí nhân sự cần bổ sung');
+            return;
+        }
+        try {
+            if (staffingTaskId) {
+                await requestTaskStaffing({
+                    id: staffingTaskId,
+                    projectId: project?.id,
+                    note: staffingNote.trim()
+                }).unwrap();
+            } else {
+                await requestProjectStaffing({
+                    id: project?.id,
+                    note: staffingNote.trim()
+                }).unwrap();
+            }
+            toast.success('Đã gửi yêu cầu bổ sung nhân sự cho PM');
+            setIsStaffingModalOpen(false);
+            setStaffingNote('');
+            setStaffingTaskId('');
+            setIsRowSpecificStaffing(false);
+        } catch (error) {
+            toast.error(error?.data?.message || 'Không thể gửi yêu cầu bổ sung nhân sự');
+        }
     };
 
     if (!canSeeTable) return null;
@@ -255,31 +303,31 @@ export const TaskTable = ({ tasks = [], project }) => {
 
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ">
-            {/* Filters */}
-            <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3 items-center">
-                <div className="relative flex-1 min-w-[200px]">
+            {/* Filters & Actions */}
+            <div className="p-4 border-b border-gray-100 flex items-center gap-2.5 min-w-0">
+                <div className="relative flex-1 min-w-[140px]">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                         type="text"
                         placeholder="Tìm tên công việc"
-                        className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                        className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
                         value={filter.search}
                         onChange={(e) => setFilter({ ...filter, search: e.target.value })}
                     />
                 </div>
                 <select
-                    className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 outline-none hover:bg-gray-100"
+                    className="px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 outline-none hover:bg-gray-100 shrink-0"
                     value={filter.status}
                     onChange={(e) => setFilter({ ...filter, status: e.target.value })}
                 >
-                    <option value="ALL">Tất cả trạng thái Công việc</option>
+                    <option value="ALL">Tất cả trạng thái</option>
                     {Object.entries(TASK_STATUS_LABELS).map(([value, label]) => (
                         <option key={value} value={value}>{label}</option>
                     ))}
                 </select>
                 {canManageAllTasks && (
                     <select
-                        className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 outline-none hover:bg-gray-100"
+                        className="px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 outline-none hover:bg-gray-100 shrink-0 max-w-[160px] truncate"
                         value={filter.assigneeId}
                         onChange={(e) => setFilter({ ...filter, assigneeId: e.target.value })}
                     >
@@ -291,32 +339,43 @@ export const TaskTable = ({ tasks = [], project }) => {
                         ))}
                     </select>
                 )}
-                {canAddTask && isProjectInProgress && (
-                    <button
-                        onClick={handleToggleUnassignMode}
-                        className={cn(
-                            "ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-lg transition-all active:scale-95 shadow-sm font-medium text-sm",
-                            selectionMode === 'unassign'
-                                ? "bg-red-600 text-white hover:bg-red-700"
-                                : "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
-                        )}
-                    >
-                        <UserMinus className="w-4 h-4" />
-                        <span>{selectionMode === 'unassign' ? 'Huỷ xoá phân công' : 'Xoá phân công'}</span>
-                    </button>
-                )}
-                {canCreateProjectWork && (
-                    <button
-                        onClick={() => setShowAddServiceModal(true)}
-                        className={cn(
-                            "inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm font-medium text-sm",
-                            !isProjectInProgress && "ml-auto"
-                        )}
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span>Thêm dịch vụ</span>
-                    </button>
-                )}
+                <div className="flex items-center gap-2 shrink-0 whitespace-nowrap ml-auto">
+                    {isProjectLead && (
+                        <button
+                            type="button"
+                            onClick={handleOpenStaffingModal}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-orange-50 text-[#F38820] border border-orange-200 hover:bg-orange-100 rounded-lg transition-all active:scale-95 shadow-sm font-medium text-xs sm:text-sm whitespace-nowrap"
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            <span>Yêu cầu thêm người</span>
+                        </button>
+                    )}
+                    {canAddTask && isProjectInProgress && (
+                        <button
+                            type="button"
+                            onClick={handleToggleUnassignMode}
+                            className={cn(
+                                "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all active:scale-95 shadow-sm font-medium text-xs sm:text-sm whitespace-nowrap",
+                                selectionMode === 'unassign'
+                                    ? "bg-red-600 text-white hover:bg-red-700"
+                                    : "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                            )}
+                        >
+                            <UserMinus className="w-4 h-4" />
+                            <span>{selectionMode === 'unassign' ? 'Huỷ xoá phân công' : 'Xoá phân công'}</span>
+                        </button>
+                    )}
+                    {canCreateProjectWork && (
+                        <button
+                            type="button"
+                            onClick={() => setShowAddServiceModal(true)}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm font-medium text-xs sm:text-sm whitespace-nowrap"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span>Thêm dịch vụ</span>
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Table */}
@@ -538,7 +597,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                         {task.supportRequestType === 'STAFFING' &&
                                                             task.isSupportRequested &&
                                                             !task.isSupportAccepted &&
-                                                            (isSameUser(task.supportLeadId, currentUserId) || hasStaffingAdminOverride) && (
+                                                            (isSameUser(task.supportLeadId, currentUserId) || isProjectManager || hasStaffingAdminOverride) && (
                                                                 <button
                                                                     onClick={(event) => {
                                                                         event.stopPropagation();
@@ -582,6 +641,30 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                     Hỗ trợ
                                                 </button>
                                             )} */}
+
+                                                        {isProjectInProgress && isProjectLead && !['COMPLETED', 'CANCELLED'].includes(task.status) && (
+                                                            task.supportRequestType === 'STAFFING' && task.isSupportRequested && !task.isSupportAccepted ? (
+                                                                <span className="inline-flex whitespace-nowrap items-center gap-1 px-2.5 py-1.5 bg-amber-50 text-amber-600 rounded-xl text-xs font-medium border border-amber-200">
+                                                                    <UserPlus className="w-3.5 h-3.5" />
+                                                                    Chờ duyệt thêm người
+                                                                </span>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setStaffingTaskId(task.id);
+                                                                        setIsRowSpecificStaffing(true);
+                                                                        setStaffingNote('');
+                                                                        setIsStaffingModalOpen(true);
+                                                                    }}
+                                                                    title="Yêu cầu PM bổ sung nhân sự cho công việc này"
+                                                                    className="inline-flex whitespace-nowrap items-center gap-1 px-2.5 py-1.5 bg-orange-50 text-[#F38820] rounded-xl hover:bg-[#F38820] hover:text-white transition-all active:scale-95 text-xs font-bold"
+                                                                >
+                                                                    <UserPlus className="w-3.5 h-3.5" />
+                                                                    Yêu cầu thêm người
+                                                                </button>
+                                                            )
+                                                        )}
 
                                                         <button
                                                             onClick={(e) => {
@@ -635,6 +718,76 @@ export const TaskTable = ({ tasks = [], project }) => {
                 team={project?.team ? { ...project.team, members } : null}
                 projectId={project?.id}
             />
+
+            <Modal
+                isOpen={isStaffingModalOpen}
+                onClose={() => {
+                    setIsStaffingModalOpen(false);
+                    setIsRowSpecificStaffing(false);
+                }}
+                title="Yêu cầu PM bổ sung nhân sự"
+                className="max-w-lg"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600">
+                        PM sẽ nhận được thông báo và thêm nhân sự vào đội dự án để hỗ trợ thực hiện công việc.
+                    </p>
+                    {!isRowSpecificStaffing ? (
+                        <div>
+                            <label className="mb-2 block text-sm font-bold text-gray-700">
+                                Công việc liên quan <span className="text-xs font-normal text-gray-400">(Không bắt buộc)</span>
+                            </label>
+                            <select
+                                value={staffingTaskId}
+                                onChange={(e) => setStaffingTaskId(e.target.value)}
+                                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                            >
+                                <option value="">-- Yêu cầu chung cho dự án (Không gắn công việc) --</option>
+                                {tasks
+                                    .filter(t => t.performerType === 'INTERNAL' || !t.performerType)
+                                    .map(t => (
+                                        <option key={t.id} value={t.id}>
+                                            {t.code ? `[${t.code}] ` : ''}{t.nickname || t.name || 'Công việc'} ({TASK_STATUS_LABELS[t.status] || t.status})
+                                        </option>
+                                    ))}
+                            </select>
+                        </div>
+                    ) : (
+                        <div className="rounded-xl border border-orange-100 bg-orange-50/60 p-3">
+                            <span className="text-xs font-medium text-gray-500 block mb-1">Công việc yêu cầu bổ sung nhân sự:</span>
+                            <span className="text-sm font-bold text-gray-800">
+                                {(() => {
+                                    const target = tasks.find(t => t.id === staffingTaskId);
+                                    return target ? `${target.code ? `[${target.code}] ` : ''}${target.nickname || target.name || 'Công việc'}` : 'Công việc đã chọn';
+                                })()}
+                            </span>
+                        </div>
+                    )}
+                    <div>
+                        <label className="mb-2 block text-sm font-bold text-gray-700">
+                            Ghi chú / Vị trí cần bổ sung <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            value={staffingNote}
+                            onChange={(e) => setStaffingNote(e.target.value)}
+                            rows={3}
+                            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                            placeholder="Nhập lý do cần thêm nhân sự, vị trí hoặc kỹ năng cần bổ sung..."
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={() => setIsStaffingModalOpen(false)}>Hủy</Button>
+                        <Button
+                            onClick={handleSendStaffingRequest}
+                            isLoading={isRequestingStaffing || isRequestingProjectStaffing}
+                            disabled={!staffingNote.trim()}
+                            className="bg-[#F38820] text-white hover:bg-[#D97010] focus:ring-orange-500 disabled:opacity-50"
+                        >
+                            Gửi cho PM
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
 
             {/* Batch Action Bar */}
             {selectedTasks.length > 0 && (

@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { BASE_URL, api } from '../store/api';
 import { selectIsAuthenticated } from '../store/authSlice';
 import { notificationsApi } from '../api/notifications';
@@ -9,6 +11,7 @@ import { notificationsApi } from '../api/notifications';
  * It connects to the backend stream and triggers UI updates/toasts.
  */
 export const useSSE = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
@@ -72,8 +75,20 @@ export const useSSE = () => {
         }
 
         // Handle Standard Notifications (Persistent)
-        // Không hiện popup toast nữa — chỉ cập nhật số lượng/danh sách ở icon chuông
         console.log('[SSE] New notification received:', payload);
+
+        const title = payload.title || 'Thông báo mới';
+        const content = payload.content || '';
+        const message = content ? `${title}: ${content}` : title;
+
+        toast.info(message, {
+          onClick: () => {
+            if (payload.link) {
+              navigate(payload.link);
+            }
+          },
+          autoClose: 5000,
+        });
 
         // Invalidate RTK Query cache for notifications
         dispatch(notificationsApi.util.invalidateTags(['Notifications']));
