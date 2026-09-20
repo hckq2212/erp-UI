@@ -24,6 +24,8 @@ import {
     useUpdateProjectProductDescriptionMutation,
 } from '../../../api/projects';
 import { useGetMeQuery } from '../../../api/auth';
+import { getCurrentUserId, getUserAccountRole, isSameUser } from '../../../utils/authUser';
+import { TEAM_MEMBER_ROLE } from '../../../utils/enums';
 import { getFilePreviewUrl, uploadToCloudinary } from '../../../utils/cloudinary';
 import { toast } from 'react-toastify';
 import { Modal } from '../../../components/ui/Modal';
@@ -358,13 +360,22 @@ const ProductDescriptionSection = ({ project }) => {
     const [approveSubmission, { isLoading: isApproving }] = useApproveProjectProductDescriptionMutation();
     const [rejectSubmission, { isLoading: isRejecting }] = useRejectProjectProductDescriptionMutation();
 
+    const currentUserId = getCurrentUserId(user);
+    const userRole = getUserAccountRole(user);
+    const isAdmin = ['ADMIN', 'BOD'].includes(userRole);
     const hasPendingSubmission = submissions.some((submission) => submission?.status === 'PENDING_REVIEW');
-    const isAssignedPm = user?.role === 'PM' && project?.team?.members?.some((member) =>
-        member.role === 'PROJECT_MANAGER' && member.user?.id === user.id
-    );
-    const isProjectLead = project?.team?.teamLead?.id === user?.id;
-    const canManageSubmission = user?.role === 'BD' || isAssignedPm || isProjectLead;
-    const canReview = Boolean(isAssignedPm);
+    const isAssignedPm = (userRole === 'PM' || isSameUser(project?.projectManager?.id, currentUserId)) &&
+        project?.team?.members?.some((member) =>
+            (member.role === 'PROJECT_MANAGER' || member.role === 'PM' || member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER) &&
+            isSameUser(member.user?.id, currentUserId)
+        );
+    const isAccount = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
+        project?.team?.members?.some((member) =>
+            (member.role === 'ACCOUNT' || member.role === 'LEAD' || member.role === TEAM_MEMBER_ROLE.ACCOUNT) &&
+            isSameUser(member.user?.id, currentUserId)
+        );
+    const canManageSubmission = isAdmin || isAccount || isAssignedPm;
+    const canReview = Boolean(isAssignedPm || isAdmin);
     const [products, setProducts] = useState([emptyProduct()]);
     const [loadedSubmissionId, setLoadedSubmissionId] = useState(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
