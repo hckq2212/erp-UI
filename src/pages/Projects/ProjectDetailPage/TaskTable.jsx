@@ -29,11 +29,17 @@ export const TaskTable = ({ tasks = [], project }) => {
     const currentUserId = getCurrentUserId(user);
     const isAdminOrBOD = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
     const hasStaffingAdminOverride = ['ADMIN', 'BOD'].includes(user?.role);
-    const isProjectLead = isSameUser(currentUserId, project?.team?.teamLead?.id);
+    const isProjectLead = isSameUser(currentUserId, project?.team?.teamLead?.id) ||
+        isSameUser(currentUserId, project?.team?.teamLeadId);
+    const isProjectManager = isSameUser(currentUserId, project?.projectManager?.id) ||
+        Boolean(project?.team?.members?.some(m => m.role === 'PROJECT_MANAGER' && isSameUser(m.user?.id, currentUserId)));
+    const canManageAllTasks = isAdminOrBOD || isProjectLead || isProjectManager;
     const isSupportLead = tasks.some(t => isSameUser(t.supportLeadId, currentUserId));
     const isHelper = tasks.some(t => isSameUser(t.helperId, currentUserId));
+    const isAssignee = tasks.some(t => isSameUser(t.assigneeId, currentUserId) || isSameUser(t.assignee?.id, currentUserId));
+    const isTeamMember = Boolean(project?.team?.members?.some(m => isSameUser(m.user?.id, currentUserId)));
 
-    const canSeeTable = isAdminOrBOD || isProjectLead || isSupportLead || isHelper;
+    const canSeeTable = canManageAllTasks || isSupportLead || isHelper || isAssignee || isTeamMember;
     const canAddTask = isAdminOrBOD || isProjectLead;
     const canCreateProjectWork = user?.role === 'PM' || user?.role === 'ADMIN';
     const isProjectInProgress = project?.status === 'IN_PROGRESS' || project?.status === 'CONFIRMED';
@@ -181,6 +187,14 @@ export const TaskTable = ({ tasks = [], project }) => {
 
     const filteredTasks = useMemo(() => {
         const filtered = tasks.filter(task => {
+            if (!canManageAllTasks) {
+                const isUserTask = isSameUser(currentUserId, task.assigneeId) ||
+                    isSameUser(currentUserId, task.assignee?.id) ||
+                    isSameUser(currentUserId, task.helperId) ||
+                    isSameUser(currentUserId, task.helper?.id);
+                if (!isUserTask) return false;
+            }
+
             const search = filter.search.toLowerCase();
             const matchesSearch = task.name?.toLowerCase().includes(search) ||
                 task.nickname?.toLowerCase().includes(search) ||
@@ -192,7 +206,7 @@ export const TaskTable = ({ tasks = [], project }) => {
 
         // Sắp xếp các task theo mã code tăng dần (sử dụng natural sort để nhận diện số cuối chính xác)
         return [...filtered].sort((a, b) => (a.code || '').localeCompare(b.code || '', undefined, { numeric: true }));
-    }, [tasks, filter]);
+    }, [tasks, filter, canManageAllTasks, currentUserId]);
 
     const groupedTasks = useMemo(() => {
         const groups = {};
@@ -263,18 +277,20 @@ export const TaskTable = ({ tasks = [], project }) => {
                         <option key={value} value={value}>{label}</option>
                     ))}
                 </select>
-                <select
-                    className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 outline-none hover:bg-gray-100"
-                    value={filter.assigneeId}
-                    onChange={(e) => setFilter({ ...filter, assigneeId: e.target.value })}
-                >
-                    <option value="ALL">Tất cả nhân sự</option>
-                    {members.map((member) => (
-                        <option key={member.user.id} value={member.user.id}>
-                            {member.user.fullName}
-                        </option>
-                    ))}
-                </select>
+                {canManageAllTasks && (
+                    <select
+                        className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 outline-none hover:bg-gray-100"
+                        value={filter.assigneeId}
+                        onChange={(e) => setFilter({ ...filter, assigneeId: e.target.value })}
+                    >
+                        <option value="ALL">Tất cả nhân sự</option>
+                        {members.map((member) => (
+                            <option key={member.user.id} value={member.user.id}>
+                                {member.user.fullName}
+                            </option>
+                        ))}
+                    </select>
+                )}
                 {canAddTask && isProjectInProgress && (
                     <button
                         onClick={handleToggleUnassignMode}

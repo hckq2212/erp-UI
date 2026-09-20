@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CalendarPlus, CheckCircle, RefreshCw, UserPlus } from 'lucide-react';
 import {
@@ -41,6 +41,27 @@ export const ProjectDetailPage = () => {
   const canAssignPm = (user?.role === 'ADMIN' || user?.role === 'BOD') && !hasProjectManager;
   const canConfirmProject = project?.status === 'PENDING_CONFIRMATION' &&
     (user?.role === 'ADMIN' || isSameUser(project?.team?.teamLead?.id, currentUserId));
+
+  const isProjectLead = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
+    isSameUser(project?.team?.teamLeadId, currentUserId);
+  const isProjectManager = isSameUser(projectManagerMember?.user?.id, currentUserId) ||
+    isSameUser(project?.projectManager?.id, currentUserId) ||
+    Boolean(project?.team?.members?.some(m => m.role === 'PROJECT_MANAGER' && isSameUser(m.user?.id, currentUserId)));
+  const isAdminOrBOD = ['ADMIN', 'BOD'].includes(user?.role);
+  const canSeeAllProjectTasks = isAdminOrBOD || isProjectLead || isProjectManager;
+
+  const isUserTask = (task) => {
+    return isSameUser(currentUserId, task.assigneeId) ||
+      isSameUser(currentUserId, task.assignee?.id) ||
+      isSameUser(currentUserId, task.helperId) ||
+      isSameUser(currentUserId, task.helper?.id);
+  };
+
+  const displayedTasks = useMemo(() => {
+    if (!Array.isArray(project?.tasks)) return [];
+    if (canSeeAllProjectTasks) return project.tasks;
+    return project.tasks.filter(isUserTask);
+  }, [project?.tasks, canSeeAllProjectTasks, currentUserId]);
 
   const isCoreMember = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
     project?.team?.members?.some(m => isSameUser(m.user?.id, currentUserId)) ||
@@ -230,7 +251,7 @@ export const ProjectDetailPage = () => {
         >
           Công việc
           <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] text-blue-700">
-            {taskCount}
+            {displayedTasks.length}
           </span>
         </button>
         {isCoreMember && (
@@ -273,13 +294,13 @@ export const ProjectDetailPage = () => {
 
       {activeTab === 'TASKS' && (
         <div className="space-y-8">
-          <TaskStatistics tasks={project.tasks} />
-          <TaskTable tasks={project.tasks} project={project} className="min-w-[2000px]" />
+          <TaskStatistics tasks={displayedTasks} />
+          <TaskTable tasks={displayedTasks} project={project} className="min-w-[2000px]" />
         </div>
       )}
 
       {activeTab === 'SERVICES' && isCoreMember && (
-        <ContractInfo contract={project.contract} projectId={project.id} />
+        <ContractInfo contract={project.contract} projectId={project.id} project={project} />
       )}
 
       {activeTab === 'EXTRA' && (
