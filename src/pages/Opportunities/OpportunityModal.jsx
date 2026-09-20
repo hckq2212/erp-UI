@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
-import { X, Plus, Trash2, Upload, Link as LinkIcon, Building2, FileText, MapPin, Calendar, Target, TrendingUp, Clock, Briefcase } from 'lucide-react';
+import { X, Plus, Trash2, Upload, Link as LinkIcon, Building2, FileText, MapPin, Calendar, Target, TrendingUp, Clock, Briefcase, ChevronDown } from 'lucide-react';
 import { useCreateOpportunityMutation } from '../../api/opportunities';
 import { useGetServicesQuery } from '../../api/services';
 import { useGetServicePackagesQuery } from '../../api/servicePackages';
@@ -168,6 +168,9 @@ const PackageItem = memo(({
   onAddService,
   onQuantityChange
 }) => {
+  const [isServicesOpen, setIsServicesOpen] = useState(false);
+  const serviceCount = pkg.services?.length || 0;
+
   return (
     <div className="bg-blue-50/40 border-2 border-blue-100 rounded-2xl p-5 space-y-4">
       <div className="flex items-center justify-between">
@@ -211,21 +214,29 @@ const PackageItem = memo(({
       {/* Services inside package */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-bold text-blue-700 uppercase tracking-widest">
-            Dịch vụ trong gói
-          </p>
-
           <button
             type="button"
-            onClick={() => onAddService(index)}
-            className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-all"
+            onClick={() => setIsServicesOpen(prev => !prev)}
+            className="flex items-center gap-2 text-xs font-bold text-blue-700 uppercase tracking-widest hover:text-blue-900 transition-colors"
+            aria-expanded={isServicesOpen}
           >
-            <Plus className="w-4 h-4" />
-            Thêm dịch vụ
+            <ChevronDown className={`w-4 h-4 transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
+            Dịch vụ trong gói ({serviceCount})
           </button>
+
+          {isServicesOpen && (
+            <button
+              type="button"
+              onClick={() => onAddService(index)}
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              Thêm dịch vụ
+            </button>
+          )}
         </div>
 
-        {(pkg.services || []).map((serviceItem, serviceIndex) => {
+        {isServicesOpen && (pkg.services || []).map((serviceItem, serviceIndex) => {
           const selectedIds = (pkg.services || [])
             .filter((_, i) => i !== serviceIndex)
             .map(s => String(s.serviceId))
@@ -289,15 +300,6 @@ const PackageItem = memo(({
                 </button>
               </div>
 
-              {serviceItem.serviceId && (
-                <div className="text-xs text-gray-500">
-                  Giá vốn:{" "}
-                  <span className="font-semibold text-gray-700">
-                    {Number(serviceItem.sellingPrice || 0).toLocaleString('vi-VN')} VNĐ
-                  </span>
-                </div>
-              )}
-
               {briefJobs.map(job => (
                 <div key={job.jobId} className="space-y-2">
                   <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-blue-900">
@@ -350,7 +352,7 @@ const PackageItem = memo(({
           );
         })}
 
-        {(!pkg.services || pkg.services.length === 0) && (
+        {isServicesOpen && (!pkg.services || pkg.services.length === 0) && (
           <p className="text-sm text-gray-400 italic text-center py-3 bg-white/70 rounded-xl border border-dashed border-blue-200">
             Gói này chưa có dịch vụ
           </p>
@@ -1656,27 +1658,27 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
                         accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
                       />
                     </label>
-                  {files.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      <p className="text-sm font-medium text-gray-700">Tệp đã chọn ({files.length}):</p>
-                      <div className="grid grid-cols-1 gap-2">
-                        {files.map((file, index) => (
-                          <FileItem
-                            key={index}
-                            index={index}
-                            file={file}
-                            onRemove={removeFile}
-                            progress={uploadProgress[index]}
-                            isUploading={isUploading}
-                          />
-                        ))}
+                    {files.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <p className="text-sm font-medium text-gray-700">Tệp đã chọn ({files.length}):</p>
+                        <div className="grid grid-cols-1 gap-2">
+                          {files.map((file, index) => (
+                            <FileItem
+                              key={index}
+                              index={index}
+                              file={file}
+                              onRemove={removeFile}
+                              progress={uploadProgress[index]}
+                              isUploading={isUploading}
+                            />
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {errors.files && <p className="mt-2 text-sm text-red-500">{errors.files}</p>}
+                    )}
+                    {errors.files && <p className="mt-2 text-sm text-red-500">{errors.files}</p>}
+                  </div>
                 </div>
               </div>
-            </div>
             </div>
 
             {/* Submit Button */}
