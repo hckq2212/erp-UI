@@ -36,13 +36,17 @@ export const TaskDelegationPanel = ({
     currentUser,
     isStaffingModalOpen: externalIsStaffingModalOpen,
     setIsStaffingModalOpen: externalSetIsStaffingModalOpen,
+    isSubtaskModalOpen: externalIsSubtaskModalOpen,
+    setIsSubtaskModalOpen: externalSetIsSubtaskModalOpen,
 }) => {
     const navigate = useNavigate();
     const [internalIsStaffingModalOpen, setInternalIsStaffingModalOpen] = useState(false);
     const isStaffingModalOpen = externalIsStaffingModalOpen !== undefined ? externalIsStaffingModalOpen : internalIsStaffingModalOpen;
     const setIsStaffingModalOpen = externalSetIsStaffingModalOpen || setInternalIsStaffingModalOpen;
     const [isAddStaffingMemberModalOpen, setIsAddStaffingMemberModalOpen] = useState(false);
-    const [isSubtaskModalOpen, setIsSubtaskModalOpen] = useState(false);
+    const [internalIsSubtaskModalOpen, setInternalIsSubtaskModalOpen] = useState(false);
+    const isSubtaskModalOpen = externalIsSubtaskModalOpen !== undefined ? externalIsSubtaskModalOpen : internalIsSubtaskModalOpen;
+    const setIsSubtaskModalOpen = externalSetIsSubtaskModalOpen || setInternalIsSubtaskModalOpen;
     const [isRoadmapModalOpen, setIsRoadmapModalOpen] = useState(false);
     const [editingSubtaskId, setEditingSubtaskId] = useState(null);
     const [staffingNote, setStaffingNote] = useState('');
@@ -256,21 +260,23 @@ export const TaskDelegationPanel = ({
     };
 
     return (
-        <section className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm md:p-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <h2 className="text-lg font-bold text-gray-900">Danh sách công việc con</h2>
-                {canDelegate && !subtaskBlockedReason && (
-                    <div className="flex flex-wrap gap-2">
-                        <Button
-                            onClick={openCreateSubtaskModal}
-                            className="bg-[#F38820] text-white hover:bg-[#D97010] focus:ring-orange-500"
-                        >
-                            <Plus className="mr-2 h-4 w-4" />
-                            Thêm subtask
-                        </Button>
+        <>
+            {subtasks.length > 0 && (
+                <section className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm md:p-8">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <h2 className="text-lg font-bold text-gray-900">Danh sách công việc con</h2>
+                        {canDelegate && !subtaskBlockedReason && (
+                            <div className="flex flex-wrap gap-2">
+                                <Button
+                                    onClick={openCreateSubtaskModal}
+                                    className="bg-[#F38820] text-white hover:bg-[#D97010] focus:ring-orange-500"
+                                >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Thêm subtask
+                                </Button>
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
 
             {isPendingStaffingRequest && (
                 <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -421,8 +427,10 @@ export const TaskDelegationPanel = ({
                     </div>
                 )}
             </div>
+        </section>
+    )}
 
-            <Modal
+    <Modal
                 isOpen={isStaffingModalOpen}
                 onClose={() => setIsStaffingModalOpen(false)}
                 title="Yêu cầu PM bổ sung nhân sự"
@@ -558,6 +566,6 @@ export const TaskDelegationPanel = ({
                     setIsRoadmapModalOpen(false);
                 }}
             />
-        </section>
+        </>
     );
 };

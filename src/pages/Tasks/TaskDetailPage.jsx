@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip, Plus } from 'lucide-react';
 import { useGetTaskQuery, useSubmitTaskResultMutation, useSubmitTaskResultFileMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetTaskResultCheckQuery } from '../../api/taskResultChecks';
@@ -62,6 +62,7 @@ export const TaskDetailPage = () => {
     const [isReworkModalOpen, setIsReworkModalOpen] = useState(false);
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [isStaffingModalOpen, setIsStaffingModalOpen] = useState(false);
+    const [isSubtaskModalOpen, setIsSubtaskModalOpen] = useState(false);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [editedDescription, setEditedDescription] = useState('');
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);
@@ -90,6 +91,19 @@ export const TaskDetailPage = () => {
     const isResultReady = submissionType === 'file'
         ? Boolean(resultFile)
         : Boolean(resultLink.trim());
+
+    const team = task?.project?.team;
+    const currentMembership = team?.members?.find(member => isSameUser(member.user?.id, currentUserId));
+    const isPM = currentMembership?.role === 'PROJECT_MANAGER' || isSameUser(task?.project?.projectManager?.id, currentUserId);
+    const isAccount = isSameUser(team?.teamLead?.id, currentUserId) || currentMembership?.role === 'ACCOUNT';
+    const isAdminOverride = ['ADMIN', 'BOD'].includes(user?.role);
+    const isTeamLead = isSameUser(team?.teamLead?.id, currentUserId);
+    const canDelegate = isAccount || isPM || isAdminOverride || isTeamLead;
+    const canAddSubtask = canDelegate &&
+        !task?.parentTaskId &&
+        (!task?.subtasks || task?.subtasks?.length === 0) &&
+        task?.performerType === 'INTERNAL' &&
+        ['PENDING', 'DOING', 'REWORKING', 'OVERDUE', 'AWAITING_SUPPORT'].includes(task?.status);
 
     useEffect(() => {
         if (isResultModalOpen) {
@@ -568,6 +582,17 @@ export const TaskDetailPage = () => {
                                     : 'Yêu cầu thêm người'}
                             </Button>
                         )}
+
+                    {canAddSubtask && (
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsSubtaskModalOpen(true)}
+                            className="rounded-2xl py-3 px-6 border-orange-200 text-orange-700 hover:bg-orange-50 flex items-center gap-2"
+                        >
+                            <Plus className="w-5 h-5 text-[#F38820]" />
+                            Thêm subtask
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -576,6 +601,8 @@ export const TaskDetailPage = () => {
                 currentUser={user}
                 isStaffingModalOpen={isStaffingModalOpen}
                 setIsStaffingModalOpen={setIsStaffingModalOpen}
+                isSubtaskModalOpen={isSubtaskModalOpen}
+                setIsSubtaskModalOpen={setIsSubtaskModalOpen}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
