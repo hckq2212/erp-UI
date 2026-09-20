@@ -248,6 +248,7 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
                                                     <div className={cn(
                                                         "relative z-10 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 border-2 shrink-0",
                                                         m.status === 'COMPLETED' ? "bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-100/40" :
+                                                            m.status === 'ACTIVE' && overdue ? "bg-rose-50 backdrop-blur-sm border-rose-500 text-rose-600 shadow-lg shadow-rose-100/40" :
                                                             m.status === 'ACTIVE' ? "bg-white/90 backdrop-blur-sm border-indigo-500 text-indigo-600 shadow-lg shadow-indigo-100/40" :
                                                                 "bg-white/90 backdrop-blur-sm border-slate-100 text-slate-300"
                                                     )}>
@@ -259,9 +260,11 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
                                                     {/* Content */}
                                                     <div className={cn(
                                                         "flex-1 p-4 rounded-2xl border transition-all duration-500 min-w-0",
-                                                        m.status !== 'PLANNED'
-                                                            ? "bg-slate-50/50 border-slate-100 group-hover:bg-indigo-50/30 group-hover:border-indigo-100/50"
-                                                            : "bg-white border-dashed border-slate-200 opacity-60"
+                                                        m.status !== 'PLANNED' && overdue
+                                                            ? "bg-rose-50/30 border-rose-200 group-hover:bg-rose-50/50 group-hover:border-rose-300/50"
+                                                            : m.status !== 'PLANNED'
+                                                                ? "bg-slate-50/50 border-slate-100 group-hover:bg-indigo-50/30 group-hover:border-indigo-100/50"
+                                                                : "bg-white border-dashed border-slate-200 opacity-60"
                                                     )}>
                                                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                                                             <div className="min-w-0">

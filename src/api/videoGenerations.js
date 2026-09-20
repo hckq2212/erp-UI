@@ -9,7 +9,10 @@ export const videoGenerationsApi = api.injectEndpoints({
         method: 'POST',
         body: formData,
       }),
-      invalidatesTags: [{ type: 'VideoGenerations', id: 'LIST' }],
+      invalidatesTags: (result, error, formData) => [
+        { type: 'VideoGenerations', id: 'LIST' },
+        { type: 'VideoGenerations', id: `BUDGET-${formData.get('taskId')}` },
+      ],
     }),
     getVideoGenerationStatus: builder.query({
       query: (id) => `/video-generations/${id}/status`,
@@ -25,13 +28,22 @@ export const videoGenerationsApi = api.injectEndpoints({
             ]
           : [{ type: 'VideoGenerations', id: 'LIST' }],
     }),
+    getGenerationBudget: builder.query({
+      query: (taskId) => `/video-generations/tasks/${taskId}/budget`,
+      providesTags: (result, error, taskId) => [
+        { type: 'VideoGenerations', id: `BUDGET-${taskId}` },
+      ],
+    }),
     createMotionControlVideo: builder.mutation({
       query: (formData) => ({
         url: '/video-generations/create-motion-control',
         method: 'POST',
         body: formData,
       }),
-      invalidatesTags: [{ type: 'VideoGenerations', id: 'LIST' }],
+      invalidatesTags: (result, error, formData) => [
+        { type: 'VideoGenerations', id: 'LIST' },
+        { type: 'VideoGenerations', id: `BUDGET-${formData.get('taskId')}` },
+      ],
     }),
     getMotionControlHistory: builder.query({
       query: () => '/video-generations/motion-control/history',
@@ -52,4 +64,5 @@ export const {
   useGetMotionControlHistoryQuery,
   useGetVideoGenerationStatusQuery,
   useGetVideoGenHistoryQuery,
+  useGetGenerationBudgetQuery,
 } = videoGenerationsApi;

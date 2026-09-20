@@ -7,6 +7,7 @@ import { calcMotionControlPrice } from "../../../utils/videoPricing"
 import { useGetTasksQuery } from '../../../api/tasks'
 import { useGetMeQuery } from '../../../api/auth'
 import { getCurrentUserId } from '../../../utils/authUser'
+import GenerationBudgetCard from '../GenerationBudgetCard'
 
 export default function FromCreateVideoMotionControl({ createMotionControlHook }) {
   const { submitCreateMotionControl, isSubmitting, status } = createMotionControlHook
@@ -317,6 +318,7 @@ export default function FromCreateVideoMotionControl({ createMotionControlHook }
               )}
             </div>
           )}
+          <GenerationBudgetCard taskId={taskId} />
           {selectedTask?.opportunityServiceJob?.briefVideo && (
             <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
               <p className="mb-1 font-semibold">Brief khách hàng</p>

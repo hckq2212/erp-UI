@@ -55,6 +55,15 @@ export const OpportunityDetailPage = () => {
   console.log(opportunity?.status);
 
   const showBadge = (opportunity?.status === 'PENDING_QUOTE_APPROVAL' || opportunity?.status === 'QUOTATION_DRAFTING') && draftCount > 0;
+  const incompleteAiJobs = useMemo(() => (opportunity?.services || []).flatMap(service => {
+    if (!service.service?.isAI) return [];
+
+    return (service.jobs || []).filter(job =>
+      job.isQuotationItem &&
+      !job.isBriefVideo &&
+      Number(job.costAtSale || 0) <= 0
+    );
+  }), [opportunity?.services]);
 
   // Modal state
   const [showContactModal, setShowContactModal] = useState(false);
@@ -196,6 +205,16 @@ export const OpportunityDetailPage = () => {
     setShowQuotationModal(true);
   };
 
+  const handleCreateQuotation = () => {
+    if (incompleteAiJobs.length > 0) {
+      const jobNames = [...new Set(incompleteAiJobs.map(job => job.name))].join(', ');
+      toast.warning(`Vui lòng điền đầy đủ giá vốn job AI trước khi tạo báo giá: ${jobNames}`);
+      return;
+    }
+
+    setShowQuotationModal(true);
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return 'Chưa xác định';
     return new Date(dateString).toLocaleDateString('vi-VN');
@@ -281,8 +300,10 @@ export const OpportunityDetailPage = () => {
                 )}
                 {(opportunity.status === 'QUOTATION_DRAFTING' || opportunity.status === 'PENDING_QUOTE_APPROVAL' || opportunity.status === 'OPP_APPROVED' && (currentUser.role == 'ADMIN' || currentUser.id == opportunity.createdBy.id)) && (
                   <button
-                    onClick={() => setShowQuotationModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    onClick={handleCreateQuotation}
+                    aria-disabled={incompleteAiJobs.length > 0}
+                    title={incompleteAiJobs.length > 0 ? 'Cần điền đầy đủ giá vốn job AI trước' : undefined}
+                    className={`flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg transition-colors ${incompleteAiJobs.length > 0 ? 'cursor-not-allowed opacity-50' : 'hover:bg-green-700'}`}
                   >
                     Tạo báo giá
                   </button>
@@ -326,7 +347,7 @@ export const OpportunityDetailPage = () => {
           <FinancialInfo opportunity={opportunity} formatDate={formatDate} />
           <TimeLocationInfo opportunity={opportunity} formatDate={formatDate} />
           <OpportunityEvaluation opportunity={opportunity} />
-          <OpportunityServicesInfo opportunity={opportunity} />
+          <OpportunityServicesInfo opportunity={opportunity} currentUser={currentUser} onAddCustomer={handleOpenContactModal} />
           <AttachmentsList attachments={opportunity.attachments} />
         </div>
 
@@ -382,7 +403,7 @@ export const OpportunityDetailPage = () => {
         onClose={() => setShowQuotationsListModal(false)}
         quotations={quotations}
         isLoading={isLoadingQuotations}
-        onCreateNew={() => setShowQuotationModal(true)}
+        onCreateNew={handleCreateQuotation}
         onEditQuotation={handleEditQuotation}
         onApprovedContract={(contractId) => {
           setShowQuotationsListModal(false);

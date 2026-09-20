@@ -63,7 +63,7 @@ export const TeamInfo = ({ team }) => {
     const currentMembership = members.find(member => isSameUser(member.user?.id, currentUserId));
     const isCurrentProjectManager = currentUser?.role === 'PM' && currentMembership?.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER;
     const isCurrentTeamLead = isSameUser(currentUserId, team?.teamLead?.id);
-    const canManageTeam = currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD' || isCurrentTeamLead || isCurrentProjectManager;
+    const canManageTeam = currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD'|| isCurrentProjectManager;
     const memberUserIds = useMemo(() => new Set(members.map(member => member.user?.id)), [members]);
     const availableUsers = users.filter(user => !memberUserIds.has(user.id));
     const assignableMemberRoles = useMemo(

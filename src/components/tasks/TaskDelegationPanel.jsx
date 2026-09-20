@@ -36,13 +36,17 @@ export const TaskDelegationPanel = ({
     currentUser,
     isStaffingModalOpen: externalIsStaffingModalOpen,
     setIsStaffingModalOpen: externalSetIsStaffingModalOpen,
+    isSubtaskModalOpen: externalIsSubtaskModalOpen,
+    setIsSubtaskModalOpen: externalSetIsSubtaskModalOpen,
 }) => {
     const navigate = useNavigate();
     const [internalIsStaffingModalOpen, setInternalIsStaffingModalOpen] = useState(false);
     const isStaffingModalOpen = externalIsStaffingModalOpen !== undefined ? externalIsStaffingModalOpen : internalIsStaffingModalOpen;
     const setIsStaffingModalOpen = externalSetIsStaffingModalOpen || setInternalIsStaffingModalOpen;
     const [isAddStaffingMemberModalOpen, setIsAddStaffingMemberModalOpen] = useState(false);
-    const [isSubtaskModalOpen, setIsSubtaskModalOpen] = useState(false);
+    const [internalIsSubtaskModalOpen, setInternalIsSubtaskModalOpen] = useState(false);
+    const isSubtaskModalOpen = externalIsSubtaskModalOpen !== undefined ? externalIsSubtaskModalOpen : internalIsSubtaskModalOpen;
+    const setIsSubtaskModalOpen = externalSetIsSubtaskModalOpen || setInternalIsSubtaskModalOpen;
     const [isRoadmapModalOpen, setIsRoadmapModalOpen] = useState(false);
     const [editingSubtaskId, setEditingSubtaskId] = useState(null);
     const [staffingNote, setStaffingNote] = useState('');
@@ -70,7 +74,7 @@ export const TaskDelegationPanel = ({
         task?.isSupportRequested &&
         !task?.isSupportAccepted;
     const canRespondStaffing = isPendingStaffingRequest &&
-        (isSameUser(task?.supportLeadId, currentUserId) || isAdminOverride);
+        (isPM || isAdminOverride);
 
     const assignableMembers = useMemo(() => (
         (team?.members || []).filter(member =>
@@ -255,93 +259,95 @@ export const TaskDelegationPanel = ({
         setSubtaskForm(emptySubtaskForm);
     };
 
+    const hasStaffingNotice = isPendingStaffingRequest || (task.supportRequestType === 'STAFFING' && task.isSupportAccepted);
+    const hasSubtasks = subtasks.length > 0;
+
     return (
-        <section className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm md:p-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <h2 className="text-lg font-bold text-gray-900">Danh sách công việc con</h2>
-                {canDelegate && !subtaskBlockedReason && (
-                    <div className="flex flex-wrap gap-2">
-                        <Button
-                            onClick={openCreateSubtaskModal}
-                            className="bg-[#F38820] text-white hover:bg-[#D97010] focus:ring-orange-500"
-                        >
-                            <Plus className="mr-2 h-4 w-4" />
-                            Thêm subtask
-                        </Button>
-                    </div>
-                )}
-            </div>
-
-            {isPendingStaffingRequest && (
-                <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <p className="font-bold text-amber-900">Đang chờ PM bổ sung nhân sự</p>
-                            <p className="mt-1 text-sm text-amber-700">
-                                {task.supportRequestNote || 'Account chưa nhập ghi chú cho yêu cầu này.'}
-                            </p>
-                        </div>
-                        {canRespondStaffing && (
-                            <div className="flex flex-wrap gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => navigate(`/projects/${task.project.id}`)}
-                                    className="border-amber-300 bg-white text-amber-800 hover:bg-amber-100"
-                                >
-                                    <Users className="mr-2 h-4 w-4" />
-                                    Mở đội dự án
-                                </Button>
-                                <Button
-                                    onClick={() => setIsAddStaffingMemberModalOpen(true)}
-                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
-                                >
-                                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    Thêm người & xác nhận
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleRespondStaffing('REJECT')}
-                                    disabled={isRespondingStaffing}
-                                    className="border-red-200 text-red-600 hover:bg-red-50"
-                                >
-                                    <XCircle className="mr-2 h-4 w-4" />
-                                    Từ chối
-                                </Button>
+        <>
+            {(hasStaffingNotice || hasSubtasks) && (
+                <section className="rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm md:p-8">
+                    {/* KHUNG PM DUYỆT / TỪ CHỐI BỔ SUNG NHÂN SỰ */}
+                    {isPendingStaffingRequest && (
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <p className="font-bold text-amber-900">Đang chờ PM bổ sung nhân sự</p>
+                                    <p className="mt-1 text-sm text-amber-700">
+                                        {task.supportRequestNote || 'Account chưa nhập ghi chú cho yêu cầu này.'}
+                                    </p>
+                                </div>
+                                {canRespondStaffing && (
+                                    <div className="flex flex-wrap gap-2">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => navigate(`/projects/${task.project.id}`)}
+                                            className="border-amber-300 bg-white text-amber-800 hover:bg-amber-100"
+                                        >
+                                            <Users className="mr-2 h-4 w-4" />
+                                            Mở đội dự án
+                                        </Button>
+                                        <Button
+                                            onClick={() => setIsAddStaffingMemberModalOpen(true)}
+                                            className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                        >
+                                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                                            Thêm người & xác nhận
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => handleRespondStaffing('REJECT')}
+                                            disabled={isRespondingStaffing}
+                                            className="border-red-200 text-red-600 hover:bg-red-50"
+                                        >
+                                            <XCircle className="mr-2 h-4 w-4" />
+                                            Từ chối
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {task.supportRequestType === 'STAFFING' && task.isSupportAccepted && (
-                <div className="mt-5 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
-                    <CheckCircle2 className="h-5 w-5 shrink-0" />
-                    PM đã xác nhận bổ sung nhân sự. Account có thể phân công subtask.
-                </div>
-            )}
-
-            <div className="mt-6">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                    {canViewAllocationPercent ? (
-                        <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
-                            <span className="rounded-lg bg-orange-50 px-3 py-1.5 text-orange-700">
-                                Đã phân bổ: {allocatedPercent.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%
-                            </span>
-                            <span className="rounded-lg bg-blue-50 px-3 py-1.5 text-blue-700">
-                                Người làm task gốc: {remainingPercent.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%
-                            </span>
                         </div>
-                    ) : <div />}
-                    <span className="text-sm font-semibold text-gray-400">{subtasks.length} công việc</span>
-                </div>
+                    )}
 
-                {subtasks.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center">
-                        <p className="text-sm font-semibold text-gray-500">Chưa có subtask</p>
-                        <p className="mt-1 text-xs text-gray-400">Account có thể chia công việc sau khi PM bổ sung đủ nhân sự.</p>
-                    </div>
-                ) : (
-                    <div className="space-y-3.5">
+                    {task.supportRequestType === 'STAFFING' && task.isSupportAccepted && (
+                        <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
+                            <CheckCircle2 className="h-5 w-5 shrink-0" />
+                            PM đã xác nhận bổ sung nhân sự. Account có thể phân công subtask.
+                        </div>
+                    )}
+
+                    {/* DANH SÁCH SUBTASK (CHỈ HIỆN KHI CÓ SUBTASK) */}
+                    {hasSubtasks && (
+                        <div className={hasStaffingNotice ? "mt-6" : ""}>
+                            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
+                                <h2 className="text-lg font-bold text-gray-900">Danh sách công việc con</h2>
+                                {canDelegate && !subtaskBlockedReason && (
+                                    <div className="flex flex-wrap gap-2">
+                                        <Button
+                                            onClick={openCreateSubtaskModal}
+                                            className="bg-[#F38820] text-white hover:bg-[#D97010] focus:ring-orange-500"
+                                        >
+                                            <Plus className="mr-2 h-4 w-4" />
+                                            Thêm subtask
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                                {canViewAllocationPercent ? (
+                                    <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+                                        <span className="rounded-lg bg-orange-50 px-3 py-1.5 text-orange-700">
+                                            Đã phân bổ: {allocatedPercent.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%
+                                        </span>
+                                        <span className="rounded-lg bg-blue-50 px-3 py-1.5 text-blue-700">
+                                            Người làm task gốc: {remainingPercent.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%
+                                        </span>
+                                    </div>
+                                ) : <div />}
+                                <span className="text-sm font-semibold text-gray-400">{subtasks.length} công việc</span>
+                            </div>
+
+                            <div className="space-y-3.5">
                         {subtasks.map(subtask => {
                             const percent = getAllocationPercent(subtask);
 
@@ -419,10 +425,12 @@ export const TaskDelegationPanel = ({
                             );
                         })}
                     </div>
-                )}
-            </div>
+                </div>
+            )}
+        </section>
+    )}
 
-            <Modal
+    <Modal
                 isOpen={isStaffingModalOpen}
                 onClose={() => setIsStaffingModalOpen(false)}
                 title="Yêu cầu PM bổ sung nhân sự"
@@ -558,6 +566,6 @@ export const TaskDelegationPanel = ({
                     setIsRoadmapModalOpen(false);
                 }}
             />
-        </section>
+        </>
     );
 };

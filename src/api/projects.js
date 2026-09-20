@@ -208,6 +208,17 @@ export const projectsApi = api.injectEndpoints({
       query: () => '/projects/my-projects',
       providesTags: [{ type: 'Projects', id: 'MY_LIST' }],
     }),
+    requestProjectStaffing: builder.mutation({
+      query: ({ id, note }) => ({
+        url: `/projects/${id}/request-staffing`,
+        method: 'POST',
+        body: { note },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Projects', id },
+        { type: 'Projects', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -234,4 +245,5 @@ export const {
   useApproveProjectProductDescriptionMutation,
   useRejectProjectProductDescriptionMutation,
   useGetMyProjectsQuery,
+  useRequestProjectStaffingMutation,
 } = projectsApi;

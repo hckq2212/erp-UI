@@ -1,7 +1,9 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip, Plus } from 'lucide-react';
 import { useGetTaskQuery, useSubmitTaskResultMutation, useSubmitTaskResultFileMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
+import { useGetTaskResultCheckQuery } from '../../api/taskResultChecks';
+import { ConfirmedCheckErrors } from '../../components/tasks/ConfirmedCheckErrors';
 import { useGetMeQuery } from '../../api/auth';
 import { formatDate, formatDateTime } from '../../utils/format';
 import { toast } from 'react-toastify';
@@ -21,21 +23,13 @@ import { TaskDelegationPanel } from '../../components/tasks/TaskDelegationPanel'
 
 const COMPLETED_SUBTASK_STATUSES = new Set(['INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED']);
 
-const groupIterationSpellErrors = (items) => {
-    const map = new Map();
-    (items || []).forEach((item) => {
-        if (!map.has(item.token)) map.set(item.token, { token: item.token, sheetName: item.sheetName, scenarioLabel: item.scenarioLabel, locations: [] });
-        map.get(item.token).locations.push(item.location);
-    });
-    return Array.from(map.values());
-};
-
 export const TaskDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { data: user } = useGetMeQuery();
     const { data: task, isLoading: isTaskLoading, error } = useGetTaskQuery(id);
     const { data: reviews } = useGetTaskReviewsQuery(id);
+    const { data: resultCheck } = useGetTaskResultCheckQuery(id, { skip: !id });
     const [submitResult, { isLoading: isSubmittingResult }] = useSubmitTaskResultMutation();
     const [submitResultFile, { isLoading: isSubmittingResultFile }] = useSubmitTaskResultFileMutation();
     const [requestRework, { isLoading: isRequestingRework }] = useRequestReworkMutation();
@@ -51,12 +45,14 @@ export const TaskDetailPage = () => {
     const currentUserId = getCurrentUserId(user);
     const isProjectLead = isSameUser(currentUserId, task?.project?.team?.teamLead?.id);
     const canManageProjectTask = PROJECT_MANAGEMENT_ROLES.includes(user?.role) || isProjectLead;
+    const isVideoDemoTask = Boolean(task?.opportunityId && task?.opportunityServiceJob?.isBriefVideo);
     const isAssigneeOrHelper = isSameUser(currentUserId, task?.assigneeId) ||
         isSameUser(currentUserId, task?.assignee?.id) ||
         isSameUser(currentUserId, task?.helperId) ||
         isSameUser(currentUserId, task?.helper?.id);
     const isAssigner = isSameUser(currentUserId, task?.assignerId) || isSameUser(currentUserId, task?.assigner?.id);
     const canSubmitResult = isAssigneeOrHelper || isAssigner || canManageProjectTask || ['ADMIN', 'BOD'].includes(user?.role);
+    const isReviewerForThisTask = canManageProjectTask && !isAssigneeOrHelper;
     const canEditDescription = canManageProjectTask;
     const incompleteSubtasks = (task?.subtasks || []).filter(
         subtask => !COMPLETED_SUBTASK_STATUSES.has(subtask.status)
@@ -66,6 +62,7 @@ export const TaskDetailPage = () => {
     const [isReworkModalOpen, setIsReworkModalOpen] = useState(false);
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [isStaffingModalOpen, setIsStaffingModalOpen] = useState(false);
+    const [isSubtaskModalOpen, setIsSubtaskModalOpen] = useState(false);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [editedDescription, setEditedDescription] = useState('');
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);
@@ -94,6 +91,19 @@ export const TaskDetailPage = () => {
     const isResultReady = submissionType === 'file'
         ? Boolean(resultFile)
         : Boolean(resultLink.trim());
+
+    const team = task?.project?.team;
+    const currentMembership = team?.members?.find(member => isSameUser(member.user?.id, currentUserId));
+    const isPM = currentMembership?.role === 'PROJECT_MANAGER' || isSameUser(task?.project?.projectManager?.id, currentUserId);
+    const isAccount = isSameUser(team?.teamLead?.id, currentUserId) || currentMembership?.role === 'ACCOUNT';
+    const isAdminOverride = ['ADMIN', 'BOD'].includes(user?.role);
+    const isTeamLead = isSameUser(team?.teamLead?.id, currentUserId);
+    const canDelegate = isAccount || isPM || isAdminOverride || isTeamLead;
+    const canAddSubtask = canDelegate &&
+        !task?.parentTaskId &&
+        (!task?.subtasks || task?.subtasks?.length === 0) &&
+        task?.performerType === 'INTERNAL' &&
+        ['PENDING', 'DOING', 'REWORKING', 'OVERDUE', 'AWAITING_SUPPORT'].includes(task?.status);
 
     useEffect(() => {
         if (isResultModalOpen) {
@@ -296,7 +306,9 @@ export const TaskDetailPage = () => {
     const handleCustomerApprove = async () => {
         try {
             await approveByCustomer({ id, projectId: task.project?.id }).unwrap();
-            toast.success('Khách hàng đã duyệt công việc!');
+            toast.success(isVideoDemoTask
+                ? 'Đã nghiệm thu demo 0 đồng và cộng Vinicoin!'
+                : 'Khách hàng đã duyệt công việc!');
         } catch (err) {
             toast.error(err?.data?.message || 'Lỗi khi duyệt công việc');
         }
@@ -395,6 +407,16 @@ export const TaskDetailPage = () => {
                     <div className="flex flex-wrap items-center gap-4">
                         <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{getTaskDisplayName(task)}</h1>
                         {getStatusBadge(task.status)}
+                        {task.customerDecision === 'APPROVED' && (
+                            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase text-emerald-700 ring-1 ring-emerald-200">
+                                Khách hàng duyệt
+                            </span>
+                        )}
+                        {task.customerDecision === 'NOT_PURCHASED' && (
+                            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold uppercase text-amber-700 ring-1 ring-amber-200">
+                                Khách hàng không mua
+                            </span>
+                        )}
                     </div>
 
                     <p className="text-gray-500 font-mono text-sm bg-gray-100 px-3 py-1 rounded-lg inline-block">{task.code}</p>
@@ -410,7 +432,7 @@ export const TaskDetailPage = () => {
                             Phân công
                         </Button>
                     )}
-                    {task.status === 'AWAITING_REVIEW' && canManageProjectTask && (
+                    {task.status === 'AWAITING_REVIEW' && isReviewerForThisTask && (
                         <div className="flex gap-3">
                             <Button
                                 variant="outline"
@@ -433,7 +455,7 @@ export const TaskDetailPage = () => {
                         </div>
                     )}
 
-                    {task.status === 'INTERNAL_COMPLETED' && canManageProjectTask && (
+                    {task.status === 'INTERNAL_COMPLETED' && canManageProjectTask && !isVideoDemoTask && (
                         <Button
                             onClick={handleCustomerApprove}
                             isLoading={isApprovingByCustomer}
@@ -446,7 +468,7 @@ export const TaskDetailPage = () => {
                         </Button>
                     )}
 
-                    {(task.status === 'DONE' || task.status === 'COMPLETED' || task.status === 'INTERNAL_COMPLETED') && canManageProjectTask && (
+                    {(task.status === 'DONE' || task.status === 'COMPLETED' || task.status === 'INTERNAL_COMPLETED') && canManageProjectTask && !isVideoDemoTask && (
                         <Button
                             variant="outline"
                             onClick={() => setIsReworkModalOpen(true)}
@@ -545,9 +567,7 @@ export const TaskDetailPage = () => {
                     {task?.performerType === 'INTERNAL' &&
                         ['PENDING', 'DOING', 'REWORKING', 'OVERDUE'].includes(task?.status) &&
                         task?.project?.team &&
-                        (isSameUser(task?.project?.team?.teamLead?.id, getCurrentUserId(user)) ||
-                            task?.project?.team?.members?.some(m => isSameUser(m.user?.id, getCurrentUserId(user)) && m.role === 'ACCOUNT') ||
-                            ['ADMIN', 'BOD'].includes(user?.role)) && (
+                        (isProjectLead || isTeamLead) && (
                             <Button
                                 variant="outline"
                                 onClick={() => setIsStaffingModalOpen(true)}
@@ -560,6 +580,17 @@ export const TaskDetailPage = () => {
                                     : 'Yêu cầu thêm người'}
                             </Button>
                         )}
+
+                    {canAddSubtask && (
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsSubtaskModalOpen(true)}
+                            className="rounded-2xl py-3 px-6 border-orange-200 text-orange-700 hover:bg-orange-50 flex items-center gap-2"
+                        >
+                            <Plus className="w-5 h-5 text-[#F38820]" />
+                            Thêm subtask
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -568,6 +599,8 @@ export const TaskDetailPage = () => {
                 currentUser={user}
                 isStaffingModalOpen={isStaffingModalOpen}
                 setIsStaffingModalOpen={setIsStaffingModalOpen}
+                isSubtaskModalOpen={isSubtaskModalOpen}
+                setIsSubtaskModalOpen={setIsSubtaskModalOpen}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -653,6 +686,9 @@ export const TaskDetailPage = () => {
                                     )}>
                                         {review.criteria?.name}
                                     </p>
+                                    {review.note && (
+                                        <p className="text-xs text-red-600 mt-1 whitespace-pre-wrap">{review.note}</p>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -695,6 +731,16 @@ export const TaskDetailPage = () => {
                             </div>
                         );
                     })()}
+
+                    {resultCheck?.finalizedAt && (((resultCheck.reviewedSpellErrors || []).length > 0) || ((resultCheck.reviewedQcMismatches || []).length > 0)) && (
+                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                            <ConfirmedCheckErrors
+                                title="Lỗi đã chốt ở kết quả đã nộp"
+                                spellErrors={(resultCheck.reviewedSpellErrors || []).filter(e => e.confirmed !== false)}
+                                qcMismatches={(resultCheck.reviewedQcMismatches || []).filter(m => m.confirmed !== false)}
+                            />
+                        </div>
+                    )}
 
                     <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8 overflow-hidden">
                         {isParentBlockedBySubtasks && (
@@ -828,33 +874,7 @@ export const TaskDetailPage = () => {
                                                 </p>
                                             </div>
 
-                                            {((iteration.confirmedSpellErrors && iteration.confirmedSpellErrors.length > 0) || (iteration.confirmedQcMismatches && iteration.confirmedQcMismatches.length > 0)) && (
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center gap-2 text-gray-400">
-                                                        <AlertCircle className="w-3.5 h-3.5" />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest">Lỗi đã chốt ở bản nộp trước</span>
-                                                    </div>
-                                                    <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
-                                                        {groupIterationSpellErrors(iteration.confirmedSpellErrors).map((g, gIdx) => (
-                                                            <div key={`spell-${gIdx}`} className="px-3 py-2 text-xs flex items-center justify-between gap-2">
-                                                                <span className="font-bold text-red-600">{g.token}</span>
-                                                                <span className="text-gray-400 font-mono">
-                                                                    {g.sheetName ? `${g.sheetName}!` : ''}{g.locations.join(', ')}
-                                                                    {g.scenarioLabel ? ` (${g.scenarioLabel})` : ''}
-                                                                </span>
-                                                            </div>
-                                                        ))}
-                                                        {(iteration.confirmedQcMismatches || []).map((m, mIdx) => (
-                                                            <div key={`qc-${mIdx}`} className="px-3 py-2 text-xs space-y-0.5">
-                                                                <div className="font-bold text-orange-600">
-                                                                    {m.sheet_name ? `${m.sheet_name}${m.scenario ? ` / ${m.scenario}` : ''} · ` : ''}{m.product_ref || 'Không rõ sản phẩm'} · {m.attribute}
-                                                                </div>
-                                                                <div className="text-gray-500">{m.claimed_value} → {m.expected_value ?? 'không tìm thấy'}</div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
+                                            <ConfirmedCheckErrors spellErrors={iteration.confirmedSpellErrors} qcMismatches={iteration.confirmedQcMismatches} />
 
                                             {iteration.feedbackAttachments && iteration.feedbackAttachments.length > 0 && (
                                                 <div className="space-y-2">
