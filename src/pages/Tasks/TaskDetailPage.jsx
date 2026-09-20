@@ -2,6 +2,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip } from 'lucide-react';
 import { useGetTaskQuery, useSubmitTaskResultMutation, useSubmitTaskResultFileMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
+import { useGetTaskResultCheckQuery } from '../../api/taskResultChecks';
+import { ConfirmedCheckErrors } from '../../components/tasks/ConfirmedCheckErrors';
 import { useGetMeQuery } from '../../api/auth';
 import { formatDate, formatDateTime } from '../../utils/format';
 import { toast } from 'react-toastify';
@@ -21,21 +23,13 @@ import { TaskDelegationPanel } from '../../components/tasks/TaskDelegationPanel'
 
 const COMPLETED_SUBTASK_STATUSES = new Set(['INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED']);
 
-const groupIterationSpellErrors = (items) => {
-    const map = new Map();
-    (items || []).forEach((item) => {
-        if (!map.has(item.token)) map.set(item.token, { token: item.token, sheetName: item.sheetName, scenarioLabel: item.scenarioLabel, locations: [] });
-        map.get(item.token).locations.push(item.location);
-    });
-    return Array.from(map.values());
-};
-
 export const TaskDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { data: user } = useGetMeQuery();
     const { data: task, isLoading: isTaskLoading, error } = useGetTaskQuery(id);
     const { data: reviews } = useGetTaskReviewsQuery(id);
+    const { data: resultCheck } = useGetTaskResultCheckQuery(id, { skip: !id });
     const [submitResult, { isLoading: isSubmittingResult }] = useSubmitTaskResultMutation();
     const [submitResultFile, { isLoading: isSubmittingResultFile }] = useSubmitTaskResultFileMutation();
     const [requestRework, { isLoading: isRequestingRework }] = useRequestReworkMutation();
@@ -667,6 +661,9 @@ export const TaskDetailPage = () => {
                                     )}>
                                         {review.criteria?.name}
                                     </p>
+                                    {review.note && (
+                                        <p className="text-xs text-red-600 mt-1 whitespace-pre-wrap">{review.note}</p>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -709,6 +706,16 @@ export const TaskDetailPage = () => {
                             </div>
                         );
                     })()}
+
+                    {resultCheck?.finalizedAt && (((resultCheck.reviewedSpellErrors || []).length > 0) || ((resultCheck.reviewedQcMismatches || []).length > 0)) && (
+                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                            <ConfirmedCheckErrors
+                                title="Lỗi đã chốt ở kết quả đã nộp"
+                                spellErrors={(resultCheck.reviewedSpellErrors || []).filter(e => e.confirmed !== false)}
+                                qcMismatches={(resultCheck.reviewedQcMismatches || []).filter(m => m.confirmed !== false)}
+                            />
+                        </div>
+                    )}
 
                     <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8 overflow-hidden">
                         {isParentBlockedBySubtasks && (
@@ -842,33 +849,7 @@ export const TaskDetailPage = () => {
                                                 </p>
                                             </div>
 
-                                            {((iteration.confirmedSpellErrors && iteration.confirmedSpellErrors.length > 0) || (iteration.confirmedQcMismatches && iteration.confirmedQcMismatches.length > 0)) && (
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center gap-2 text-gray-400">
-                                                        <AlertCircle className="w-3.5 h-3.5" />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest">Lỗi đã chốt ở bản nộp trước</span>
-                                                    </div>
-                                                    <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
-                                                        {groupIterationSpellErrors(iteration.confirmedSpellErrors).map((g, gIdx) => (
-                                                            <div key={`spell-${gIdx}`} className="px-3 py-2 text-xs flex items-center justify-between gap-2">
-                                                                <span className="font-bold text-red-600">{g.token}</span>
-                                                                <span className="text-gray-400 font-mono">
-                                                                    {g.sheetName ? `${g.sheetName}!` : ''}{g.locations.join(', ')}
-                                                                    {g.scenarioLabel ? ` (${g.scenarioLabel})` : ''}
-                                                                </span>
-                                                            </div>
-                                                        ))}
-                                                        {(iteration.confirmedQcMismatches || []).map((m, mIdx) => (
-                                                            <div key={`qc-${mIdx}`} className="px-3 py-2 text-xs space-y-0.5">
-                                                                <div className="font-bold text-orange-600">
-                                                                    {m.sheet_name ? `${m.sheet_name}${m.scenario ? ` / ${m.scenario}` : ''} · ` : ''}{m.product_ref || 'Không rõ sản phẩm'} · {m.attribute}
-                                                                </div>
-                                                                <div className="text-gray-500">{m.claimed_value} → {m.expected_value ?? 'không tìm thấy'}</div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
+                                            <ConfirmedCheckErrors spellErrors={iteration.confirmedSpellErrors} qcMismatches={iteration.confirmedQcMismatches} />
 
                                             {iteration.feedbackAttachments && iteration.feedbackAttachments.length > 0 && (
                                                 <div className="space-y-2">
