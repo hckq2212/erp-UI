@@ -527,7 +527,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                             <td className="px-4 py-1.5">
                               <input
                                 type="text"
-                                value={formatNumber(item.customPrice)}
+                                value={formatNumber(Math.round(item.customPrice))}
                                 onChange={(e) => handleCustomPriceChange(item.originalIndex, e.target.value)}
                                 className="w-full px-2 py-1 text-right border border-gray-300 rounded text-sm bg-white focus:border-blue-500 outline-none transition-all"
                               />
@@ -591,7 +591,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                             <td className="px-4 py-3">
                               <input
                                 type="text"
-                                value={formatNumber(item.customPrice)}
+                                value={formatNumber(Math.round(item.customPrice))}
                                 onChange={(e) => handleCustomPriceChange(item.originalIndex, e.target.value)}
                                 className="w-full px-2 py-1 text-right border border-gray-300 rounded text-sm"
                               />
