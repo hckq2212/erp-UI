@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Briefcase, FileText,
   FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store,
   CheckCircle2, Package, User, Handshake, FolderOpenDotIcon, Video, BookText, Megaphone, Bell, Archive,
-  Sparkles, ChevronDown
+  Sparkles, ChevronDown, MessageSquare
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useGetMeQuery } from '../../api/auth';
@@ -35,6 +35,7 @@ const menuItems = [
     ],
   },
   { path: '/document-library', icon: Archive, label: 'Kho tài liệu' },
+  { path: '/chat', icon: MessageSquare, label: 'Tin nhắn' },
   { path: '/settings', icon: Settings, label: 'Cài đặt', roles: ['ADMIN'] },
 ];
 
