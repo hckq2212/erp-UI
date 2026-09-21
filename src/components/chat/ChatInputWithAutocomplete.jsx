@@ -149,8 +149,8 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping }) {
                             type="button"
                             onClick={() => handleSelectSuggestion(task)}
                             className={`w-full text-left px-4 py-2 text-xs flex flex-col transition-colors ${idx === activeSuggestionIndex
-                                    ? "bg-orange-50 text-[#F38820]"
-                                    : "text-slate-600 hover:bg-gray-50 hover:text-slate-900"
+                                ? "bg-orange-50 text-[#F38820]"
+                                : "text-slate-600 hover:bg-gray-50 hover:text-slate-900"
                                 }`}
                         >
                             <span className="font-mono font-bold text-[#F38820]">{task.code}</span>
@@ -174,12 +174,12 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping }) {
                         <button type="button" className="w-8 h-8 text-[#F38820] hover:text-[#d97616] transition-colors flex items-center justify-center flex-shrink-0" title="Ảnh">
                             <Image className="w-[21px] h-[21px] stroke-[2.4]" />
                         </button>
-                        <button type="button" className="w-8 h-8 text-[#F38820] hover:text-[#d97616] transition-colors flex items-center justify-center flex-shrink-0" title="Sticker">
+                        {/* <button type="button" className="w-8 h-8 text-[#F38820] hover:text-[#d97616] transition-colors flex items-center justify-center flex-shrink-0" title="Sticker">
                             <Sticker className="w-[21px] h-[21px] stroke-[2.4]" />
-                        </button>
-                        <button type="button" className="w-8 h-8 text-[#F38820] hover:text-[#d97616] transition-colors flex items-center justify-center flex-shrink-0 font-black text-[11px]" title="GIF">
+                        </button> */}
+                        {/* <button type="button" className="w-8 h-8 text-[#F38820] hover:text-[#d97616] transition-colors flex items-center justify-center flex-shrink-0 font-black text-[11px]" title="GIF">
                             GIF
-                        </button>
+                        </button> */}
                     </>
                 )}
 

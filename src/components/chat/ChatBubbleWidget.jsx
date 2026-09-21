@@ -27,7 +27,8 @@ export function ChatBubbleWidget() {
         selectRoom,
         createDM,
         onlineUsers,
-        unreadCounts
+        unreadCounts,
+        isConnected
     } = useChatStore();
 
     useEffect(() => {
@@ -113,7 +114,7 @@ export function ChatBubbleWidget() {
                                 <div className="relative w-10 h-10 rounded-full bg-orange-50 border border-white shadow-sm flex items-center justify-center text-sm font-black text-[#F38820] shrink-0">
                                     {getRoomInitial(activeRoom)}
                                     {isUserOnline(activeRoom) && (
-                                        <span className="absolute -right-0.5 bottom-0 w-3.5 h-3.5 rounded-full bg-[#F38820] border-2 border-white" />
+                                        <span className="absolute -right-0.5 bottom-0 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-white" />
                                     )}
                                 </div>
                                 <div className="min-w-0">
@@ -121,7 +122,7 @@ export function ChatBubbleWidget() {
                                         <span className="font-bold text-[15px] leading-4 text-slate-900 truncate">
                                             {getRoomName(activeRoom)}
                                         </span>
-                                        <ChevronDown className="w-4 h-4 text-[#F38820] shrink-0" />
+                                        {/* <ChevronDown className="w-4 h-4 text-[#F38820] shrink-0" /> */}
                                     </div>
                                     <span className="block text-[12px] leading-4 text-slate-500 truncate">
                                         {isUserOnline(activeRoom) ? "Đang hoạt động" : "Tin nhắn"}
@@ -130,7 +131,7 @@ export function ChatBubbleWidget() {
                             </div>
                         ) : (
                             <div className="flex items-center gap-2 min-w-0">
-                                <div className="w-2.5 h-2.5 bg-[#F38820] rounded-full animate-pulse" />
+                                <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? "bg-green-500 animate-pulse" : "bg-slate-300"}`} />
                                 <span className="font-bold text-xs text-slate-800 tracking-wider uppercase truncate">
                                     GETVINI Chat
                                 </span>
@@ -138,7 +139,7 @@ export function ChatBubbleWidget() {
                         )}
 
                         <div className="flex items-center gap-1 text-[#F38820]">
-                            {activeRoom && (
+                            {/* {activeRoom && (
                                 <>
                                     <button type="button" className="w-8 h-8 flex items-center justify-center hover:bg-orange-50 rounded-full transition-colors" title="Gọi thoại">
                                         <Phone className="w-5 h-5" />
@@ -150,7 +151,7 @@ export function ChatBubbleWidget() {
                                         <Minus className="w-5 h-5" />
                                     </button>
                                 </>
-                            )}
+                            )} */}
                             <button
                                 onClick={handleToggleWidget}
                                 className="w-8 h-8 flex items-center justify-center hover:bg-orange-50 rounded-full transition-colors"
@@ -200,7 +201,7 @@ export function ChatBubbleWidget() {
                                                 </div>
                                             </div>
                                             {onlineUsers.includes(user.id) && (
-                                                <span className="w-2 h-2 bg-[#F38820] rounded-full" />
+                                                <span className="w-2 h-2 bg-green-500 rounded-full" />
                                             )}
                                         </button>
                                     ))
@@ -236,36 +237,37 @@ export function ChatBubbleWidget() {
                                     filteredRooms.map(room => {
                                         const unreadCount = Number(unreadCounts?.[room.id] || 0);
                                         return (
-                                        <button
-                                            key={room.id}
-                                            onClick={() => selectRoom(room)}
-                                            className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 text-left transition-colors"
-                                        >
-                                            <div className="relative">
-                                                <div className="w-8 h-8 bg-gray-100 border border-gray-200 flex items-center justify-center font-bold text-xs text-[#F38820]">
-                                                    {room.isGroup ? "G" : getRoomName(room)[0].toUpperCase()}
-                                                </div>
-                                                {isUserOnline(room) && (
-                                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#F38820] border-2 border-white rounded-full" />
-                                                )}
-                                            </div>
-                                            <div className="flex-1 min-w-0 flex flex-col">
-                                                <div className="flex justify-between items-baseline">
-                                                    <span className={`text-xs truncate ${unreadCount > 0 ? "font-black text-slate-950" : "font-semibold text-slate-800"}`}>
-                                                        {getRoomName(room)}
-                                                    </span>
-                                                    {unreadCount > 0 && (
-                                                        <span className="ml-2 min-w-5 h-5 px-1.5 rounded-full bg-[#F38820] text-white text-[10px] font-black flex items-center justify-center">
-                                                            {unreadCount > 99 ? "99+" : unreadCount}
-                                                        </span>
+                                            <button
+                                                key={room.id}
+                                                onClick={() => selectRoom(room)}
+                                                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 text-left transition-colors"
+                                            >
+                                                <div className="relative">
+                                                    <div className="w-8 h-8 bg-gray-100 border border-gray-200 flex items-center justify-center font-bold text-xs text-[#F38820]">
+                                                        {room.isGroup ? "G" : getRoomName(room)[0].toUpperCase()}
+                                                    </div>
+                                                    {isUserOnline(room) && (
+                                                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
                                                     )}
                                                 </div>
-                                                <span className={`text-[10px] truncate mt-0.5 ${unreadCount > 0 ? "text-slate-900 font-bold" : "text-slate-500"}`}>
-                                                    {room.latestMessage ? room.latestMessage.content : "Chưa có tin nhắn"}
-                                                </span>
-                                            </div>
-                                        </button>
-                                    )})
+                                                <div className="flex-1 min-w-0 flex flex-col">
+                                                    <div className="flex justify-between items-baseline">
+                                                        <span className={`text-xs truncate ${unreadCount > 0 ? "font-black text-slate-950" : "font-semibold text-slate-800"}`}>
+                                                            {getRoomName(room)}
+                                                        </span>
+                                                        {unreadCount > 0 && (
+                                                            <span className="ml-2 min-w-5 h-5 px-1.5 rounded-full bg-[#F38820] text-white text-[10px] font-black flex items-center justify-center">
+                                                                {unreadCount > 99 ? "99+" : unreadCount}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className={`text-[10px] truncate mt-0.5 ${unreadCount > 0 ? "text-slate-900 font-bold" : "text-slate-500"}`}>
+                                                        {room.latestMessage ? room.latestMessage.content : "Chưa có tin nhắn"}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        )
+                                    })
                                 )}
                             </div>
                         </div>

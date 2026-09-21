@@ -126,7 +126,7 @@ export function ChatWorkspace({
                             {activeRoom.isGroup ? <UsersIcon className="w-4 h-4" /> : getRoomName(activeRoom)[0].toUpperCase()}
                         </div>
                         {isOnline && (
-                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#F38820] border border-white rounded-full" />
+                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border border-white rounded-full" />
                         )}
                     </div>
                     <div className="flex flex-col">

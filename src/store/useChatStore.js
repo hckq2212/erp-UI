@@ -27,6 +27,51 @@ export const useChatStore = create((set, get) => ({
     unreadRooms: {}, // roomId -> boolean
     unreadCounts: {}, // roomId -> number
 
+    applyReceivedMessage: (message) => {
+        const { activeRoom, messages, rooms, selfUserId: currentSelfUserId, unreadRooms, unreadCounts } = get();
+
+        if (activeRoom && String(activeRoom.id) === String(message.roomId)) {
+            const exists = messages.some((item) => String(item.id) === String(message.id));
+            if (!exists) {
+                set({ messages: [...messages, message] });
+            }
+        }
+
+        const roomExists = rooms.some(room => String(room.id) === String(message.roomId));
+        if (!roomExists) {
+            get().fetchRooms();
+            return;
+        }
+
+        const updatedRooms = rooms.map(room => {
+            if (String(room.id) === String(message.roomId)) {
+                return {
+                    ...room,
+                    latestMessage: message,
+                    updatedAt: new Date().toISOString()
+                };
+            }
+            return room;
+        });
+
+        const getRoomTime = (room) => room.latestMessage?.createdAt || room.updatedAt || room.createdAt || 0;
+        const sortedRooms = [...updatedRooms].sort((a, b) => new Date(getRoomTime(b)).getTime() - new Date(getRoomTime(a)).getTime());
+        const isUnread = String(message.senderId) !== String(currentSelfUserId) && (!activeRoom || String(activeRoom.id) !== String(message.roomId));
+        const newUnread = { ...unreadRooms };
+        const newUnreadCounts = { ...unreadCounts };
+
+        if (isUnread) {
+            newUnread[message.roomId] = true;
+            newUnreadCounts[message.roomId] = (newUnreadCounts[message.roomId] || 0) + 1;
+        }
+
+        set({
+            rooms: sortedRooms,
+            unreadRooms: newUnread,
+            unreadCounts: newUnreadCounts
+        });
+    },
+
     // Initialize Socket.io connection
     initSocket: (token, selfUserId) => {
         const { socket } = get();
@@ -40,12 +85,22 @@ export const useChatStore = create((set, get) => ({
         // Create socket connection with authentication credentials
         const newSocket = io(SOCKET_URL, {
             auth: { token },
-            transports: ["websocket"],
-            withCredentials: true
+            transports: ["websocket", "polling"],
+            withCredentials: true,
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 500,
+            reconnectionDelayMax: 5000,
+            timeout: 10000
         });
 
         newSocket.on("connect", () => {
+            const { activeRoom } = get();
             set({ isConnected: true });
+            if (activeRoom) {
+                newSocket.emit("join_room", activeRoom.id);
+            }
+            get().fetchRooms();
             console.log("Socket connected successfully");
         });
 
@@ -53,55 +108,12 @@ export const useChatStore = create((set, get) => ({
             set({ isConnected: false });
         });
 
-        // Listen for new messages
-        newSocket.on("receive_message", (message) => {
-            const { activeRoom, messages, rooms, selfUserId: currentSelfUserId, unreadRooms, unreadCounts } = get();
-
-            // If the message is for the active room, append it to messages
-            if (activeRoom && String(activeRoom.id) === String(message.roomId)) {
-                set({ messages: [...messages, message] });
-            }
-
-            // If the room doesn't exist in our state yet (e.g. newly created DM from another user), re-fetch
-            const roomExists = rooms.some(room => String(room.id) === String(message.roomId));
-            if (!roomExists) {
-                get().fetchRooms();
-                return;
-            }
-
-            // Update the room's latest message in the sidebar
-            const updatedRooms = rooms.map(room => {
-                if (String(room.id) === String(message.roomId)) {
-                    return {
-                        ...room,
-                        latestMessage: message,
-                        updatedAt: new Date().toISOString()
-                    };
-                }
-                return room;
-            });
-
-            // Sort rooms by newest message or update first!
-            const getRoomTime = (room) => {
-                return room.latestMessage?.createdAt || room.updatedAt || room.createdAt || 0;
-            };
-            const sortedRooms = [...updatedRooms].sort((a, b) => new Date(getRoomTime(b)).getTime() - new Date(getRoomTime(a)).getTime());
-
-            // Track unread if the message is from someone else and it's NOT the active room
-            const isUnread = String(message.senderId) !== String(currentSelfUserId) && (!activeRoom || String(activeRoom.id) !== String(message.roomId));
-            const newUnread = { ...unreadRooms };
-            const newUnreadCounts = { ...unreadCounts };
-            if (isUnread) {
-                newUnread[message.roomId] = true;
-                newUnreadCounts[message.roomId] = (newUnreadCounts[message.roomId] || 0) + 1;
-            }
-
-            set({
-                rooms: sortedRooms,
-                unreadRooms: newUnread,
-                unreadCounts: newUnreadCounts
-            });
+        newSocket.on("connect_error", (error) => {
+            console.error("Socket connection error:", error);
+            set({ isConnected: false });
         });
+
+        newSocket.on("receive_message", (message) => get().applyReceivedMessage(message));
 
         // Listen for online users
         newSocket.on("online_users", (userIds) => {
@@ -250,14 +262,57 @@ export const useChatStore = create((set, get) => ({
     },
 
     // Send a message via WebSockets
-    sendMessage: (content, attachments = []) => {
+    sendMessage: async (content, attachments = []) => {
         const { socket, activeRoom } = get();
-        if (!socket || !activeRoom) return;
+        const trimmed = content?.trim();
+        if (!activeRoom || !trimmed) return;
 
-        socket.emit("send_message", {
-            roomId: activeRoom.id,
-            content,
-            attachments
+        const sendViaRest = async () => {
+            const response = await chatAxios.post(`/chat-rooms/${activeRoom.id}/messages`, {
+                content: trimmed,
+                attachments
+            });
+            if (response.data) {
+                get().applyReceivedMessage(response.data);
+            }
+            return response.data;
+        };
+
+        if (!socket) {
+            return sendViaRest();
+        }
+
+        if (!socket.connected) {
+            socket.connect();
+            await new Promise((resolve) => {
+                const done = () => resolve(null);
+                socket.once("connect", done);
+                setTimeout(done, 1500);
+            });
+        }
+
+        if (!socket.connected) {
+            return sendViaRest();
+        }
+
+        return new Promise((resolve) => {
+            socket.timeout(5000).emit("send_message", {
+                roomId: activeRoom.id,
+                content: trimmed,
+                attachments
+            }, async (error, response) => {
+                if (error || !response?.ok) {
+                    try {
+                        const fallbackMessage = await sendViaRest();
+                        resolve(fallbackMessage);
+                    } catch (fallbackError) {
+                        console.error("Error sending message:", fallbackError);
+                        resolve(null);
+                    }
+                    return;
+                }
+                resolve(response.message);
+            });
         });
     },
 

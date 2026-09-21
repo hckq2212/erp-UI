@@ -58,7 +58,7 @@ export function ChatInfoSidebar({
                         )}
                     </div>
                     {isOnline && (
-                        <span className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-[#F38820] border-2 border-white rounded-full" />
+                        <span className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
                     )}
                 </div>
 
@@ -120,7 +120,7 @@ export function ChatInfoSidebar({
                                                     {(p.user?.fullName || "M").toUpperCase()[0]}
                                                 </div>
                                                 {isMemberOnline && (
-                                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#F38820] border-2 border-white rounded-full" />
+                                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
                                                 )}
                                             </div>
                                             <div className="flex-1 min-w-0">
