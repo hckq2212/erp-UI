@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { formatCurrency } from '../../utils/format';
+import { JOB_CATEGORY_LABELS, JOB_CATEGORY_COLORS } from '../../utils/enums';
+import { cn } from '../../utils/cn';
 import { useState } from 'react';
 import { EditJobCriteriaModal } from './EditJobCriteriaModal';
 import { EditJobInfoModal } from './EditJobInfoModal';
@@ -76,6 +78,20 @@ export const JobDetailPage = () => {
                                 Nickname mặc định: {job.nickname}
                             </p>
                         )}
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                            {Array.isArray(job.categories) && job.categories.length > 0 ? (
+                                job.categories.map((cat) => (
+                                    <span
+                                        key={cat}
+                                        className={cn("px-2 py-0.5 rounded-lg text-xs font-bold border", JOB_CATEGORY_COLORS[cat] || 'bg-gray-100 text-gray-600 border-gray-200')}
+                                    >
+                                        {JOB_CATEGORY_LABELS[cat] || cat}
+                                    </span>
+                                ))
+                            ) : (
+                                <span className="text-xs italic text-gray-400">Chưa xác định category</span>
+                            )}
+                        </div>
                         <p className="text-gray-500 text-sm mt-1">Quản lý chi tiết và tiêu chí đánh giá hạng mục công việc</p>
                     </div>
                     {canEdit && (

@@ -228,6 +228,36 @@ export const FIELD_LABELS = {
   Khac: 'Khác'
 };
 
+export const JOB_CATEGORY_LABELS = {
+  QUAY_PHIM: 'Quay phim',
+  DUNG_PHIM: 'Dựng phim',
+  THIET_KE: 'Thiết kế',
+  AI_CONTENT: 'AI Content',
+  MARKETING: 'Marketing',
+  BIEN_KICH: 'Biên kịch',
+  KHAC: 'Khác'
+};
+
+export const JOB_CATEGORY_COLORS = {
+  QUAY_PHIM: 'bg-blue-50 text-blue-700 border-blue-100',
+  DUNG_PHIM: 'bg-purple-50 text-purple-700 border-purple-100',
+  THIET_KE: 'bg-pink-50 text-pink-700 border-pink-100',
+  AI_CONTENT: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+  MARKETING: 'bg-orange-50 text-orange-700 border-orange-100',
+  BIEN_KICH: 'bg-amber-50 text-amber-700 border-amber-100',
+  KHAC: 'bg-gray-100 text-gray-600 border-gray-200'
+};
+
+export const JOB_CATEGORY_OPTIONS = [
+  { value: 'QUAY_PHIM', label: JOB_CATEGORY_LABELS.QUAY_PHIM },
+  { value: 'DUNG_PHIM', label: JOB_CATEGORY_LABELS.DUNG_PHIM },
+  { value: 'THIET_KE', label: JOB_CATEGORY_LABELS.THIET_KE },
+  { value: 'AI_CONTENT', label: JOB_CATEGORY_LABELS.AI_CONTENT },
+  { value: 'MARKETING', label: JOB_CATEGORY_LABELS.MARKETING },
+  { value: 'BIEN_KICH', label: JOB_CATEGORY_LABELS.BIEN_KICH },
+  { value: 'KHAC', label: JOB_CATEGORY_LABELS.KHAC }
+];
+
 export const JOB_PERFORMER_TYPE = {
   INTERNAL: "Nội bộ",
   PARTNER: "Đối tác",
