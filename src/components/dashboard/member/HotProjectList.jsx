@@ -17,7 +17,7 @@ export const HotProjectList = ({
     };
 
     return (
-        <div className="bg-white p-4  rounded-[1rem] border border-slate-100 shadow-sm h-full">
+        <div className="bg-white p-4  rounded-[1rem] border border-slate-100 shadow-sm h-fit">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-rose-50 text-rose-500 rounded-lg relative">

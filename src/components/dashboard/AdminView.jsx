@@ -392,7 +392,7 @@ export const AdminView = ({ dashboard, navigate, onSelectMember }) => {
                 averageProgress={averageProgress}
             />
 
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(320px,0.8fr)_minmax(320px,0.85fr)_minmax(0,1.3fr)]">
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(320px,0.8fr)_minmax(320px,0.85fr)_minmax(0,1.3fr)] h-fit">
                 <SectionPanel
                     title="Danh sách cần duyệt"
                     count={approvalItems.length}
