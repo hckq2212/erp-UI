@@ -24,6 +24,9 @@ import { getFilePreviewUrl } from '../../../utils/cloudinary';
 import { cn } from '../../../utils/cn';
 import { getTaskDisplayName } from '../../../utils/taskName';
 import { formatDate } from '../../../utils/format';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../../../store/authSlice';
+import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
 
 const FILTER_OPTIONS = [
     { value: 'ALL', label: 'Tất cả' },
@@ -155,29 +158,41 @@ const TaskRow = ({ task, onOpenTask }) => (
     <button
         type="button"
         onClick={() => onOpenTask(task.id)}
-        className="group grid w-full gap-2 px-3 py-3 text-left transition-colors hover:bg-blue-50/40 md:grid-cols-[92px_minmax(0,1fr)_128px_92px_128px_42px] md:items-center"
+        className="group grid w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-blue-50/40 md:grid-cols-[120px_minmax(160px,1fr)_160px_100px_130px_36px] md:items-center"
     >
-        <div className="flex items-center gap-2 md:block">
-            <span className="font-mono text-xs font-bold text-gray-500">{task.code || '---'}</span>
-            {task.isOutput && <span className="rounded bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-600 md:mt-1 md:inline-block">Đầu ra</span>}
+        <div className="flex items-center gap-2 md:block min-w-0">
+            <span className="font-mono text-xs font-bold text-gray-600 block truncate" title={task.code}>
+                {task.code || '---'}
+            </span>
+            {task.isOutput && (
+                <span className="rounded bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-600 md:mt-1 md:inline-block">
+                    Đầu ra
+                </span>
+            )}
         </div>
 
         <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-gray-900">
+            <p className="truncate text-sm font-bold text-gray-900" title={getTaskDisplayName(task)}>
                 {getTaskDisplayName(task) || 'Chưa có tên công việc'}
             </p>
-            <p className="mt-0.5 text-xs text-gray-400 md:hidden">{getTaskOwner(task)}</p>
+            <p className="mt-0.5 text-xs text-gray-400 block truncate md:hidden" title={getTaskOwner(task)}>
+                {getTaskOwner(task)}
+            </p>
+        </div>
+
+        <div className="hidden min-w-0 text-xs font-medium text-gray-600 md:block">
+            <span className="block truncate" title={getTaskOwner(task)}>
+                {getTaskOwner(task)}
+            </span>
         </div>
 
         <div className="hidden min-w-0 text-xs font-medium text-gray-500 md:block">
-            <span className="truncate">{getTaskOwner(task)}</span>
+            <span className="block truncate">
+                {task.plannedEndDate ? formatDate(task.plannedEndDate) : '---'}
+            </span>
         </div>
 
-        <div className="hidden text-xs font-medium text-gray-500 md:block">
-            {task.plannedEndDate ? formatDate(task.plannedEndDate) : '---'}
-        </div>
-
-        <div>
+        <div className="min-w-0">
             <TaskStatusBadge status={task.status} />
         </div>
 
@@ -196,18 +211,22 @@ const TaskList = ({ tasks, onOpenTask }) => {
 
     return (
         <div className="overflow-hidden rounded-xl border border-gray-100 bg-white">
-            <div className="hidden border-b border-gray-100 bg-gray-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-400 md:grid md:grid-cols-[92px_minmax(0,1fr)_128px_92px_128px_42px]">
-                <span>Mã</span>
-                <span>Công việc</span>
-                <span>Người làm</span>
-                <span>Hạn</span>
-                <span>Trạng thái</span>
-                <span></span>
-            </div>
-            <div className="divide-y divide-gray-100">
-                {sortedTasks.map((task) => (
-                    <TaskRow key={task.id} task={task} onOpenTask={onOpenTask} />
-                ))}
+            <div className="overflow-x-auto">
+                <div className="min-w-[720px]">
+                    <div className="hidden border-b border-gray-100 bg-gray-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-400 md:grid md:grid-cols-[120px_minmax(160px,1fr)_160px_100px_130px_36px] md:items-center gap-3">
+                        <span>Mã</span>
+                        <span>Công việc</span>
+                        <span>Người làm</span>
+                        <span>Hạn</span>
+                        <span>Trạng thái</span>
+                        <span></span>
+                    </div>
+                    <div className="divide-y divide-gray-100">
+                        {sortedTasks.map((task) => (
+                            <TaskRow key={task.id} task={task} onOpenTask={onOpenTask} />
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -241,18 +260,26 @@ const ResultCard = ({ result, index }) => {
     );
 };
 
-const ServiceDetails = ({ serviceTasks, results, feedback, onOpenTask }) => (
+const ServiceDetails = ({ serviceTasks, results, feedback, onOpenTask, canSeeAllTasks = true }) => (
     <div className="mt-4 grid gap-4 rounded-xl border border-gray-100 bg-gray-50 p-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
         <div>
             <SectionHeader
                 icon={ListChecks}
                 title="Công việc thuộc dịch vụ"
-                subtitle={`${serviceTasks.length} công việc trong hạng mục này`}
+                subtitle={
+                    canSeeAllTasks
+                        ? `${serviceTasks.length} công việc trong hạng mục này`
+                        : `${serviceTasks.length} công việc của bạn trong hạng mục này`
+                }
             />
             {serviceTasks.length > 0 ? (
                 <TaskList tasks={serviceTasks} onOpenTask={onOpenTask} />
             ) : (
-                <p className="text-sm italic text-gray-400">Chưa có công việc thuộc dịch vụ</p>
+                <p className="text-sm italic text-gray-400">
+                    {canSeeAllTasks
+                        ? 'Chưa có công việc thuộc dịch vụ'
+                        : 'Bạn không có công việc nào trong dịch vụ này'}
+                </p>
             )}
         </div>
 
@@ -282,35 +309,88 @@ const ServiceDetails = ({ serviceTasks, results, feedback, onOpenTask }) => (
     </div>
 );
 
-export const ContractInfo = ({ contract, projectId }) => {
+export const ContractInfo = ({ contract, projectId, project }) => {
     const navigate = useNavigate();
     const [isAcceptanceModalOpen, setIsAcceptanceModalOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [expandedGroups, setExpandedGroups] = useState({});
     const [expandedServices, setExpandedServices] = useState({});
     const services = Array.isArray(contract?.services) ? contract.services : [];
+    const user = useSelector(selectCurrentUser);
+    const currentUserId = getCurrentUserId(user);
+
+    const projectManagerMember = project?.team?.members?.find((member) => member.role === 'PROJECT_MANAGER');
+    const isProjectLead = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
+        isSameUser(project?.team?.teamLeadId, currentUserId);
+    const isProjectManager = isSameUser(projectManagerMember?.user?.id, currentUserId) ||
+        isSameUser(project?.projectManager?.id, currentUserId) ||
+        Boolean(project?.team?.members?.some((m) => m.role === 'PROJECT_MANAGER' && isSameUser(m.user?.id, currentUserId)));
+    const isAdminOrBOD = ['ADMIN', 'BOD'].includes(user?.role);
+    const canSeeAllTasks = isAdminOrBOD || isProjectLead || isProjectManager;
+    const canSendAcceptance = canSeeAllTasks || user?.role === 'ADMIN_SALE';
+
+    const projectTasksMap = useMemo(() => {
+        const map = new Map();
+        if (Array.isArray(project?.tasks)) {
+            project.tasks.forEach((t) => map.set(t.id, t));
+        }
+        return map;
+    }, [project?.tasks]);
+
+    const isUserTask = (task) => {
+        if (
+            isSameUser(currentUserId, task.assigneeId) ||
+            isSameUser(currentUserId, task.assignee?.id) ||
+            isSameUser(currentUserId, task.helperId) ||
+            isSameUser(currentUserId, task.helper?.id)
+        ) {
+            return true;
+        }
+        if (Array.isArray(task.subtasks) && task.subtasks.some((st) =>
+            isSameUser(currentUserId, st.assigneeId) ||
+            isSameUser(currentUserId, st.assignee?.id) ||
+            isSameUser(currentUserId, st.helperId) ||
+            isSameUser(currentUserId, st.helper?.id)
+        )) {
+            return true;
+        }
+        return false;
+    };
+
+    const visibleServices = useMemo(() => {
+        if (canSeeAllTasks) return services;
+        return services.filter((item) => {
+            const rawTasks = Array.isArray(item.tasks) ? item.tasks : [];
+            const enrichedTasks = rawTasks.map((t) => {
+                const full = projectTasksMap.get(t.id);
+                return full ? { ...t, ...full } : t;
+            });
+            const userTasks = enrichedTasks.filter(isUserTask);
+            return userTasks.length > 0;
+        });
+    }, [services, canSeeAllTasks, projectTasksMap, currentUserId]);
 
     const summary = useMemo(() => ({
-        total: services.length,
-        active: services.filter((service) => service.status === 'ACTIVE').length,
-        awaiting: services.filter((service) => service.status === 'AWAITING_ACCEPTANCE').length,
-        rejected: services.filter((service) => service.status === 'ACCEPTANCE_REJECTED').length,
-        completed: services.filter((service) => service.status === 'COMPLETED').length,
-        cancelled: services.filter((service) => service.status === 'CANCELLED').length,
-    }), [services]);
+        total: visibleServices.length,
+        active: visibleServices.filter((service) => service.status === 'ACTIVE').length,
+        awaiting: visibleServices.filter((service) => service.status === 'AWAITING_ACCEPTANCE').length,
+        rejected: visibleServices.filter((service) => service.status === 'ACCEPTANCE_REJECTED').length,
+        completed: visibleServices.filter((service) => service.status === 'COMPLETED').length,
+        cancelled: visibleServices.filter((service) => service.status === 'CANCELLED').length,
+    }), [visibleServices]);
 
     const filterCounts = useMemo(() => ({
-        ALL: services.length,
+        ALL: visibleServices.length,
         ACTIVE: summary.active,
         AWAITING_ACCEPTANCE: summary.awaiting,
         ACCEPTANCE_REJECTED: summary.rejected,
         COMPLETED: summary.completed,
-    }), [services.length, summary]);
+    }), [visibleServices.length, summary]);
 
     const groupedServices = useMemo(() => {
         const filtered = statusFilter === 'ALL'
-            ? services
-            : services.filter((service) => service.status === statusFilter);
+            ? visibleServices
+            : visibleServices.filter((service) => service.status === statusFilter);
 
         return filtered.reduce((acc, item) => {
             const groupKey = item.packageName || 'Dịch vụ lẻ';
@@ -318,7 +398,7 @@ export const ContractInfo = ({ contract, projectId }) => {
             acc[groupKey].push(item);
             return acc;
         }, {});
-    }, [services, statusFilter]);
+    }, [visibleServices, statusFilter]);
 
     const groupEntries = Object.entries(groupedServices);
 
@@ -352,13 +432,15 @@ export const ContractInfo = ({ contract, projectId }) => {
                         </div>
                     </div>
 
-                    <button
-                        onClick={() => setIsAcceptanceModalOpen(true)}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-blue-100 transition-all hover:bg-blue-700 active:scale-95"
-                    >
-                        <Send className="h-4 w-4" />
-                        Gửi nghiệm thu
-                    </button>
+                    {canSendAcceptance && (
+                        <button
+                            onClick={() => setIsAcceptanceModalOpen(true)}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-blue-100 transition-all hover:bg-blue-700 active:scale-95"
+                        >
+                            <Send className="h-4 w-4" />
+                            Gửi nghiệm thu
+                        </button>
+                    )}
                 </div>
 
 
@@ -382,8 +464,14 @@ export const ContractInfo = ({ contract, projectId }) => {
                     ))}
                 </div>
 
-                {services.length === 0 ? (
-                    <EmptyState text="Chưa có hạng mục dịch vụ" />
+                {visibleServices.length === 0 ? (
+                    <EmptyState
+                        text={
+                            canSeeAllTasks
+                                ? 'Chưa có hạng mục dịch vụ'
+                                : 'Bạn không có công việc nào trong các hạng mục dịch vụ của dự án'
+                        }
+                    />
                 ) : groupEntries.length === 0 ? (
                     <EmptyState text="Không có dịch vụ phù hợp bộ lọc" />
                 ) : (
@@ -423,7 +511,14 @@ export const ContractInfo = ({ contract, projectId }) => {
                                     {isGroupOpen && (
                                         <div className="divide-y divide-gray-100 bg-white">
                                             {items.map((item) => {
-                                                const serviceTasks = Array.isArray(item.tasks) ? item.tasks : [];
+                                                const rawTasks = Array.isArray(item.tasks) ? item.tasks : [];
+                                                const enrichedTasks = rawTasks.map((t) => {
+                                                    const full = projectTasksMap.get(t.id);
+                                                    return full ? { ...t, ...full } : t;
+                                                });
+                                                const serviceTasks = canSeeAllTasks
+                                                    ? enrichedTasks
+                                                    : enrichedTasks.filter(isUserTask);
                                                 const results = Array.isArray(item.results) ? item.results : [];
                                                 const isServiceOpen = Boolean(expandedServices[item.id]);
                                                 const hasDetails = serviceTasks.length > 0 || results.length > 0 || item.feedback;
@@ -445,7 +540,11 @@ export const ContractInfo = ({ contract, projectId }) => {
                                                                 <div className="min-w-0">
                                                                     <h4 className="font-bold text-gray-900">{getServiceName(item)}</h4>
                                                                     <div className="mt-1 flex flex-wrap gap-2 text-xs font-semibold text-gray-400">
-                                                                        <span>{serviceTasks.length} công việc</span>
+                                                                        <span>
+                                                                            {canSeeAllTasks
+                                                                                ? `${serviceTasks.length} công việc`
+                                                                                : `${serviceTasks.length} công việc của bạn`}
+                                                                        </span>
                                                                         <span>{results.length} kết quả</span>
                                                                     </div>
                                                                 </div>
@@ -474,6 +573,7 @@ export const ContractInfo = ({ contract, projectId }) => {
                                                                 results={results}
                                                                 feedback={item.status === 'ACCEPTANCE_REJECTED' ? item.feedback : null}
                                                                 onOpenTask={(taskId) => navigate(`/tasks/${taskId}`)}
+                                                                canSeeAllTasks={canSeeAllTasks}
                                                             />
                                                         )}
                                                     </div>

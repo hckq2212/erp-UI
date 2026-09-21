@@ -9,6 +9,7 @@ import { ChevronDown, ChevronRight, ImagePlus, History, Trash2, Zap, RotateCcw }
 import { useGetTasksQuery } from '../../api/tasks'
 import { useGetMeQuery } from '../../api/auth'
 import { getCurrentUserId } from '../../utils/authUser'
+import GenerationBudgetCard from './GenerationBudgetCard'
 
 const STATUS_LABEL = {
   queued: 'Đang chờ xử lý...',
@@ -504,6 +505,7 @@ export default function FromCreateVideo({ createVideoHook }) {
               )}
             </div>
           )}
+          <GenerationBudgetCard taskId={taskId} />
           {selectedTask?.opportunityServiceJob?.briefVideo && (
             <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
               <p className="mb-1 font-semibold">Brief khách hàng</p>
