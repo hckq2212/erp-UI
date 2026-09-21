@@ -10,12 +10,16 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import Select from 'react-select';
 import {
   Bot,
+  BriefcaseBusiness,
   ChevronDown,
   CircleDollarSign,
   FolderKanban,
   Image as ImageIcon,
+  Lightbulb,
+  ListTodo,
   MessageSquareText,
   RefreshCw,
   UserRound,
@@ -46,6 +50,52 @@ const SelectField = ({ icon: Icon, label, value, onChange, children, disabled })
       </select>
       <ChevronDown className="pointer-events-none absolute right-3 h-4 w-4 text-slate-400" />
     </span>
+  </label>
+);
+
+const searchableSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: 44,
+    borderRadius: 12,
+    borderColor: state.isFocused ? '#818cf8' : '#e2e8f0',
+    boxShadow: state.isFocused ? '0 0 0 4px #e0e7ff' : 'none',
+    backgroundColor: state.isDisabled ? '#f8fafc' : '#ffffff',
+    cursor: state.isDisabled ? 'not-allowed' : 'pointer',
+    ':hover': { borderColor: state.isFocused ? '#818cf8' : '#cbd5e1' },
+  }),
+  valueContainer: (base) => ({ ...base, paddingLeft: 10, paddingRight: 6 }),
+  singleValue: (base) => ({ ...base, color: '#334155', fontSize: 14, fontWeight: 600 }),
+  placeholder: (base) => ({ ...base, color: '#94a3b8', fontSize: 14 }),
+  input: (base) => ({ ...base, color: '#334155', fontSize: 14 }),
+  indicatorSeparator: () => ({ display: 'none' }),
+  dropdownIndicator: (base) => ({ ...base, color: '#94a3b8' }),
+  menu: (base) => ({ ...base, zIndex: 30, borderRadius: 12, overflow: 'hidden' }),
+  option: (base, state) => ({
+    ...base,
+    fontSize: 14,
+    fontWeight: state.isSelected ? 700 : 500,
+    color: state.isSelected ? '#ffffff' : '#334155',
+    backgroundColor: state.isSelected ? '#4f46e5' : state.isFocused ? '#eef2ff' : '#ffffff',
+    cursor: 'pointer',
+  }),
+};
+
+const SearchableSelectField = ({ icon: Icon, label, options, value, onChange, placeholder, disabled }) => (
+  <label className="flex min-w-0 flex-col gap-1.5">
+    <span className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
+      <Icon className="h-3.5 w-3.5" /> {label}
+    </span>
+    <Select
+      options={options}
+      value={options.find((option) => option.value === value) || null}
+      onChange={onChange}
+      placeholder={placeholder}
+      noOptionsMessage={() => 'Không tìm thấy kết quả'}
+      isSearchable
+      isDisabled={disabled}
+      styles={searchableSelectStyles}
+    />
   </label>
 );
 
@@ -94,6 +144,8 @@ export const DashboardAIPage = () => {
   const canViewMembers = MEMBER_VIEW_ROLES.includes(me?.role);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [selectedOpportunityId, setSelectedOpportunityId] = useState('');
+  const [selectedTaskId, setSelectedTaskId] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
@@ -104,6 +156,8 @@ export const DashboardAIPage = () => {
   const queryArgs = {
     userId: selectedUserId,
     projectId: selectedProjectId,
+    opportunityId: selectedOpportunityId,
+    taskId: selectedTaskId,
     month: selectedMonth,
     year: selectedYear,
   };
@@ -114,6 +168,8 @@ export const DashboardAIPage = () => {
   const stats = data?.stats || { totalPrompts: 0, totalImages: 0, totalVideos: 0, totalCost: 0 };
   const members = data?.filters?.availableMembers || [];
   const projects = data?.filters?.availableProjects || [];
+  const opportunities = data?.filters?.availableOpportunities || [];
+  const tasks = data?.filters?.availableTasks || [];
   const generations = data?.generations || [];
   const spending = data?.spending || [];
   const years = useMemo(() => {
@@ -124,20 +180,50 @@ export const DashboardAIPage = () => {
   const selectedMember = selectedUserId === 'ALL'
     ? 'toàn bộ thành viên'
     : members.find((member) => member.id === selectedUserId)?.fullName || me?.fullName || 'bạn';
+  const projectOptions = useMemo(() => [
+    { value: '', label: 'Tất cả dự án' },
+    ...projects.map((project) => ({ value: project.id, label: project.name })),
+  ], [projects]);
+  const taskOptions = useMemo(() => [
+    { value: '', label: 'Tất cả công việc' },
+    ...tasks.map((task) => ({
+      value: task.id,
+      label: task.code ? `${task.code} · ${task.name}` : task.name,
+    })),
+  ], [tasks]);
+  const opportunityOptions = useMemo(() => [
+    { value: '', label: 'Tất cả cơ hội' },
+    ...opportunities.map((opportunity) => ({
+      value: opportunity.id,
+      label: opportunity.opportunityCode
+        ? `${opportunity.opportunityCode} · ${opportunity.name}`
+        : opportunity.name,
+    })),
+  ], [opportunities]);
 
   const handleMemberChange = (event) => {
     setSelectedProjectId('');
+    setSelectedOpportunityId('');
+    setSelectedTaskId('');
     setSelectedUserId(event.target.value);
+  };
+
+  const handleProjectChange = (option) => {
+    setSelectedTaskId('');
+    setSelectedOpportunityId('');
+    setSelectedProjectId(option?.value || '');
+  };
+
+  const handleOpportunityChange = (option) => {
+    setSelectedTaskId('');
+    setSelectedProjectId('');
+    setSelectedOpportunityId(option?.value || '');
   };
 
   return (
     <div className="mx-auto max-w-[1500px] space-y-6 pb-8">
       <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
         <div>
-          <div className="mb-2 flex items-center gap-2 text-indigo-600">
-            <Bot className="h-5 w-5" />
-            <span className="text-xs font-black uppercase tracking-[0.18em]">AI Analytics</span>
-          </div>
           <h1 className="text-3xl font-black tracking-tight text-slate-900">Phân tích dữ liệu AI</h1>
           <p className="mt-1 text-sm text-slate-500">
             Theo dõi lượt tạo và chi phí AI của {selectedMember}.
@@ -151,7 +237,7 @@ export const DashboardAIPage = () => {
         )}
       </div>
 
-      <section className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         {canViewMembers && (
           <SelectField icon={UserRound} label="Thành viên" value={selectedUserId} onChange={handleMemberChange}>
             <option value="ALL">Tất cả thành viên</option>
@@ -162,10 +248,31 @@ export const DashboardAIPage = () => {
             ))}
           </SelectField>
         )}
-        <SelectField icon={FolderKanban} label="Dự án" value={selectedProjectId} onChange={(event) => setSelectedProjectId(event.target.value)}>
-          <option value="">Tất cả dự án</option>
-          {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
-        </SelectField>
+        <SearchableSelectField
+          icon={BriefcaseBusiness}
+          label="Dự án"
+          options={selectedOpportunityId ? projectOptions.filter((option) => option.value) : projectOptions}
+          value={selectedOpportunityId ? '__disabled__' : selectedProjectId}
+          onChange={handleProjectChange}
+          placeholder={selectedOpportunityId ? 'Lọc theo dự án' : 'Tìm dự án...'}
+        />
+        <SearchableSelectField
+          icon={Lightbulb}
+          label="Cơ hội"
+          options={selectedProjectId ? opportunityOptions.filter((option) => option.value) : opportunityOptions}
+          value={selectedProjectId ? '__disabled__' : selectedOpportunityId}
+          onChange={handleOpportunityChange}
+          placeholder={selectedProjectId ? 'Lọc theo cơ hội' : 'Tìm cơ hội...'}
+        />
+        <SearchableSelectField
+          icon={ListTodo}
+          label="Công việc"
+          options={taskOptions}
+          value={selectedTaskId}
+          onChange={(option) => setSelectedTaskId(option?.value || '')}
+          placeholder={selectedProjectId || selectedOpportunityId ? 'Tìm công việc...' : 'Chọn dự án hoặc cơ hội'}
+          disabled={!selectedProjectId && !selectedOpportunityId}
+        />
         <SelectField icon={FolderKanban} label="Tháng" value={selectedMonth} onChange={(event) => setSelectedMonth(Number(event.target.value))}>
           {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
             <option key={month} value={month}>Tháng {month}</option>
