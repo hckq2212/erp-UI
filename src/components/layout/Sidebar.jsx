@@ -35,6 +35,7 @@ const menuItems = [
     ],
   },
   { path: '/document-library', icon: Archive, label: 'Kho tài liệu' },
+  { path: '/settings', icon: Settings, label: 'Cài đặt', roles: ['ADMIN'] },
 ];
 
 export const Sidebar = ({ isCollapsed }) => {

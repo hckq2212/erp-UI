@@ -41,6 +41,7 @@ import Chatbot from './components/Chatbot';
 import { CreateVideoAIPage } from './pages/CreateVideoAI/CreateVideoAIPage';
 import { CreateVideoMotionControlPage } from './pages/CreateVideoAI/CreateVideoMotionControlPage';
 import { LibraryVideoAiPage } from './pages/LibraryVideoAi/LibraryVideoAiPage';
+import { SettingsPage } from './pages/Settings/SettingsPage';
 function AppContent() {
   // Use the query to check if the user is logged in via cookies on startup
   const { data: currentUser, isLoading } = useGetMeQuery();
@@ -425,6 +426,16 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <LibraryVideoAiPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/settings'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <SettingsPage />
               </Layout>
             </ProtectedRoute>
           }
