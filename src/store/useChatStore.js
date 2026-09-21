@@ -25,6 +25,7 @@ export const useChatStore = create((set, get) => ({
 
     selfUserId: null,
     unreadRooms: {}, // roomId -> boolean
+    unreadCounts: {}, // roomId -> number
 
     // Initialize Socket.io connection
     initSocket: (token, selfUserId) => {
@@ -54,7 +55,7 @@ export const useChatStore = create((set, get) => ({
 
         // Listen for new messages
         newSocket.on("receive_message", (message) => {
-            const { activeRoom, messages, rooms, selfUserId: currentSelfUserId, unreadRooms } = get();
+            const { activeRoom, messages, rooms, selfUserId: currentSelfUserId, unreadRooms, unreadCounts } = get();
 
             // If the message is for the active room, append it to messages
             if (activeRoom && String(activeRoom.id) === String(message.roomId)) {
@@ -89,13 +90,16 @@ export const useChatStore = create((set, get) => ({
             // Track unread if the message is from someone else and it's NOT the active room
             const isUnread = String(message.senderId) !== String(currentSelfUserId) && (!activeRoom || String(activeRoom.id) !== String(message.roomId));
             const newUnread = { ...unreadRooms };
+            const newUnreadCounts = { ...unreadCounts };
             if (isUnread) {
                 newUnread[message.roomId] = true;
+                newUnreadCounts[message.roomId] = (newUnreadCounts[message.roomId] || 0) + 1;
             }
 
             set({
                 rooms: sortedRooms,
-                unreadRooms: newUnread
+                unreadRooms: newUnread,
+                unreadCounts: newUnreadCounts
             });
         });
 
@@ -152,11 +156,14 @@ export const useChatStore = create((set, get) => ({
 
             // Initialize unreadRooms state from backend database
             const newUnread = {};
+            const newUnreadCounts = {};
             sortedRooms.forEach(room => {
-                newUnread[room.id] = !!room.unread;
+                const unreadCount = Number(room.unreadCount || 0);
+                newUnread[room.id] = unreadCount > 0 || !!room.unread;
+                newUnreadCounts[room.id] = unreadCount;
             });
 
-            set({ rooms: sortedRooms, unreadRooms: newUnread, loadingRooms: false });
+            set({ rooms: sortedRooms, unreadRooms: newUnread, unreadCounts: newUnreadCounts, loadingRooms: false });
         } catch (error) {
             console.error("Error fetching chat rooms:", error);
             set({ loadingRooms: false });
@@ -207,15 +214,17 @@ export const useChatStore = create((set, get) => ({
 
     // Select active room and join socket room
     selectRoom: (room) => {
-        const { socket, activeRoom, unreadRooms } = get();
+        const { socket, activeRoom, unreadRooms, unreadCounts } = get();
 
         if (activeRoom && socket) {
             socket.emit("leave_room", activeRoom.id);
         }
 
         const newUnread = { ...unreadRooms };
+        const newUnreadCounts = { ...unreadCounts };
         if (room) {
             newUnread[room.id] = false;
+            newUnreadCounts[room.id] = 0;
 
             // Call backend API to mark as read in database persistently
             chatAxios.post(`/chat-rooms/${room.id}/read`).catch(err => {
@@ -227,6 +236,7 @@ export const useChatStore = create((set, get) => ({
             activeRoom: room,
             messages: [],
             unreadRooms: newUnread,
+            unreadCounts: newUnreadCounts,
             hasMoreMessages: true,
             loadingMoreMessages: false
         });

@@ -50,7 +50,7 @@ export function ChatInfoSidebar({
             {/* 1. Header Details */}
             <div className="flex flex-col items-center pt-8 pb-6 px-4 border-b border-gray-100 flex-shrink-0">
                 <div className="relative mb-3">
-                    <div className="w-20 h-20 rounded-full bg-gray-150 border border-gray-200/60 flex items-center justify-center font-bold text-3xl text-[#0084ff]">
+                    <div className="w-20 h-20 rounded-full bg-gray-150 border border-gray-200/60 flex items-center justify-center font-bold text-3xl text-[#F38820]">
                         {activeRoom.isGroup ? (
                             <UsersIcon className="w-9 h-9" />
                         ) : (
@@ -58,7 +58,7 @@ export function ChatInfoSidebar({
                         )}
                     </div>
                     {isOnline && (
-                        <span className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-[#31a24c] border-2 border-white rounded-full" />
+                        <span className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-[#F38820] border-2 border-white rounded-full" />
                     )}
                 </div>
 
@@ -116,11 +116,11 @@ export function ChatInfoSidebar({
                                     return (
                                         <div key={p.id} className="flex items-center gap-2.5">
                                             <div className="relative flex-shrink-0">
-                                                <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-bold text-xs text-[#0084ff]">
+                                                <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-bold text-xs text-[#F38820]">
                                                     {(p.user?.fullName || "M").toUpperCase()[0]}
                                                 </div>
                                                 {isMemberOnline && (
-                                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#31a24c] border-2 border-white rounded-full" />
+                                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#F38820] border-2 border-white rounded-full" />
                                                 )}
                                             </div>
                                             <div className="flex-1 min-w-0">

@@ -46,7 +46,7 @@ export function ChatGroupModal({
                             placeholder="Nhập tên nhóm..."
                             value={groupName}
                             onChange={(e) => setGroupName(e.target.value)}
-                            className="w-full bg-gray-50 border border-gray-200 text-xs px-3 py-2 outline-none focus:border-[#0084ff] text-slate-800 rounded-lg"
+                            className="w-full bg-gray-50 border border-gray-200 text-xs px-3 py-2 outline-none focus:border-[#F38820] text-slate-800 rounded-lg"
                         />
                     </div>
 
@@ -61,12 +61,12 @@ export function ChatGroupModal({
                                         type="button"
                                         onClick={() => toggleSelectUser(user.id)}
                                         className={`w-full px-4 py-2.5 text-xs flex items-center justify-between text-left transition-colors ${
-                                            isSelected ? "bg-emerald-50 text-emerald-800" : "text-slate-600 hover:bg-gray-100"
+                                            isSelected ? "bg-orange-50 text-[#F38820]" : "text-slate-600 hover:bg-gray-100"
                                         }`}
                                     >
                                         <span>{user.fullName}</span>
                                         <span className={`w-4 h-4 border flex items-center justify-center font-bold text-[8px] rounded-md ${
-                                            isSelected ? "border-[#0084ff] bg-[#0084ff] text-white" : "border-gray-300"
+                                            isSelected ? "border-[#F38820] bg-[#F38820] text-white" : "border-gray-300"
                                         }`}>
                                             {isSelected ? "✓" : ""}
                                         </span>
@@ -89,7 +89,7 @@ export function ChatGroupModal({
                         disabled={!groupName.trim() || selectedUserIds.length === 0}
                         className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors rounded-lg ${
                             groupName.trim() && selectedUserIds.length > 0
-                                ? "bg-[#0084ff] text-white hover:bg-[#0073de]"
+                                ? "bg-[#F38820] text-white hover:bg-[#d97616]"
                                 : "bg-gray-150 text-gray-400 cursor-not-allowed"
                         }`}
                     >

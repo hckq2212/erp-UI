@@ -51,7 +51,7 @@ export function ChatBubbleRoom() {
     return (
         <div className="flex-1 flex flex-col bg-white overflow-hidden">
             {/* Messages Thread Pane */}
-            <div className="flex-1 overflow-y-auto px-3 py-4 flex flex-col">
+            <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col bg-white">
                 {loadingMessages ? (
                     <div className="flex-1 flex items-center justify-center text-xs text-slate-400 font-mono">
                         ĐANG TẢI LỊCH SỬ...

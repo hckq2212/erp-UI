@@ -102,7 +102,7 @@ export function ChatWorkspace({
     if (!activeRoom) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-white">
-                <div className="w-16 h-16 bg-[#eaf4ff] text-[#0084ff] flex items-center justify-center text-2xl mb-4 rounded-full shadow-sm">
+                <div className="w-16 h-16 bg-orange-50 text-[#F38820] flex items-center justify-center text-2xl mb-4 rounded-full shadow-sm">
                     💬
                 </div>
                 <h3 className="text-sm font-bold text-slate-700 uppercase tracking-widest">Chọn cuộc trò chuyện</h3>
@@ -122,11 +122,11 @@ export function ChatWorkspace({
             <div className="px-6 py-3.5 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="relative">
-                        <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-bold text-sm text-[#0084ff]">
+                        <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-bold text-sm text-[#F38820]">
                             {activeRoom.isGroup ? <UsersIcon className="w-4 h-4" /> : getRoomName(activeRoom)[0].toUpperCase()}
                         </div>
                         {isOnline && (
-                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#31a24c] border border-white rounded-full" />
+                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#F38820] border border-white rounded-full" />
                         )}
                     </div>
                     <div className="flex flex-col">
@@ -144,17 +144,17 @@ export function ChatWorkspace({
 
                 {/* Messenger Top Header Action Tools */}
                 <div className="flex items-center gap-4">
-                    {/* <button className="text-[#0084ff] hover:text-[#0073de] transition-colors p-1.5 rounded-full hover:bg-gray-100">
-                        <Phone className="w-5 h-5 fill-current" />
+                    {/* <button className="text-[#F38820] hover:text-[#d97616] transition-colors p-1.5 rounded-full hover:bg-gray-100">
+                        <Phone className="w-5 h-5" />
                     </button>
-                    <button className="text-[#0084ff] hover:text-[#0073de] transition-colors p-1.5 rounded-full hover:bg-gray-100">
-                        <Video className="w-5 h-5 fill-current" />
+                    <button className="text-[#F38820] hover:text-[#d97616] transition-colors p-1.5 rounded-full hover:bg-gray-100">
+                        <Video className="w-5 h-5" />
                     </button> */}
 
                     {activeRoom.isGroup && (
                         <button
                             onClick={onAddMembersClick}
-                            className="text-[#0084ff] hover:text-[#0073de] transition-colors p-1.5 rounded-full hover:bg-gray-100"
+                            className="text-[#F38820] hover:text-[#d97616] transition-colors p-1.5 rounded-full hover:bg-gray-100"
                             title="Thêm thành viên"
                         >
                             <Plus className="w-5 h-5" />
@@ -164,8 +164,8 @@ export function ChatWorkspace({
                     <button
                         onClick={onToggleInfo}
                         className={`transition-colors p-1.5 rounded-full ${showInfo
-                            ? "bg-[#eaf4ff] text-[#0084ff]"
-                            : "text-[#0084ff] hover:text-[#0073de] hover:bg-gray-100"
+                            ? "bg-orange-50 text-[#F38820]"
+                            : "text-[#F38820] hover:text-[#d97616] hover:bg-gray-100"
                             }`}
                         title="Thông tin về cuộc trò chuyện"
                     >

@@ -131,23 +131,23 @@ export function ChatSidebar({
                                 key={item.type + "-" + item.id}
                                 onClick={() => item.type === "room" ? selectRoom(item.room) : handleUserClick(item.id)}
                                 className={`w-full p-3 flex items-center gap-3 transition-colors text-left rounded-xl ${isActive
-                                    ? "bg-[#eaf4ff]/60"
+                                    ? "bg-orange-50/80"
                                     : "hover:bg-gray-100"
                                     }`}
                             >
                                 <div className="relative flex-shrink-0">
-                                    <div className={`w-12 h-12 rounded-full border border-gray-200/60 flex items-center justify-center font-bold text-base ${isActive ? "bg-[#0084ff] text-white" : "bg-gray-150 text-[#0084ff]"
+                                    <div className={`w-12 h-12 rounded-full border border-gray-200/60 flex items-center justify-center font-bold text-base ${isActive ? "bg-[#F38820] text-white" : "bg-gray-150 text-[#F38820]"
                                         }`}>
                                         {item.isGroup ? <UsersIcon className="w-5 h-5" /> : item.name[0].toUpperCase()}
                                     </div>
                                     {item.online && (
-                                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#31a24c] border-2 border-white rounded-full" />
+                                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#F38820] border-2 border-white rounded-full" />
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0 flex flex-row items-center justify-between gap-2">
                                     <div className="flex-1 min-w-0 flex flex-col">
                                         <span className={`text-[14px] truncate ${isActive
-                                            ? "text-[#0084ff] font-bold"
+                                            ? "text-[#F38820] font-bold"
                                             : isUnread
                                                 ? "text-[#050505] font-black"
                                                 : "text-[#050505] font-semibold"
@@ -163,7 +163,7 @@ export function ChatSidebar({
                                     </div>
 
                                     {isUnread && (
-                                        <span className="w-2.5 h-2.5 bg-[#0084ff] rounded-full flex-shrink-0" />
+                                        <span className="w-2.5 h-2.5 bg-[#F38820] rounded-full flex-shrink-0" />
                                     )}
                                 </div>
                             </button>

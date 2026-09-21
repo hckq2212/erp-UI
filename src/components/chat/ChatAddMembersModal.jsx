@@ -58,12 +58,12 @@ export function ChatAddMembersModal({
                                             type="button"
                                             onClick={() => toggleSelectUser(user.id)}
                                             className={`w-full px-4 py-2.5 text-xs flex items-center justify-between text-left transition-colors ${
-                                                isSelected ? "bg-emerald-50 text-emerald-800" : "text-slate-600 hover:bg-gray-100"
+                                                isSelected ? "bg-orange-50 text-[#F38820]" : "text-slate-600 hover:bg-gray-100"
                                             }`}
                                         >
                                             <span>{user.fullName}</span>
                                             <span className={`w-4 h-4 border flex items-center justify-center font-bold text-[8px] rounded-md ${
-                                                isSelected ? "border-[#0084ff] bg-[#0084ff] text-white" : "border-gray-350"
+                                                isSelected ? "border-[#F38820] bg-[#F38820] text-white" : "border-gray-350"
                                             }`}>
                                                 {isSelected ? "✓" : ""}
                                             </span>
@@ -87,7 +87,7 @@ export function ChatAddMembersModal({
                         disabled={selectedUserIds.length === 0}
                         className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors rounded-lg ${
                             selectedUserIds.length > 0
-                                ? "bg-[#0084ff] text-white hover:bg-[#0073de]"
+                                ? "bg-[#F38820] text-white hover:bg-[#d97616]"
                                 : "bg-gray-150 text-gray-400 cursor-not-allowed"
                         }`}
                     >
