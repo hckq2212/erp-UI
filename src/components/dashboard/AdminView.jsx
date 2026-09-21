@@ -167,7 +167,7 @@ const AdminMetricCardsGrid = ({ admin, approvalCount, activeProjectCount, averag
 );
 
 const SectionPanel = ({ title, count, icon: Icon, accentClass, children }) => (
-    <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
+    <section className="rounded-lg border border-slate-200 bg-white shadow-sm h-fit">
         <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
             <div className="flex min-w-0 items-center gap-3">
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${accentClass}`}>
@@ -392,7 +392,7 @@ export const AdminView = ({ dashboard, navigate, onSelectMember }) => {
                 averageProgress={averageProgress}
             />
 
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(320px,0.8fr)_minmax(320px,0.85fr)_minmax(0,1.3fr)] h-fit">
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(320px,0.8fr)_minmax(320px,0.85fr)_minmax(0,1.3fr)] ">
                 <SectionPanel
                     title="Danh sách cần duyệt"
                     count={approvalItems.length}
