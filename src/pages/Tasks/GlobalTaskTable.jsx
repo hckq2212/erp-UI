@@ -86,7 +86,8 @@ export const GlobalTaskTable = ({
                     <thead>
                         <tr className="bg-gray-50/50 border-b border-gray-100">
                             {renderSortableHeader('Mã Công Việc', 'code')}
-                            {renderSortableHeader('Tên hiển thị', 'name')}
+                            {renderSortableHeader('Tên mặc định', 'name')}
+                            {renderSortableHeader('Tên hiển thị', 'nickname')}
                             {renderSortableHeader('Dự án', 'project.name')}
                             {renderSortableHeader('Phân công', 'assignee.fullName')}
                             {renderSortableHeader('Thời hạn', 'plannedEndDate')}
@@ -106,6 +107,9 @@ export const GlobalTaskTable = ({
                                         <div className="flex flex-col">
                                             <span className="text-md font-bold text-blue-600 font-medium ">{task.code}</span>
                                         </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-sm font-medium line-clamp-1">{task.name || '---'}</span>
                                     </td>
                                     <td className="px-6 py-4">
                                         <InlineTaskNickname

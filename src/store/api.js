@@ -7,6 +7,10 @@ export const BASE_URL = configuredApiUrl
   ? (configuredApiUrl.endsWith('/api') ? configuredApiUrl : `${configuredApiUrl}/api`)
   : '/api';
 
+export const API_ORIGIN = configuredApiUrl
+  ? new URL(BASE_URL).origin
+  : (import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin);
+
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   credentials: 'include',
