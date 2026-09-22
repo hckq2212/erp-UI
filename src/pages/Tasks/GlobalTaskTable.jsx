@@ -64,15 +64,16 @@ export const GlobalTaskTable = ({
             : <ArrowDown className="w-3 h-3 ml-1 text-blue-600" />;
     };
 
-    const renderSortableHeader = (label, sortKey, align = 'left') => (
+    const renderSortableHeader = (label, sortKey, align = 'left', extraClass = '') => (
         <th
             className={cn(
-                "px-6 py-4 font-semibold text-gray-500 uppercase tracking-wider text-xs cursor-pointer hover:bg-gray-100/50 transition-colors group",
-                align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left'
+                "px-6 py-4 font-semibold text-gray-500 uppercase tracking-wider text-xs cursor-pointer hover:bg-gray-100/50 transition-colors group whitespace-nowrap",
+                align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left',
+                extraClass
             )}
             onClick={() => handleSort(sortKey)}
         >
-            <div className={cn("flex items-center", align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : 'justify-start')}>
+            <div className={cn("flex items-center whitespace-nowrap", align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : 'justify-start')}>
                 {label}
                 {getSortIcon(sortKey)}
             </div>
@@ -85,14 +86,14 @@ export const GlobalTaskTable = ({
                 <table className="w-full text-sm text-left border-collapse min-w-[1600px]">
                     <thead>
                         <tr className="bg-gray-50/50 border-b border-gray-100">
-                            {renderSortableHeader('Mã Công Việc', 'code')}
-                            {renderSortableHeader('Tên mặc định', 'name')}
-                            {renderSortableHeader('Tên hiển thị', 'nickname')}
-                            {renderSortableHeader('Dự án', 'project.name')}
-                            {renderSortableHeader('Phân công', 'assignee.fullName')}
-                            {renderSortableHeader('Thời hạn', 'plannedEndDate')}
-                            {renderSortableHeader('Trạng thái', 'status', 'center')}
-                            <th className="px-6 py-4 font-semibold text-gray-500 uppercase tracking-wider text-xs text-right">Hành động</th>
+                            {renderSortableHeader('Mã Công Việc', 'code', 'left', 'min-w-[150px]')}
+                            {renderSortableHeader('Tên mặc định', 'name', 'left', 'min-w-[180px]')}
+                            {renderSortableHeader('Tên hiển thị', 'nickname', 'left', 'min-w-[180px]')}
+                            {renderSortableHeader('Dự án', 'project.name', 'left', 'min-w-[160px]')}
+                            {renderSortableHeader('Phân công', 'assignee.fullName', 'left', 'min-w-[170px]')}
+                            {renderSortableHeader('Thời hạn', 'plannedEndDate', 'left', 'min-w-[210px]')}
+                            {renderSortableHeader('Trạng thái', 'status', 'center', 'min-w-[170px]')}
+                            <th className="px-6 py-4 font-semibold text-gray-500 uppercase tracking-wider text-xs text-right whitespace-nowrap min-w-[130px]">Hành động</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -103,9 +104,9 @@ export const GlobalTaskTable = ({
                                     className="hover:bg-blue-50/30 transition-all group cursor-pointer"
                                     onClick={() => navigate(`/tasks/${task.id}`)}
                                 >
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex flex-col">
-                                            <span className="text-md font-bold text-blue-600 font-medium ">{task.code}</span>
+                                            <span className="text-md font-bold text-blue-600 font-medium">{task.code}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -123,38 +124,38 @@ export const GlobalTaskTable = ({
                                             <span className="text-sm font-medium line-clamp-1">{task.project?.name || '---'}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2 text-gray-600">
-                                            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 border border-gray-200">
+                                    <td className="px-6 py-4 whitespace-nowrap min-w-[170px]">
+                                        <div className="flex items-center gap-2 text-gray-600 whitespace-nowrap">
+                                            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 border border-gray-200 shrink-0">
                                                 {(task.assignee?.fullName || task.assignee?.name)?.charAt(0) || <User className="w-3.5 h-3.5" />}
                                             </div>
-                                            <span className="text-xs font-medium line-clamp-1">{task.assignee?.fullName || task.assignee?.name || 'Chưa phân công'}</span>
+                                            <span className="text-xs font-medium whitespace-nowrap">{task.assignee?.fullName || task.assignee?.name || 'Chưa phân công'}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col gap-1">
-                                            <div className="flex items-center gap-1.5 text-gray-500 text-xs text-nowrap">
-                                                <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                                                <span>Deadline: {formatDateTime(task.plannedEndDate) || '---'}</span>
+                                    <td className="px-6 py-4 whitespace-nowrap min-w-[210px]">
+                                        <div className="flex flex-col gap-1 whitespace-nowrap">
+                                            <div className="flex items-center gap-1.5 text-gray-500 text-xs whitespace-nowrap">
+                                                <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                <span className="whitespace-nowrap">{formatDateTime(task.plannedEndDate) || '---'}</span>
                                             </div>
                                             {task.status === 'PENDING' && task.plannedEndDate && new Date(task.plannedEndDate) < new Date() && (
-                                                <span className="text-[10px] text-red-500 font-bold flex items-center gap-1">
-                                                    <AlertCircle className="w-3 h-3" />
+                                                <span className="text-[10px] text-red-500 font-bold flex items-center gap-1 whitespace-nowrap">
+                                                    <AlertCircle className="w-3 h-3 shrink-0" />
                                                     QUÁ HẠN
                                                 </span>
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-center">
+                                    <td className="px-6 py-4 text-center whitespace-nowrap min-w-[170px]">
                                         <span className={cn(
-                                            "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                                            "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap inline-flex items-center justify-center shrink-0 shadow-2xs",
                                             TASK_STATUS_COLORS[task.status] || "bg-gray-100 text-gray-600"
                                         )}>
                                             {TASK_STATUS_LABELS[task.status] || task.status}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button className="px-4 py-2 text-white bg-blue-600 rounded-xl transition-all font-bold">
+                                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                                        <button className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all font-bold text-xs whitespace-nowrap inline-flex items-center justify-center shrink-0 shadow-xs">
                                             Xem chi tiết
                                         </button>
                                     </td>

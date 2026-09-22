@@ -5,7 +5,7 @@ import {
     isSameDay, isToday
 } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertCircle, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, TASK_STATUS } from '../../utils/enums';
@@ -14,7 +14,8 @@ import { getTaskDisplayName } from '../../utils/taskName';
 export const TaskCalendar = ({
     tasks = [],
     selectedDate: propSelectedDate,
-    onSelectDate
+    onSelectDate,
+    buildTasksUrl
 }) => {
     const navigate = useNavigate();
     const [internalSelectedDate, setInternalSelectedDate] = useState(new Date());
@@ -121,9 +122,26 @@ export const TaskCalendar = ({
 
             {/* Right: Selected Day Tasks */}
             <div className="lg:w-56 xl:w-64 min-h-0 overflow-hidden flex flex-col pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l border-gray-50 lg:pl-5">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">
-                    Ngày {format(selectedDate, 'dd/MM')}
-                </h4>
+                <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                        Ngày {format(selectedDate, 'dd/MM')}
+                    </h4>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (buildTasksUrl) {
+                                navigate(buildTasksUrl({ deadline: format(selectedDate, 'yyyy-MM-dd'), includeMonth: false }));
+                            } else {
+                                navigate(`/tasks?deadline=${format(selectedDate, 'yyyy-MM-dd')}`);
+                            }
+                        }}
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-full transition-all"
+                        title="Xem tất cả công việc có hạn chót ngày này trong Quản lý công việc"
+                    >
+                        <span>Xem tất cả</span>
+                        <ArrowRight size={10} />
+                    </button>
+                </div>
                 
                 <div className="flex-1 min-h-0 max-h-[260px] lg:max-h-none overflow-y-auto overscroll-contain pr-1 scrollbar-hide">
                     <div className="relative space-y-6 before:absolute before:left-[47px] before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-100">

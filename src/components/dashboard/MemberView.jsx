@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { format, isSameDay } from 'date-fns';
 import { ArrowUpRight, ClipboardCheck, UserRound } from 'lucide-react';
 import { useGetMyNotificationsQuery } from '../../api/notifications';
@@ -78,6 +78,7 @@ export const MemberView = ({
     isTeamLead,
     awaitingReviewTasks,
     user,
+    selectedMemberId,
     selectedProjectId,
     onSelectProject,
     availableProjects = [],
@@ -189,6 +190,48 @@ export const MemberView = ({
         });
     }, [filteredCalendarTasks, selectedDayKey]);
 
+    const effectiveAssigneeId = isViewingMember
+        ? (selectedMemberId || member?.id || '')
+        : (!isManagementOrAdmin && !isTeamLead ? (currentUserId || member?.id || '') : '');
+
+    const now = new Date();
+    const targetMonth = selectedDate?.month ?? (now.getMonth() + 1);
+    const targetYear = selectedDate?.year ?? now.getFullYear();
+    const startOfMonthStr = format(new Date(targetYear, targetMonth - 1, 1), 'yyyy-MM-dd');
+    const endOfMonthStr = format(new Date(targetYear, targetMonth, 0), 'yyyy-MM-dd');
+
+    const buildTasksUrl = useCallback(({
+        status,
+        dateType,
+        deadline,
+        deadlineFrom,
+        deadlineTo,
+        sortBy,
+        sortDir,
+        includeMonth = true
+    } = {}) => {
+        const params = new URLSearchParams();
+        if (status && status !== 'ALL') params.set('status', status);
+        if (effectiveAssigneeId) params.set('assigneeId', effectiveAssigneeId);
+        if (selectedProjectId) params.set('projectId', selectedProjectId);
+        if (dateType && dateType !== 'plannedEndDate') params.set('dateType', dateType);
+
+        if (deadline) {
+            params.set('deadline', deadline);
+        } else if (deadlineFrom || deadlineTo) {
+            if (deadlineFrom) params.set('deadlineFrom', deadlineFrom);
+            if (deadlineTo) params.set('deadlineTo', deadlineTo);
+        } else if (includeMonth) {
+            params.set('deadlineFrom', startOfMonthStr);
+            params.set('deadlineTo', endOfMonthStr);
+        }
+
+        if (sortBy) params.set('sortBy', sortBy);
+        if (sortDir) params.set('sortDir', sortDir);
+
+        return `/tasks?${params.toString()}`;
+    }, [effectiveAssigneeId, selectedProjectId, startOfMonthStr, endOfMonthStr]);
+
     const activeSelectedDayCount = isSelectedDayToday ? stats.today : selectedDayTasks.length;
 
     return (
@@ -215,7 +258,8 @@ export const MemberView = ({
                                 selectedDate={selectedCalendarDate}
                                 isToday={isSelectedDayToday}
                                 onResetToday={() => setSelectedCalendarDate(new Date())}
-                                onViewDetail={() => navigate('/tasks')}
+                                onViewDetail={() => navigate(buildTasksUrl({ includeMonth: false }))}
+                                buildTasksUrl={buildTasksUrl}
                             />
                         )}
                     </div>
@@ -224,6 +268,7 @@ export const MemberView = ({
                             tasks={filteredCalendarTasks}
                             selectedDate={selectedCalendarDate}
                             onSelectDate={setSelectedCalendarDate}
+                            buildTasksUrl={buildTasksUrl}
                         />
                     </div>
                 </div>
@@ -247,17 +292,18 @@ export const MemberView = ({
                                 isTeamLead={isTeamLead}
                                 isViewingMember={isViewingMember}
                                 dashboard={dashboard}
+                                buildTasksUrl={buildTasksUrl}
                                 onOpenReviewModal={() => setIsReviewModalOpen(true)}
                             />
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-stretch">
                             <div className="lg:col-span-3">
-                                <ReworkZone tasks={filteredReworkTasks} navigate={navigate} />
+                                <ReworkZone tasks={filteredReworkTasks} navigate={navigate} buildTasksUrl={buildTasksUrl} />
                             </div>
 
                             <div className="lg:col-span-5">
-                                <TimelineList tasks={timelineTasks} navigate={navigate} />
+                                <TimelineList tasks={timelineTasks} navigate={navigate} buildTasksUrl={buildTasksUrl} />
                             </div>
 
                             <div className="lg:col-span-4">
