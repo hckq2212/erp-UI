@@ -219,6 +219,144 @@ export const projectsApi = api.injectEndpoints({
         { type: 'Projects', id: 'LIST' },
       ],
     }),
+
+    // ─────────────────────────────────────────────────────────────────────
+    // TẠM DỪNG DỰ ÁN
+    // ─────────────────────────────────────────────────────────────────────
+
+    /** PM hoặc BD gửi yêu cầu tạm dừng → chờ BOD duyệt. */
+    requestPauseProject: builder.mutation({
+      query: ({ id, reason }) => ({
+        url: `/projects/${id}/pause`,
+        method: 'POST',
+        body: { reason },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Projects', id },
+        { type: 'Projects', id: 'LIST' },
+        { type: 'PauseHistory', id },
+      ],
+    }),
+
+    /** BOD/ADMIN tạm dừng TRỰC TIẾP — không cần duyệt. */
+    pauseProjectDirect: builder.mutation({
+      query: ({ id, reason }) => ({
+        url: `/projects/${id}/pause/direct`,
+        method: 'POST',
+        body: { reason },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Projects', id },
+        { type: 'Projects', id: 'LIST' },
+        { type: 'Tasks', id: 'LIST' },
+        { type: 'PauseHistory', id },
+      ],
+    }),
+
+    approvePauseRequest: builder.mutation({
+      query: (requestId) => ({
+        url: `/projects/pause-requests/${requestId}/approve`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, requestId) => [
+        { type: 'PauseHistory', id: 'LIST' },
+        { type: 'Projects', id: 'LIST' },
+        { type: 'Tasks', id: 'LIST' },
+      ],
+    }),
+
+    rejectPauseRequest: builder.mutation({
+      query: ({ requestId, feedback }) => ({
+        url: `/projects/pause-requests/${requestId}/reject`,
+        method: 'POST',
+        body: { feedback },
+      }),
+      invalidatesTags: [
+        { type: 'PauseHistory', id: 'LIST' },
+        { type: 'Projects', id: 'LIST' },
+      ],
+    }),
+
+    /** Làm tiếp — hủy đồng hồ 37 ngày, khôi phục task. */
+    resumeProject: builder.mutation({
+      query: ({ id, resumeReason }) => ({
+        url: `/projects/${id}/resume`,
+        method: 'POST',
+        body: { resumeReason },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Projects', id },
+        { type: 'Projects', id: 'LIST' },
+        { type: 'Tasks', id: 'LIST' },
+        { type: 'PauseHistory', id },
+      ],
+    }),
+
+    /** Xem trước khi đóng: số task ACCEPTED/CANCELLED, Vinicoin, nợ sẽ khóa. */
+    getHoldSummary: builder.query({
+      query: (id) => `/projects/${id}/hold-summary`,
+      providesTags: (result, error, id) => [{ type: 'Projects', id }],
+    }),
+
+    /** BD/BOD/ADMIN đóng dự án TRỰC TIẾP — reason BẮT BUỘC. */
+    closeProjectDirect: builder.mutation({
+      query: ({ id, reason }) => ({
+        url: `/projects/${id}/close/direct`,
+        method: 'POST',
+        body: { reason },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Projects', id },
+        { type: 'Projects', id: 'LIST' },
+        { type: 'Tasks', id: 'LIST' },
+        { type: 'Debts', id: 'LIST' },
+        { type: 'PauseHistory', id },
+      ],
+    }),
+
+    /** PM đề nghị đóng → chờ BOD duyệt. */
+    requestCloseProject: builder.mutation({
+      query: ({ id, reason }) => ({
+        url: `/projects/${id}/close`,
+        method: 'POST',
+        body: { reason },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Projects', id },
+        { type: 'PauseHistory', id },
+      ],
+    }),
+
+    approveCloseRequest: builder.mutation({
+      query: (requestId) => ({
+        url: `/projects/close-requests/${requestId}/approve`,
+        method: 'POST',
+      }),
+      invalidatesTags: [
+        { type: 'PauseHistory', id: 'LIST' },
+        { type: 'Projects', id: 'LIST' },
+        { type: 'Tasks', id: 'LIST' },
+        { type: 'Debts', id: 'LIST' },
+      ],
+    }),
+
+    rejectCloseRequest: builder.mutation({
+      query: ({ requestId, feedback }) => ({
+        url: `/projects/close-requests/${requestId}/reject`,
+        method: 'POST',
+        body: { feedback },
+      }),
+      invalidatesTags: [
+        { type: 'PauseHistory', id: 'LIST' },
+        { type: 'Projects', id: 'LIST' },
+      ],
+    }),
+
+    /** Lịch sử tạm dừng / đóng dự án. */
+    getPauseHistory: builder.query({
+      query: (id) => `/projects/${id}/pause-history`,
+      providesTags: (result, error, id) => [{ type: 'PauseHistory', id }],
+    }),
   }),
 });
 
@@ -246,4 +384,16 @@ export const {
   useRejectProjectProductDescriptionMutation,
   useGetMyProjectsQuery,
   useRequestProjectStaffingMutation,
+  // Tạm dừng dự án
+  useRequestPauseProjectMutation,
+  usePauseProjectDirectMutation,
+  useApprovePauseRequestMutation,
+  useRejectPauseRequestMutation,
+  useResumeProjectMutation,
+  useGetHoldSummaryQuery,
+  useCloseProjectDirectMutation,
+  useRequestCloseProjectMutation,
+  useApproveCloseRequestMutation,
+  useRejectCloseRequestMutation,
+  useGetPauseHistoryQuery,
 } = projectsApi;

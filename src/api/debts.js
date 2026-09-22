@@ -66,6 +66,21 @@ export const debtsApi = api.injectEndpoints({
                     ]
                     : [{ type: 'Debts', id: 'LIST' }],
         }),
+        /**
+         * Mở khóa công nợ — chỉ BOD/ADMIN, BẮT BUỘC nhập lý do.
+         * Dùng khi dự án bị đóng nhầm và cần thu lại khoản nợ đã bị khóa.
+         */
+        unlockDebt: builder.mutation({
+            query: ({ id, reason }) => ({
+                url: `/debts/${id}/unlock`,
+                method: 'POST',
+                body: { reason },
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'Debts', id },
+                { type: 'Debts', id: 'LIST' },
+            ],
+        }),
     }),
 });
 
@@ -77,4 +92,5 @@ export const {
     useCreatePaymentMutation,
     useDeletePaymentMutation,
     useGetDebtsByContractQuery,
+    useUnlockDebtMutation,
 } = debtsApi;
