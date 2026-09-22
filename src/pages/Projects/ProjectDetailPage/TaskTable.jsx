@@ -340,7 +340,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                     </select>
                 )}
                 <div className="flex items-center gap-2 shrink-0 whitespace-nowrap ml-auto">
-                    {isProjectLead && (
+                    {isProjectLead && isProjectInProgress && (
                         <button
                             type="button"
                             onClick={handleOpenStaffingModal}
@@ -365,7 +365,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                             <span>{selectionMode === 'unassign' ? 'Huỷ xoá phân công' : 'Xoá phân công'}</span>
                         </button>
                     )}
-                    {canCreateProjectWork && (
+                    {canCreateProjectWork && isProjectInProgress && (
                         <button
                             type="button"
                             onClick={() => setShowAddServiceModal(true)}
@@ -412,10 +412,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                             {renderHeader('Bên thực hiện')}
                             {renderHeader('Người thực hiện', 'center')}
                             {renderHeader('Trạng thái', 'center')}
-                            {isProjectInProgress && (
-                                <th className="px-6 py-4 font-medium text-center">Hành động</th>
-                            )}
-
+                            <th className="px-6 py-4 font-medium text-center">Hành động</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -452,7 +449,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 />
                                             </td>
                                             <td
-                                                colSpan={isProjectInProgress ? 8 : 7}
+                                                colSpan={7}
                                                 className="px-6 py-3 font-bold text-gray-800 cursor-pointer"
                                                 onClick={() => toggleGroup(group.job.id)}
                                             >
@@ -507,7 +504,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                     <InlineTaskNickname
                                                         task={task}
                                                         projectId={project.id}
-                                                        canEdit={isAdminOrBOD || isProjectLead}
+                                                        canEdit={isProjectInProgress && task.status !== 'ON_HOLD' && (isAdminOrBOD || isProjectLead)}
                                                     />
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -594,7 +591,9 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                             </button>
                                                         )}
 
-                                                        {task.supportRequestType === 'STAFFING' &&
+                                                        {isProjectInProgress &&
+                                                            task.status !== 'ON_HOLD' &&
+                                                            task.supportRequestType === 'STAFFING' &&
                                                             task.isSupportRequested &&
                                                             !task.isSupportAccepted &&
                                                             (isSameUser(task.supportLeadId, currentUserId) || isProjectManager || hasStaffingAdminOverride) && (
@@ -685,7 +684,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                             })
                         ) : (
                             <tr>
-                                <td colSpan={isProjectInProgress ? 9 : 8} className="px-6 py-10 text-center text-gray-400 italic">
+                                <td colSpan={8} className="px-6 py-10 text-center text-gray-400 italic">
                                     Không tìm thấy công việc nào
                                 </td>
                             </tr>

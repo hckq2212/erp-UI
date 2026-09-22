@@ -43,17 +43,20 @@ export const TaskDetailPage = () => {
 
     const isLoading = isTaskLoading || !user;
     const currentUserId = getCurrentUserId(user);
+    const isProjectOnHold = task?.project?.status === 'ON_HOLD' || task?.status === 'ON_HOLD';
     const isProjectLead = isSameUser(currentUserId, task?.project?.team?.teamLead?.id);
-    const canManageProjectTask = PROJECT_MANAGEMENT_ROLES.includes(user?.role) || isProjectLead;
+    const canManageProjectTask = !isProjectOnHold && (PROJECT_MANAGEMENT_ROLES.includes(user?.role) || isProjectLead);
     const isVideoDemoTask = Boolean(task?.opportunityId && task?.opportunityServiceJob?.isBriefVideo);
     const isAssigneeOrHelper = isSameUser(currentUserId, task?.assigneeId) ||
         isSameUser(currentUserId, task?.assignee?.id) ||
         isSameUser(currentUserId, task?.helperId) ||
         isSameUser(currentUserId, task?.helper?.id);
     const isAssigner = isSameUser(currentUserId, task?.assignerId) || isSameUser(currentUserId, task?.assigner?.id);
-    const canSubmitResult = isAssigneeOrHelper || isAssigner || canManageProjectTask || ['ADMIN', 'BOD'].includes(user?.role);
-    const isReviewerForThisTask = canManageProjectTask && !isAssigneeOrHelper;
-    const canEditDescription = canManageProjectTask;
+    const canSubmitResult = !isProjectOnHold && (isAssigneeOrHelper || isAssigner || canManageProjectTask || ['ADMIN', 'BOD'].includes(user?.role));
+    const isReviewerForThisTask = !isProjectOnHold && canManageProjectTask && !isAssigneeOrHelper;
+    const isTaskLocked = ['INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED', 'DONE', 'CANCELLED', 'ON_HOLD'].includes(task?.status);
+    const isProjectLocked = Boolean(task?.project && ['COMPLETED', 'CANCELLED', 'ON_HOLD'].includes(task?.project?.status));
+    const canEditDescription = !isTaskLocked && !isProjectLocked && canManageProjectTask;
     const incompleteSubtasks = (task?.subtasks || []).filter(
         subtask => !COMPLETED_SUBTASK_STATUSES.has(subtask.status)
     );
@@ -98,7 +101,7 @@ export const TaskDetailPage = () => {
     const isAccount = isSameUser(team?.teamLead?.id, currentUserId) || currentMembership?.role === 'ACCOUNT';
     const isAdminOverride = ['ADMIN', 'BOD'].includes(user?.role);
     const isTeamLead = isSameUser(team?.teamLead?.id, currentUserId);
-    const canDelegate = isAccount || isPM || isAdminOverride || isTeamLead;
+    const canDelegate = !isProjectOnHold && (isAccount || isPM || isAdminOverride || isTeamLead);
     const canAddSubtask = canDelegate &&
         !task?.parentTaskId &&
         (!task?.subtasks || task?.subtasks?.length === 0) &&
@@ -565,6 +568,7 @@ export const TaskDetailPage = () => {
                         )}
 
                     {task?.performerType === 'INTERNAL' &&
+                        !isProjectOnHold &&
                         ['PENDING', 'DOING', 'REWORKING', 'OVERDUE'].includes(task?.status) &&
                         task?.project?.team &&
                         (isProjectLead || isTeamLead) && (
