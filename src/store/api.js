@@ -7,10 +7,6 @@ export const BASE_URL = configuredApiUrl
   ? (configuredApiUrl.endsWith('/api') ? configuredApiUrl : `${configuredApiUrl}/api`)
   : '/api';
 
-export const API_ORIGIN = configuredApiUrl
-  ? new URL(BASE_URL).origin
-  : (import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin);
-
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   credentials: 'include',
@@ -74,6 +70,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
   return result;
 };
 
+
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
@@ -86,7 +83,7 @@ export const api = createApi({
     'ProjectProductDescriptions', 'TaskResultChecks',
     'ProjectProductDescriptions', 'ProjectSpellCheckWhitelist',
     'VideoGenerations', 'AiModels', 'Assets', 'Elements',
-    'Documents', 'DocumentVersions','Announcements','AnnouncementComments',
+    'Documents', 'DocumentVersions', 'Announcements', 'AnnouncementComments',
     'Settings'
   ],
   endpoints: () => ({}),
