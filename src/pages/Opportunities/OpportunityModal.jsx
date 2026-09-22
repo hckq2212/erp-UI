@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
-import { X, Plus, Trash2, Upload, Link as LinkIcon, Building2, FileText, MapPin, Calendar, Target, TrendingUp, Clock, Briefcase, ChevronDown } from 'lucide-react';
+import { X, Plus, Trash2, Upload, Link as LinkIcon, Building2, FileText, MapPin, Calendar, Target, TrendingUp, Clock, Briefcase, ChevronDown, RotateCcw } from 'lucide-react';
 import { useCreateOpportunityMutation } from '../../api/opportunities';
 import { useGetServicesQuery } from '../../api/services';
 import { useGetServicePackagesQuery } from '../../api/servicePackages';
@@ -39,22 +39,72 @@ const LINK_PLACEHOLDERS = [
   'Trang web của khách hàng',
 ];
 
+const OPPORTUNITY_DRAFT_KEY = 'opportunity-create-draft';
+
+const createEmptyFormData = () => ({
+  description: '',
+  field: '',
+  expectedRevenue: 0,
+  budget: 0,
+  startDate: '',
+  endDate: '',
+  priority: 'Medium',
+  successChance: 0,
+  region: [],
+  durationMonths: 1,
+  customerRequirements: '',
+});
+
+const createEmptyOpportunityNameParts = () => ({
+  customerName: '',
+  brandName: '',
+  monthYear: '',
+});
+
+const createEmptyServices = () => [{ serviceId: '', quantity: 1 }];
+const createEmptyPackages = () => [{ servicePackageId: '', services: [], quantity: 1 }];
+
+const searchableSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: '46px',
+    borderWidth: '2px',
+    borderColor: state.isFocused ? '#3b82f6' : '#e5e7eb',
+    borderRadius: '0.5rem',
+    boxShadow: state.isFocused ? '0 0 0 3px rgb(59 130 246 / 0.12)' : 'none',
+    '&:hover': { borderColor: state.isFocused ? '#3b82f6' : '#d1d5db' },
+  }),
+  menu: (base) => ({ ...base, zIndex: 30 }),
+  option: (base, state) => ({
+    ...base,
+    backgroundColor: state.isSelected ? '#2563eb' : state.isFocused ? '#eff6ff' : '#fff',
+    color: state.isSelected ? '#fff' : '#111827',
+  }),
+};
+
 const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJobBriefChange, onJobIncludedChange, onRemove, hasError }) => {
   const isUnselected = !item.serviceId && hasError;
   const briefJobs = (item.jobs || []).filter(job => job.isBriefVideo);
+  const serviceOptions = availableServices.map(service => ({
+    value: service.id,
+    label: service.name,
+  }));
   return (
     <div className={`space-y-3 p-3 rounded-xl border ${isUnselected ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
       <div className="flex items-center gap-3">
-        <select
-          value={item.serviceId}
-          onChange={(e) => onServiceChange(index, 'serviceId', e.target.value)}
-          className={`flex-1 px-4 py-2.5 border-2 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all ${isUnselected ? 'border-red-400' : 'border-gray-200'}`}
-        >
-          <option value="">-- Chọn dịch vụ --</option>
-          {availableServices.map(s => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
+        <div className={`flex-1 rounded-lg ${isUnselected ? 'ring-2 ring-red-400' : ''}`}>
+          <Select
+            instanceId={`standalone-service-${index}`}
+            options={serviceOptions}
+            value={serviceOptions.find(option => String(option.value) === String(item.serviceId)) || null}
+            onChange={(option) => onServiceChange(index, 'serviceId', option?.value || '')}
+            placeholder="-- Chọn hoặc tìm dịch vụ --"
+            noOptionsMessage={() => 'Không tìm thấy dịch vụ'}
+            isClearable
+            isSearchable
+            styles={searchableSelectStyles}
+          />
+        </div>
         <input
           type="number"
           value={item.quantity}
@@ -245,6 +295,10 @@ const PackageItem = memo(({
           const packageAvailableServices = availableServices.filter(
             service => !selectedIds.includes(String(service.id))
           );
+          const serviceOptions = packageAvailableServices.map(service => ({
+            value: service.id,
+            label: service.name,
+          }));
 
           const briefJobs = (serviceItem.jobs || []).filter(
             job => job.isBriefVideo
@@ -256,25 +310,26 @@ const PackageItem = memo(({
               className="bg-white border border-blue-100 rounded-xl p-3 space-y-3"
             >
               <div className="flex items-center gap-3">
-                <select
-                  value={serviceItem.serviceId || ''}
-                  onChange={(e) =>
-                    onServiceChange(
-                      index,
-                      serviceIndex,
-                      'serviceId',
-                      e.target.value
-                    )
-                  }
-                  className="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all text-sm"
-                >
-                  <option value="">-- Chọn dịch vụ --</option>
-                  {packageAvailableServices.map(service => (
-                    <option key={service.id} value={service.id}>
-                      {service.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex-1 text-sm">
+                  <Select
+                    instanceId={`package-${index}-service-${serviceIndex}`}
+                    options={serviceOptions}
+                    value={serviceOptions.find(option => String(option.value) === String(serviceItem.serviceId)) || null}
+                    onChange={(option) =>
+                      onServiceChange(
+                        index,
+                        serviceIndex,
+                        'serviceId',
+                        option?.value || ''
+                      )
+                    }
+                    placeholder="-- Chọn hoặc tìm dịch vụ --"
+                    noOptionsMessage={() => 'Không tìm thấy dịch vụ'}
+                    isClearable
+                    isSearchable
+                    styles={searchableSelectStyles}
+                  />
+                </div>
 
                 <input
                   type="number"
@@ -401,25 +456,9 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
     'services',
   ];
 
-  const [formData, setFormData] = useState({
-    description: '',
-    field: '',
-    expectedRevenue: 0,
-    budget: 0,
-    startDate: '',
-    endDate: '',
-    priority: 'Medium',
-    successChance: 0,
-    region: [],
-    durationMonths: 1,
-    customerRequirements: '',
-  });
+  const [formData, setFormData] = useState(createEmptyFormData);
 
-  const [opportunityNameParts, setOpportunityNameParts] = useState({
-    customerName: '',
-    brandName: '',
-    monthYear: '',
-  });
+  const [opportunityNameParts, setOpportunityNameParts] = useState(createEmptyOpportunityNameParts);
 
   const opportunityName = useMemo(() => {
     const { customerName, brandName, monthYear } = opportunityNameParts;
@@ -452,13 +491,9 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
 
 
 
-  const [selectedServices, setSelectedServices] = useState([
-    { serviceId: '', quantity: 1 }
-  ]);
+  const [selectedServices, setSelectedServices] = useState(createEmptyServices);
 
-  const [selectedPackages, setSelectedPackages] = useState([
-    { servicePackageId: '', services: [], quantity: 1 }
-  ]);
+  const [selectedPackages, setSelectedPackages] = useState(createEmptyPackages);
 
   const [documentLinks, setDocumentLinks] = useState(Array(LINK_PLACEHOLDERS.length).fill(''));
   const [files, setFiles] = useState([]);
@@ -466,32 +501,32 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
   const [uploadProgress, setUploadProgress] = useState({});
   const [isUploading, setIsUploading] = useState(false);
   const [errors, setErrors] = useState({});
+  const skipNextDraftSave = useRef(false);
+  const draftFiles = useRef([]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     if (!initialData) {
-      // Mở modal ở chế độ "Tạo Cơ Hội Mới": reset sạch state để không dính
-      // dữ liệu còn sót lại từ lần mở "Tạo Cơ Hội Tương Tự" (copy) trước đó.
-      setOpportunityNameParts({ customerName: '', brandName: '', monthYear: '' });
-      setFormData({
-        description: '',
-        field: '',
-        expectedRevenue: 0,
-        budget: 0,
-        startDate: '',
-        endDate: '',
-        priority: 'Medium',
-        successChance: 0,
-        region: [],
-        durationMonths: 1,
-        customerRequirements: '',
-      });
-      setSelectedServices([{ serviceId: '', quantity: 1 }]);
-      setSelectedPackages([{ servicePackageId: '', services: [], quantity: 1 }]);
-      setDocumentLinks(Array(LINK_PLACEHOLDERS.length).fill(''));
-      setFiles([]);
-      setExistingAttachments([]);
+      let draft = null;
+      try {
+        draft = JSON.parse(localStorage.getItem(OPPORTUNITY_DRAFT_KEY) || 'null');
+      } catch {
+        draft = null;
+      }
+
+      // Không ghi đè nháp bằng state cũ trong chính lượt render đang khôi phục này.
+      skipNextDraftSave.current = true;
+      setOpportunityNameParts(draft?.opportunityNameParts || createEmptyOpportunityNameParts());
+      setFormData({ ...createEmptyFormData(), ...(draft?.formData || {}) });
+      setSelectedServices(Array.isArray(draft?.selectedServices) ? draft.selectedServices : createEmptyServices());
+      setSelectedPackages(Array.isArray(draft?.selectedPackages) ? draft.selectedPackages : createEmptyPackages());
+      setDocumentLinks(Array.isArray(draft?.documentLinks) ? draft.documentLinks : Array(LINK_PLACEHOLDERS.length).fill(''));
+      // File không thể serialize vào localStorage, nhưng vẫn giữ được khi người dùng
+      // vô tình đóng rồi mở lại modal trong cùng trang.
+      setFiles(draftFiles.current);
+      setExistingAttachments(Array.isArray(draft?.existingAttachments) ? draft.existingAttachments : []);
+      setUploadProgress({});
       setErrors({});
       return;
     }
@@ -618,6 +653,40 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
     setFiles([]);
     setErrors({});
   }, [isOpen, initialData]);
+
+  useEffect(() => {
+    if (!isOpen || initialData) return;
+    if (skipNextDraftSave.current) {
+      skipNextDraftSave.current = false;
+      return;
+    }
+
+    const draft = {
+      opportunityNameParts,
+      formData,
+      selectedServices,
+      selectedPackages,
+      documentLinks,
+      existingAttachments,
+    };
+    draftFiles.current = files;
+
+    try {
+      localStorage.setItem(OPPORTUNITY_DRAFT_KEY, JSON.stringify(draft));
+    } catch {
+      // Nếu trình duyệt chặn hoặc hết dung lượng lưu trữ, form hiện tại vẫn hoạt động bình thường.
+    }
+  }, [
+    isOpen,
+    initialData,
+    opportunityNameParts,
+    formData,
+    selectedServices,
+    selectedPackages,
+    documentLinks,
+    existingAttachments,
+    files,
+  ]);
 
   const handlePackageTemplateChange = useCallback((index, templateId) => {
     if (!templateId) {
@@ -930,6 +999,29 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
     setErrors(prev => (prev.files ? { ...prev, files: null } : prev));
   }, []);
 
+  const resetForm = useCallback(() => {
+    skipNextDraftSave.current = true;
+    if (!initialData) {
+      try {
+        localStorage.removeItem(OPPORTUNITY_DRAFT_KEY);
+      } catch {
+        // State trong modal vẫn được reset nếu trình duyệt không cho dùng localStorage.
+      }
+      draftFiles.current = [];
+    }
+
+    setOpportunityNameParts(createEmptyOpportunityNameParts());
+    setFormData(createEmptyFormData());
+    setSelectedServices(createEmptyServices());
+    setSelectedPackages(createEmptyPackages());
+    setDocumentLinks(Array(LINK_PLACEHOLDERS.length).fill(''));
+    setFiles([]);
+    setExistingAttachments([]);
+    setUploadProgress({});
+    setErrors({});
+    setIsDraggingFile(false);
+  }, [initialData]);
+
   const totalValue = useMemo(() => {
     const standaloneTotal = selectedServices.reduce((total, item) => {
       if (!item.serviceId) return total;
@@ -1080,34 +1172,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
       navigate(`/opportunities/${result.id}`);
       onSuccess?.();
       setIsUploading(false);
+      resetForm();
       onClose();
-
-      // Reset form
-      setFormData({
-        description: '',
-        field: '',
-        expectedRevenue: 0,
-        budget: 0,
-        startDate: '',
-        endDate: '',
-        priority: 'Medium',
-        successChance: 0,
-        region: [],
-        durationMonths: 1,
-        customerRequirements: '',
-      });
-      setOpportunityNameParts({
-        customerName: '',
-        brandName: '',
-        monthYear: '',
-      });
-      setSelectedServices([{ serviceId: '', quantity: 1 }]);
-      setSelectedPackages([{ servicePackageId: '', services: [], quantity: 1 }]);
-      setDocumentLinks(Array(LINK_PLACEHOLDERS.length).fill(''));
-      setFiles([]);
-      setExistingAttachments([]);
-      setUploadProgress({});
-      setErrors({});
     } catch (err) {
       setIsUploading(false);
       setErrors({ submit: err?.data?.message || err?.message || 'Có lỗi xảy ra' });
@@ -1132,9 +1198,25 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
                 <p className="text-blue-100 text-sm">Điền thông tin chi tiết của cơ hội </p>
               </div>
             </div>
-            <button onClick={onClose} className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-all">
-              <X className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-white/90 transition-all hover:bg-white/20 hover:text-white"
+                title="Xóa toàn bộ thông tin đã nhập"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-all"
+                aria-label="Đóng modal"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
           </div>
 
           {/* Form */}
@@ -1469,18 +1551,21 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
                       <div key={index} className="space-y-3">
                         {!pkg.servicePackageId ? (
                           <div className="flex items-center gap-3 p-3 rounded-xl border bg-blue-50/30 border-blue-100">
-                            <select
-                              className="flex-1 px-4 py-2.5 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all text-sm font-bold text-blue-900"
-                              value={pkg.servicePackageId}
-                              onChange={(e) => handlePackageTemplateChange(index, e.target.value)}
-                            >
-                              <option value="">-- Chọn gói mẫu --</option>
-                              {packageTemplates
-                                .filter(t => !selectedPackages.some(pkg => String(pkg.servicePackageId) === String(t.id)))
-                                .map(t => (
-                                  <option key={t.id} value={t.id}>{t.name}</option>
-                                ))}
-                            </select>
+                            <div className="flex-1 text-sm font-bold text-blue-900">
+                              <Select
+                                instanceId={`service-package-${index}`}
+                                options={packageTemplates
+                                  .filter(template => !selectedPackages.some(selected => String(selected.servicePackageId) === String(template.id)))
+                                  .map(template => ({ value: template.id, label: template.name }))}
+                                value={null}
+                                onChange={(option) => handlePackageTemplateChange(index, option?.value || '')}
+                                placeholder="-- Chọn hoặc tìm gói mẫu --"
+                                noOptionsMessage={() => 'Không tìm thấy gói dịch vụ'}
+                                isClearable
+                                isSearchable
+                                styles={searchableSelectStyles}
+                              />
+                            </div>
                             <button
                               type="button"
                               onClick={() => removePackage(index)}

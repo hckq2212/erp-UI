@@ -106,13 +106,26 @@ export const Sidebar = ({ isCollapsed }) => {
     };
   }, [isCollapsed]);
 
-  const toggleSubmenu = (menuId, event) => {
+  const toggleSubmenu = (item, event) => {
+    const menuId = item.id || item.label;
     if (isCollapsed) {
       const rect = event.currentTarget.getBoundingClientRect();
+      const viewportPadding = 8;
+      const estimatedFlyoutHeight = 48 + (item.children?.length || 0) * 36;
+      const availableHeight = window.innerHeight - viewportPadding * 2;
+      const flyoutHeight = Math.min(estimatedFlyoutHeight, availableHeight);
+      const top = Math.max(
+        viewportPadding,
+        Math.min(rect.top, window.innerHeight - flyoutHeight - viewportPadding),
+      );
+      const arrowTop = Math.max(
+        12,
+        Math.min(rect.top + rect.height / 2 - top - 4, flyoutHeight - 20),
+      );
       setCollapsedFlyout((current) => (
         current?.menuId === menuId
           ? null
-          : { menuId, top: rect.top, left: rect.right + 12 }
+          : { menuId, top, left: rect.right + 12, arrowTop }
       ));
       return;
     }
@@ -138,7 +151,7 @@ export const Sidebar = ({ isCollapsed }) => {
               <div key={item.id || item.label} className="space-y-1">
                 <button
                   type="button"
-                  onClick={(event) => toggleSubmenu(item.id || item.label, event)}
+                  onClick={(event) => toggleSubmenu(item, event)}
                   data-sidebar-flyout
                   aria-expanded={isCollapsed
                     ? collapsedFlyout?.menuId === (item.id || item.label)
@@ -181,34 +194,39 @@ export const Sidebar = ({ isCollapsed }) => {
                     data-sidebar-flyout
                     role="menu"
                     aria-label={item.label}
-                    className="fixed min-w-52 px-3 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg whitespace-nowrap shadow-xl z-[100]"
+                    className="fixed min-w-52 text-white text-xs font-bold whitespace-nowrap z-[100]"
                     style={{ top: collapsedFlyout.top, left: collapsedFlyout.left }}
                   >
-                    <div className="text-[11px] font-bold text-slate-300 mb-1 border-b border-slate-700/60 pb-1">
-                      {item.label}
+                    <div className="max-h-[calc(100vh-1rem)] overflow-y-auto rounded-lg bg-slate-900 px-3 py-2 shadow-xl">
+                      <div className="text-[11px] font-bold text-slate-300 mb-1 border-b border-slate-700/60 pb-1">
+                        {item.label}
+                      </div>
+                      <div className="space-y-1">
+                        {item.children.map((child) => {
+                          const isChildActive = location.pathname === child.path;
+                          return (
+                            <Link
+                              key={child.path}
+                              to={child.path}
+                              role="menuitem"
+                              className={cn(
+                                'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-semibold transition-colors',
+                                isChildActive
+                                  ? 'bg-indigo-600 text-white'
+                                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                              )}
+                            >
+                              <child.icon className="h-3.5 w-3.5 shrink-0" />
+                              <span>{child.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      {item.children.map((child) => {
-                        const isChildActive = location.pathname === child.path;
-                        return (
-                          <Link
-                            key={child.path}
-                            to={child.path}
-                            role="menuitem"
-                            className={cn(
-                              'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-semibold transition-colors',
-                              isChildActive
-                                ? 'bg-indigo-600 text-white'
-                                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                            )}
-                          >
-                            <child.icon className="h-3.5 w-3.5 shrink-0" />
-                            <span>{child.label}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                    <div className="absolute top-6 -left-1 w-2 h-2 bg-slate-900 rotate-45" />
+                    <div
+                      className="absolute -left-1 w-2 h-2 bg-slate-900 rotate-45"
+                      style={{ top: collapsedFlyout.arrowTop }}
+                    />
                   </div>,
                   document.body
                 )}
