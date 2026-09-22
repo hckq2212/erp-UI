@@ -20,8 +20,7 @@ export const MetricCardsGrid = ({
     dashboard,
 }) => {
     const statusCounts = member?.statusCounts || {};
-    const hasManagedProjects = (dashboard?.teamLead?.length || 0) > 0;
-    const canViewRoleStats = ['ADMIN', 'BOD', 'PM'].includes(userRole) || hasManagedProjects;
+    const canViewRoleStats = ['ADMIN', 'BOD', 'PM'].includes(userRole);
     const roleStats = !isViewingMember && canViewRoleStats ? member?.roleStats : null;
     const selectedProject = projects.find(p => p.id === selectedProjectId);
 

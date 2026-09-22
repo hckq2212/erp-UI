@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { format, isSameDay } from 'date-fns';
 import { ArrowUpRight, ClipboardCheck, UserRound } from 'lucide-react';
 import { useGetMyNotificationsQuery } from '../../api/notifications';
 import { TASK_STATUS, PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
@@ -170,6 +171,26 @@ export const MemberView = ({
         ? (member?.calendarTasks || []).filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
         : member?.calendarTasks;
 
+    const [selectedCalendarDate, setSelectedCalendarDate] = useState(new Date());
+
+    const isSelectedDayToday = useMemo(() => {
+        return isSameDay(selectedCalendarDate || new Date(), new Date());
+    }, [selectedCalendarDate]);
+
+    const selectedDayKey = useMemo(() => {
+        return format(selectedCalendarDate || new Date(), 'yyyy-MM-dd');
+    }, [selectedCalendarDate]);
+
+    const selectedDayTasks = useMemo(() => {
+        return (filteredCalendarTasks || []).filter(task => {
+            const dateStr = task.deadline || task.end || task.start;
+            if (!dateStr) return false;
+            return format(new Date(dateStr), 'yyyy-MM-dd') === selectedDayKey;
+        });
+    }, [filteredCalendarTasks, selectedDayKey]);
+
+    const activeSelectedDayCount = isSelectedDayToday ? stats.today : selectedDayTasks.length;
+
     return (
         <>
             <div className="space-y-3 pb-2">
@@ -188,15 +209,22 @@ export const MemberView = ({
                         ) : (
                             <TodayFocusCard
                                 overdueCount={stats.overdue}
-                                todayCount={stats.today}
+                                todayCount={activeSelectedDayCount}
                                 pendingCount={stats.pending}
                                 progress={stats.progress}
+                                selectedDate={selectedCalendarDate}
+                                isToday={isSelectedDayToday}
+                                onResetToday={() => setSelectedCalendarDate(new Date())}
                                 onViewDetail={() => navigate('/tasks')}
                             />
                         )}
                     </div>
                     <div className="lg:col-span-5 min-h-0">
-                        <TaskCalendar tasks={filteredCalendarTasks} />
+                        <TaskCalendar
+                            tasks={filteredCalendarTasks}
+                            selectedDate={selectedCalendarDate}
+                            onSelectDate={setSelectedCalendarDate}
+                        />
                     </div>
                 </div>
 

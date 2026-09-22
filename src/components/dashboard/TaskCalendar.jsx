@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     format, addMonths, subMonths, startOfMonth, endOfMonth,
     startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth,
@@ -11,10 +11,22 @@ import { useNavigate } from 'react-router-dom';
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, TASK_STATUS } from '../../utils/enums';
 import { getTaskDisplayName } from '../../utils/taskName';
 
-export const TaskCalendar = ({ tasks = [] }) => {
+export const TaskCalendar = ({
+    tasks = [],
+    selectedDate: propSelectedDate,
+    onSelectDate
+}) => {
     const navigate = useNavigate();
-    const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [internalSelectedDate, setInternalSelectedDate] = useState(new Date());
+    const selectedDate = propSelectedDate !== undefined ? propSelectedDate : internalSelectedDate;
+    const setSelectedDate = onSelectDate || setInternalSelectedDate;
+    const [currentMonth, setCurrentMonth] = useState(propSelectedDate || new Date());
+
+    useEffect(() => {
+        if (propSelectedDate && !isSameMonth(propSelectedDate, currentMonth)) {
+            setCurrentMonth(startOfMonth(propSelectedDate));
+        }
+    }, [propSelectedDate]);
 
     const days = useMemo(() => {
         const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 });
