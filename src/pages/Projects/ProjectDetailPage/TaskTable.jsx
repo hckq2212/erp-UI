@@ -44,7 +44,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     const isAssignee = tasks.some(t => isSameUser(t.assigneeId, currentUserId) || isSameUser(t.assignee?.id, currentUserId));
     const isTeamMember = Boolean(project?.team?.members?.some(m => isSameUser(m.user?.id, currentUserId)));
 
-    const canSeeTable = canManageAllTasks || isSupportLead || isHelper || isAssignee || isTeamMember;
+    const canSeeTable = true;
     const canAddTask = isAdminOrBOD || isProjectLead;
     const canCreateProjectWork = user?.role === 'PM' || user?.role === 'ADMIN';
     const isProjectInProgress = project?.status === 'IN_PROGRESS' || project?.status === 'CONFIRMED';
@@ -235,14 +235,6 @@ export const TaskTable = ({ tasks = [], project }) => {
 
     const filteredTasks = useMemo(() => {
         const filtered = tasks.filter(task => {
-            if (!canManageAllTasks) {
-                const isUserTask = isSameUser(currentUserId, task.assigneeId) ||
-                    isSameUser(currentUserId, task.assignee?.id) ||
-                    isSameUser(currentUserId, task.helperId) ||
-                    isSameUser(currentUserId, task.helper?.id);
-                if (!isUserTask) return false;
-            }
-
             const search = filter.search.toLowerCase();
             const matchesSearch = task.name?.toLowerCase().includes(search) ||
                 task.nickname?.toLowerCase().includes(search) ||
@@ -254,7 +246,7 @@ export const TaskTable = ({ tasks = [], project }) => {
 
         // Sắp xếp các task theo mã code tăng dần (sử dụng natural sort để nhận diện số cuối chính xác)
         return [...filtered].sort((a, b) => (a.code || '').localeCompare(b.code || '', undefined, { numeric: true }));
-    }, [tasks, filter, canManageAllTasks, currentUserId]);
+    }, [tasks, filter]);
 
     const groupedTasks = useMemo(() => {
         const groups = {};
@@ -325,20 +317,18 @@ export const TaskTable = ({ tasks = [], project }) => {
                         <option key={value} value={value}>{label}</option>
                     ))}
                 </select>
-                {canManageAllTasks && (
-                    <select
-                        className="px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 outline-none hover:bg-gray-100 shrink-0 max-w-[160px] truncate"
-                        value={filter.assigneeId}
-                        onChange={(e) => setFilter({ ...filter, assigneeId: e.target.value })}
-                    >
-                        <option value="ALL">Tất cả nhân sự</option>
-                        {members.map((member) => (
-                            <option key={member.user.id} value={member.user.id}>
-                                {member.user.fullName}
-                            </option>
-                        ))}
-                    </select>
-                )}
+                <select
+                    className="px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 outline-none hover:bg-gray-100 shrink-0 max-w-[160px] truncate"
+                    value={filter.assigneeId}
+                    onChange={(e) => setFilter({ ...filter, assigneeId: e.target.value })}
+                >
+                    <option value="ALL">Tất cả nhân sự</option>
+                    {members.map((member) => (
+                        <option key={member.user.id} value={member.user.id}>
+                            {member.user.fullName}
+                        </option>
+                    ))}
+                </select>
                 <div className="flex items-center gap-2 shrink-0 whitespace-nowrap ml-auto">
                     {isProjectLead && isProjectInProgress && (
                         <button
@@ -523,7 +513,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
-                                                        {isProjectInProgress &&
+                                                        {isProjectInProgress && canManageAllTasks &&
                                                             (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
                                                             <button
                                                                 onClick={() => setAssigningTask(task)}

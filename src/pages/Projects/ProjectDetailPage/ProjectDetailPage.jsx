@@ -65,8 +65,6 @@ export const ProjectDetailPage = () => {
   const isProjectManager = isSameUser(projectManagerMember?.user?.id, currentUserId) ||
     isSameUser(project?.projectManager?.id, currentUserId) ||
     Boolean(project?.team?.members?.some(m => m.role === 'PROJECT_MANAGER' && isSameUser(m.user?.id, currentUserId)));
-  const canSeeAllProjectTasks = isAdminOrBOD || isProjectLead || isProjectManager;
-
   // ── Tạm dừng dự án ────────────────────────────────────────────────────
   const showRequestPause = canRequestPause(project, user);
   const showPauseDirect = canPauseDirect(project, user);
@@ -94,19 +92,10 @@ export const ProjectDetailPage = () => {
     }
   };
 
-
-  const isUserTask = (task) => {
-    return isSameUser(currentUserId, task.assigneeId) ||
-      isSameUser(currentUserId, task.assignee?.id) ||
-      isSameUser(currentUserId, task.helperId) ||
-      isSameUser(currentUserId, task.helper?.id);
-  };
-
   const displayedTasks = useMemo(() => {
     if (!Array.isArray(project?.tasks)) return [];
-    if (canSeeAllProjectTasks) return project.tasks;
-    return project.tasks.filter(isUserTask);
-  }, [project?.tasks, canSeeAllProjectTasks, currentUserId]);
+    return project.tasks;
+  }, [project?.tasks]);
 
   const isCoreMember = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
     project?.team?.members?.some(m => isSameUser(m.user?.id, currentUserId)) ||
