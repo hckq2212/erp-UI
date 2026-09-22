@@ -57,17 +57,12 @@ export const TeamDetailPage = () => {
     const isCurrentProjectManager = currentUser?.role === 'PM' && team?.members?.some(member =>
         isSameUser(member.user?.id, currentUserId) && member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER
     );
-    const canChangeProjectManager = currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD';
-    const canManageTeam = canChangeProjectManager || isCurrentProjectManager;
-    const canAddMember = currentUser?.role !== 'BOD' && (
-        currentUser?.role === 'ADMIN' || isCurrentProjectManager
+    const canManageTeam = currentUser?.role === 'ADMIN' || isCurrentProjectManager;
+    const canAddMember = canManageTeam;
+    const assignableMemberRoles = useMemo(
+        () => prioritizeLeadRole(Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER)),
+        []
     );
-    const assignableMemberRoles = useMemo(() => {
-        const roles = canChangeProjectManager
-            ? Object.values(TEAM_MEMBER_ROLE)
-            : Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER);
-        return prioritizeLeadRole(roles);
-    }, [canChangeProjectManager]);
 
     const getRolesOfUser = (userId) => new Set(
         (team?.members || [])
@@ -82,7 +77,8 @@ export const TeamDetailPage = () => {
             const assignedRoles = new Set(
                 team.members.filter(member => isSameUser(member.user?.id, user.id)).map(member => member.role)
             );
-            return assignableMemberRoles.some(role => !assignedRoles.has(role));
+            return !assignedRoles.has(TEAM_MEMBER_ROLE.PROJECT_MANAGER)
+                && assignableMemberRoles.some(role => !assignedRoles.has(role));
         });
     }, [users, team?.members, assignableMemberRoles]);
     const selectedUserRoles = getRolesOfUser(selectedUserId);
@@ -238,7 +234,11 @@ export const TeamDetailPage = () => {
                                     {team.members?.map((member) => {
                                         const isLead = isSameUser(team.teamLead?.id, member.user?.id);
                                         const isProjectManager = member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER;
-                                        const canEditMember = canManageTeam && (canChangeProjectManager || !isProjectManager) && !isLead;
+                                        const userIsAssignedProjectManager = team.members?.some(item =>
+                                            isSameUser(item.user?.id, member.user?.id)
+                                            && item.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER
+                                        );
+                                        const canEditMember = canManageTeam && !userIsAssignedProjectManager && !isLead;
                                         return (
                                             <tr key={member.id} className="hover:bg-gray-50 transition-colors group">
                                                 <td className="px-6 py-4 whitespace-nowrap">

@@ -73,11 +73,8 @@ export const TeamInfo = ({ team }) => {
     const isCurrentProjectManager = currentUser?.role === 'PM' && members.some(member =>
         isSameUser(member.user?.id, currentUserId) && member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER
     );
-    const canManageTeam = currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD'
-        || isCurrentProjectManager;
-    const canAddMember = currentUser?.role !== 'BOD' && (
-        currentUser?.role === 'ADMIN' || isCurrentProjectManager
-    );
+    const canManageTeam = currentUser?.role === 'ADMIN' || isCurrentProjectManager;
+    const canAddMember = canManageTeam;
     const assignableMemberRoles = useMemo(
         () => prioritizeLeadRole(Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER)),
         []
@@ -87,7 +84,8 @@ export const TeamInfo = ({ team }) => {
     );
     const availableUsers = users.filter(user => {
         const assignedRoles = getRolesOfUser(user.id);
-        return assignableMemberRoles.some(role => !assignedRoles.has(role));
+        return !assignedRoles.has(TEAM_MEMBER_ROLE.PROJECT_MANAGER)
+            && assignableMemberRoles.some(role => !assignedRoles.has(role));
     });
     const selectedUserRoles = getRolesOfUser(selectedUserId);
     const availableRolesForSelectedUser = assignableMemberRoles.filter(role => !selectedUserRoles.has(role));
@@ -206,7 +204,7 @@ export const TeamInfo = ({ team }) => {
                             const isLead = isSameUser(group.userId, team.teamLead?.id);
                             const isProjectManager = group.roles.includes(TEAM_MEMBER_ROLE.PROJECT_MANAGER);
                             const accountRole = getUserAccountRole(group.user);
-                            const canEditRoles = canManageTeam && (!isProjectManager || ['ADMIN', 'BOD'].includes(currentUser?.role));
+                            const canEditRoles = canManageTeam && !isProjectManager;
                             const isEditing = editingUserId === group.userId;
                             return (
                                 <div key={group.userId} className="rounded-xl border border-gray-100 bg-white p-2">
