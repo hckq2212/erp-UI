@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Save, Trash2, Lock } from 'lucide-react';
+import { Plus, Save, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useGetPaymentMilestonesByContractQuery, useBulkSavePaymentMilestonesMutation } from '../../api/paymentMilestones';
 import { Modal } from '../ui/Modal';
@@ -81,13 +81,6 @@ export const MilestoneModal = ({
     };
 
     const handleRemoveRow = (index) => {
-        const row = localMilestones[index];
-        const payments = row?.debt?.payments || row?.payments || [];
-        const paidAmount = Number(row?.paidAmount ?? payments.reduce((sum, p) => sum + Number(p.amount || 0), 0));
-        if (paidAmount > 0) {
-            toast.warning(`Không thể xóa đợt "${row.name}" vì đã phát sinh thanh toán`);
-            return;
-        }
         setLocalMilestones((prev) => prev.filter((_, i) => i !== index));
     };
 
@@ -95,11 +88,6 @@ export const MilestoneModal = ({
         setLocalMilestones((prev) => {
             const next = [...prev];
             const row = { ...next[index] };
-            const payments = row?.debt?.payments || row?.payments || [];
-            const paidAmount = Number(row?.paidAmount ?? payments.reduce((sum, p) => sum + Number(p.amount || 0), 0));
-            if (paidAmount > 0) {
-                return prev; // Đợt đã thanh toán bị khóa, không cho sửa
-            }
 
             if (field === 'percentage') {
                 const numValue = parseNumber(value);
@@ -121,7 +109,7 @@ export const MilestoneModal = ({
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const totalPercentage = Math.round(localMilestones.reduce((sum, m) => sum + Number(m?.percentage || 0), 0));
+        const totalPercentage = localMilestones.reduce((sum, m) => sum + Number(m?.percentage || 0), 0);
         const totalAmount = localMilestones.reduce((sum, m) => sum + Number(m?.amount || 0), 0);
         const price = Number(sellingPrice || 0);
 
@@ -130,31 +118,14 @@ export const MilestoneModal = ({
                 toast.error(`Tổng tỷ lệ các đợt phải bằng 100% (hiện tại: ${totalPercentage || 0}%)`);
                 return;
             }
-            for (let i = 0; i < localMilestones.length; i++) {
-                const m = localMilestones[i];
-                if (!m.name || !m.name.trim()) {
-                    toast.error(`Vui lòng nhập tên cho Đợt ${i + 1}`);
-                    return;
-                }
-                if (!m.dueDate) {
-                    toast.error(`Vui lòng chọn hạn thanh toán cho Đợt "${m.name}"`);
-                    return;
-                }
+            if (totalAmount !== price) {
+                toast.error(`Tổng số tiền (${formatNumber(totalAmount)}) phải bằng giá trị hợp đồng (${formatNumber(price)})`);
+                return;
             }
         }
 
         try {
-            await bulkSave({
-                contractId,
-                milestones: localMilestones.map(m => ({
-                    id: m.id,
-                    name: m.name,
-                    percentage: Number(m.percentage) || 0,
-                    amount: Number(m.amount) || 0,
-                    dueDate: m.dueDate,
-                    description: m.description
-                }))
-            }).unwrap();
+            await bulkSave({ contractId, milestones: localMilestones }).unwrap();
             toast.success('Cập nhật kế hoạch thanh toán thành công');
             onClose();
         } catch (err) {
@@ -177,6 +148,12 @@ export const MilestoneModal = ({
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Giá trị hợp đồng</p>
                         <p className="text-lg font-black text-slate-900">{formatNumber(Number(sellingPrice || 0))} VNĐ</p>
                     </div>
+                    {/* <div className="space-y-1">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tổng tiền đã chia</p>
+                        <p className={cn("text-lg font-black", isValidTotals ? "text-emerald-700" : "text-rose-600")}>
+                            {formatNumber(currentTotalAmount)} VNĐ
+                        </p>
+                    </div> */}
                 </div>
 
                 <div className="space-y-3">
@@ -201,34 +178,15 @@ export const MilestoneModal = ({
                         <div className="space-y-3">
                             {localMilestones.map((m, idx) => {
                                 const isFocus = String(m?.id) === String(initialFocusMilestoneId);
-                                const payments = m?.debt?.payments || m?.payments || [];
-                                const paidAmount = Number(m?.paidAmount ?? payments.reduce((sum, p) => sum + Number(p.amount || 0), 0));
-                                const isLocked = paidAmount > 0;
-
                                 return (
                                     <div
                                         key={m.id || `${idx}-${m.name}`}
                                         ref={isFocus ? focusRowRef : null}
                                         className={cn(
-                                            "p-4 rounded-2xl border flex flex-col gap-3 transition-all",
-                                            isLocked
-                                                ? "bg-slate-50/90 border-slate-200"
-                                                : isFocus
-                                                    ? "bg-white border-indigo-300 shadow-sm"
-                                                    : "bg-white border-slate-100 hover:border-slate-200"
+                                            "p-4 rounded-2xl border bg-white flex flex-col gap-3",
+                                            isFocus ? "border-indigo-300 shadow-sm" : "border-slate-100"
                                         )}
                                     >
-                                        {isLocked && (
-                                            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
-                                                <span className="flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200/60 text-[10px] font-black rounded-lg uppercase tracking-wider">
-                                                    <Lock className="w-3 h-3" /> Đã thu: {formatNumber(paidAmount)} VNĐ (Cố định đợt)
-                                                </span>
-                                                <span className="text-[10px] text-slate-400 font-medium">
-                                                    Đợt đã phát sinh phiếu thu, không thể chỉnh sửa
-                                                </span>
-                                            </div>
-                                        )}
-
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                                             <div className="md:col-span-4">
                                                 <label className="block text-[10px] uppercase font-black text-slate-400 mb-1 tracking-widest">
@@ -238,8 +196,7 @@ export const MilestoneModal = ({
                                                     value={m.name || ''}
                                                     onChange={(e) => handleChange(idx, 'name', e.target.value)}
                                                     placeholder="VD: Đợt thanh toán 1"
-                                                    className={cn("h-10 text-sm font-semibold", isLocked && "bg-slate-100 text-slate-500 cursor-not-allowed")}
-                                                    disabled={isLocked}
+                                                    className="h-10 text-sm font-semibold"
                                                     required
                                                     ref={isFocus ? focusInputRef : null}
                                                 />
@@ -253,8 +210,7 @@ export const MilestoneModal = ({
                                                         type="text"
                                                         value={formatNumber(m.percentage)}
                                                         onChange={(e) => handleChange(idx, 'percentage', e.target.value)}
-                                                        className={cn("h-10 text-sm pr-6 font-semibold", isLocked && "bg-slate-100 text-slate-500 cursor-not-allowed")}
-                                                        disabled={isLocked}
+                                                        className="h-10 text-sm pr-6 font-semibold"
                                                         required
                                                     />
                                                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">%</span>
@@ -269,8 +225,7 @@ export const MilestoneModal = ({
                                                         type="text"
                                                         value={formatNumber(m.amount)}
                                                         onChange={(e) => handleChange(idx, 'amount', e.target.value)}
-                                                        className={cn("h-10 text-sm pr-12 font-semibold", isLocked && "bg-slate-100 text-slate-500 cursor-not-allowed")}
-                                                        disabled={isLocked}
+                                                        className="h-10 text-sm pr-12 font-semibold"
                                                         required
                                                     />
                                                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">VNĐ</span>
@@ -284,26 +239,19 @@ export const MilestoneModal = ({
                                                     type="date"
                                                     value={toDateOnly(m.dueDate)}
                                                     onChange={(e) => handleChange(idx, 'dueDate', e.target.value)}
-                                                    className={cn("h-10 text-sm px-2 font-semibold", isLocked && "bg-slate-100 text-slate-500 cursor-not-allowed")}
-                                                    disabled={isLocked}
+                                                    className="h-10 text-sm px-2 font-semibold"
                                                     required
                                                 />
                                             </div>
                                             <div className="md:col-span-1 flex justify-end">
-                                                {isLocked ? (
-                                                    <div className="p-2 text-slate-400 cursor-not-allowed" title="Không thể xóa đợt đã thanh toán">
-                                                        <Lock className="w-4 h-4" />
-                                                    </div>
-                                                ) : (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveRow(idx)}
-                                                        className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
-                                                        title="Xóa đợt"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveRow(idx)}
+                                                    className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
+                                                    title="Xóa"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
                                             </div>
                                         </div>
                                     </div>

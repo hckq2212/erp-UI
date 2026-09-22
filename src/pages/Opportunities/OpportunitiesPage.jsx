@@ -14,7 +14,7 @@ const COLUMNS = [
     { id: 'QUOTATION', title: 'Báo Giá' },
     { id: 'QUOTATION_DRAFTING', title: 'Đang làm báo giá' },
     { id: 'PENDING_QUOTE_APPROVAL', title: 'Chờ duyệt báo giá' },
-    { id: 'QUOTE_APPROVED', title: 'Đang làm hợp đồng' },
+    { id: 'QUOTE_APPROVED', title: 'Đã duyệt báo giá' },
     { id: 'CONTRACT_CREATED', title: 'Đã tạo hợp đồng' },
     { id: 'PROJECT_ASSIGNED', title: 'Đã giao dự án' },
     { id: 'IMPLEMENTATION', title: 'Triển Khai' }

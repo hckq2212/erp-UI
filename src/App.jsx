@@ -42,9 +42,6 @@ import { CreateVideoAIPage } from './pages/CreateVideoAI/CreateVideoAIPage';
 import { CreateVideoMotionControlPage } from './pages/CreateVideoAI/CreateVideoMotionControlPage';
 import { LibraryVideoAiPage } from './pages/LibraryVideoAi/LibraryVideoAiPage';
 import { SettingsPage } from './pages/Settings/SettingsPage';
-import { ChatPage } from './pages/Chat/ChatPage';
-import { ChatBubbleWidget } from './components/chat/ChatBubbleWidget';
-
 function AppContent() {
   // Use the query to check if the user is logged in via cookies on startup
   const { data: currentUser, isLoading } = useGetMeQuery();
@@ -401,6 +398,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path='/create-video-ai'
           element={
@@ -442,21 +440,10 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path='/chat'
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ChatPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
         <Route path='*' element={<Navigate to='/' replace />} />
       </Routes>
       <SessionExpiredModal />
       {/* {canChat && <Chatbot />} */}
-      <ChatBubbleWidget />
     </>
   );
 }

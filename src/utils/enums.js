@@ -87,7 +87,7 @@ export const OPPORTUNITY_STATUS_LABELS = {
   QUOTATION: 'Báo giá',
   QUOTATION_DRAFTING: 'Đang làm báo giá',
   PENDING_QUOTE_APPROVAL: 'Chờ duyệt báo giá',
-  QUOTE_APPROVED: 'Đang làm hợp đồng',
+  QUOTE_APPROVED: 'Đã duyệt báo giá',
   CONTRACT_CREATED: 'Đã tạo hợp đồng',
   IMPLEMENTATION: 'Đã triển khai',
   PROJECT_ASSIGNED: 'Đã giao dự án'
@@ -298,7 +298,7 @@ export const TEAM_MEMBER_ROLE_LABELS = {
   [TEAM_MEMBER_ROLE.GRAPHIC_DESIGNER]: 'Thiết kế đồ họa',
   [TEAM_MEMBER_ROLE.CAMERAMAN]: 'Quay phim',
   [TEAM_MEMBER_ROLE.PROJECT_MANAGER]: 'Quản lý dự án',
-  [TEAM_MEMBER_ROLE.ACCOUNT]: 'Account',
+  [TEAM_MEMBER_ROLE.ACCOUNT]: 'Lead dự án',
   [TEAM_MEMBER_ROLE.SCRIPTER]: 'Biên kịch',
   [TEAM_MEMBER_ROLE.SOCIAL_MEDIA_MANAGER]: 'Quản lý MXH',
   [TEAM_MEMBER_ROLE.SEO_SPECIALIST]: 'Chuyên viên SEO'
