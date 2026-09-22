@@ -1,4 +1,4 @@
-import { useState, useMemo, Fragment } from 'react';
+import { useState, useMemo, useEffect, Fragment } from 'react';
 import { Calendar, Users, FileText, Search, UserPlus, UserMinus, Plus, AlertCircle, ChevronRight, ChevronDown } from 'lucide-react';
 import { TaskAssignModal } from './TaskAssignModal';
 import { AddProjectServiceModal } from './AddProjectServiceModal';
@@ -149,6 +149,16 @@ export const TaskTable = ({ tasks = [], project }) => {
     };
 
     const isTaskSelectable = selectionMode === 'unassign' ? isTaskUnassignable : isTaskBatchAssignable;
+
+    // Tự động loại bỏ các task đã phân công hoặc không còn thoả mãn điều kiện chọn khỏi selectedTasks
+    useEffect(() => {
+        if (selectedTasks.length === 0) return;
+        const selectableIds = new Set(tasks.filter(isTaskSelectable).map(t => t.id));
+        setSelectedTasks(prev => {
+            const next = prev.filter(id => selectableIds.has(id));
+            return next.length === prev.length ? prev : next;
+        });
+    }, [tasks, selectionMode]);
 
     const handleToggleUnassignMode = () => {
         setSelectedTasks([]);
@@ -695,6 +705,13 @@ export const TaskTable = ({ tasks = [], project }) => {
                 <TaskAssignModal
                     isOpen={!!assigningTask}
                     onClose={() => setAssigningTask(null)}
+                    onSuccess={() => {
+                        const assignedIds = Array.isArray(assigningTask)
+                            ? assigningTask.map(t => t.id)
+                            : [assigningTask?.id];
+                        setSelectedTasks(prev => prev.filter(id => !assignedIds.includes(id)));
+                        if (selectionMode === 'unassign') setSelectionMode('assign');
+                    }}
                     task={assigningTask}
                     project={project}
                 />
