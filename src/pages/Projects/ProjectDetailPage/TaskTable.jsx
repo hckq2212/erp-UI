@@ -462,12 +462,13 @@ export const TaskTable = ({ tasks = [], project }) => {
                                         {expandedGroups[group.job.id] && group.tasks.map((task, index) => (
                                             <tr
                                                 key={task.id}
+                                                onClick={() => navigate(`/tasks/${task.id}`)}
                                                 className={cn(
-                                                    "transition-colors",
-                                                    task.isSupportRequested ? "bg-red-50/50 hover:bg-red-50 border-l-4 border-l-red-500" : "hover:bg-gray-50/50"
+                                                    "transition-colors cursor-pointer",
+                                                    task.isSupportRequested ? "bg-red-50/50 hover:bg-red-50 border-l-4 border-l-red-500" : "hover:bg-blue-50/40"
                                                 )}
                                             >
-                                                <td className="px-6 py-4 text-center">
+                                                <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                                                     <input
                                                         type="checkbox"
                                                         className={cn(
@@ -512,7 +513,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 <td className="px-3 py-2 text-center w-fit">
                                                     {getStatusBadge(task.status)}
                                                 </td>
-                                                <td className="px-6 py-4">
+                                                <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                                                     <div className="flex flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
                                                         {isProjectInProgress && canManageAllTasks &&
                                                             (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
