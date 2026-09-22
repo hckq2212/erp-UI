@@ -193,3 +193,17 @@ export const getRemainingTime = (endDate, status) => {
   }
   return { text: `${symbol} ${diffDays} ngày`, color: color };
 };
+
+export const formatDateToDDMMYYYY = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
+  return format(d, 'dd-MM-yyyy');
+};
+
+export const formatDateToYYYYMMDD = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
+  return format(d, 'yyyy-MM-dd');
+};

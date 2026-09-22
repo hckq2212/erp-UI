@@ -13,6 +13,7 @@ import { ReworkZone } from './member/ReworkZone';
 import { TimelineList } from './member/TimelineList';
 import { HotProjectList } from './member/HotProjectList';
 import { TaskCalendar } from './TaskCalendar';
+import { PMOperationsHub } from './pm/PMOperationsHub';
 
 const TeamLeadReviewModal = ({ isOpen, onClose, tasks = [], navigate }) => (
     <Modal isOpen={isOpen} onClose={onClose} title="Việc cần duyệt" className="max-w-4xl">
@@ -80,11 +81,16 @@ export const MemberView = ({
     onSelectProject,
     availableProjects = [],
     selectedDate,
+    viewMode = 'overview',
+    teamMembers = [],
+    onSelectMember
 }) => {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const member = dashboard?.member || {};
     const userRole = user?.role || user?.account?.role;
     const isManagementOrAdmin = ['ADMIN', 'BOD', 'PM'].includes(userRole);
+    const isPM = userRole === 'PM';
+    const isPMOverview = isPM && !isViewingMember && viewMode === 'overview';
     const hideLowerSection = isAccountViewingMember ||
                              Boolean(dashboard?.scope?.isAccountViewingMember) ||
                              (isViewingMember && !isManagementOrAdmin);
@@ -110,6 +116,11 @@ export const MemberView = ({
         }) || [];
     }, [awaitingReviewTasks, canManageProjectTasks, currentUserId, selectedProjectId, selectedDate]);
 
+    const rawOverdue = member?.overdueTasks || [];
+    const filteredOverdueTasks = selectedProjectId
+        ? rawOverdue.filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
+        : rawOverdue;
+
     const stats = useMemo(() => {
         const todayStr = new Date().toISOString().split('T')[0];
         const now = new Date();
@@ -124,13 +135,8 @@ export const MemberView = ({
             task.deadline && task.deadline.startsWith(todayStr)
         ).length;
 
-        const rawOverdue = member?.overdueTasks || [];
-        const filteredOverdue = selectedProjectId
-            ? rawOverdue.filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
-            : rawOverdue;
-
         const overdueCount = member?.overdueCount !== undefined
-            ? (selectedProjectId ? filteredOverdue.length : member.overdueCount)
+            ? (selectedProjectId ? filteredOverdueTasks.length : member.overdueCount)
             : filteredUpcoming.filter(task => task.deadline && new Date(task.deadline) < startOfToday).length;
         const statusCounts = member?.statusCounts || {};
         const completedCount = member?.completedCount ?? (
@@ -148,7 +154,7 @@ export const MemberView = ({
             pending: teamLeadReviewTasks.length,
             progress
         };
-    }, [member, selectedProjectId, teamLeadReviewTasks]);
+    }, [member, selectedProjectId, teamLeadReviewTasks, filteredOverdueTasks]);
 
     const rawTimelineTasks = member?.upcomingDeadlines || [];
     const filteredTimelineTasks = selectedProjectId
@@ -169,13 +175,25 @@ export const MemberView = ({
             <div className="space-y-3 pb-2">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-2">
                     <div className="lg:col-span-7">
-                        <TodayFocusCard
-                            overdueCount={stats.overdue}
-                            todayCount={stats.today}
-                            pendingCount={stats.pending}
-                            progress={stats.progress}
-                            onViewDetail={() => navigate('/tasks')}
-                        />
+                        {isPMOverview ? (
+                            <PMOperationsHub
+                                reviewTasks={teamLeadReviewTasks}
+                                overdueTasks={filteredOverdueTasks}
+                                reworkTasks={filteredReworkTasks}
+                                workloads={dashboard?.staffWorkloads || dashboard?.admin?.staffWorkloads}
+                                teamMembers={teamMembers}
+                                navigate={navigate}
+                                onSelectMember={onSelectMember}
+                            />
+                        ) : (
+                            <TodayFocusCard
+                                overdueCount={stats.overdue}
+                                todayCount={stats.today}
+                                pendingCount={stats.pending}
+                                progress={stats.progress}
+                                onViewDetail={() => navigate('/tasks')}
+                            />
+                        )}
                     </div>
                     <div className="lg:col-span-5 min-h-0">
                         <TaskCalendar tasks={filteredCalendarTasks} />
