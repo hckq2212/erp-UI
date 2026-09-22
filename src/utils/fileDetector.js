@@ -11,6 +11,10 @@ export const FILE_TYPES = {
   IMAGE: 'IMAGE',
   VIDEO: 'VIDEO',
   TEXT: 'TEXT',
+  GDOCS: 'GDOCS',
+  GSHEETS: 'GSHEETS',
+  GSLIDES: 'GSLIDES',
+  GDRIVE: 'GDRIVE',
   UNKNOWN: 'UNKNOWN'
 };
 
@@ -22,11 +26,91 @@ const SUPPORTED_EXTENSIONS = [
 ];
 
 /**
+ * Các hàm nhận diện và trích xuất link Google Docs, Sheets, Slides, Drive
+ */
+export const getGoogleDocId = (url = '') => {
+  if (!url || typeof url !== 'string') return null;
+  const match = url.match(/docs\.google\.com\/document\/(?:u\/\d+\/)?d\/([a-zA-Z0-9_-]+)/i);
+  return match ? match[1] : null;
+};
+
+export const getGoogleSheetId = (url = '') => {
+  if (!url || typeof url !== 'string') return null;
+  const match = url.match(/docs\.google\.com\/spreadsheets\/(?:u\/\d+\/)?d\/([a-zA-Z0-9_-]+)/i);
+  return match ? match[1] : null;
+};
+
+export const getGoogleSlideId = (url = '') => {
+  if (!url || typeof url !== 'string') return null;
+  const match = url.match(/docs\.google\.com\/presentation\/(?:u\/\d+\/)?d\/([a-zA-Z0-9_-]+)/i);
+  return match ? match[1] : null;
+};
+
+export const getGoogleDriveFileId = (url = '') => {
+  if (!url || typeof url !== 'string') return null;
+  const match = url.match(/drive\.google\.com\/(?:file\/(?:u\/\d+\/)?d\/([a-zA-Z0-9_-]+)|(?:open|uc)\?(?:.*&)?id=([a-zA-Z0-9_-]+))/i);
+  return match ? (match[1] || match[2]) : null;
+};
+
+export const isGoogleDocUrl = (url = '') => !!getGoogleDocId(url);
+export const isGoogleSheetUrl = (url = '') => !!getGoogleSheetId(url);
+export const isGoogleSlideUrl = (url = '') => !!getGoogleSlideId(url);
+export const isGoogleDriveUrl = (url = '') => !!getGoogleDriveFileId(url);
+export const isGoogleUrl = (url = '') => (
+  isGoogleDocUrl(url) || isGoogleSheetUrl(url) || isGoogleSlideUrl(url) || isGoogleDriveUrl(url)
+);
+
+/**
+ * Trả về embed link cho phép nhúng iframe xem trước trực tiếp các file từ Google
+ */
+export const getGoogleEmbedUrl = (url = '') => {
+  const docId = getGoogleDocId(url);
+  if (docId) return `https://docs.google.com/document/d/${docId}/preview`;
+
+  const sheetId = getGoogleSheetId(url);
+  if (sheetId) return `https://docs.google.com/spreadsheets/d/${sheetId}/preview`;
+
+  const slideId = getGoogleSlideId(url);
+  if (slideId) return `https://docs.google.com/presentation/d/${slideId}/preview`;
+
+  const driveId = getGoogleDriveFileId(url);
+  if (driveId) return `https://drive.google.com/file/d/${driveId}/preview`;
+
+  return null;
+};
+
+/**
+ * Kiểm tra xem URL có phải link PDF trực tiếp không
+ */
+export const isPdfUrl = (url = '') => {
+  if (!url || typeof url !== 'string') return false;
+  const clean = url.split('?')[0].split('#')[0].toLowerCase();
+  if (clean.endsWith('.pdf')) return true;
+  if (url.toLowerCase().includes('.pdf?') || url.toLowerCase().includes('.pdf#')) return true;
+  return false;
+};
+
+/**
+ * Kiểm tra xem URL có phải link Excel / Spreadsheet trực tiếp không
+ */
+export const isExcelUrl = (url = '') => {
+  if (!url || typeof url !== 'string') return false;
+  const clean = url.split('?')[0].split('#')[0].toLowerCase();
+  if (clean.endsWith('.xlsx') || clean.endsWith('.xls') || clean.endsWith('.csv')) return true;
+  return isGoogleSheetUrl(url);
+};
+
+/**
  * Tách lấy tên file sạch từ URL hoặc chuỗi tên truyền vào
  */
 export const getFileNameFromUrl = (url, fallbackName = '') => {
   if (fallbackName && fallbackName.trim()) return fallbackName.trim();
   if (!url) return 'Tài liệu';
+
+  if (isGoogleDocUrl(url)) return 'Tài liệu Google Docs';
+  if (isGoogleSheetUrl(url)) return 'Bảng tính Google Sheets';
+  if (isGoogleSlideUrl(url)) return 'Bản trình bày Google Slides';
+  if (isGoogleDriveUrl(url)) return 'Tệp Google Drive';
 
   try {
     const cleanUrl = url.split('?')[0].split('#')[0];
@@ -100,6 +184,12 @@ export const isValidFileUrl = (url) => {
   }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
 
+  // Các liên kết Google Docs, Google Sheets, Google Slides, Google Drive đều hỗ trợ xem trước
+  if (isGoogleUrl(url)) return true;
+
+  // Link PDF (kể cả có query param)
+  if (isPdfUrl(url)) return true;
+
   // Phải có đuôi file nằm trong danh sách hỗ trợ
   const ext = extractExt(url);
   if (!ext || !SUPPORTED_EXTENSIONS.includes(ext)) return false;
@@ -111,6 +201,13 @@ export const isValidFileUrl = (url) => {
  * Nhận diện loại file (FILE_TYPES)
  */
 export const detectFileType = (url = '', fileName = '') => {
+  if (isGoogleDocUrl(url)) return FILE_TYPES.GDOCS;
+  if (isGoogleSheetUrl(url)) return FILE_TYPES.GSHEETS;
+  if (isGoogleSlideUrl(url)) return FILE_TYPES.GSLIDES;
+  if (isGoogleDriveUrl(url)) return FILE_TYPES.GDRIVE;
+
+  if (isPdfUrl(url)) return FILE_TYPES.PDF;
+
   const ext = getFileExtension(url, fileName);
 
   switch (ext) {
@@ -157,6 +254,46 @@ export const detectFileType = (url = '', fileName = '') => {
  */
 export const getFileMeta = (fileType) => {
   switch (fileType) {
+    case FILE_TYPES.GDOCS:
+      return {
+        label: 'Tài liệu Google Docs',
+        shortType: 'DOC',
+        badgeBg: 'bg-blue-600',
+        badgeText: 'text-white',
+        borderHover: 'hover:border-blue-500',
+        color: '#4285F4',
+        iconType: 'word'
+      };
+    case FILE_TYPES.GSHEETS:
+      return {
+        label: 'Bảng tính Google Sheets',
+        shortType: 'SHEET',
+        badgeBg: 'bg-emerald-600',
+        badgeText: 'text-white',
+        borderHover: 'hover:border-emerald-500',
+        color: '#0F9D58',
+        iconType: 'excel'
+      };
+    case FILE_TYPES.GSLIDES:
+      return {
+        label: 'Bản trình bày Google Slides',
+        shortType: 'SLIDE',
+        badgeBg: 'bg-amber-500',
+        badgeText: 'text-white',
+        borderHover: 'hover:border-amber-500',
+        color: '#FBBC05',
+        iconType: 'powerpoint'
+      };
+    case FILE_TYPES.GDRIVE:
+      return {
+        label: 'Tệp Google Drive',
+        shortType: 'DRIVE',
+        badgeBg: 'bg-blue-500',
+        badgeText: 'text-white',
+        borderHover: 'hover:border-blue-400',
+        color: '#4285F4',
+        iconType: 'generic'
+      };
     case FILE_TYPES.DOCX:
     case FILE_TYPES.DOC:
       return {

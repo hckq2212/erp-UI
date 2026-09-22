@@ -29,6 +29,7 @@ import { TEAM_MEMBER_ROLE } from '../../../utils/enums';
 import { getFilePreviewUrl, uploadToCloudinary } from '../../../utils/cloudinary';
 import { toast } from 'react-toastify';
 import { Modal } from '../../../components/ui/Modal';
+import { ProjectWorkingFilesSection } from './ProjectWorkingFilesSection';
 
 const STATUS_LABELS = {
     DRAFT: 'Bản nháp',
@@ -1036,6 +1037,8 @@ export const ProjectInfo = ({ project }) => {
                     )}
                 </div>
             </div>
+
+            <ProjectWorkingFilesSection project={project} />
 
             <ProductDescriptionSection project={project} />
         </div>

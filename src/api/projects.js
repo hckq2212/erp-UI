@@ -66,6 +66,17 @@ export const projectsApi = api.injectEndpoints({
         { type: 'Projects', id: 'LIST' },
       ],
     }),
+    updateProjectWorkingFiles: builder.mutation({
+      query: ({ id, workingFiles }) => ({
+        url: `/projects/${id}/working-files`,
+        method: 'PATCH',
+        body: { workingFiles },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Projects', id },
+        { type: 'Projects', id: 'LIST' },
+      ],
+    }),
     updateProjectProgress: builder.mutation({
       query: ({ id, progress }) => ({
         url: `/projects/${id}/progress`,
@@ -368,6 +379,7 @@ export const {
   useUpdateProjectMutation,
   useDeleteProjectMutation,
   useUpdateProjectStatusMutation,
+  useUpdateProjectWorkingFilesMutation,
   useUpdateProjectProgressMutation,
   useAssignProjectMutation,
   useConfirmProjectMutation,
