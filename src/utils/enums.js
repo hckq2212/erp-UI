@@ -87,7 +87,7 @@ export const OPPORTUNITY_STATUS_LABELS = {
   QUOTATION: 'Báo giá',
   QUOTATION_DRAFTING: 'Đang làm báo giá',
   PENDING_QUOTE_APPROVAL: 'Chờ duyệt báo giá',
-  QUOTE_APPROVED: 'Đã duyệt báo giá',
+  QUOTE_APPROVED: 'Đang làm hợp đồng',
   CONTRACT_CREATED: 'Đã tạo hợp đồng',
   IMPLEMENTATION: 'Đã triển khai',
   PROJECT_ASSIGNED: 'Đã giao dự án'
