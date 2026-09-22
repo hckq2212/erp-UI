@@ -52,13 +52,16 @@ export const TeamDetailPage = () => {
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState('');
-    const [selectedRole, setSelectedRole] = useState(TEAM_MEMBER_ROLE.EDITOR);
+    const [selectedRoles, setSelectedRoles] = useState([TEAM_MEMBER_ROLE.EDITOR]);
     const currentUserId = getCurrentUserId(currentUser);
-    const currentMembership = team?.members?.find(member => isSameUser(member.user?.id, currentUserId));
-    const isCurrentProjectManager = currentUser?.role === 'PM' && currentMembership?.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER;
-    const isCurrentTeamLead = isSameUser(currentUserId, team?.teamLead?.id);
+    const isCurrentProjectManager = currentUser?.role === 'PM' && team?.members?.some(member =>
+        isSameUser(member.user?.id, currentUserId) && member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER
+    );
     const canChangeProjectManager = currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD';
-    const canManageTeam = canChangeProjectManager || isCurrentProjectManager || isCurrentTeamLead;
+    const canManageTeam = canChangeProjectManager || isCurrentProjectManager;
+    const canAddMember = currentUser?.role !== 'BOD' && (
+        currentUser?.role === 'ADMIN' || isCurrentProjectManager
+    );
     const assignableMemberRoles = useMemo(() => {
         const roles = canChangeProjectManager
             ? Object.values(TEAM_MEMBER_ROLE)
@@ -66,25 +69,61 @@ export const TeamDetailPage = () => {
         return prioritizeLeadRole(roles);
     }, [canChangeProjectManager]);
 
-    // Filter out users who are already members of this team
+    const getRolesOfUser = (userId) => new Set(
+        (team?.members || [])
+            .filter(member => isSameUser(member.user?.id, userId))
+            .map(member => member.role)
+    );
+
+    // Existing members remain selectable while they still have another assignable role.
     const availableUsers = useMemo(() => {
         if (!users || !team?.members) return users;
-        const memberUserIds = new Set(team.members.map(m => m.user?.id));
-        return users.filter(user => !memberUserIds.has(user.id));
-    }, [users, team?.members]);
+        return users.filter(user => {
+            const assignedRoles = new Set(
+                team.members.filter(member => isSameUser(member.user?.id, user.id)).map(member => member.role)
+            );
+            return assignableMemberRoles.some(role => !assignedRoles.has(role));
+        });
+    }, [users, team?.members, assignableMemberRoles]);
+    const selectedUserRoles = getRolesOfUser(selectedUserId);
+    const availableRolesForSelectedUser = assignableMemberRoles.filter(role => !selectedUserRoles.has(role));
+    const getEditableRoles = (member) => {
+        const otherRoles = new Set(
+            (team?.members || [])
+                .filter(item => item.id !== member.id && isSameUser(item.user?.id, member.user?.id))
+                .map(item => item.role)
+        );
+        return assignableMemberRoles.filter(role => role === member.role || !otherRoles.has(role));
+    };
 
     const handleAddMember = async (e) => {
         e.preventDefault();
-        if (!selectedUserId) return;
+        if (!selectedUserId || selectedRoles.length === 0) return;
 
         try {
-            await addMember({ id, userId: selectedUserId, role: selectedRole }).unwrap();
+            await addMember({ id, userId: selectedUserId, roles: selectedRoles }).unwrap();
             toast.success('Thêm thành viên thành công');
             setIsAddModalOpen(false);
             setSelectedUserId('');
+            setSelectedRoles([TEAM_MEMBER_ROLE.EDITOR]);
         } catch (err) {
             toast.error(err?.data?.message || 'Không thể thêm thành viên');
         }
+    };
+
+    const handleSelectUser = (userId) => {
+        setSelectedUserId(userId);
+        const assignedRoles = getRolesOfUser(userId);
+        const validSelectedRoles = selectedRoles.filter(role => !assignedRoles.has(role));
+        setSelectedRoles(validSelectedRoles.length > 0
+            ? validSelectedRoles
+            : [assignableMemberRoles.find(role => !assignedRoles.has(role))].filter(Boolean));
+    };
+
+    const toggleSelectedRole = (role) => {
+        setSelectedRoles(current => current.includes(role)
+            ? current.filter(item => item !== role)
+            : [...current, role]);
     };
 
     const handleRemoveMember = async (memberId) => {
@@ -138,7 +177,7 @@ export const TeamDetailPage = () => {
                 </button>
                 <div className="flex items-center justify-between">
                     <h1 className="text-3xl font-bold text-gray-900">{team.name}</h1>
-                    {canManageTeam && (
+                    {canAddMember && (
                         <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
                             <UserPlus className="w-5 h-5" />
                             Thêm Thành Viên
@@ -170,7 +209,9 @@ export const TeamDetailPage = () => {
                             <div className="pt-2 border-t border-gray-100">
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-gray-500">Tổng thành viên</span>
-                                    <span className="font-semibold text-gray-900">{team.members?.length || 0}</span>
+                                    <span className="font-semibold text-gray-900">
+                                        {new Set((team.members || []).map(member => member.user?.id).filter(Boolean)).size}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -237,7 +278,7 @@ export const TeamDetailPage = () => {
                                                                 'rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700'
                                                             )}
                                                         >
-                                                            {assignableMemberRoles.map((role) => (
+                                                            {getEditableRoles(member).map((role) => (
                                                                 <option key={role} value={role} className={getRoleOptionClassName(role)}>
                                                                     {TEAM_MEMBER_ROLE_LABELS[role] || role}
                                                                 </option>
@@ -290,7 +331,7 @@ export const TeamDetailPage = () => {
                         </label>
                         <select
                             value={selectedUserId}
-                            onChange={(e) => setSelectedUserId(e.target.value)}
+                            onChange={(e) => handleSelectUser(e.target.value)}
                             required
                             className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                         >
@@ -306,27 +347,25 @@ export const TeamDetailPage = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Vai trò
                         </label>
-                        <select
-                            value={selectedRole}
-                            onChange={(e) => setSelectedRole(e.target.value)}
-                            required
-                            className={getRoleSelectClassName(
-                                selectedRole,
-                                'w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all'
-                            )}
-                        >
-                            {assignableMemberRoles.map(role => (
-                                <option key={role} value={role} className={getRoleOptionClassName(role)}>
-                                    {TEAM_MEMBER_ROLE_LABELS[role]}
-                                </option>
+                        <div className="grid grid-cols-1 gap-2 rounded-lg border border-gray-300 bg-white p-3 sm:grid-cols-2">
+                            {availableRolesForSelectedUser.map(role => (
+                                <label key={role} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-50">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedRoles.includes(role)}
+                                        onChange={() => toggleSelectedRole(role)}
+                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span>{TEAM_MEMBER_ROLE_LABELS[role]}</span>
+                                </label>
                             ))}
-                        </select>
+                        </div>
                     </div>
                     <div className="flex justify-end gap-3 mt-6">
                         <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
                             Hủy
                         </Button>
-                        <Button type="submit" isLoading={isAddingMember} disabled={!selectedUserId}>
+                        <Button type="submit" isLoading={isAddingMember} disabled={!selectedUserId || selectedRoles.length === 0}>
                             Thêm
                         </Button>
                     </div>
