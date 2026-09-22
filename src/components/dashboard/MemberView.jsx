@@ -72,6 +72,7 @@ export const MemberView = ({
     dashboard,
     navigate,
     isViewingMember,
+    isAccountViewingMember = false,
     isTeamLead,
     awaitingReviewTasks,
     user,
@@ -82,6 +83,11 @@ export const MemberView = ({
 }) => {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const member = dashboard?.member || {};
+    const userRole = user?.role || user?.account?.role;
+    const isManagementOrAdmin = ['ADMIN', 'BOD', 'PM'].includes(userRole);
+    const hideLowerSection = isAccountViewingMember ||
+                             Boolean(dashboard?.scope?.isAccountViewingMember) ||
+                             (isViewingMember && !isManagementOrAdmin);
     const { data: notifications = [] } = useGetMyNotificationsQuery();
     const currentUserId = getCurrentUserId(user);
 
@@ -176,47 +182,54 @@ export const MemberView = ({
                     </div>
                 </div>
 
-                {/* Hàng ngang duy nhất hợp nhất Chỉ số công việc & Ví Vinicoin */}
-                <div className="w-full">
-                    <MetricCardsGrid
-                        member={member}
-                        projects={availableProjects}
-                        selectedProjectId={selectedProjectId}
-                        onSelectProject={onSelectProject}
-                        overdueCount={stats.overdue}
-                        reworkCount={filteredReworkTasks?.length ?? member?.reworkCount ?? 0}
-                        pendingCount={stats.pending}
-                        todayCount={stats.today}
-                        totalTasksCount={member?.totalTasks || 0}
-                        userRole={user?.role || user?.account?.role}
-                        isTeamLead={isTeamLead}
-                        isViewingMember={isViewingMember}
-                        dashboard={dashboard}
-                        onOpenReviewModal={() => setIsReviewModalOpen(true)}
-                    />
-                </div>
+                {/* Ẩn toàn bộ phần dưới lịch khi Account đang xem Dashboard của member */}
+                {!hideLowerSection && (
+                    <>
+                        {/* Hàng ngang duy nhất hợp nhất Chỉ số công việc & Ví Vinicoin */}
+                        <div className="w-full">
+                            <MetricCardsGrid
+                                member={member}
+                                projects={availableProjects}
+                                selectedProjectId={selectedProjectId}
+                                onSelectProject={onSelectProject}
+                                overdueCount={stats.overdue}
+                                reworkCount={filteredReworkTasks?.length ?? member?.reworkCount ?? 0}
+                                pendingCount={stats.pending}
+                                todayCount={stats.today}
+                                totalTasksCount={member?.totalTasks || 0}
+                                userRole={user?.role || user?.account?.role}
+                                isTeamLead={isTeamLead}
+                                isViewingMember={isViewingMember}
+                                dashboard={dashboard}
+                                onOpenReviewModal={() => setIsReviewModalOpen(true)}
+                            />
+                        </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-stretch">
-                    <div className="lg:col-span-3">
-                        <ReworkZone tasks={filteredReworkTasks} navigate={navigate} />
-                    </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-stretch">
+                            <div className="lg:col-span-3">
+                                <ReworkZone tasks={filteredReworkTasks} navigate={navigate} />
+                            </div>
 
-                    <div className="lg:col-span-5">
-                        <TimelineList tasks={timelineTasks} navigate={navigate} />
-                    </div>
+                            <div className="lg:col-span-5">
+                                <TimelineList tasks={timelineTasks} navigate={navigate} />
+                            </div>
 
-                    <div className="lg:col-span-4">
-                        <HotProjectList projects={member?.participatingProjects} navigate={navigate} />
-                    </div>
-                </div>
+                            <div className="lg:col-span-4">
+                                <HotProjectList projects={member?.participatingProjects} navigate={navigate} />
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
 
-            <TeamLeadReviewModal
-                isOpen={isReviewModalOpen}
-                onClose={() => setIsReviewModalOpen(false)}
-                tasks={teamLeadReviewTasks}
-                navigate={navigate}
-            />
+            {!hideLowerSection && (
+                <TeamLeadReviewModal
+                    isOpen={isReviewModalOpen}
+                    onClose={() => setIsReviewModalOpen(false)}
+                    tasks={teamLeadReviewTasks}
+                    navigate={navigate}
+                />
+            )}
         </>
     );
 };

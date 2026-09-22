@@ -422,37 +422,37 @@ export const TaskDetailPage = () => {
                     <p className="text-gray-500 font-mono text-sm bg-gray-100 px-3 py-1 rounded-lg inline-block">{task.code}</p>
                 </div>
 
-                <div className="flex flex-wrap gap-3">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-3 shrink-0">
                     {canAssignUnassignedTask && (
                         <Button
                             onClick={() => setIsAssignModalOpen(true)}
-                            className="rounded-2xl py-3 px-6 shadow-lg shadow-blue-100 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                            className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-lg shadow-blue-100 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 whitespace-nowrap text-sm"
                         >
-                            <Users className="w-5 h-5" />
-                            Phân công
+                            <Users className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                            <span>Phân công</span>
                         </Button>
                     )}
                     {task.status === 'AWAITING_REVIEW' && isReviewerForThisTask && (
-                        <div className="flex gap-3">
+                        <>
                             <Button
                                 variant="outline"
                                 onClick={() => setIsReworkModalOpen(true)}
-                                className="rounded-2xl py-3 px-6 shadow-sm border-purple-200 text-purple-600 hover:bg-purple-50 flex items-center gap-2"
+                                className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-sm border-purple-200 text-purple-600 hover:bg-purple-50 flex items-center gap-2 whitespace-nowrap text-sm"
                             >
-                                <History className="w-5 h-5" />
-                                Yêu cầu làm lại
+                                <History className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                                <span>Yêu cầu làm lại</span>
                             </Button>
 
                             <Button
                                 onClick={() => navigate(`/tasks/${id}/review`)}
                                 disabled={isParentBlockedBySubtasks}
                                 title={isParentBlockedBySubtasks ? 'Cần hoàn tất tất cả subtask trước khi duyệt task chính' : undefined}
-                                className="rounded-2xl py-3 px-6 shadow-lg shadow-blue-100 flex items-center gap-2"
+                                className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-lg shadow-blue-100 flex items-center gap-2 whitespace-nowrap text-sm"
                             >
-                                <CheckCircle2 className="w-5 h-5" />
-                                Đánh giá & Duyệt
+                                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                                <span>Đánh giá & Duyệt</span>
                             </Button>
-                        </div>
+                        </>
                     )}
 
                     {task.status === 'INTERNAL_COMPLETED' && canManageProjectTask && !isVideoDemoTask && (
@@ -461,10 +461,10 @@ export const TaskDetailPage = () => {
                             isLoading={isApprovingByCustomer}
                             disabled={isParentBlockedBySubtasks}
                             title={isParentBlockedBySubtasks ? 'Cần hoàn tất tất cả subtask trước khi hoàn thành task chính' : undefined}
-                            className="rounded-2xl py-3 px-6 shadow-lg shadow-emerald-100 bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2"
+                            className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-lg shadow-emerald-100 bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 whitespace-nowrap text-sm"
                         >
-                            <CheckCircle2 className="w-5 h-5" />
-                            Khách hàng duyệt
+                            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                            <span>Khách hàng duyệt</span>
                         </Button>
                     )}
 
@@ -472,10 +472,10 @@ export const TaskDetailPage = () => {
                         <Button
                             variant="outline"
                             onClick={() => setIsReworkModalOpen(true)}
-                            className="rounded-2xl py-3 px-6 shadow-sm border-purple-200 text-purple-600 hover:bg-purple-50 flex items-center gap-2"
+                            className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-sm border-purple-200 text-purple-600 hover:bg-purple-50 flex items-center gap-2 whitespace-nowrap text-sm"
                         >
-                            <History className="w-5 h-5" />
-                            Yêu cầu làm lại
+                            <History className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                            <span>Yêu cầu làm lại</span>
                         </Button>
                     )}
 
@@ -485,10 +485,10 @@ export const TaskDetailPage = () => {
                             <Button
                                 variant="outline"
                                 onClick={handleRequestSupport}
-                                className="rounded-2xl py-3 px-6 border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-2 whitespace-nowrap text-sm"
                             >
-                                <AlertCircle className="w-5 h-5" />
-                                Nhờ hỗ trợ
+                                <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                                <span>Nhờ hỗ trợ</span>
                             </Button>
                         )}
 
@@ -572,12 +572,14 @@ export const TaskDetailPage = () => {
                                 variant="outline"
                                 onClick={() => setIsStaffingModalOpen(true)}
                                 disabled={task?.supportRequestType === 'STAFFING' && task?.isSupportRequested && !task?.isSupportAccepted}
-                                className="rounded-2xl py-3 px-6 border-orange-200 text-orange-700 hover:bg-orange-50 flex items-center gap-2"
+                                className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 border-orange-200 text-orange-700 hover:bg-orange-50 flex items-center gap-2 whitespace-nowrap text-sm disabled:opacity-60"
                             >
-                                <UserPlus className="w-5 h-5 text-[#F38820]" />
-                                {task?.supportRequestType === 'STAFFING' && task?.isSupportRequested && !task?.isSupportAccepted
-                                    ? 'Đang chờ PM'
-                                    : 'Yêu cầu thêm người'}
+                                <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-[#F38820]" />
+                                <span>
+                                    {task?.supportRequestType === 'STAFFING' && task?.isSupportRequested && !task?.isSupportAccepted
+                                        ? 'Đang chờ PM'
+                                        : 'Yêu cầu thêm người'}
+                                </span>
                             </Button>
                         )}
 
@@ -585,10 +587,10 @@ export const TaskDetailPage = () => {
                         <Button
                             variant="outline"
                             onClick={() => setIsSubtaskModalOpen(true)}
-                            className="rounded-2xl py-3 px-6 border-orange-200 text-orange-700 hover:bg-orange-50 flex items-center gap-2"
+                            className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 border-orange-200 text-orange-700 hover:bg-orange-50 flex items-center gap-2 whitespace-nowrap text-sm"
                         >
-                            <Plus className="w-5 h-5 text-[#F38820]" />
-                            Thêm subtask
+                            <Plus className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-[#F38820]" />
+                            <span>Thêm subtask</span>
                         </Button>
                     )}
                 </div>

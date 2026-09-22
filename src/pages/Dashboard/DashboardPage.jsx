@@ -42,7 +42,8 @@ export const DashboardPage = () => {
     );
 
     const dashboardScope = dashboard?.scope;
-    const canSelectMember = dashboardScope?.canSelectMembers ?? isAdminOrBod;
+    const isExcludedSaleRole = userRole === 'BD' || userRole === 'ADMIN_SALE';
+    const canSelectMember = !isExcludedSaleRole && (dashboardScope?.canSelectMembers ?? isAdminOrBod);
     const effectiveTeamMembers = dashboardScope?.availableMembers || [];
     const availableProjects = dashboardScope?.availableProjects || [];
 
@@ -51,8 +52,13 @@ export const DashboardPage = () => {
         setSelectedProjectId(null);
     };
 
-    const isViewingMember = !!selectedMemberId;
+    const isViewingMember = !isExcludedSaleRole && !!selectedMemberId;
     const isTeamLead = dashboardScope?.type === 'MANAGEMENT';
+    const isManagementOrAdmin = isAdminOrBod || userRole === 'PM';
+    const isAccountViewer = !isExcludedSaleRole && (Boolean(dashboardScope?.isAccountViewer) || !isManagementOrAdmin);
+    const isAccountViewingMember = isViewingMember && (
+        Boolean(dashboardScope?.isAccountViewingMember) || isAccountViewer
+    );
 
     const isLoading = isDashboardLoading || isTasksLoading;
 
@@ -106,7 +112,7 @@ export const DashboardPage = () => {
                             selectedDate={selectedDate}
                             onChange={setSelectedDate}
                         />
-                        {/* Member Selector (chỉ hiển thị cho PM, ADMIN, BOD) */}
+                        {/* Member Selector (chỉ hiển thị khi có quyền canSelectMember) */}
                         {canSelectMember && (
                             <div className="h-full flex mt-0">
                                 <MemberSelector
@@ -130,35 +136,13 @@ export const DashboardPage = () => {
                         transition={{ delay: 0.4 }}
                         className="space-y-3 pb-2"
                     >
-                        {/* {!isViewingMember && !isAdminOrBod && !isTeamLead && (
-                            <ReviewQueueView
-                                awaitingReviewTasks={awaitingReviewTasks}
-                                user={user}
-                                navigate={navigate}
-                            />
-                        )} */}
-
-                        {!isViewingMember && isAdminOrBod && (
-                            <AdminView
-                                dashboard={dashboard}
-                                navigate={navigate}
-                                onSelectMember={setSelectedMemberId}
-                            />
-                        )}
-
-                        {!isViewingMember && user?.role === 'BD' && (
-                            <BDView
-                                dashboard={dashboard}
-                                navigate={navigate}
-                            />
-                        )}
-
-                        {user?.role !== 'BD' && (!isAdminOrBod || isViewingMember) && (
+                        {isViewingMember ? (
                             <div className="">
                                 <MemberView
                                     dashboard={dashboard}
                                     navigate={navigate}
                                     isViewingMember={isViewingMember}
+                                    isAccountViewingMember={isAccountViewingMember}
                                     selectedMemberId={selectedMemberId}
                                     selectedProjectId={selectedProjectId}
                                     onSelectProject={setSelectedProjectId}
@@ -172,6 +156,44 @@ export const DashboardPage = () => {
                                     selectedDate={selectedDate}
                                 />
                             </div>
+                        ) : (
+                            <>
+                                {isAdminOrBod && (
+                                    <AdminView
+                                        dashboard={dashboard}
+                                        navigate={navigate}
+                                        onSelectMember={setSelectedMemberId}
+                                    />
+                                )}
+
+                                {!isAdminOrBod && user?.role === 'BD' && (
+                                    <BDView
+                                        dashboard={dashboard}
+                                        navigate={navigate}
+                                    />
+                                )}
+
+                                {!isAdminOrBod && user?.role !== 'BD' && (
+                                    <div className="">
+                                        <MemberView
+                                            dashboard={dashboard}
+                                            navigate={navigate}
+                                            isViewingMember={false}
+                                            selectedMemberId={null}
+                                            selectedProjectId={selectedProjectId}
+                                            onSelectProject={setSelectedProjectId}
+                                            availableProjects={availableProjects}
+                                            teamMembers={effectiveTeamMembers}
+                                            isTeamLead={isTeamLead}
+                                            onSelectMember={handleSelectMember}
+                                            currentUserId={currentUserId}
+                                            awaitingReviewTasks={awaitingReviewTasks}
+                                            user={user}
+                                            selectedDate={selectedDate}
+                                        />
+                                    </div>
+                                )}
+                            </>
                         )}
                     </motion.div>
                 </AnimatePresence>
