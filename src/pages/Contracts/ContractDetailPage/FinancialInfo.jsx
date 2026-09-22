@@ -8,7 +8,6 @@ import {
   Clock,
   Settings2,
   ArrowRight,
-  PlusCircle,
   TrendingUp,
   Percent
 } from 'lucide-react';
@@ -16,8 +15,7 @@ import {
   useGetPaymentMilestonesByContractQuery
 } from '../../../api/paymentMilestones';
 import {
-  useGetDebtsByContractQuery,
-  useActivateDebtMutation
+  useGetDebtsByContractQuery
 } from '../../../api/debts';
 import { Button } from '../../../components/ui/Button';
 import { MilestoneModal } from '../../../components/finance/MilestoneModal';
@@ -33,20 +31,17 @@ export const FinancialInfo = ({ contract }) => {
   const { data: milestones, isLoading: loadingMilestones } = useGetPaymentMilestonesByContractQuery(contractId);
   const { data: rawDebts, isLoading: loadingDebts } = useGetDebtsByContractQuery(contractId);
 
-  // Mutations
-  const [activateDebt] = useActivateDebtMutation();
-
   // Modal states
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
   const [isDebtDetailsModalOpen, setIsDebtDetailsModalOpen] = useState(false);
-  const [selectedDebtId, setSelectedDebtId] = useState(null);
+  const [selectedDebt, setSelectedDebt] = useState(null);
 
   const sellingPrice = Number(contract.sellingPrice || contract.selling_price || 0);
 
   // Unified Data Processing
   const processedMilestones = milestones?.map(m => {
     // Find debt associated with this milestone
-    const debt = rawDebts?.find(d => d.milestone?.id === m.id || d.milestoneId === m.id);
+    const debt = rawDebts?.find(d => d.milestone?.id === m.id || d.milestoneId === m.id || d.id === m.debt?.id) || m.debt;
 
     let paidAmount = 0;
     let payments = [];
@@ -59,37 +54,37 @@ export const FinancialInfo = ({ contract }) => {
     }
 
     const amount = Number(m.amount || 0);
-    const isCompleted = debt && paidAmount >= amount;
-    const isActive = !!debt;
+    const isCompleted = paidAmount >= amount && amount > 0;
     const remaining = Math.max(0, amount - paidAmount);
+
+    const effectiveDebt = debt || {
+      id: m.id,
+      name: `Phải thu: ${m.name}`,
+      amount: m.amount,
+      dueDate: m.dueDate,
+      contract: contract,
+      milestone: m,
+      payments: []
+    };
 
     return {
       ...m,
       amount,
-      debt,
+      debt: effectiveDebt,
       payments,
       paidAmount,
       remaining,
       isCompleted,
-      isActive
+      isActive: true
     };
   }) || [];
 
   const totalPaid = processedMilestones.reduce((sum, m) => sum + m.paidAmount, 0);
-  const totalDebt = processedMilestones.reduce((sum, m) => sum + (m.isActive ? m.remaining : 0), 0);
+  const totalDebt = processedMilestones.reduce((sum, m) => sum + m.remaining, 0);
   const progressPercent = sellingPrice > 0 ? Math.round((totalPaid / sellingPrice) * 100) : 0;
 
-  const handleActivateDebt = async (milestoneId) => {
-    try {
-      await activateDebt({ milestoneId }).unwrap();
-      toast.success('Đã kích hoạt công nợ cho đợt thanh toán này');
-    } catch (err) {
-      toast.error(err?.data?.message || 'Không thể kích hoạt công nợ');
-    }
-  };
-
   const openDebtDetails = (debt) => {
-    setSelectedDebtId(debt.id);
+    setSelectedDebt(debt);
     setIsDebtDetailsModalOpen(true);
   };
 
@@ -101,8 +96,6 @@ export const FinancialInfo = ({ contract }) => {
       </div>
     );
   }
-
-  const selectedDebt = rawDebts?.find(d => d.id === selectedDebtId);
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
@@ -203,36 +196,30 @@ export const FinancialInfo = ({ contract }) => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 w-full md:w-auto self-end md:self-center">
-                        {!m.isActive ? (
-                          <Button
-                            onClick={() => handleActivateDebt(m.id)}
-                            variant="primary"
-                            size="sm"
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-100 font-black px-6 h-9"
+                      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4 w-full md:w-auto self-end md:self-center">
+                        <div className="text-right hidden sm:block">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Đã thu</p>
+                          <p className="text-sm font-black text-green-600">{formatCurrency(m.paidAmount)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Còn nợ</p>
+                          <p className={cn(
+                            "text-sm font-black",
+                            m.remaining > 0 ? "text-red-500" : "text-green-600"
+                          )}>{formatCurrency(m.remaining)}</p>
+                        </div>
+                        {m.debt && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDebtDetails(m.debt);
+                            }}
+                            className="p-2 bg-white text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+                            title="Chi tiết"
                           >
-                            <PlusCircle className="w-4 h-4 mr-2" /> Kích hoạt nợ
-                          </Button>
-                        ) : (
-                          <div className="flex items-center gap-4 w-full md:w-auto">
-                            <div className="text-right hidden sm:block">
-                              <p className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Đã thu</p>
-                              <p className="text-sm font-black text-green-600">{formatCurrency(m.paidAmount)}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Còn nợ</p>
-                              <p className={cn(
-                                "text-sm font-black",
-                                m.remaining > 0 ? "text-red-500" : "text-green-600"
-                              )}>{formatCurrency(m.remaining)}</p>
-                            </div>
-                            <button
-                              onClick={() => openDebtDetails(m.debt)}
-                              className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm group-hover:translate-x-1"
-                            >
-                              <ArrowRight size={20} />
-                            </button>
-                          </div>
+                            <ArrowRight size={16} />
+                          </button>
                         )}
                       </div>
                     </div>
@@ -316,7 +303,7 @@ export const FinancialInfo = ({ contract }) => {
       <MilestoneModal
         isOpen={isMilestoneModalOpen}
         onClose={() => setIsMilestoneModalOpen(false)}
-        milestones={milestones || []}
+        milestones={processedMilestones}
         contractId={contractId}
         sellingPrice={sellingPrice}
       />

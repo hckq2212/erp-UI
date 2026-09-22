@@ -43,6 +43,7 @@ export const debtsApi = api.injectEndpoints({
             invalidatesTags: (result, error, { debtId }) => [
                 { type: 'Debts', id: debtId },
                 { type: 'Debts', id: 'LIST' },
+                { type: 'PaymentMilestones', id: 'LIST' },
             ],
         }),
         deletePayment: builder.mutation({
@@ -50,7 +51,10 @@ export const debtsApi = api.injectEndpoints({
                 url: `/debts/payments/${id}`,
                 method: 'DELETE',
             }),
-            invalidatesTags: [{ type: 'Debts', id: 'LIST' }],
+            invalidatesTags: [
+                { type: 'Debts', id: 'LIST' },
+                { type: 'PaymentMilestones', id: 'LIST' },
+            ],
         }),
         getDebtsByContract: builder.query({
             query: (contractId) => `/debts/contract/${contractId}`,
