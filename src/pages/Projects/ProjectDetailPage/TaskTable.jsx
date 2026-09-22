@@ -13,6 +13,7 @@ import { formatDateTime, getRemainingTime } from '../../../utils/format';
 import { useGetMeQuery } from '../../../api/auth';
 import { InlineTaskNickname } from '../../../components/tasks/InlineTaskNickname';
 import { ResolveStaffingRequestModal } from '../../../components/tasks/ResolveStaffingRequestModal';
+import { TaskReminderButton } from '../../../components/tasks/TaskReminderButton';
 import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
@@ -654,6 +655,12 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                                 </button>
                                                             )
                                                         )}
+
+                                                        <TaskReminderButton
+                                                            task={task}
+                                                            isProjectInProgress={isProjectInProgress}
+                                                            canManage={canManageAllTasks}
+                                                        />
 
                                                         <button
                                                             onClick={(e) => {

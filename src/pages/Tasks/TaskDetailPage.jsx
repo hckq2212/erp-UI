@@ -20,6 +20,7 @@ import { TaskAssignModal } from '../Projects/ProjectDetailPage/TaskAssignModal';
 import { getTaskDisplayName } from '../../utils/taskName';
 import { getCurrentUserId, isSameUser } from '../../utils/authUser';
 import { TaskDelegationPanel } from '../../components/tasks/TaskDelegationPanel';
+import { TaskReminderButton } from '../../components/tasks/TaskReminderButton';
 
 const COMPLETED_SUBTASK_STATUSES = new Set(['INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED']);
 
@@ -554,18 +555,12 @@ export const TaskDetailPage = () => {
                         )}
                     */}
 
-                    {canManageProjectTask &&
-                        (task.assigneeId || task.helperId) &&
-                        !['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED', 'AWAITING_REVIEW'].includes(task.status) && (
-                            <Button
-                                onClick={handleSendReminder}
-                                isLoading={isSendingReminder}
-                                className="rounded-2xl py-3 px-6 shadow-lg shadow-blue-100 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
-                            >
-                                <Bell className="w-5 h-5" />
-                                Nhắc việc
-                            </Button>
-                        )}
+                    <TaskReminderButton
+                        task={task}
+                        isProjectInProgress={!isProjectOnHold}
+                        canManage={canManageProjectTask}
+                        variant="detail"
+                    />
 
                     {task?.performerType === 'INTERNAL' &&
                         !isProjectOnHold &&
