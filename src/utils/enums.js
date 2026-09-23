@@ -91,6 +91,7 @@ export const TASK_STATUS_LABELS_PAUSE = {
 export const OPPORTUNITY_STATUS_LABELS = {
   OPEN: 'Mới',
   PENDING_OPP_APPROVAL: 'Đang chờ duyệt',
+  OPP_REJECTED: 'Không duyệt',
   OPP_APPROVED: 'Đã duyệt',
   QUOTATION: 'Báo giá',
   QUOTATION_DRAFTING: 'Đang làm báo giá',
@@ -105,6 +106,7 @@ export const OPPORTUNITY_STATUS_LABELS = {
 export const OPPORTUNITY_STATUS_COLORS = {
   OPEN: 'bg-blue-100 text-blue-800',
   PENDING_OPP_APPROVAL: 'bg-yellow-100 text-yellow-800',
+  OPP_REJECTED: 'bg-red-100 text-red-800',
   OPP_APPROVED: 'bg-green-100 text-green-800',
   QUOTATION: 'bg-indigo-100 text-indigo-800',
   QUOTATION_DRAFTING: 'bg-purple-100 text-purple-800',

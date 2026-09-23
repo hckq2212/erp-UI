@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { hasTeamMemberRole } from '../../../utils/teamMember';
 import { useNavigate } from 'react-router-dom';
 import {
     CheckCircle2,
@@ -320,12 +321,12 @@ export const ContractInfo = ({ contract, projectId, project }) => {
     const user = useSelector(selectCurrentUser);
     const currentUserId = getCurrentUserId(user);
 
-    const projectManagerMember = project?.team?.members?.find((member) => member.role === 'PROJECT_MANAGER');
+    const projectManagerMember = project?.team?.members?.find((member) => hasTeamMemberRole(member, 'PROJECT_MANAGER'));
     const isProjectLead = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
         isSameUser(project?.team?.teamLeadId, currentUserId);
     const isProjectManager = isSameUser(projectManagerMember?.user?.id, currentUserId) ||
         isSameUser(project?.projectManager?.id, currentUserId) ||
-        Boolean(project?.team?.members?.some((m) => m.role === 'PROJECT_MANAGER' && isSameUser(m.user?.id, currentUserId)));
+        Boolean(project?.team?.members?.some((m) => hasTeamMemberRole(m, 'PROJECT_MANAGER') && isSameUser(m.user?.id, currentUserId)));
     const isAdminOrBOD = ['ADMIN', 'BOD'].includes(user?.role);
     const canSeeAllTasks = isAdminOrBOD || isProjectLead || isProjectManager;
     const canSendAcceptance = canSeeAllTasks || user?.role === 'ADMIN_SALE';

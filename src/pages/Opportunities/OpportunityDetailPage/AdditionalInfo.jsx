@@ -28,6 +28,12 @@ export const AdditionalInfo = ({ opportunity, formatDate }) => {
             <span className="font-medium text-gray-900">{opportunity.referralPartner.name}</span>
           </div>
         )}
+        {opportunity.status === 'OPP_REJECTED' && opportunity.rejectionReason && (
+          <div className="border-t border-gray-100 pt-4">
+            <p className="mb-1 text-gray-500">Lý do không duyệt</p>
+            <p className="whitespace-pre-wrap font-medium text-red-600">{opportunity.rejectionReason}</p>
+          </div>
+        )}
       </div>
     </div>
   );

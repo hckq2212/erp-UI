@@ -69,6 +69,17 @@ export const opportunitiesApi = api.injectEndpoints({
         { type: 'Opportunities', id: 'LIST' },
       ],
     }),
+    rejectOpportunity: builder.mutation({
+      query: ({ id, reason }) => ({
+        url: `/opportunities/${id}/reject`,
+        method: 'PATCH',
+        body: { reason },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Opportunities', id },
+        { type: 'Opportunities', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -81,4 +92,5 @@ export const {
   useDeleteOpportunityMutation,
   useUpdateOpportunityStageMutation,
   useApproveOpportunityMutation,
+  useRejectOpportunityMutation,
 } = opportunitiesApi;

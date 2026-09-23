@@ -40,6 +40,7 @@ import { Modal } from '../../../components/ui/Modal';
 import { RichTextEditor } from '../../../components/ui/RichTextEditor';
 import { generateProductDescriptionPdf } from '../../../utils/productDescriptionPdf';
 import { ProjectWorkingFilesSection } from './ProjectWorkingFilesSection';
+import { hasTeamMemberRole } from '../../../utils/teamMember';
 
 const STATUS_LABELS = {
     DRAFT: 'Bản nháp',
@@ -536,12 +537,12 @@ const ProductDescriptionSection = ({ project }) => {
     const hasPendingSubmission = submissions.some((submission) => submission?.status === 'PENDING_REVIEW');
     const isAssignedPm = (userRole === 'PM' || isSameUser(project?.projectManager?.id, currentUserId)) &&
         project?.team?.members?.some((member) =>
-            (member.role === 'PROJECT_MANAGER' || member.role === 'PM' || member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER) &&
+            hasTeamMemberRole(member, TEAM_MEMBER_ROLE.PROJECT_MANAGER) &&
             isSameUser(member.user?.id, currentUserId)
         );
     const isAccount = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
         project?.team?.members?.some((member) =>
-            (member.role === 'ACCOUNT' || member.role === 'LEAD' || member.role === TEAM_MEMBER_ROLE.ACCOUNT) &&
+            hasTeamMemberRole(member, TEAM_MEMBER_ROLE.ACCOUNT) &&
             isSameUser(member.user?.id, currentUserId)
         );
     const canManageSubmission = isAdmin || isAccount || isAssignedPm;
@@ -1124,7 +1125,7 @@ export const ProjectInfo = ({ project }) => {
     const currentUserId = getCurrentUserId(user);
     const userRole = getUserAccountRole(user);
     const isAssignedPm = userRole === 'PM' && project?.team?.members?.some(member =>
-        (member.role === 'PROJECT_MANAGER' || member.role === 'PM' || member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER) &&
+        hasTeamMemberRole(member, TEAM_MEMBER_ROLE.PROJECT_MANAGER) &&
         isSameUser(member.user?.id, currentUserId)
     );
     const canEditTimeline = userRole === 'ADMIN' || isAssignedPm;

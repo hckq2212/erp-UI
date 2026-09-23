@@ -21,6 +21,7 @@ import { getTaskDisplayName } from '../../utils/taskName';
 import { getCurrentUserId, isSameUser } from '../../utils/authUser';
 import { TaskDelegationPanel } from '../../components/tasks/TaskDelegationPanel';
 import { TaskReminderButton } from '../../components/tasks/TaskReminderButton';
+import { hasTeamMemberRole } from '../../utils/teamMember';
 
 const COMPLETED_SUBTASK_STATUSES = new Set(['INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED']);
 
@@ -98,8 +99,8 @@ export const TaskDetailPage = () => {
 
     const team = task?.project?.team;
     const currentMembership = team?.members?.find(member => isSameUser(member.user?.id, currentUserId));
-    const isPM = currentMembership?.role === 'PROJECT_MANAGER' || isSameUser(task?.project?.projectManager?.id, currentUserId);
-    const isAccount = isSameUser(team?.teamLead?.id, currentUserId) || currentMembership?.role === 'ACCOUNT';
+    const isPM = hasTeamMemberRole(currentMembership, 'PROJECT_MANAGER') || isSameUser(task?.project?.projectManager?.id, currentUserId);
+    const isAccount = isSameUser(team?.teamLead?.id, currentUserId) || hasTeamMemberRole(currentMembership, 'ACCOUNT');
     const isAdminOverride = ['ADMIN', 'BOD'].includes(user?.role);
     const isTeamLead = isSameUser(team?.teamLead?.id, currentUserId);
     const canDelegate = !isProjectOnHold && (isAccount || isPM || isAdminOverride || isTeamLead);

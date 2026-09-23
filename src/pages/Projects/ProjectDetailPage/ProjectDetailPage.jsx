@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { hasTeamMemberRole } from '../../../utils/teamMember';
 import {
   ArrowLeft, CalendarPlus, CheckCircle, RefreshCw, UserPlus,
   PauseCircle, Archive, PlayCircle, AlertTriangle, Clock,
@@ -57,14 +58,14 @@ export const ProjectDetailPage = () => {
   const [activeTab, setActiveTab] = useState('MAIN');
   const user = useSelector(selectCurrentUser);
   const currentUserId = getCurrentUserId(user);
-  const projectManagerMember = project?.team?.members?.find(member => member.role === 'PROJECT_MANAGER');
+  const projectManagerMember = project?.team?.members?.find(member => hasTeamMemberRole(member, 'PROJECT_MANAGER'));
   const hasProjectManager = Boolean(projectManagerMember?.user?.id);
   const isAdminOrBOD = ['ADMIN', 'BOD'].includes(user?.role);
   const isProjectLead = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
     isSameUser(project?.team?.teamLeadId, currentUserId);
   const isProjectManager = isSameUser(projectManagerMember?.user?.id, currentUserId) ||
     isSameUser(project?.projectManager?.id, currentUserId) ||
-    Boolean(project?.team?.members?.some(m => m.role === 'PROJECT_MANAGER' && isSameUser(m.user?.id, currentUserId)));
+    Boolean(project?.team?.members?.some(m => hasTeamMemberRole(m, 'PROJECT_MANAGER') && isSameUser(m.user?.id, currentUserId)));
   // ── Tạm dừng dự án ────────────────────────────────────────────────────
   const showRequestPause = canRequestPause(project, user);
   const showPauseDirect = canPauseDirect(project, user);

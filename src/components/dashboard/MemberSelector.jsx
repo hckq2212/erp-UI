@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../utils/enums';
 import { isSameUser } from '../../utils/authUser';
 import { formatWorkloadLabel, getWorkloadColor, getWorkloadDisplayPercent } from '../../utils/workload';
+import { getTeamMemberRoles } from '../../utils/teamMember';
 
 const WorkloadBadge = ({ workload }) => {
     if (!workload) return null;
@@ -216,7 +217,7 @@ export const MemberSelector = ({
                                                     <div className="text-left min-w-0 flex-1">
                                                         <p className="text-xs font-bold truncate leading-tight text-gray-900">{member.user?.fullName}</p>
                                                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tight truncate">
-                                                            {TEAM_MEMBER_ROLE_LABELS[member.role] || USER_ROLE[member.role] || member.role || 'Nhân sự'}
+                                                            {getTeamMemberRoles(member).map(role => TEAM_MEMBER_ROLE_LABELS[role] || USER_ROLE[role] || role).join(' · ') || 'Nhân sự'}
                                                         </p>
                                                     </div>
                                                 </div>

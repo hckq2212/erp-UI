@@ -12,6 +12,7 @@ import {
 import { TEAM_MEMBER_ROLE, TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../../utils/enums';
 import { getCurrentUserId, getUserAccountRole, isSameUser } from '../../../utils/authUser';
 import { formatWorkloadLabel, getWorkloadColor, getWorkloadDisplayPercent } from '../../../utils/workload';
+import { getTeamMemberRoles, hasTeamMemberRole } from '../../../utils/teamMember';
 
 const prioritizeLeadRole = (roles) => [
     TEAM_MEMBER_ROLE.ACCOUNT,
@@ -70,10 +71,10 @@ export const TeamInfo = ({ team, isOnHold = false }) => {
     const [draftRoles, setDraftRoles] = useState([]);
 
     const currentUserId = getCurrentUserId(currentUser);
-    const currentMembership = members.find(member => isSameUser(member.user?.id, currentUserId));
-    const isCurrentProjectManager = currentUser?.role === 'PM' && currentMembership?.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER;
-    const isCurrentTeamLead = isSameUser(currentUserId, team?.teamLead?.id);
-    const canManageTeam = !isOnHold && (currentUser?.role === 'ADMIN' || isCurrentProjectManager);
+    const isCurrentProjectManager = currentUser?.role === 'PM' && members.some(member =>
+        isSameUser(member.user?.id, currentUserId) && hasTeamMemberRole(member, TEAM_MEMBER_ROLE.PROJECT_MANAGER)
+    );
+    const canManageTeam = currentUser?.role === 'ADMIN' || isCurrentProjectManager;
     const canAddMember = canManageTeam;
     const assignableMemberRoles = useMemo(
         () => prioritizeLeadRole(Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER)),
@@ -81,7 +82,7 @@ export const TeamInfo = ({ team, isOnHold = false }) => {
     );
     const memberUserIds = useMemo(() => new Set(members.map(member => member.user?.id)), [members]);
     const getRolesOfUser = (userId) => new Set(
-        members.filter(member => isSameUser(member.user?.id, userId)).map(member => member.role)
+        members.filter(member => isSameUser(member.user?.id, userId)).flatMap(getTeamMemberRoles)
     );
     const availableUsers = users.filter(user => {
         const assignedRoles = getRolesOfUser(user.id);
@@ -101,7 +102,7 @@ export const TeamInfo = ({ team, isOnHold = false }) => {
             if (!userId) return;
             const group = groups.get(userId) || { userId, user: member.user, memberships: [], roles: [] };
             group.memberships.push(member);
-            group.roles.push(member.role);
+            group.roles.push(...getTeamMemberRoles(member));
             if (!group.user?.workload && member.user?.workload) group.user = member.user;
             groups.set(userId, group);
         });

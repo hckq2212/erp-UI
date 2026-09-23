@@ -10,6 +10,7 @@ import { TableFilters } from '../../components/ui/TableFilters';
 const COLUMNS = [
     { id: 'OPEN', title: 'Mới' },
     { id: 'PENDING_OPP_APPROVAL', title: 'Đang chờ duyệt' },
+    { id: 'OPP_REJECTED', title: 'Không duyệt' },
     { id: 'OPP_APPROVED', title: 'Đã Duyệt' },
     { id: 'QUOTATION', title: 'Báo Giá' },
     { id: 'QUOTATION_DRAFTING', title: 'Đang làm báo giá' },

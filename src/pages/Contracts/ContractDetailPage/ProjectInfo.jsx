@@ -5,13 +5,14 @@ import { useGetMeQuery } from '../../../api/auth';
 import { useGetUsersQuery } from '../../../api/users';
 import { useAssignProjectMutation } from '../../../api/projects';
 import { toast } from 'react-toastify';
+import { hasTeamMemberRole } from '../../../utils/teamMember';
 
 export const ProjectInfo = ({ project, formatDate, navigate, contractId }) => {
   const { data: user } = useGetMeQuery();
   const { data: pmUsers = [] } = useGetUsersQuery({ role: 'PM' });
   const [assignProject, { isLoading }] = useAssignProjectMutation();
   const projectManager = useMemo(() => (
-    project?.team?.members?.find((member) => member.role === 'PROJECT_MANAGER')?.user || null
+    project?.team?.members?.find((member) => hasTeamMemberRole(member, 'PROJECT_MANAGER'))?.user || null
   ), [project?.team?.members]);
   const [selectedPmId, setSelectedPmId] = useState(projectManager?.id || '');
 
