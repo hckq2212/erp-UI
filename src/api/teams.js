@@ -64,10 +64,10 @@ export const teamsApi = api.injectEndpoints({
       invalidatesTags: [{ type: 'Teams', id: 'LIST' }],
     }),
     addTeamMember: builder.mutation({
-      query: ({ id, userId, role }) => ({
+      query: ({ id, userId, role, roles }) => ({
         url: `/teams/${id}/members`,
         method: 'POST',
-        body: { userId, role },
+        body: { userId, role, roles },
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Teams', id },
@@ -79,6 +79,19 @@ export const teamsApi = api.injectEndpoints({
         url: `/teams/members/${memberId}`,
         method: 'PATCH',
         body: data,
+      }),
+      invalidatesTags: (result, error, { teamId }) => [
+        { type: 'Teams', id: teamId },
+        { type: 'Teams', id: 'LIST' },
+        { type: 'Projects' },
+        { type: 'Tasks' },
+      ],
+    }),
+    updateTeamMemberRoles: builder.mutation({
+      query: ({ teamId, userId, roles }) => ({
+        url: `/teams/${teamId}/members/${userId}/roles`,
+        method: 'PUT',
+        body: { roles },
       }),
       invalidatesTags: (result, error, { teamId }) => [
         { type: 'Teams', id: teamId },
@@ -124,6 +137,7 @@ export const {
   useDeleteTeamMutation,
   useAddTeamMemberMutation,
   useUpdateTeamMemberMutation,
+  useUpdateTeamMemberRolesMutation,
   useRemoveTeamMemberMutation,
   useChangeLeadMutation,
   useLazyGetTeamMembersQuery,
