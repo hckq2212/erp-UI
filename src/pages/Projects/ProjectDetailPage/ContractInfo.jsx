@@ -339,9 +339,11 @@ export const ContractInfo = ({ contract, projectId, project }) => {
     const isProjectManager = isSameUser(projectManagerMember?.user?.id, currentUserId) ||
         isSameUser(project?.projectManager?.id, currentUserId) ||
         Boolean(project?.team?.members?.some((m) => hasTeamMemberRole(m, 'PROJECT_MANAGER') && isSameUser(m.user?.id, currentUserId)));
+    const isClosed = ['COMPLETED', 'CANCELLED'].includes(project?.status);
+    const isOnHold = project?.status === 'ON_HOLD' || Boolean(project?.isOnHold);
     const isAdminOrBOD = ['ADMIN', 'BOD'].includes(user?.role);
     const canSeeAllTasks = isAdminOrBOD || isProjectLead || isProjectManager;
-    const canSendAcceptance = canSeeAllTasks || user?.role === 'ADMIN_SALE';
+    const canSendAcceptance = !isClosed && !isOnHold && (canSeeAllTasks || user?.role === 'ADMIN_SALE');
 
     const projectTasksMap = useMemo(() => {
         const map = new Map();
@@ -615,6 +617,7 @@ export const ContractInfo = ({ contract, projectId, project }) => {
                 onClose={() => setIsAcceptanceModalOpen(false)}
                 contract={contract}
                 projectId={projectId}
+                project={project}
             />
         </div>
     );
