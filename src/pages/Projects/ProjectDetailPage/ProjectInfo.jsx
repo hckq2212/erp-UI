@@ -107,7 +107,7 @@ const getProjectTimeline = (startDate, endDate) => {
             hasTimeline: false,
             percent: 0,
             label: 'Chưa xác định',
-            remainingText: 'Chưa có đủ ngày bắt đầu và ngày kết thúc từ cơ hội',
+            remainingText: 'Chưa có ngày bắt đầu và ngày kết thúc',
         };
     }
 
@@ -876,159 +876,159 @@ const ProductDescriptionSection = ({ project }) => {
                                 </div>
 
                                 {!product.collapsed && (
-                                <div className="space-y-3 p-4">
-                                <div>
-                                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-blue-600">
-                                        Thông tin chính - Tên sản phẩm
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={product.productName}
-                                        onChange={(event) => updateProduct(index, { productName: event.target.value })}
-                                        disabled={!canEdit || isSaving}
-                                        placeholder="Tên sản phẩm"
-                                        className="w-full rounded-lg border-2 border-blue-200 bg-blue-50/40 px-3 py-2.5 text-sm font-bold text-gray-900 outline-none focus:border-blue-400 disabled:bg-gray-50"
-                                    />
-                                </div>
-
-                                <div className="rounded-xl border-2 border-blue-200 bg-blue-50/40 p-3">
-                                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-blue-600">
-                                        File thông tin chuẩn (doc/pdf)
-                                    </label>
-                                    <div className="relative">
-                                        <Upload className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-400" />
-                                        <input
-                                            type="file"
-                                            accept=".pdf,.doc,.docx"
-                                            onChange={(event) => handleDocFileChange(index, event.target.files?.[0])}
-                                            disabled={!canEdit || isSaving || product.docUploading}
-                                            className="w-full rounded-lg border border-blue-200 bg-white py-2 pl-9 pr-3 text-sm outline-none file:mr-3 file:rounded-md file:border-0 file:bg-blue-100 file:px-2 file:py-1 file:text-xs file:font-bold file:text-blue-700 focus:border-blue-400 disabled:bg-gray-50"
-                                        />
-                                    </div>
-                                    {product.docUploading && (
-                                        <div className="mt-2 flex items-center gap-2 text-xs text-blue-600">
-                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                            Đang tải lên... {product.docUploadProgress}%
+                                    <div className="space-y-3 p-4">
+                                        <div>
+                                            <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-blue-600">
+                                                Thông tin chính - Tên sản phẩm
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={product.productName}
+                                                onChange={(event) => updateProduct(index, { productName: event.target.value })}
+                                                disabled={!canEdit || isSaving}
+                                                placeholder="Tên sản phẩm"
+                                                className="w-full rounded-lg border-2 border-blue-200 bg-blue-50/40 px-3 py-2.5 text-sm font-bold text-gray-900 outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                            />
                                         </div>
-                                    )}
-                                    {!product.docUploading && product.fileUrl && (
-                                        <a
-                                            href={product.fileUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
-                                        >
-                                            <FileText className="h-3.5 w-3.5" />
-                                            {product.fileName || 'Xem file đã upload'}
-                                        </a>
-                                    )}
-                                </div>
 
-                                <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3">
-                                    <div className="mb-1 flex items-center justify-between gap-2">
-                                        <label className="block text-xs font-bold uppercase tracking-wide text-emerald-700">
-                                            Nội dung trích xuất
-                                        </label>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleAiFormat(index)}
-                                            disabled={!canEdit || isSaving || product.aiFormatting || product.extracting || !product.extractedText}
-                                            className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 disabled:opacity-40"
-                                        >
-                                            {product.aiFormatting ? (
-                                                <Loader2 className="h-3 w-3 animate-spin" />
-                                            ) : (
-                                                <Sparkles className="h-3 w-3" />
-                                            )}
-                                            AI formatting
-                                        </button>
-                                    </div>
-                                    {!product.extracting && product.hasComplexLayout && (
-                                        <div className="mb-2 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
-                                            File có nhiều cột/bảng phức tạp, nội dung trích xuất bên dưới có thể bị sai thứ tự hoặc thiếu sót. Vui lòng kiểm tra kỹ và chỉnh sửa trước khi gửi duyệt.
-                                        </div>
-                                    )}
-                                    {product.extracting ? (
-                                        <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-white px-3 py-2.5 text-xs text-emerald-600">
-                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                            Đang trích xuất nội dung từ file...
-                                        </div>
-                                    ) : (
-                                        <RichTextEditor
-                                            value={product.extractedText}
-                                            onChange={(html) => updateProduct(index, { extractedText: html })}
-                                            placeholder="Nội dung trích xuất từ file sẽ hiện ở đây, có thể chỉnh sửa"
-                                            minHeight={140}
-                                            mode="basic"
-                                        />
-                                    )}
-                                </div>
-
-                                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-3">
-                                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-400">
-                                        Chú thích
-                                    </label>
-                                    <RichTextEditor
-                                        value={product.note}
-                                        onChange={(html) => updateProduct(index, { note: html })}
-                                        placeholder="Nhập ghi chú cho sản phẩm (không bắt buộc)"
-                                        minHeight={160}
-                                        mode="link"
-                                    />
-                                </div>
-
-                                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-3">
-                                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500">
-                                        Tài liệu bổ sung
-                                    </label>
-                                    <div className="relative">
-                                        <Paperclip className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                        <input
-                                            type="file"
-                                            multiple
-                                            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                                            onChange={(event) => handleAdditionalDocsChange(index, event.target.files)}
-                                            disabled={!canEdit || isSaving || product.docsUploading}
-                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700 focus:border-blue-400 disabled:bg-gray-50"
-                                        />
-                                    </div>
-                                    {product.docsUploading && (
-                                        <div className="mt-2 flex items-center gap-2 text-xs text-blue-600">
-                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                            Đang tải tài liệu lên...
-                                        </div>
-                                    )}
-                                    {product.documents.length > 0 && (
-                                        <div className="mt-2 space-y-1">
-                                            {product.documents.map((doc, docIdx) => (
-                                                <div
-                                                    key={docIdx}
-                                                    className="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1.5 text-xs"
-                                                >
-                                                    <a
-                                                        href={doc.url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="inline-flex min-w-0 items-center gap-1 text-blue-600 hover:text-blue-700"
-                                                    >
-                                                        <FileText className="h-3.5 w-3.5 shrink-0" />
-                                                        <span className="truncate">{doc.name}</span>
-                                                    </a>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeAdditionalDoc(index, docIdx)}
-                                                        disabled={!canEdit || isSaving}
-                                                        className="shrink-0 rounded p-1 text-gray-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
-                                                    >
-                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                    </button>
+                                        <div className="rounded-xl border-2 border-blue-200 bg-blue-50/40 p-3">
+                                            <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-blue-600">
+                                                File thông tin chuẩn (doc/pdf)
+                                            </label>
+                                            <div className="relative">
+                                                <Upload className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-400" />
+                                                <input
+                                                    type="file"
+                                                    accept=".pdf,.doc,.docx"
+                                                    onChange={(event) => handleDocFileChange(index, event.target.files?.[0])}
+                                                    disabled={!canEdit || isSaving || product.docUploading}
+                                                    className="w-full rounded-lg border border-blue-200 bg-white py-2 pl-9 pr-3 text-sm outline-none file:mr-3 file:rounded-md file:border-0 file:bg-blue-100 file:px-2 file:py-1 file:text-xs file:font-bold file:text-blue-700 focus:border-blue-400 disabled:bg-gray-50"
+                                                />
+                                            </div>
+                                            {product.docUploading && (
+                                                <div className="mt-2 flex items-center gap-2 text-xs text-blue-600">
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    Đang tải lên... {product.docUploadProgress}%
                                                 </div>
-                                            ))}
+                                            )}
+                                            {!product.docUploading && product.fileUrl && (
+                                                <a
+                                                    href={product.fileUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                                                >
+                                                    <FileText className="h-3.5 w-3.5" />
+                                                    {product.fileName || 'Xem file đã upload'}
+                                                </a>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                                </div>
+
+                                        <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3">
+                                            <div className="mb-1 flex items-center justify-between gap-2">
+                                                <label className="block text-xs font-bold uppercase tracking-wide text-emerald-700">
+                                                    Nội dung trích xuất
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAiFormat(index)}
+                                                    disabled={!canEdit || isSaving || product.aiFormatting || product.extracting || !product.extractedText}
+                                                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 disabled:opacity-40"
+                                                >
+                                                    {product.aiFormatting ? (
+                                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                                    ) : (
+                                                        <Sparkles className="h-3 w-3" />
+                                                    )}
+                                                    AI formatting
+                                                </button>
+                                            </div>
+                                            {!product.extracting && product.hasComplexLayout && (
+                                                <div className="mb-2 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                                                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                                                    File có nhiều cột/bảng phức tạp, nội dung trích xuất bên dưới có thể bị sai thứ tự hoặc thiếu sót. Vui lòng kiểm tra kỹ và chỉnh sửa trước khi gửi duyệt.
+                                                </div>
+                                            )}
+                                            {product.extracting ? (
+                                                <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-white px-3 py-2.5 text-xs text-emerald-600">
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    Đang trích xuất nội dung từ file...
+                                                </div>
+                                            ) : (
+                                                <RichTextEditor
+                                                    value={product.extractedText}
+                                                    onChange={(html) => updateProduct(index, { extractedText: html })}
+                                                    placeholder="Nội dung trích xuất từ file sẽ hiện ở đây, có thể chỉnh sửa"
+                                                    minHeight={140}
+                                                    mode="basic"
+                                                />
+                                            )}
+                                        </div>
+
+                                        <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-3">
+                                            <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-400">
+                                                Chú thích
+                                            </label>
+                                            <RichTextEditor
+                                                value={product.note}
+                                                onChange={(html) => updateProduct(index, { note: html })}
+                                                placeholder="Nhập ghi chú cho sản phẩm (không bắt buộc)"
+                                                minHeight={160}
+                                                mode="link"
+                                            />
+                                        </div>
+
+                                        <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-3">
+                                            <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500">
+                                                Tài liệu bổ sung
+                                            </label>
+                                            <div className="relative">
+                                                <Paperclip className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                                <input
+                                                    type="file"
+                                                    multiple
+                                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                                                    onChange={(event) => handleAdditionalDocsChange(index, event.target.files)}
+                                                    disabled={!canEdit || isSaving || product.docsUploading}
+                                                    className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700 focus:border-blue-400 disabled:bg-gray-50"
+                                                />
+                                            </div>
+                                            {product.docsUploading && (
+                                                <div className="mt-2 flex items-center gap-2 text-xs text-blue-600">
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    Đang tải tài liệu lên...
+                                                </div>
+                                            )}
+                                            {product.documents.length > 0 && (
+                                                <div className="mt-2 space-y-1">
+                                                    {product.documents.map((doc, docIdx) => (
+                                                        <div
+                                                            key={docIdx}
+                                                            className="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1.5 text-xs"
+                                                        >
+                                                            <a
+                                                                href={doc.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex min-w-0 items-center gap-1 text-blue-600 hover:text-blue-700"
+                                                            >
+                                                                <FileText className="h-3.5 w-3.5 shrink-0" />
+                                                                <span className="truncate">{doc.name}</span>
+                                                            </a>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeAdditionalDoc(index, docIdx)}
+                                                                disabled={!canEdit || isSaving}
+                                                                className="shrink-0 rounded p-1 text-gray-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         ))}

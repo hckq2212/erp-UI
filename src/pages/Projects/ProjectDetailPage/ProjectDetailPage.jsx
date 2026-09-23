@@ -40,6 +40,79 @@ import { PauseHistorySection } from './PauseHistorySection';
 import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
 import { cn } from '../../../utils/cn';
 
+const serviceSummaryCollator = new Intl.Collator('vi', { numeric: true, sensitivity: 'base' });
+
+const getContractServiceName = (service) => service.name || service.service?.name || `Dịch vụ #${service.id}`;
+const getContractServiceKey = (service) => service.serviceId || service.service?.id || getContractServiceName(service);
+
+const ServiceExecutionSummary = ({ services = [] }) => {
+  const rows = useMemo(() => {
+    const grouped = new Map();
+
+    services.forEach((service) => {
+      const key = getContractServiceKey(service);
+      const existing = grouped.get(key) || {
+        key,
+        name: getContractServiceName(service),
+        quantity: 0,
+        active: 0,
+        accepted: 0,
+      };
+
+      existing.quantity += 1;
+      if (service.status === 'COMPLETED') {
+        existing.accepted += 1;
+      } else if (service.status !== 'CANCELLED') {
+        existing.active += 1;
+      }
+
+      grouped.set(key, existing);
+    });
+
+    return Array.from(grouped.values()).sort((first, second) =>
+      serviceSummaryCollator.compare(first.name, second.name)
+    );
+  }, [services]);
+
+  return (
+    <div className="overflow-hidden rounded-[1.5rem] border border-slate-100 bg-white shadow-sm">
+      <div className="border-b border-slate-100 px-5 py-4">
+        <p className="text-sm font-extrabold text-slate-900">Thống kê dịch vụ</p>
+        <p className="mt-1 text-xs font-medium text-slate-400">Tổng hợp theo từng contract service khác nhau</p>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="px-5 py-10 text-center text-sm italic text-slate-400">
+          Chưa có dịch vụ trong hợp đồng
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[520px] text-left">
+            <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <tr>
+                <th className="px-5 py-3">Tên dịch vụ</th>
+                <th className="px-4 py-3 text-center">Số lượng</th>
+                <th className="px-4 py-3 text-center">Đang thực thi</th>
+                <th className="px-4 py-3 text-center">Đã nghiệm thu</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.map((row) => (
+                <tr key={row.key} className="text-sm">
+                  <td className="px-5 py-3 font-bold text-slate-800">{row.name}</td>
+                  <td className="px-4 py-3 text-center font-extrabold text-slate-700">{row.quantity}</td>
+                  <td className="px-4 py-3 text-center font-extrabold text-blue-700">{row.active}</td>
+                  <td className="px-4 py-3 text-center font-extrabold text-emerald-700">{row.accepted}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const ProjectDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -456,7 +529,10 @@ export const ProjectDetailPage = () => {
 
       {activeTab === 'TASKS' && (
         <div className="space-y-8">
-          <TaskStatistics tasks={displayedTasks} />
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <TaskStatistics tasks={displayedTasks} />
+            <ServiceExecutionSummary services={project.contract?.services || []} />
+          </div>
           <TaskTable tasks={displayedTasks} project={project} className="min-w-[2000px]" />
         </div>
       )}

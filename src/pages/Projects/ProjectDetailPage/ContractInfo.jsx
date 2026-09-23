@@ -55,9 +55,21 @@ const ISSUE_TASK_STATUSES = new Set([
     TASK_STATUS.AWAITING_PRICING,
 ]);
 
+const serviceNameCollator = new Intl.Collator('vi', { numeric: true, sensitivity: 'base' });
+
 const getServiceName = (item) => item.name || item.service?.name || `Hạng mục #${item.id}`;
 const getServiceCode = (item) => item.code || item.service?.code || null;
 const getTaskOwner = (task) => task.assignee?.fullName || task.helper?.fullName || task.vendor?.name || task.vendorId || 'Chưa phân công';
+
+const compareServicesByName = (first, second) => {
+    const nameDiff = serviceNameCollator.compare(getServiceName(first), getServiceName(second));
+    if (nameDiff !== 0) return nameDiff;
+
+    const codeDiff = serviceNameCollator.compare(getServiceCode(first) || '', getServiceCode(second) || '');
+    if (codeDiff !== 0) return codeDiff;
+
+    return serviceNameCollator.compare(String(first.id || ''), String(second.id || ''));
+};
 
 const ServiceStatusBadge = ({ status }) => (
     <span className={cn(
@@ -394,7 +406,7 @@ export const ContractInfo = ({ contract, projectId, project }) => {
             ? visibleServices
             : visibleServices.filter((service) => service.status === statusFilter);
 
-        return filtered.reduce((acc, item) => {
+        return [...filtered].sort(compareServicesByName).reduce((acc, item) => {
             const groupKey = item.packageName || 'Dịch vụ lẻ';
             if (!acc[groupKey]) acc[groupKey] = [];
             acc[groupKey].push(item);
