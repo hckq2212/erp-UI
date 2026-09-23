@@ -8,6 +8,7 @@ import {
   Clock,
   Settings2,
   ArrowRight,
+  PlusCircle,
   TrendingUp,
   Percent,
   Lock,
@@ -67,7 +68,7 @@ export const FinancialInfo = ({ contract }) => {
   // Unified Data Processing
   const processedMilestones = milestones?.map(m => {
     // Find debt associated with this milestone
-    const debt = rawDebts?.find(d => d.milestone?.id === m.id || d.milestoneId === m.id || d.id === m.debt?.id) || m.debt;
+    const debt = rawDebts?.find(d => d.milestone?.id === m.id || d.milestoneId === m.id);
 
     let paidAmount = 0;
     let payments = [];
@@ -80,34 +81,34 @@ export const FinancialInfo = ({ contract }) => {
     }
 
     const amount = Number(m.amount || 0);
-    const isCompleted = paidAmount >= amount && amount > 0;
+    const isCompleted = debt && paidAmount >= amount;
+    const isActive = !!debt;
     const remaining = Math.max(0, amount - paidAmount);
-
-    const effectiveDebt = debt || {
-      id: m.id,
-      name: `Phải thu: ${m.name}`,
-      amount: m.amount,
-      dueDate: m.dueDate,
-      contract: contract,
-      milestone: m,
-      payments: []
-    };
 
     return {
       ...m,
       amount,
-      debt: effectiveDebt,
+      debt,
       payments,
       paidAmount,
       remaining,
       isCompleted,
-      isActive: true
+      isActive
     };
   }) || [];
 
   const totalPaid = processedMilestones.reduce((sum, m) => sum + m.paidAmount, 0);
-  const totalDebt = processedMilestones.reduce((sum, m) => sum + m.remaining, 0);
+  const totalDebt = processedMilestones.reduce((sum, m) => sum + (m.isActive ? m.remaining : 0), 0);
   const progressPercent = sellingPrice > 0 ? Math.round((totalPaid / sellingPrice) * 100) : 0;
+
+  const handleActivateDebt = async (milestoneId) => {
+    try {
+      await activateDebt({ milestoneId }).unwrap();
+      toast.success('Đã kích hoạt công nợ cho đợt thanh toán này');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Không thể kích hoạt công nợ');
+    }
+  };
 
   const openDebtDetails = (debt) => {
     setSelectedDebt(debt);
@@ -350,7 +351,7 @@ export const FinancialInfo = ({ contract }) => {
       <MilestoneModal
         isOpen={isMilestoneModalOpen}
         onClose={() => setIsMilestoneModalOpen(false)}
-        milestones={processedMilestones}
+        milestones={milestones || []}
         contractId={contractId}
         sellingPrice={sellingPrice}
       />

@@ -95,8 +95,9 @@ export const OPPORTUNITY_STATUS_LABELS = {
   QUOTATION: 'Báo giá',
   QUOTATION_DRAFTING: 'Đang làm báo giá',
   PENDING_QUOTE_APPROVAL: 'Chờ duyệt báo giá',
-  QUOTE_APPROVED: 'Đang làm hợp đồng',
-  CONTRACT_CREATED: 'Đã tạo hợp đồng',
+  QUOTE_APPROVED: 'Đã duyệt báo giá',
+  CONTRACT_CREATED: 'Đang làm hợp đồng',
+  CONTRACT_APPROVED: 'Đã tạo hợp đồng',
   IMPLEMENTATION: 'Đã triển khai',
   PROJECT_ASSIGNED: 'Đã giao dự án'
 };
@@ -110,6 +111,7 @@ export const OPPORTUNITY_STATUS_COLORS = {
   PENDING_QUOTE_APPROVAL: 'bg-amber-100 text-amber-800',
   QUOTE_APPROVED: 'bg-emerald-100 text-emerald-800',
   CONTRACT_CREATED: 'bg-cyan-100 text-cyan-800',
+  CONTRACT_APPROVED: 'bg-green-100 text-green-800',
   IMPLEMENTATION: 'bg-teal-100 text-teal-800',
   LEAD: 'bg-gray-100 text-gray-800',
   QUALIFIED: 'bg-blue-100 text-blue-800',
@@ -336,7 +338,7 @@ export const TEAM_MEMBER_ROLE_LABELS = {
   [TEAM_MEMBER_ROLE.GRAPHIC_DESIGNER]: 'Thiết kế đồ họa',
   [TEAM_MEMBER_ROLE.CAMERAMAN]: 'Quay phim',
   [TEAM_MEMBER_ROLE.PROJECT_MANAGER]: 'Quản lý dự án',
-  [TEAM_MEMBER_ROLE.ACCOUNT]: 'Account',
+  [TEAM_MEMBER_ROLE.ACCOUNT]: 'Lead dự án',
   [TEAM_MEMBER_ROLE.SCRIPTER]: 'Biên kịch',
   [TEAM_MEMBER_ROLE.SOCIAL_MEDIA_MANAGER]: 'Quản lý MXH',
   [TEAM_MEMBER_ROLE.SEO_SPECIALIST]: 'Chuyên viên SEO'

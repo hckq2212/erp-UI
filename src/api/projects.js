@@ -215,7 +215,7 @@ export const projectsApi = api.injectEndpoints({
         { type: 'ProjectProductDescriptions', id: projectId },
       ],
     }),
-     extractProjectProductDescriptionFile: builder.mutation({
+    extractProjectProductDescriptionFile: builder.mutation({
       query: ({ projectId, fileUrl }) => ({
         url: `/projects/${projectId}/product-descriptions/extract-file`,
         method: 'POST',

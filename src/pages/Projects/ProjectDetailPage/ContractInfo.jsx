@@ -55,6 +55,7 @@ const ISSUE_TASK_STATUSES = new Set([
 ]);
 
 const getServiceName = (item) => item.name || item.service?.name || `Hạng mục #${item.id}`;
+const getServiceCode = (item) => item.code || item.service?.code || null;
 const getTaskOwner = (task) => task.assignee?.fullName || task.helper?.fullName || task.vendor?.name || task.vendorId || 'Chưa phân công';
 
 const ServiceStatusBadge = ({ status }) => (
@@ -520,6 +521,7 @@ export const ContractInfo = ({ contract, projectId, project }) => {
                                                     ? enrichedTasks
                                                     : enrichedTasks.filter(isUserTask);
                                                 const results = Array.isArray(item.results) ? item.results : [];
+                                                const serviceCode = getServiceCode(item);
                                                 const isServiceOpen = Boolean(expandedServices[item.id]);
                                                 const hasDetails = serviceTasks.length > 0 || results.length > 0 || item.feedback;
 
@@ -538,7 +540,14 @@ export const ContractInfo = ({ contract, projectId, project }) => {
                                                                     {hasDetails && (isServiceOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
                                                                 </div>
                                                                 <div className="min-w-0">
-                                                                    <h4 className="font-bold text-gray-900">{getServiceName(item)}</h4>
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        {serviceCode && (
+                                                                            <span className="rounded-md bg-blue-50 px-2 py-1 font-mono text-xs font-black text-blue-700">
+                                                                                {serviceCode}
+                                                                            </span>
+                                                                        )}
+                                                                        <h4 className="font-bold text-gray-900">{getServiceName(item)}</h4>
+                                                                    </div>
                                                                     <div className="mt-1 flex flex-wrap gap-2 text-xs font-semibold text-gray-400">
                                                                         <span>
                                                                             {canSeeAllTasks

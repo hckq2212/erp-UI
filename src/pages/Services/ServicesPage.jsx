@@ -30,7 +30,8 @@ export const ServicesPage = () => {
     const services = useMemo(() => {
         const rawData = Array.isArray(servicesData) ? servicesData : (servicesData?.data || []);
         return rawData.filter(service =>
-            (service.name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+            (service.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (service.code?.toLowerCase() || '').includes(searchTerm.toLowerCase())
         );
     }, [servicesData, searchTerm]);
 
@@ -67,7 +68,7 @@ export const ServicesPage = () => {
         setCurrentPage,
         totalPages,
         totalItems
-    } = useTableFeatures(services, { initialSort: { key: 'name', direction: 'ascending' } });
+    } = useTableFeatures(services, { initialSort: { key: 'code', direction: 'ascending' } });
 
     const handleToggleSelectionMode = () => {
         setIsSelectionMode(!isSelectionMode);
@@ -183,7 +184,7 @@ export const ServicesPage = () => {
                 filterOptions={[]} // Hide status filter by passing empty options if needed, but TableFilters currently always shows it. 
                 // I'll update TableFilters to optionally hide the dropdown if filterOptions is empty.
                 onReset={() => setSearchTerm('')}
-                searchPlaceholder="Tìm tên dịch vụ..."
+                searchPlaceholder="Tìm mã dịch vụ, tên dịch vụ..."
             />
 
             <div className='bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden'>
@@ -212,6 +213,7 @@ export const ServicesPage = () => {
                                                 </button>
                                             </th>
                                         )}
+                                        {renderSortableHeader('Mã Dịch Vụ', 'code')}
                                         {renderSortableHeader('Tên Dịch Vụ', 'name')}
                                         {renderSortableHeader('Đơn vị', 'unit')}
                                         {renderSortableHeader('Giá vốn', 'costPrice')}
@@ -239,6 +241,7 @@ export const ServicesPage = () => {
                                                     </div>
                                                 </td>
                                             )}
+                                            <td className="px-6 py-4 text-sm font-mono text-blue-600 font-bold">{service.code}</td>
                                             <td className="px-6 py-4 text-sm text-gray-900 font-medium uppercase">{service.name}</td>
                                             <td className="px-6 py-4 text-sm text-gray-500 italic lowercase">{service.unit || '---'}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-bold">{formatCurrency(service.costPrice)}</td>
@@ -282,7 +285,7 @@ export const ServicesPage = () => {
                                     ))}
                                     {services.length === 0 && (
                                         <tr>
-                                            <td colSpan={isSelectionMode ? 5 : 4} className="px-6 py-16 text-center text-gray-400 italic">
+                                            <td colSpan="5" className="px-6 py-16 text-center text-gray-400 italic">
                                                 Không tìm thấy dịch vụ nào
                                             </td>
                                         </tr>
