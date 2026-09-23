@@ -9,21 +9,28 @@ import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../../components/ui/Pagination';
 import { TableFilters } from '../../components/ui/TableFilters';
 import { cn } from '../../utils/cn';
+import { JOB_CATEGORY_LABELS, JOB_CATEGORY_COLORS, JOB_CATEGORY_OPTIONS } from '../../utils/enums';
 
 export const JobsPage = () => {
     const navigate = useNavigate();
     const { data: jobsData = [], isLoading } = useGetJobsQuery();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('ALL');
 
     const jobs = useMemo(() => {
         const rawData = Array.isArray(jobsData) ? jobsData : (jobsData?.data || []);
-        return rawData.filter(job =>
-            (job.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-            (job.nickname?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-            (job.code?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-        );
-    }, [jobsData, searchTerm]);
+        return rawData.filter(job => {
+            const matchesSearch =
+                (job.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                (job.nickname?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                (job.code?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+            const matchesCategory =
+                categoryFilter === 'ALL' ||
+                (Array.isArray(job.categories) && job.categories.includes(categoryFilter));
+            return matchesSearch && matchesCategory;
+        });
+    }, [jobsData, searchTerm, categoryFilter]);
 
     const {
         data: paginatedJobs,
@@ -59,6 +66,7 @@ export const JobsPage = () => {
 
     const handleReset = () => {
         setSearchTerm('');
+        setCategoryFilter('ALL');
     };
 
     return (
@@ -77,9 +85,10 @@ export const JobsPage = () => {
             <TableFilters
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
-                filterValue="ALL"
-                onFilterChange={() => { }}
-                filterOptions={[]}
+                filterValue={categoryFilter}
+                onFilterChange={setCategoryFilter}
+                filterOptions={JOB_CATEGORY_OPTIONS}
+                filterPlaceholder="Tất cả category"
                 searchPlaceholder="Tìm mã hạng mục, tên hạng mục, nickname..."
                 onReset={handleReset}
             />
@@ -98,6 +107,7 @@ export const JobsPage = () => {
                                     <tr className="bg-gray-50/50 border-b border-gray-100">
                                         {renderSortableHeader('Mã Hạng Mục', 'code')}
                                         {renderSortableHeader('Tên Hạng Mục', 'name')}
+                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Category</th>
                                         {renderSortableHeader('Giá vốn', 'costPrice')}
                                         {renderSortableHeader('Vinicoin', 'vinicoin')}
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Xem chi tiết</th>
@@ -115,6 +125,22 @@ export const JobsPage = () => {
                                                     </div>
                                                 )}
                                             </td>
+                                            <td className="px-6 py-4 text-sm">
+                                                {Array.isArray(job.categories) && job.categories.length > 0 ? (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {job.categories.map((cat) => (
+                                                            <span
+                                                                key={cat}
+                                                                className={cn("px-2 py-0.5 rounded-lg text-xs font-bold border", JOB_CATEGORY_COLORS[cat] || 'bg-gray-100 text-gray-600 border-gray-200')}
+                                                            >
+                                                                {JOB_CATEGORY_LABELS[cat] || cat}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs italic text-gray-400">Chưa xác định</span>
+                                                )}
+                                            </td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-bold">{formatCurrency(job.costPrice)}</td>
                                             <td className="px-6 py-4 text-sm text-orange-600 font-bold">{job.vinicoin || 0}</td>
                                             <td className="px-6 py-4 text-sm text-right">
@@ -129,7 +155,7 @@ export const JobsPage = () => {
                                     ))}
                                     {jobs.length === 0 && (
                                         <tr>
-                                            <td colSpan="5" className="px-6 py-16 text-center text-gray-400 italic">
+                                            <td colSpan="6" className="px-6 py-16 text-center text-gray-400 italic">
                                                 Không tìm thấy hạng mục công việc nào
                                             </td>
                                         </tr>

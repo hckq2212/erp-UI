@@ -10,6 +10,7 @@ import { formatNumber, parseNumber } from '../../utils/format';
 import { Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { JOB_CATEGORY_OPTIONS } from '../../utils/enums';
 
 const jobSchema = z.object({
     name: z.string().min(1, 'Tên hạng mục là bắt buộc'),
@@ -19,6 +20,7 @@ const jobSchema = z.object({
     vinicoin: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     timeToComplete: z.string().transform((val) => val.replace(/[^0-9.]/g, '')).optional().default('0'),
     defaultPerformerType: z.enum(['INTERNAL', 'EXTERNAL']).default('INTERNAL'),
+    categories: z.array(z.string()).optional().default([]),
     isBriefVideo: z.boolean().optional().default(false),
     isQuotationItem: z.boolean().optional().default(true),
     criteria: z.array(z.object({
@@ -51,6 +53,7 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
             defaultPerformerType: 'INTERNAL',
             isBriefVideo: false,
             isQuotationItem: true,
+            categories: [],
             criteria: [],
         },
     });
@@ -72,10 +75,20 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
     const costPriceValue = watch('costPrice');
     const vinicoinValue = watch('vinicoin');
     const timeToCompleteValue = watch('timeToComplete');
+    const categoriesValue = watch('categories');
 
     useEffect(() => {
         if (!isOpen) setIsAiRelated(false);
     }, [isOpen]);
+
+    const toggleCategory = (value) => {
+        const current = categoriesValue || [];
+        if (current.includes(value)) {
+            setValue('categories', current.filter((c) => c !== value));
+        } else {
+            setValue('categories', [...current, value]);
+        }
+    };
 
     const handleAiRelatedChange = (checked) => {
         setIsAiRelated(checked);
@@ -196,6 +209,29 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                                 Được tính vào giá vốn dịch vụ
                             </label>
                         </div>
+                    )}
+                </div>
+
+                <div className="space-y-3">
+                    <label className="text-sm font-bold text-gray-700 uppercase tracking-wider">Category</label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {JOB_CATEGORY_OPTIONS.map((option) => (
+                            <label
+                                key={option.value}
+                                className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 cursor-pointer"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={(categoriesValue || []).includes(option.value)}
+                                    onChange={() => toggleCategory(option.value)}
+                                    className="h-4 w-4 accent-blue-600"
+                                />
+                                {option.label}
+                            </label>
+                        ))}
+                    </div>
+                    {(categoriesValue || []).length === 0 && (
+                        <p className="text-xs text-gray-400 italic">Chưa xác định</p>
                     )}
                 </div>
 
