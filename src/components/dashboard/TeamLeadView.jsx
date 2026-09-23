@@ -19,7 +19,7 @@ export const TeamLeadView = ({
             {/* Tầng 1: Grid Projects  */}
             <div className="lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {projects.length > 0 ? projects.map((project, idx) => {
-                    const roleLabel = TEAM_MEMBER_ROLE_LABELS[project.role] || USER_ROLE[project.role] || project.role || 'Account';
+                    const roleLabel = TEAM_MEMBER_ROLE_LABELS[project.role] || USER_ROLE[project.role] || project.role || 'Lead dự án';
 
                     return (
                         <motion.div

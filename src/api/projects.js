@@ -204,6 +204,20 @@ export const projectsApi = api.injectEndpoints({
         { type: 'ProjectProductDescriptions', id: projectId },
       ],
     }),
+    extractProjectProductDescriptionFile: builder.mutation({
+      query: ({ projectId, fileUrl }) => ({
+        url: `/projects/${projectId}/product-descriptions/extract-file`,
+        method: 'POST',
+        body: { fileUrl },
+      }),
+    }),
+    aiFormatProjectProductDescription: builder.mutation({
+      query: ({ projectId, text, productName }) => ({
+        url: `/projects/${projectId}/product-descriptions/ai-format`,
+        method: 'POST',
+        body: { text, productName },
+      }),
+    }),
     getMyProjects: builder.query({
       query: () => '/projects/my-projects',
       providesTags: [{ type: 'Projects', id: 'MY_LIST' }],
@@ -244,6 +258,8 @@ export const {
   useSubmitProjectProductDescriptionMutation,
   useApproveProjectProductDescriptionMutation,
   useRejectProjectProductDescriptionMutation,
+  useExtractProjectProductDescriptionFileMutation,
+  useAiFormatProjectProductDescriptionMutation,
   useGetMyProjectsQuery,
   useRequestProjectStaffingMutation,
 } = projectsApi;
