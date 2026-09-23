@@ -70,15 +70,16 @@ export const TeamInfo = ({ team, isOnHold = false }) => {
     const [draftRoles, setDraftRoles] = useState([]);
 
     const currentUserId = getCurrentUserId(currentUser);
-    const isCurrentProjectManager = currentUser?.role === 'PM' && members.some(member =>
-        isSameUser(member.user?.id, currentUserId) && member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER
-    );
-    const canManageTeam = currentUser?.role === 'ADMIN' || isCurrentProjectManager;
+    const currentMembership = members.find(member => isSameUser(member.user?.id, currentUserId));
+    const isCurrentProjectManager = currentUser?.role === 'PM' && currentMembership?.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER;
+    const isCurrentTeamLead = isSameUser(currentUserId, team?.teamLead?.id);
+    const canManageTeam = !isOnHold && (currentUser?.role === 'ADMIN' || isCurrentProjectManager);
     const canAddMember = canManageTeam;
     const assignableMemberRoles = useMemo(
         () => prioritizeLeadRole(Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER)),
         []
     );
+    const memberUserIds = useMemo(() => new Set(members.map(member => member.user?.id)), [members]);
     const getRolesOfUser = (userId) => new Set(
         members.filter(member => isSameUser(member.user?.id, userId)).map(member => member.role)
     );
