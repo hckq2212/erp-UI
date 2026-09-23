@@ -41,9 +41,6 @@ export const FinancialInfo = ({ contract }) => {
   const { data: rawDebts, isLoading: loadingDebts } = useGetDebtsByContractQuery(contractId);
   const [unlockDebt, { isLoading: isUnlocking }] = useUnlockDebtMutation();
 
-  // // Mutations
-  // const [activateDebt] = useActivateDebtMutation();
-
   // Modal states
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
   const [isDebtDetailsModalOpen, setIsDebtDetailsModalOpen] = useState(false);

@@ -80,6 +80,7 @@ export const TeamInfo = ({ team, isOnHold = false }) => {
         () => prioritizeLeadRole(Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER)),
         []
     );
+    const memberUserIds = useMemo(() => new Set(members.map(member => member.user?.id)), [members]);
     const getRolesOfUser = (userId) => new Set(
         members.filter(member => isSameUser(member.user?.id, userId)).flatMap(getTeamMemberRoles)
     );

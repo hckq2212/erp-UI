@@ -1,6 +1,7 @@
 import React from 'react';
 import { MetricCard } from './MetricCard';
 import { Clock, CheckCircle2, AlertCircle, ClipboardCheck, RotateCcw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const MetricCardsGrid = ({
     member,
@@ -18,10 +19,11 @@ export const MetricCardsGrid = ({
     isTeamLead,
     isViewingMember = false,
     dashboard,
+    buildTasksUrl,
 }) => {
+    const navigate = useNavigate();
     const statusCounts = member?.statusCounts || {};
-    const hasManagedProjects = (dashboard?.teamLead?.length || 0) > 0;
-    const canViewRoleStats = ['ADMIN', 'BOD', 'PM'].includes(userRole) || hasManagedProjects;
+    const canViewRoleStats = ['ADMIN', 'BOD', 'PM'].includes(userRole);
     const roleStats = !isViewingMember && canViewRoleStats ? member?.roleStats : null;
     const selectedProject = projects.find(p => p.id === selectedProjectId);
 
@@ -42,6 +44,7 @@ export const MetricCardsGrid = ({
                     icon={Clock}
                     color="blue"
                     sparklineData={[]}
+                    onClick={() => navigate(buildTasksUrl ? buildTasksUrl({ status: 'DOING' }) : '/tasks?status=DOING')}
                 />
 
                 {projectMetricOverride || (
@@ -51,7 +54,7 @@ export const MetricCardsGrid = ({
                         icon={ClipboardCheck}
                         color="indigo"
                         sparklineData={[]}
-                        onClick={onOpenReviewModal}
+                        onClick={onOpenReviewModal || (() => navigate(buildTasksUrl ? buildTasksUrl({ status: 'AWAITING_REVIEW' }) : '/tasks?status=AWAITING_REVIEW'))}
                     />
                 )}
 
@@ -61,6 +64,7 @@ export const MetricCardsGrid = ({
                     icon={CheckCircle2}
                     color="emerald"
                     sparklineData={[]}
+                    onClick={() => navigate(buildTasksUrl ? buildTasksUrl({ status: 'COMPLETED', dateType: 'actualEndDate' }) : '/tasks?status=COMPLETED')}
                 />
 
                 <MetricCard
@@ -69,6 +73,7 @@ export const MetricCardsGrid = ({
                     icon={AlertCircle}
                     color="red"
                     sparklineData={[]}
+                    onClick={() => navigate(buildTasksUrl ? buildTasksUrl({ status: 'OVERDUE' }) : '/tasks?status=OVERDUE')}
                 />
 
                 <MetricCard
@@ -77,6 +82,7 @@ export const MetricCardsGrid = ({
                     icon={RotateCcw}
                     color="amber"
                     sparklineData={[]}
+                    onClick={() => navigate(buildTasksUrl ? buildTasksUrl({ status: 'REWORKING' }) : '/tasks?status=REWORKING')}
                 />
             </div>
         </div>

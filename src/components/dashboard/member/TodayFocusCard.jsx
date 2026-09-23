@@ -1,14 +1,48 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, AlertCircle, Calendar, Hourglass } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, AlertCircle, Calendar, Hourglass, RotateCcw } from 'lucide-react';
+import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 export const TodayFocusCard = ({
     overdueCount = 0,
     todayCount = 0,
     pendingCount = 0,
     progress = 72,
-    onViewDetail
+    selectedDate = new Date(),
+    isToday = true,
+    onResetToday,
+    onViewDetail,
+    buildTasksUrl
 }) => {
+    const navigate = useNavigate();
+    const formattedSelectedDate = selectedDate instanceof Date && !isNaN(selectedDate.getTime()) ? selectedDate : new Date();
+    const dateKey = format(formattedSelectedDate, 'yyyy-MM-dd');
+
+    const handleOverdueClick = () => {
+        if (buildTasksUrl) {
+            navigate(buildTasksUrl({ status: 'OVERDUE', includeMonth: false }));
+        } else {
+            navigate('/tasks?status=OVERDUE');
+        }
+    };
+
+    const handleDeadlineClick = () => {
+        if (isToday) {
+            if (buildTasksUrl) {
+                navigate(buildTasksUrl({ deadline: 'today', includeMonth: false }));
+            } else {
+                navigate('/tasks?deadline=today');
+            }
+        } else {
+            if (buildTasksUrl) {
+                navigate(buildTasksUrl({ deadline: dateKey, includeMonth: false }));
+            } else {
+                navigate(`/tasks?deadline=${dateKey}`);
+            }
+        }
+    };
+
     return (
         <div className="relative overflow-hidden bg-gradient-to-br from-[#FFF6EF] via-[#FFEBE0] to-[#FFDBC4] rounded-[1.25rem] p-5 text-[#1A1A1A] shadow-xl shadow-orange-100/40 border border-[#FFE6D5] ">
             {/* Background Decorative Waves */}
@@ -40,58 +74,97 @@ export const TodayFocusCard = ({
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
                 <div className="lg:col-span-8 space-y-4">
                     <div>
-                        <p className="text-[#FF6633] text-[10px] font-black uppercase tracking-[0.2em] mb-2">TODAY FOCUS</p>
-                        <h2 className="text-2xl sm:text-3xl font-semibold leading-tight tracking-tight text-[#1A1A1A]">
-                            Tập trung để tạo ra<br />những điều khác biệt! 🔥
-                        </h2>
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-[#FF6633] text-[10px] font-black uppercase tracking-[0.2em]">
+                                {isToday ? 'TODAY FOCUS' : `TIÊU ĐIỂM NGÀY ${format(formattedSelectedDate, 'dd/MM/yyyy')}`}
+                            </span>
+                            {!isToday && onResetToday && (
+                                <button
+                                    type="button"
+                                    onClick={onResetToday}
+                                    className="inline-flex items-center gap-1 text-[9px] font-bold text-orange-600 hover:text-orange-800 bg-orange-100/90 hover:bg-orange-200/90 px-2 py-0.5 rounded-full transition-all shadow-sm"
+                                >
+                                    <RotateCcw size={10} />
+                                    <span>Về hôm nay</span>
+                                </button>
+                            )}
+                        </div>
+                        <AnimatePresence mode="wait">
+                            <motion.h2
+                                key={`heading-${dateKey}`}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{ duration: 0.2 }}
+                                className="text-2xl sm:text-3xl font-semibold leading-tight tracking-tight text-[#1A1A1A]"
+                            >
+                                {isToday ? (
+                                    <>Tập trung để tạo ra<br />những điều khác biệt! 🔥</>
+                                ) : (
+                                    <>Kế hoạch công việc<br />ngày {format(formattedSelectedDate, 'dd/MM')}! 🎯</>
+                                )}
+                            </motion.h2>
+                        </AnimatePresence>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {/* Overdue Card */}
-                        <div className="bg-white rounded-xl p-4 flex items-center gap-3 shadow-md shadow-orange-100/40 border border-orange-50/50 hover:scale-[1.03] ">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-red-50 text-red-500 shadow-inner flex-shrink-0">
-                                <AlertCircle size={18} />
+                        <div
+                            onClick={handleOverdueClick}
+                            role="button"
+                            tabIndex={0}
+                            title="Xem tất cả task quá hạn trong Quản lý công việc"
+                            className="bg-white rounded-xl p-4 flex items-center justify-between shadow-md shadow-orange-100/40 border border-orange-50/50 hover:scale-[1.03] hover:border-red-200 hover:shadow-lg transition-all cursor-pointer group"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-red-50 text-red-500 shadow-inner flex-shrink-0 group-hover:bg-red-500 group-hover:text-white transition-colors">
+                                    <AlertCircle size={18} />
+                                </div>
+                                <div>
+                                    <span className="text-2xl font-black text-[#1A1A1A] leading-tight block">{overdueCount}</span>
+                                    <p className="text-[10px] font-bold text-gray-500 leading-tight">Task bị quá hạn</p>
+                                    <span className="text-[9px] font-bold text-red-500">Cần xử lý ngay</span>
+                                </div>
                             </div>
-                            <div>
-                                <span className="text-2xl font-black text-[#1A1A1A] leading-tight block">{overdueCount}</span>
-                                <p className="text-[10px] font-bold text-gray-500 leading-tight">Task bị quá hạn</p>
-                                <span className="text-[9px] font-bold text-red-500">Cần xử lý ngay</span>
-                            </div>
+                            <ArrowRight size={14} className="text-gray-300 group-hover:text-red-500 group-hover:translate-x-1 transition-all" />
                         </div>
 
-                        {/* Today Deadlines Card */}
-                        <div className="bg-white rounded-xl p-4 flex items-center gap-3 shadow-md shadow-orange-100/40 border border-orange-50/50 hover:scale-[1.03]">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-orange-50 text-orange-500 shadow-inner flex-shrink-0">
-                                <Calendar size={18} />
+                        {/* Selected Day Deadlines Card */}
+                        <div
+                            onClick={handleDeadlineClick}
+                            role="button"
+                            tabIndex={0}
+                            title={isToday ? "Xem tất cả task có deadline hôm nay" : `Xem tất cả task có deadline ngày ${format(formattedSelectedDate, 'dd/MM/yyyy')}`}
+                            className="bg-white rounded-xl p-4 flex items-center justify-between shadow-md shadow-orange-100/40 border border-orange-50/50 hover:scale-[1.03] hover:border-orange-300 hover:shadow-lg transition-all cursor-pointer group"
+                        >
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-orange-50 text-orange-500 shadow-inner flex-shrink-0 group-hover:bg-[#FF6633] group-hover:text-white transition-colors">
+                                    <Calendar size={18} />
+                                </div>
+                                <div className="min-w-0">
+                                    <AnimatePresence mode="wait">
+                                        <motion.span
+                                            key={`count-${dateKey}-${todayCount}`}
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.8 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="text-2xl font-black text-[#1A1A1A] leading-tight block"
+                                        >
+                                            {todayCount}
+                                        </motion.span>
+                                    </AnimatePresence>
+                                    <p className="text-[10px] font-bold text-gray-500 leading-tight truncate">
+                                        {isToday ? 'Deadline hôm nay' : `Hạn chót ${format(formattedSelectedDate, 'dd/MM')}`}
+                                    </p>
+                                    <span className="text-[9px] font-bold text-orange-500">
+                                        {isToday ? 'Đừng bỏ lỡ nhé!' : (todayCount > 0 ? `Có ${todayCount} công việc` : 'Không có deadline')}
+                                    </span>
+                                </div>
                             </div>
-                            <div>
-                                <span className="text-2xl font-black text-[#1A1A1A] leading-tight block">{todayCount}</span>
-                                <p className="text-[10px] font-bold text-gray-500 leading-tight">Deadline hôm nay</p>
-                                <span className="text-[9px] font-bold text-orange-500">Đừng bỏ lỡ nhé!</span>
-                            </div>
+                            <ArrowRight size={14} className="text-gray-300 group-hover:text-orange-500 group-hover:translate-x-1 transition-all" />
                         </div>
-
-                        {/* Pending Projects Card */}
-                        {/* <div className="bg-white rounded-2xl p-4 flex items-center gap-3 shadow-md shadow-orange-100/40 border border-orange-50/50 hover:scale-[1.03] transition-transform duration-300">
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-purple-50 text-purple-500 shadow-inner flex-shrink-0">
-                                <Hourglass size={18} />
-                            </div>
-                            <div>
-                                <span className="text-2xl font-black text-[#1A1A1A] leading-tight block">{pendingCount}</span>
-                                <p className="text-[10px] font-bold text-gray-500 leading-tight">Dự án chờ duyệt</p>
-                                <span className="text-[9px] font-bold text-purple-600">Khách đang chờ</span>
-                            </div>
-                        </div> */}
                     </div>
-                    {/* 
-                    <motion.button
-                        whileHover={{ scale: 1.05, x: 2 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={onViewDetail}
-                        className="group flex items-center gap-2 bg-[#FF511A] hover:bg-[#E0400C] text-white transition-all px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-500/20"
-                    >
-                        Xem chi tiết <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                    </motion.button> */}
                 </div>
 
                 {/* Glowing Progress Circle Section */}

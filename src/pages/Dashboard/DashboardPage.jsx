@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LayoutDashboard, UserCheck } from 'lucide-react';
 
 // API Hooks
 import { useGetMeQuery } from '../../api/auth';
@@ -23,6 +24,8 @@ export const DashboardPage = () => {
     const currentUserId = getCurrentUserId(user);
     const userRole = user?.role || user?.account?.role;
     const isAdminOrBod = userRole === 'ADMIN' || userRole === 'BOD';
+    const isPM = userRole === 'PM';
+    const [viewMode, setViewMode] = useState('overview'); // 'overview' | 'personal'
     const [selectedMemberId, setSelectedMemberId] = useState(null);
     const [selectedProjectId, setSelectedProjectId] = useState(null);
     const [selectedDate, setSelectedDate] = useState({
@@ -33,7 +36,8 @@ export const DashboardPage = () => {
         userId: selectedMemberId,
         month: selectedDate.month,
         year: selectedDate.year,
-        projectId: selectedProjectId
+        projectId: selectedProjectId,
+        mode: isPM && !selectedMemberId ? (viewMode === 'personal' ? 'personal' : 'management') : undefined
     });
     const dashboard = dashboardData || {};
     const { data: awaitingReviewTasks, isLoading: isTasksLoading } = useGetTasksQuery(
@@ -42,7 +46,8 @@ export const DashboardPage = () => {
     );
 
     const dashboardScope = dashboard?.scope;
-    const canSelectMember = dashboardScope?.canSelectMembers ?? isAdminOrBod;
+    const isExcludedSaleRole = userRole === 'BD' || userRole === 'ADMIN_SALE';
+    const canSelectMember = !isExcludedSaleRole && (dashboardScope?.canSelectMembers ?? isAdminOrBod);
     const effectiveTeamMembers = dashboardScope?.availableMembers || [];
     const availableProjects = dashboardScope?.availableProjects || [];
 
@@ -51,8 +56,13 @@ export const DashboardPage = () => {
         setSelectedProjectId(null);
     };
 
-    const isViewingMember = !!selectedMemberId;
+    const isViewingMember = !isExcludedSaleRole && !!selectedMemberId;
     const isTeamLead = dashboardScope?.type === 'MANAGEMENT';
+    const isManagementOrAdmin = isAdminOrBod || userRole === 'PM';
+    const isAccountViewer = !isExcludedSaleRole && (Boolean(dashboardScope?.isAccountViewer) || !isManagementOrAdmin);
+    const isAccountViewingMember = isViewingMember && (
+        Boolean(dashboardScope?.isAccountViewingMember) || isAccountViewer
+    );
 
     const isLoading = isDashboardLoading || isTasksLoading;
 
@@ -92,6 +102,31 @@ export const DashboardPage = () => {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
+                        {/* PM Quick Mode Switcher */}
+                        {isPM && !selectedMemberId && (
+                            <button
+                                type="button"
+                                onClick={() => setViewMode(prev => prev === 'personal' ? 'overview' : 'personal')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all shadow-sm border ${
+                                    viewMode === 'personal'
+                                        ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-transparent shadow-orange-200 hover:shadow-md'
+                                        : 'bg-white hover:bg-orange-50 text-slate-700 border-gray-100 hover:border-orange-200'
+                                }`}
+                            >
+                                {viewMode === 'personal' ? (
+                                    <>
+                                        <LayoutDashboard className="w-4 h-4 text-white" />
+                                        <span>Xem tổng quan dự án</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <UserCheck className="w-4 h-4 text-orange-500" />
+                                        <span>Công việc của tôi</span>
+                                    </>
+                                )}
+                            </button>
+                        )}
+
                         {/* Project Selector (bộ lọc dự án) */}
                         <div className="h-full flex mt-0">
                             <ProjectSelector
@@ -106,7 +141,7 @@ export const DashboardPage = () => {
                             selectedDate={selectedDate}
                             onChange={setSelectedDate}
                         />
-                        {/* Member Selector (chỉ hiển thị cho PM, ADMIN, BOD) */}
+                        {/* Member Selector (chỉ hiển thị khi có quyền canSelectMember) */}
                         {canSelectMember && (
                             <div className="h-full flex mt-0">
                                 <MemberSelector
@@ -115,6 +150,9 @@ export const DashboardPage = () => {
                                     onSelect={handleSelectMember}
                                     currentUserId={currentUserId}
                                     workloads={dashboard?.staffWorkloads || dashboard?.admin?.staffWorkloads}
+                                    isPM={isPM}
+                                    viewMode={viewMode}
+                                    onSelectViewMode={setViewMode}
                                 />
                             </div>
                         )}
@@ -130,35 +168,13 @@ export const DashboardPage = () => {
                         transition={{ delay: 0.4 }}
                         className="space-y-3 pb-2"
                     >
-                        {/* {!isViewingMember && !isAdminOrBod && !isTeamLead && (
-                            <ReviewQueueView
-                                awaitingReviewTasks={awaitingReviewTasks}
-                                user={user}
-                                navigate={navigate}
-                            />
-                        )} */}
-
-                        {!isViewingMember && isAdminOrBod && (
-                            <AdminView
-                                dashboard={dashboard}
-                                navigate={navigate}
-                                onSelectMember={setSelectedMemberId}
-                            />
-                        )}
-
-                        {!isViewingMember && user?.role === 'BD' && (
-                            <BDView
-                                dashboard={dashboard}
-                                navigate={navigate}
-                            />
-                        )}
-
-                        {user?.role !== 'BD' && (!isAdminOrBod || isViewingMember) && (
+                        {isViewingMember ? (
                             <div className="">
                                 <MemberView
                                     dashboard={dashboard}
                                     navigate={navigate}
                                     isViewingMember={isViewingMember}
+                                    isAccountViewingMember={isAccountViewingMember}
                                     selectedMemberId={selectedMemberId}
                                     selectedProjectId={selectedProjectId}
                                     onSelectProject={setSelectedProjectId}
@@ -170,8 +186,48 @@ export const DashboardPage = () => {
                                     awaitingReviewTasks={awaitingReviewTasks}
                                     user={user}
                                     selectedDate={selectedDate}
+                                    viewMode={isPM ? viewMode : 'personal'}
                                 />
                             </div>
+                        ) : (
+                            <>
+                                {isAdminOrBod && (
+                                    <AdminView
+                                        dashboard={dashboard}
+                                        navigate={navigate}
+                                        onSelectMember={setSelectedMemberId}
+                                    />
+                                )}
+
+                                {!isAdminOrBod && user?.role === 'BD' && (
+                                    <BDView
+                                        dashboard={dashboard}
+                                        navigate={navigate}
+                                    />
+                                )}
+
+                                {!isAdminOrBod && user?.role !== 'BD' && (
+                                    <div className="">
+                                        <MemberView
+                                            dashboard={dashboard}
+                                            navigate={navigate}
+                                            isViewingMember={false}
+                                            selectedMemberId={null}
+                                            selectedProjectId={selectedProjectId}
+                                            onSelectProject={setSelectedProjectId}
+                                            availableProjects={availableProjects}
+                                            teamMembers={effectiveTeamMembers}
+                                            isTeamLead={isTeamLead}
+                                            onSelectMember={handleSelectMember}
+                                            currentUserId={currentUserId}
+                                            awaitingReviewTasks={awaitingReviewTasks}
+                                            user={user}
+                                            selectedDate={selectedDate}
+                                            viewMode={isPM ? viewMode : 'personal'}
+                                        />
+                                    </div>
+                                )}
+                            </>
                         )}
                     </motion.div>
                 </AnimatePresence>
