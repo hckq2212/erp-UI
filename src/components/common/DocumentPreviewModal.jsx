@@ -39,9 +39,11 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 export const DocumentPreviewModal = ({
   isOpen,
   onClose,
-  url,
+  url: propUrl,
+  fileUrl,
   fileName = ''
 }) => {
+  const url = propUrl || fileUrl || '';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [useFallbackViewer, setUseFallbackViewer] = useState(false);

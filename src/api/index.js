@@ -21,3 +21,4 @@ export * from './videoGenerations';
 export * from './aiModels';
 export * from './assets';
 export * from './elements';
+export * from './paymentDashboard';

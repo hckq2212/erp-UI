@@ -226,6 +226,14 @@ export const QUOTATION_STATUS_COLORS = {
   Expired: 'bg-amber-50 text-amber-700 border-amber-100'
 };
 
+export const QUOTATION_STATUS_LABELS = {
+  DRAFT: 'Nháp',
+  PENDING_APPROVAL: 'Chờ duyệt',
+  APPROVED: 'Đã duyệt',
+  REJECTED: 'Đã từ chối',
+  ARCHIVED: 'Lưu trữ'
+};
+
 // Field
 export const FIELD_LABELS = {
   CNTT: 'Công nghệ thông tin',
