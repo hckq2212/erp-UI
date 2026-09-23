@@ -17,6 +17,7 @@ import { TaskReminderButton } from '../../../components/tasks/TaskReminderButton
 import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
+import { hasTeamMemberRole } from '../../../utils/teamMember';
 
 export const TaskTable = ({ tasks = [], project }) => {
     const navigate = useNavigate();
@@ -38,7 +39,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     const isProjectLead = isSameUser(currentUserId, project?.team?.teamLead?.id) ||
         isSameUser(currentUserId, project?.team?.teamLeadId);
     const isProjectManager = isSameUser(currentUserId, project?.projectManager?.id) ||
-        Boolean(project?.team?.members?.some(m => m.role === 'PROJECT_MANAGER' && isSameUser(m.user?.id, currentUserId)));
+        Boolean(project?.team?.members?.some(m => hasTeamMemberRole(m, 'PROJECT_MANAGER') && isSameUser(m.user?.id, currentUserId)));
     const canManageAllTasks = isAdminOrBOD || isProjectLead || isProjectManager;
     const isSupportLead = tasks.some(t => isSameUser(t.supportLeadId, currentUserId));
     const isHelper = tasks.some(t => isSameUser(t.helperId, currentUserId));

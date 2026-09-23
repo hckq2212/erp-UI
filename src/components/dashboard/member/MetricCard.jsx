@@ -65,11 +65,11 @@ export const MetricCard = ({
                 onClick ? 'cursor-pointer hover:border-amber-300 hover:shadow-md transition-all' : ''
             }`}
         >
-            <div className="flex items-start mb-3 gap-3">
-                <div className={`p-3 rounded-lg ${style.bg} ${style.icon} mr-4 shrink-0`}>
+            <div className="flex items-start gap-3">
+                <div className={`p-3 rounded-xl ${style.bg} ${style.icon} shrink-0 flex items-center justify-center`}>
                     <Icon size={20} strokeWidth={2.5} />
                 </div>
-                <div className="flex flex-col text-left items-baseline gap-2 min-w-0">
+                <div className="flex flex-col text-left items-baseline gap-1 min-w-0">
                     <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 min-w-0">
                         <span className="truncate">{title}</span>
                         {onClick && (

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { AlertTriangle, ChevronRight } from 'lucide-react';
 import { getTaskDisplayName } from '../../../utils/taskName';
 
-export const ReworkZone = ({ tasks = [], navigate }) => {
+export const ReworkZone = ({ tasks = [], navigate, buildTasksUrl }) => {
     return (
         <div className="bg-white p-4 rounded-[1rem] border border-slate-100 shadow-sm relative overflow-hidden h-full">
             <div className="flex items-center justify-between mb-4">
@@ -21,7 +21,16 @@ export const ReworkZone = ({ tasks = [], navigate }) => {
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Các task cần chỉnh sửa</p>
                     </div>
                 </div>
-                <button className="text-[9px] font-black text-slate-400 hover:text-rose-500 transition-colors uppercase tracking-widest flex items-center gap-1">
+                <button
+                    onClick={() => {
+                        if (buildTasksUrl) {
+                            navigate(buildTasksUrl({ status: 'REWORKING' }));
+                        } else {
+                            navigate('/tasks?status=REWORKING');
+                        }
+                    }}
+                    className="text-[9px] font-black text-slate-400 hover:text-rose-500 transition-colors uppercase tracking-widest flex items-center gap-1"
+                >
                     Xem tất cả <ChevronRight size={10} />
                 </button>
             </div>

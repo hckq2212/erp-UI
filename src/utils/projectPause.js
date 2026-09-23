@@ -1,3 +1,5 @@
+import { hasTeamMemberRole } from './teamMember';
+
 /**
  * Hằng số và logic quyền cho luồng TẠM DỪNG DỰ ÁN (mirror backend).
  *
@@ -67,7 +69,7 @@ export const isProjectPm = (project, user) => {
   if (!uid) return false;
   if (isSameId(project?.team?.teamLead?.id, uid)) return true;
   return Boolean(project?.team?.members?.some(
-    (m) => isSameId(m.user?.id, uid) && m.role === 'PROJECT_MANAGER'
+    (m) => isSameId(m.user?.id, uid) && hasTeamMemberRole(m, 'PROJECT_MANAGER')
   ));
 };
 

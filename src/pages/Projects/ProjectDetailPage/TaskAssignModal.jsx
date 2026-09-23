@@ -9,6 +9,8 @@ import { uploadToCloudinary } from '../../../utils/cloudinary';
 import { toast } from 'react-toastify';
 import { getTaskDisplayName } from '../../../utils/taskName';
 import { formatWorkloadLabel, getWorkloadColor, getWorkloadDisplayPercent } from '../../../utils/workload';
+import { getTeamMemberRoles } from '../../../utils/teamMember';
+import { TEAM_MEMBER_ROLE_LABELS } from '../../../utils/enums';
 
 const WorkloadPill = ({ workload }) => {
     const percent = getWorkloadDisplayPercent(workload);
@@ -396,7 +398,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                                     {selectedMember ? (
                                                         <>
                                                             <span className="min-w-0 flex-1 truncate">
-                                                                {selectedMember.user.fullName} - {selectedMember.role}
+                                                                {selectedMember.user.fullName}
                                                             </span>
                                                             <WorkloadPill workload={selectedMember.user.workload} />
                                                         </>
@@ -412,10 +414,13 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                                         {internalMembers.length > 0 ? (
                                                             internalMembers.map(member => {
                                                                 const workload = member.user?.workload;
+                                                                const roleLabels = getTeamMemberRoles(member)
+                                                                    .map(role => TEAM_MEMBER_ROLE_LABELS[role] || role)
+                                                                    .join(' · ');
 
                                                                 return (
                                                                     <button
-                                                                        key={member.user.id}
+                                                                        key={member.id || member.user.id}
                                                                         type="button"
                                                                         className={`w-full rounded-xl p-3 text-left transition hover:bg-blue-50 ${
                                                                             formData.assigneeId === member.user.id
@@ -436,7 +441,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                                                                     {member.user.fullName}
                                                                                 </p>
                                                                                 <p className="truncate text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                                                                    {member.role}
+                                                                                    {roleLabels || 'Thành viên'}
                                                                                 </p>
                                                                             </div>
 

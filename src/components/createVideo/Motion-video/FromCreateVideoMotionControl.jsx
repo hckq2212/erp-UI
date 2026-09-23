@@ -50,6 +50,7 @@ export default function FromCreateVideoMotionControl({ createMotionControlHook }
     {
       assigneeId: currentUserId,
       excludeStatus: 'ACCEPTED,AWAITING_REVIEW,INTERNAL_COMPLETED,COMPLETED',
+      nameLike: 'Video AI',
       limit: 500,
     },
     { skip: !currentUserId },

@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
+import { format, isSameDay } from 'date-fns';
 import { ArrowUpRight, ClipboardCheck, UserRound } from 'lucide-react';
 import { useGetMyNotificationsQuery } from '../../api/notifications';
 import { TASK_STATUS, PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
@@ -13,6 +14,7 @@ import { ReworkZone } from './member/ReworkZone';
 import { TimelineList } from './member/TimelineList';
 import { HotProjectList } from './member/HotProjectList';
 import { TaskCalendar } from './TaskCalendar';
+import { PMOperationsHub } from './pm/PMOperationsHub';
 
 const TeamLeadReviewModal = ({ isOpen, onClose, tasks = [], navigate }) => (
     <Modal isOpen={isOpen} onClose={onClose} title="Việc cần duyệt" className="max-w-4xl">
@@ -72,16 +74,28 @@ export const MemberView = ({
     dashboard,
     navigate,
     isViewingMember,
+    isAccountViewingMember = false,
     isTeamLead,
     awaitingReviewTasks,
     user,
+    selectedMemberId,
     selectedProjectId,
     onSelectProject,
     availableProjects = [],
     selectedDate,
+    viewMode = 'overview',
+    teamMembers = [],
+    onSelectMember
 }) => {
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const member = dashboard?.member || {};
+    const userRole = user?.role || user?.account?.role;
+    const isManagementOrAdmin = ['ADMIN', 'BOD', 'PM'].includes(userRole);
+    const isPM = userRole === 'PM';
+    const isPMOverview = isPM && !isViewingMember && viewMode === 'overview';
+    const hideLowerSection = isAccountViewingMember ||
+                             Boolean(dashboard?.scope?.isAccountViewingMember) ||
+                             (isViewingMember && !isManagementOrAdmin);
     const { data: notifications = [] } = useGetMyNotificationsQuery();
     const currentUserId = getCurrentUserId(user);
 
@@ -104,6 +118,11 @@ export const MemberView = ({
         }) || [];
     }, [awaitingReviewTasks, canManageProjectTasks, currentUserId, selectedProjectId, selectedDate]);
 
+    const rawOverdue = member?.overdueTasks || [];
+    const filteredOverdueTasks = selectedProjectId
+        ? rawOverdue.filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
+        : rawOverdue;
+
     const stats = useMemo(() => {
         const todayStr = new Date().toISOString().split('T')[0];
         const now = new Date();
@@ -118,13 +137,8 @@ export const MemberView = ({
             task.deadline && task.deadline.startsWith(todayStr)
         ).length;
 
-        const rawOverdue = member?.overdueTasks || [];
-        const filteredOverdue = selectedProjectId
-            ? rawOverdue.filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
-            : rawOverdue;
-
         const overdueCount = member?.overdueCount !== undefined
-            ? (selectedProjectId ? filteredOverdue.length : member.overdueCount)
+            ? (selectedProjectId ? filteredOverdueTasks.length : member.overdueCount)
             : filteredUpcoming.filter(task => task.deadline && new Date(task.deadline) < startOfToday).length;
         const statusCounts = member?.statusCounts || {};
         const completedCount = member?.completedCount ?? (
@@ -142,7 +156,7 @@ export const MemberView = ({
             pending: teamLeadReviewTasks.length,
             progress
         };
-    }, [member, selectedProjectId, teamLeadReviewTasks]);
+    }, [member, selectedProjectId, teamLeadReviewTasks, filteredOverdueTasks]);
 
     const rawTimelineTasks = member?.upcomingDeadlines || [];
     const filteredTimelineTasks = selectedProjectId
@@ -158,65 +172,159 @@ export const MemberView = ({
         ? (member?.calendarTasks || []).filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
         : member?.calendarTasks;
 
+    const [selectedCalendarDate, setSelectedCalendarDate] = useState(new Date());
+
+    const isSelectedDayToday = useMemo(() => {
+        return isSameDay(selectedCalendarDate || new Date(), new Date());
+    }, [selectedCalendarDate]);
+
+    const selectedDayKey = useMemo(() => {
+        return format(selectedCalendarDate || new Date(), 'yyyy-MM-dd');
+    }, [selectedCalendarDate]);
+
+    const selectedDayTasks = useMemo(() => {
+        return (filteredCalendarTasks || []).filter(task => {
+            const dateStr = task.deadline || task.end || task.start;
+            if (!dateStr) return false;
+            return format(new Date(dateStr), 'yyyy-MM-dd') === selectedDayKey;
+        });
+    }, [filteredCalendarTasks, selectedDayKey]);
+
+    const isPersonalMode = viewMode === 'personal' || (!isManagementOrAdmin && !isTeamLead);
+
+    const effectiveAssigneeId = isViewingMember
+        ? (selectedMemberId || member?.id || '')
+        : (isPersonalMode ? (currentUserId || user?.id || member?.id || '') : '');
+
+    const now = new Date();
+    const targetMonth = selectedDate?.month ?? (now.getMonth() + 1);
+    const targetYear = selectedDate?.year ?? now.getFullYear();
+    const startOfMonthStr = format(new Date(targetYear, targetMonth - 1, 1), 'yyyy-MM-dd');
+    const endOfMonthStr = format(new Date(targetYear, targetMonth, 0), 'yyyy-MM-dd');
+
+    const buildTasksUrl = useCallback(({
+        status,
+        dateType,
+        deadline,
+        deadlineFrom,
+        deadlineTo,
+        sortBy,
+        sortDir,
+        includeMonth = true
+    } = {}) => {
+        const params = new URLSearchParams();
+        if (status && status !== 'ALL') params.set('status', status);
+        if (effectiveAssigneeId) params.set('assigneeId', effectiveAssigneeId);
+        if (selectedProjectId) params.set('projectId', selectedProjectId);
+        if (dateType && dateType !== 'plannedEndDate') params.set('dateType', dateType);
+
+        if (deadline) {
+            params.set('deadline', deadline);
+        } else if (deadlineFrom || deadlineTo) {
+            if (deadlineFrom) params.set('deadlineFrom', deadlineFrom);
+            if (deadlineTo) params.set('deadlineTo', deadlineTo);
+        } else if (includeMonth) {
+            params.set('deadlineFrom', startOfMonthStr);
+            params.set('deadlineTo', endOfMonthStr);
+        }
+
+        if (sortBy) params.set('sortBy', sortBy);
+        if (sortDir) params.set('sortDir', sortDir);
+
+        return `/tasks?${params.toString()}`;
+    }, [effectiveAssigneeId, selectedProjectId, startOfMonthStr, endOfMonthStr]);
+
+    const activeSelectedDayCount = isSelectedDayToday ? stats.today : selectedDayTasks.length;
+
     return (
         <>
             <div className="space-y-3 pb-2">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-2">
                     <div className="lg:col-span-7">
-                        <TodayFocusCard
-                            overdueCount={stats.overdue}
-                            todayCount={stats.today}
-                            pendingCount={stats.pending}
-                            progress={stats.progress}
-                            onViewDetail={() => navigate('/tasks')}
-                        />
+                        {isPMOverview ? (
+                            <PMOperationsHub
+                                reviewTasks={teamLeadReviewTasks}
+                                overdueTasks={filteredOverdueTasks}
+                                reworkTasks={filteredReworkTasks}
+                                workloads={dashboard?.staffWorkloads || dashboard?.admin?.staffWorkloads}
+                                teamMembers={teamMembers}
+                                navigate={navigate}
+                                onSelectMember={onSelectMember}
+                            />
+                        ) : (
+                            <TodayFocusCard
+                                overdueCount={stats.overdue}
+                                todayCount={activeSelectedDayCount}
+                                pendingCount={stats.pending}
+                                progress={stats.progress}
+                                selectedDate={selectedCalendarDate}
+                                isToday={isSelectedDayToday}
+                                onResetToday={() => setSelectedCalendarDate(new Date())}
+                                onViewDetail={() => navigate(buildTasksUrl({ includeMonth: false }))}
+                                buildTasksUrl={buildTasksUrl}
+                            />
+                        )}
                     </div>
                     <div className="lg:col-span-5 min-h-0">
-                        <TaskCalendar tasks={filteredCalendarTasks} />
+                        <TaskCalendar
+                            tasks={filteredCalendarTasks}
+                            selectedDate={selectedCalendarDate}
+                            onSelectDate={setSelectedCalendarDate}
+                            buildTasksUrl={buildTasksUrl}
+                        />
                     </div>
                 </div>
 
-                {/* Hàng ngang duy nhất hợp nhất Chỉ số công việc & Ví Vinicoin */}
-                <div className="w-full">
-                    <MetricCardsGrid
-                        member={member}
-                        projects={availableProjects}
-                        selectedProjectId={selectedProjectId}
-                        onSelectProject={onSelectProject}
-                        overdueCount={stats.overdue}
-                        reworkCount={filteredReworkTasks?.length ?? member?.reworkCount ?? 0}
-                        pendingCount={stats.pending}
-                        todayCount={stats.today}
-                        totalTasksCount={member?.totalTasks || 0}
-                        userRole={user?.role || user?.account?.role}
-                        isTeamLead={isTeamLead}
-                        isViewingMember={isViewingMember}
-                        dashboard={dashboard}
-                        onOpenReviewModal={() => setIsReviewModalOpen(true)}
-                    />
-                </div>
+                {/* Ẩn toàn bộ phần dưới lịch khi Account đang xem Dashboard của member */}
+                {!hideLowerSection && (
+                    <>
+                        {/* Hàng ngang duy nhất hợp nhất Chỉ số công việc & Ví Vinicoin */}
+                        <div className="w-full">
+                            <MetricCardsGrid
+                                member={member}
+                                projects={availableProjects}
+                                selectedProjectId={selectedProjectId}
+                                onSelectProject={onSelectProject}
+                                overdueCount={stats.overdue}
+                                reworkCount={filteredReworkTasks?.length ?? member?.reworkCount ?? 0}
+                                pendingCount={stats.pending}
+                                todayCount={stats.today}
+                                totalTasksCount={member?.totalTasks || 0}
+                                userRole={user?.role || user?.account?.role}
+                                isTeamLead={isTeamLead}
+                                isViewingMember={isViewingMember}
+                                viewMode={viewMode}
+                                dashboard={dashboard}
+                                buildTasksUrl={buildTasksUrl}
+                                onOpenReviewModal={() => setIsReviewModalOpen(true)}
+                            />
+                        </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-stretch">
-                    <div className="lg:col-span-3">
-                        <ReworkZone tasks={filteredReworkTasks} navigate={navigate} />
-                    </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-stretch">
+                            <div className="lg:col-span-3">
+                                <ReworkZone tasks={filteredReworkTasks} navigate={navigate} buildTasksUrl={buildTasksUrl} />
+                            </div>
 
-                    <div className="lg:col-span-5">
-                        <TimelineList tasks={timelineTasks} navigate={navigate} />
-                    </div>
+                            <div className="lg:col-span-5">
+                                <TimelineList tasks={timelineTasks} navigate={navigate} buildTasksUrl={buildTasksUrl} />
+                            </div>
 
-                    <div className="lg:col-span-4">
-                        <HotProjectList projects={member?.participatingProjects} navigate={navigate} />
-                    </div>
-                </div>
+                            <div className="lg:col-span-4">
+                                <HotProjectList projects={member?.participatingProjects} navigate={navigate} />
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
 
-            <TeamLeadReviewModal
-                isOpen={isReviewModalOpen}
-                onClose={() => setIsReviewModalOpen(false)}
-                tasks={teamLeadReviewTasks}
-                navigate={navigate}
-            />
+            {!hideLowerSection && (
+                <TeamLeadReviewModal
+                    isOpen={isReviewModalOpen}
+                    onClose={() => setIsReviewModalOpen(false)}
+                    tasks={teamLeadReviewTasks}
+                    navigate={navigate}
+                />
+            )}
         </>
     );
 };
