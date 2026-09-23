@@ -16,7 +16,7 @@ import {
     useGetTeamQuery,
     useAddTeamMemberMutation,
     useRemoveTeamMemberMutation,
-    useUpdateTeamMemberMutation,
+    useUpdateTeamMemberRolesMutation,
 } from '../../api/teams';
 import { useGetUsersQuery } from '../../api/users';
 import { TEAM_MEMBER_ROLE, TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../utils/enums';
@@ -25,19 +25,12 @@ import { Modal } from '../../components/ui/Modal';
 import { toast } from 'react-toastify';
 import { useGetMeQuery } from '../../api/auth';
 import { getCurrentUserId, getUserAccountRole, isSameUser } from '../../utils/authUser';
+import { getTeamMemberRoles, hasTeamMemberRole } from '../../utils/teamMember';
 
 const prioritizeLeadRole = (roles) => [
     TEAM_MEMBER_ROLE.ACCOUNT,
     ...roles.filter(role => role !== TEAM_MEMBER_ROLE.ACCOUNT),
 ];
-
-const getRoleSelectClassName = (role, baseClassName) => {
-    if (role !== TEAM_MEMBER_ROLE.ACCOUNT) return baseClassName;
-    return `${baseClassName} border-emerald-300 bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100`;
-};
-
-const getRoleOptionClassName = (role) =>
-    role === TEAM_MEMBER_ROLE.ACCOUNT ? 'bg-emerald-50 font-bold text-emerald-700' : '';
 
 export const TeamDetailPage = () => {
     const { id } = useParams();
@@ -48,14 +41,14 @@ export const TeamDetailPage = () => {
 
     const [addMember, { isLoading: isAddingMember }] = useAddTeamMemberMutation();
     const [removeMember] = useRemoveTeamMemberMutation();
-    const [updateMember] = useUpdateTeamMemberMutation();
+    const [updateMemberRoles] = useUpdateTeamMemberRolesMutation();
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState('');
     const [selectedRoles, setSelectedRoles] = useState([TEAM_MEMBER_ROLE.EDITOR]);
     const currentUserId = getCurrentUserId(currentUser);
     const isCurrentProjectManager = currentUser?.role === 'PM' && team?.members?.some(member =>
-        isSameUser(member.user?.id, currentUserId) && member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER
+        isSameUser(member.user?.id, currentUserId) && hasTeamMemberRole(member, TEAM_MEMBER_ROLE.PROJECT_MANAGER)
     );
     const canManageTeam = currentUser?.role === 'ADMIN' || isCurrentProjectManager;
     const canAddMember = canManageTeam;
@@ -67,7 +60,7 @@ export const TeamDetailPage = () => {
     const getRolesOfUser = (userId) => new Set(
         (team?.members || [])
             .filter(member => isSameUser(member.user?.id, userId))
-            .map(member => member.role)
+            .flatMap(getTeamMemberRoles)
     );
 
     // Existing members remain selectable while they still have another assignable role.
@@ -75,7 +68,7 @@ export const TeamDetailPage = () => {
         if (!users || !team?.members) return users;
         return users.filter(user => {
             const assignedRoles = new Set(
-                team.members.filter(member => isSameUser(member.user?.id, user.id)).map(member => member.role)
+                team.members.filter(member => isSameUser(member.user?.id, user.id)).flatMap(getTeamMemberRoles)
             );
             return !assignedRoles.has(TEAM_MEMBER_ROLE.PROJECT_MANAGER)
                 && assignableMemberRoles.some(role => !assignedRoles.has(role));
@@ -83,14 +76,6 @@ export const TeamDetailPage = () => {
     }, [users, team?.members, assignableMemberRoles]);
     const selectedUserRoles = getRolesOfUser(selectedUserId);
     const availableRolesForSelectedUser = assignableMemberRoles.filter(role => !selectedUserRoles.has(role));
-    const getEditableRoles = (member) => {
-        const otherRoles = new Set(
-            (team?.members || [])
-                .filter(item => item.id !== member.id && isSameUser(item.user?.id, member.user?.id))
-                .map(item => item.role)
-        );
-        return assignableMemberRoles.filter(role => role === member.role || !otherRoles.has(role));
-    };
 
     const handleAddMember = async (e) => {
         e.preventDefault();
@@ -132,12 +117,20 @@ export const TeamDetailPage = () => {
         }
     };
 
-    const handleUpdateRole = async (memberId, role) => {
+    const handleToggleRole = async (member, role) => {
+        const currentRoles = getTeamMemberRoles(member);
+        const roles = currentRoles.includes(role)
+            ? currentRoles.filter(item => item !== role)
+            : [...currentRoles, role];
+        if (roles.length === 0) {
+            toast.error('Thành viên phải có ít nhất một vai trò');
+            return;
+        }
         try {
-            await updateMember({ memberId, teamId: id, role }).unwrap();
-            toast.success('Đã cập nhật vai trò');
+            await updateMemberRoles({ teamId: id, userId: member.user.id, roles }).unwrap();
+            toast.success('Đã cập nhật các vai trò');
         } catch (err) {
-            toast.error(err?.data?.message || 'Không thể cập nhật vai trò');
+            toast.error(err?.data?.message || 'Không thể cập nhật các vai trò');
         }
     };
 
@@ -233,11 +226,9 @@ export const TeamDetailPage = () => {
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {team.members?.map((member) => {
                                         const isLead = isSameUser(team.teamLead?.id, member.user?.id);
-                                        const isProjectManager = member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER;
-                                        const userIsAssignedProjectManager = team.members?.some(item =>
-                                            isSameUser(item.user?.id, member.user?.id)
-                                            && item.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER
-                                        );
+                                        const roles = getTeamMemberRoles(member);
+                                        const isProjectManager = hasTeamMemberRole(member, TEAM_MEMBER_ROLE.PROJECT_MANAGER);
+                                        const userIsAssignedProjectManager = isProjectManager;
                                         const canEditMember = canManageTeam && !userIsAssignedProjectManager && !isLead;
                                         return (
                                             <tr key={member.id} className="hover:bg-gray-50 transition-colors group">
@@ -253,7 +244,7 @@ export const TeamDetailPage = () => {
                                                             {isProjectManager && (
                                                                 <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">PM</span>
                                                             )}
-                                                            {(isLead || member.role === TEAM_MEMBER_ROLE.ACCOUNT) && (
+                                                            {(isLead || hasTeamMemberRole(member, TEAM_MEMBER_ROLE.ACCOUNT)) && (
                                                                 <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">ACCOUNT</span>
                                                             )}
                                                         </div>
@@ -269,24 +260,23 @@ export const TeamDetailPage = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {canEditMember ? (
-                                                        <select
-                                                            value={member.role}
-                                                            onChange={(event) => handleUpdateRole(member.id, event.target.value)}
-                                                            className={getRoleSelectClassName(
-                                                                member.role,
-                                                                'rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-700'
-                                                            )}
-                                                        >
-                                                            {getEditableRoles(member).map((role) => (
-                                                                <option key={role} value={role} className={getRoleOptionClassName(role)}>
-                                                                    {TEAM_MEMBER_ROLE_LABELS[role] || role}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    ) : (
-                                                        TEAM_MEMBER_ROLE_LABELS[member.role] || member.role
-                                                    )}
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {canEditMember ? assignableMemberRoles.map(role => (
+                                                            <label key={role} className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={roles.includes(role)}
+                                                                    onChange={() => handleToggleRole(member, role)}
+                                                                    className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600"
+                                                                />
+                                                                {TEAM_MEMBER_ROLE_LABELS[role] || role}
+                                                            </label>
+                                                        )) : roles.map(role => (
+                                                            <span key={role} className="rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700">
+                                                                {TEAM_MEMBER_ROLE_LABELS[role] || role}
+                                                            </span>
+                                                        ))}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

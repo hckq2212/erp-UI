@@ -15,6 +15,7 @@ import { SubtaskRoadmapModal } from './SubtaskRoadmapModal';
 import { formatNumber, formatDate } from '../../utils/format';
 import { getCurrentUserId, isSameUser, getUserAccountRole } from '../../utils/authUser';
 import { TASK_STATUS_LABELS } from '../../utils/enums';
+import { hasTeamMemberRole } from '../../utils/teamMember';
 
 const emptySubtaskForm = {
     name: '',
@@ -60,8 +61,8 @@ export const TaskDelegationPanel = ({
     const userRole = getUserAccountRole(currentUser);
     const team = task?.project?.team;
     const currentMembership = team?.members?.find(member => isSameUser(member.user?.id, currentUserId));
-    const isPM = currentMembership?.role === 'PROJECT_MANAGER' || isSameUser(task?.project?.projectManager?.id, currentUserId);
-    const isAccount = isSameUser(team?.teamLead?.id, currentUserId) || currentMembership?.role === 'ACCOUNT';
+    const isPM = hasTeamMemberRole(currentMembership, 'PROJECT_MANAGER') || isSameUser(task?.project?.projectManager?.id, currentUserId);
+    const isAccount = isSameUser(team?.teamLead?.id, currentUserId) || hasTeamMemberRole(currentMembership, 'ACCOUNT');
     const isAdminOverride = ['ADMIN', 'BOD'].includes(userRole);
     const isTeamLead = isSameUser(team?.teamLead?.id, currentUserId);
     const isProjectOnHold = task?.project?.status === 'ON_HOLD' || task?.status === 'ON_HOLD';
@@ -79,7 +80,7 @@ export const TaskDelegationPanel = ({
 
     const assignableMembers = useMemo(() => (
         (team?.members || []).filter(member =>
-            member.user?.id && member.role !== 'PROJECT_MANAGER'
+            member.user?.id && !hasTeamMemberRole(member, 'PROJECT_MANAGER')
         )
     ), [team?.members]);
 
@@ -101,7 +102,7 @@ export const TaskDelegationPanel = ({
     );
     const isSplittableStatus = SPLITTABLE_TASK_STATUSES.has(task?.status);
     const projectManager = team?.members?.find(member =>
-        member.role === 'PROJECT_MANAGER' && member.user?.id
+        hasTeamMemberRole(member, 'PROJECT_MANAGER') && member.user?.id
     );
 
     let sharedActionBlockedReason = '';
@@ -504,7 +505,7 @@ export const TaskDelegationPanel = ({
                             <option value="">Chọn thành viên đội dự án</option>
                             {assignableMembers.map(member => (
                                 <option key={member.id} value={member.user.id}>
-                                    {member.user.fullName}{member.role === 'ACCOUNT' ? ' (Account)' : ''}
+                                    {member.user.fullName}{hasTeamMemberRole(member, 'ACCOUNT') ? ' (Account)' : ''}
                                 </option>
                             ))}
                         </select>
