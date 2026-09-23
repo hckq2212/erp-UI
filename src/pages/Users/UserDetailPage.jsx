@@ -1,24 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGetUserQuery, useUpdateUserMutation, useUpdateUserLaborContractsMutation } from '../../api/users';
-import { TASK_STATUS_LABELS, TASK_STATUS_COLORS, USER_ROLE_COLORS, USER_ROLE } from '../../utils/enums';
+import { USER_ROLE_COLORS, USER_ROLE } from '../../utils/enums';
 import { uploadToCloudinary, getFilePreviewUrl } from '../../utils/cloudinary';
 import { toast } from 'react-toastify';
 import { Modal } from '../../components/ui/Modal';
+import { UserTasksSection } from '../../components/users/UserTasksSection';
 import {
-    X, Plus, Trash2, Upload, FileText, Download, Eye, Loader2,
-    ArrowLeft, CheckCircle, Activity, Clock, XCircle, Briefcase, Mail, Phone, User, Shield, MapPin, Calendar
+    X, Upload, FileText, Download, Eye, Loader2,
+    ArrowLeft, CheckCircle, Mail, Phone, User
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { getTaskDisplayName } from '../../utils/taskName';
+
 export const UserDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { data: user, isLoading, error } = useGetUserQuery(id);
     const [updateUser, { isLoading: isUpdatingUser }] = useUpdateUserMutation();
     const [updateUserLaborContracts, { isLoading: isSavingContracts }] = useUpdateUserLaborContractsMutation();
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 4;
 
     // File handling state
     const [isUploading, setIsUploading] = useState(false);
@@ -98,28 +97,6 @@ export const UserDetailPage = () => {
             </div>
         );
     }
-
-    const tasks = user.tasks || [];
-    const totalPages = Math.ceil(tasks.length / itemsPerPage);
-    const paginatedTasks = tasks.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-    const getStatusBadge = (status) => {
-        const label = TASK_STATUS_LABELS[status] || status;
-        const Icon = (() => {
-            if (['DONE', 'COMPLETED', 'ACCEPTED'].includes(status)) return CheckCircle;
-            if (['DOING', 'PENDING'].includes(status)) return status === 'DOING' ? Activity : Clock;
-            return XCircle;
-        })();
-
-        return (
-            <span className={cn(
-                "px-2 py-0.5 rounded-lg text-[10px] font-black uppercase border flex items-center gap-1 shadow-sm",
-                TASK_STATUS_COLORS[status] || 'bg-gray-50 text-gray-700 border-gray-100'
-            )}>
-                {label}
-            </span>
-        );
-    };
 
     return (
         <div className="space-y-6 max-w-full pt-6 mx-auto pb-12">
@@ -293,87 +270,8 @@ export const UserDetailPage = () => {
                 </div>
 
                 {/* Right: Tasks & Activity */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 min-h-[500px] flex flex-col">
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
-                                    <Briefcase className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-black text-gray-900">Công việc được giao</h3>
-                                    <p className="text-sm text-gray-500">Danh sách các task đang phụ trách</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3 flex-1">
-                            {paginatedTasks.length > 0 ? (
-                                paginatedTasks.map((task) => (
-                                    <div
-                                        key={task.id}
-                                        onClick={() => navigate(`/tasks/${task.id}`)}
-                                        className="p-4 bg-gray-50 hover:bg-white border border-transparent hover:border-gray-200 rounded-2xl transition-all cursor-pointer group"
-                                    >
-                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-[10px] font-mono font-black text-gray-400">
-                                                        {task.code || `#${task.id}`}
-                                                    </span>
-                                                    {getStatusBadge(task.status)}
-                                                </div>
-                                                <h4 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                                    {getTaskDisplayName(task)}
-                                                </h4>
-                                            </div>
-                                            <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all flex-shrink-0 hidden md:block" />
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                                    <Clock className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                                    <p className="text-gray-500 italic">Chưa có công việc nào được phân công</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {totalPages > 1 && (
-                            <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-center gap-2">
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                    disabled={currentPage === 1}
-                                    className="p-2 rounded-xl border border-gray-100 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                                >
-                                    <ChevronLeft className="w-5 h-5 text-gray-600" />
-                                </button>
-
-                                <div className="flex items-center gap-1">
-                                    {[...Array(totalPages)].map((_, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => setCurrentPage(i + 1)}
-                                            className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${currentPage === i + 1
-                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
-                                                : 'text-gray-500 hover:bg-gray-50'
-                                                }`}
-                                        >
-                                            {i + 1}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="p-2 rounded-xl border border-gray-100 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                                >
-                                    <ChevronRight className="w-5 h-5 text-gray-600" />
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                <div className="lg:col-span-2">
+                    <UserTasksSection userId={id} userName={user?.fullName} />
                 </div>
             </div>
 
@@ -407,37 +305,3 @@ export const UserDetailPage = () => {
         </div>
     );
 };
-
-const ChevronLeft = ({ className }) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={className}
-    >
-        <path d="m15 18-6-6 6-6" />
-    </svg>
-);
-
-const ChevronRight = ({ className }) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={className}
-    >
-        <path d="m9 18 6-6-6-6" />
-    </svg>
-);
