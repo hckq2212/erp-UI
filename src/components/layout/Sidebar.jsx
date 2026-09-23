@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Briefcase, FileText,
   FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store,
   CheckCircle2, Package, User, Handshake, FolderOpenDotIcon, Video, BookText, Megaphone, Bell, Archive,
-  Sparkles, ChevronDown
+  Sparkles, ChevronDown, ChartNoAxesCombined, MessageSquare
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useGetMeQuery } from '../../api/auth';
@@ -30,6 +31,7 @@ const menuItems = [
     label: 'AI',
     icon: Sparkles,
     children: [
+      { path: '/dashboard-ai', icon: ChartNoAxesCombined, label: 'Thống kê AI' },
       { path: '/create-video-ai', icon: Video, label: 'Tạo Video AI' },
       { path: '/library-video-ai', icon: BookText, label: 'Thư viện Video AI' },
     ],
@@ -41,6 +43,7 @@ const menuItems = [
 export const Sidebar = ({ isCollapsed }) => {
   const location = useLocation();
   const { data: me } = useGetMeQuery();
+  const [collapsedFlyout, setCollapsedFlyout] = useState(null);
 
   const filteredMenuItems = menuItems
     .filter((item) => {
@@ -76,9 +79,58 @@ export const Sidebar = ({ isCollapsed }) => {
         setOpenMenus((prev) => ({ ...prev, [item.id || item.label]: true }));
       }
     });
+    setCollapsedFlyout(null);
   }, [location.pathname]);
 
-  const toggleSubmenu = (menuId) => {
+  useEffect(() => {
+    if (!isCollapsed) {
+      setCollapsedFlyout(null);
+      return undefined;
+    }
+
+    const closeFlyout = (event) => {
+      if (event.type === 'keydown' && event.key !== 'Escape') return;
+      if (event.type === 'pointerdown' && event.target.closest('[data-sidebar-flyout]')) return;
+      setCollapsedFlyout(null);
+    };
+
+    window.addEventListener('resize', closeFlyout);
+    window.addEventListener('scroll', closeFlyout, true);
+    document.addEventListener('pointerdown', closeFlyout);
+    document.addEventListener('keydown', closeFlyout);
+
+    return () => {
+      window.removeEventListener('resize', closeFlyout);
+      window.removeEventListener('scroll', closeFlyout, true);
+      document.removeEventListener('pointerdown', closeFlyout);
+      document.removeEventListener('keydown', closeFlyout);
+    };
+  }, [isCollapsed]);
+
+  const toggleSubmenu = (item, event) => {
+    const menuId = item.id || item.label;
+    if (isCollapsed) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const viewportPadding = 8;
+      const estimatedFlyoutHeight = 48 + (item.children?.length || 0) * 36;
+      const availableHeight = window.innerHeight - viewportPadding * 2;
+      const flyoutHeight = Math.min(estimatedFlyoutHeight, availableHeight);
+      const top = Math.max(
+        viewportPadding,
+        Math.min(rect.top, window.innerHeight - flyoutHeight - viewportPadding),
+      );
+      const arrowTop = Math.max(
+        12,
+        Math.min(rect.top + rect.height / 2 - top - 4, flyoutHeight - 20),
+      );
+      setCollapsedFlyout((current) => (
+        current?.menuId === menuId
+          ? null
+          : { menuId, top, left: rect.right + 12, arrowTop }
+      ));
+      return;
+    }
+
     setOpenMenus((prev) => ({
       ...prev,
       [menuId]: !prev[menuId],
@@ -100,7 +152,11 @@ export const Sidebar = ({ isCollapsed }) => {
               <div key={item.id || item.label} className="space-y-1">
                 <button
                   type="button"
-                  onClick={() => toggleSubmenu(item.id || item.label)}
+                  onClick={(event) => toggleSubmenu(item, event)}
+                  data-sidebar-flyout
+                  aria-expanded={isCollapsed
+                    ? collapsedFlyout?.menuId === (item.id || item.label)
+                    : isOpen}
                   className={cn(
                     'w-full flex items-center px-3 py-3 text-sm font-bold rounded-xl transition-all group relative',
                     isAnyChildActive
@@ -129,8 +185,20 @@ export const Sidebar = ({ isCollapsed }) => {
                     )} />
                   )}
 
-                  {isCollapsed && (
-                    <div className="absolute left-full ml-3 px-3 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 translate-x-3 group-hover:translate-x-0 transition-all group-hover:pointer-events-auto pointer-events-none whitespace-nowrap shadow-xl z-50">
+                  {isCollapsed && isAnyChildActive && (
+                    <div className="absolute left-0 w-1 h-6 bg-indigo-600 rounded-r-full" />
+                  )}
+                </button>
+
+                {isCollapsed && collapsedFlyout?.menuId === (item.id || item.label) && createPortal(
+                  <div
+                    data-sidebar-flyout
+                    role="menu"
+                    aria-label={item.label}
+                    className="fixed min-w-52 text-white text-xs font-bold whitespace-nowrap z-[100]"
+                    style={{ top: collapsedFlyout.top, left: collapsedFlyout.left }}
+                  >
+                    <div className="max-h-[calc(100vh-1rem)] overflow-y-auto rounded-lg bg-slate-900 px-3 py-2 shadow-xl">
                       <div className="text-[11px] font-bold text-slate-300 mb-1 border-b border-slate-700/60 pb-1">
                         {item.label}
                       </div>
@@ -141,6 +209,7 @@ export const Sidebar = ({ isCollapsed }) => {
                             <Link
                               key={child.path}
                               to={child.path}
+                              role="menuitem"
                               className={cn(
                                 'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-semibold transition-colors',
                                 isChildActive
@@ -154,14 +223,14 @@ export const Sidebar = ({ isCollapsed }) => {
                           );
                         })}
                       </div>
-                      <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45" />
                     </div>
-                  )}
-
-                  {isCollapsed && isAnyChildActive && (
-                    <div className="absolute left-0 w-1 h-6 bg-indigo-600 rounded-r-full" />
-                  )}
-                </button>
+                    <div
+                      className="absolute -left-1 w-2 h-2 bg-slate-900 rotate-45"
+                      style={{ top: collapsedFlyout.arrowTop }}
+                    />
+                  </div>,
+                  document.body
+                )}
 
                 {!isCollapsed && isOpen && (
                   <div className="pl-4 pr-1 py-0.5 space-y-1">

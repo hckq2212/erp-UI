@@ -97,7 +97,7 @@ export const ProposalManagement = ({
         <div className="border border-gray-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium text-gray-900">Hợp đồng <span className="text-sm italic text-gray-400">(.docx, Excel hoặc link)</span></h3>
+              <h3 className="font-medium text-gray-900">Hợp đồng <span className="text-sm italic text-gray-400">(.docx, .pdf hoặc link)</span></h3>
               <p className="text-sm text-gray-500 mt-1">
                 {contract.proposal_contract ? 'Đã upload' : 'Chưa có file'}
               </p>
@@ -201,7 +201,7 @@ export const ProposalManagement = ({
                       onChange={() => changeUploadMethod('FILE')}
                     />
                     <Upload className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-gray-700">Tải file Word/Excel</span>
+                    <span className="text-sm font-medium text-gray-700">Tải file Word/PDF</span>
                   </label>
                   <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${uploadMethod === 'LINK' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
                     <input
@@ -219,10 +219,10 @@ export const ProposalManagement = ({
 
               {uploadMethod === 'FILE' && (
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700">File hợp đồng (.docx, .xls, .xlsx)</label>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700">File hợp đồng (.docx, .pdf)</label>
                   <input
                     type="file"
-                    accept=".docx,.xls,.xlsx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    accept=".docx,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf"
                     onChange={(event) => setProposalFile(event.target.files?.[0] || null)}
                     className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
                   />
