@@ -190,9 +190,11 @@ export const MemberView = ({
         });
     }, [filteredCalendarTasks, selectedDayKey]);
 
+    const isPersonalMode = viewMode === 'personal' || (!isManagementOrAdmin && !isTeamLead);
+
     const effectiveAssigneeId = isViewingMember
         ? (selectedMemberId || member?.id || '')
-        : (!isManagementOrAdmin && !isTeamLead ? (currentUserId || member?.id || '') : '');
+        : (isPersonalMode ? (currentUserId || user?.id || member?.id || '') : '');
 
     const now = new Date();
     const targetMonth = selectedDate?.month ?? (now.getMonth() + 1);
@@ -291,6 +293,7 @@ export const MemberView = ({
                                 userRole={user?.role || user?.account?.role}
                                 isTeamLead={isTeamLead}
                                 isViewingMember={isViewingMember}
+                                viewMode={viewMode}
                                 dashboard={dashboard}
                                 buildTasksUrl={buildTasksUrl}
                                 onOpenReviewModal={() => setIsReviewModalOpen(true)}

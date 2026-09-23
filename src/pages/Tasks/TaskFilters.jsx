@@ -46,7 +46,9 @@ export const TaskFilters = ({
     onReset,
     canFilterByAssignee = false,
     users = [],
-    isLoadingUsers = false
+    isLoadingUsers = false,
+    showQuickPresets = true,
+    className = ''
 }) => {
     const [isDatePopoverOpen, setIsDatePopoverOpen] = useState(false);
     const popoverRef = useRef(null);
@@ -129,7 +131,7 @@ export const TaskFilters = ({
     );
 
     return (
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 space-y-3">
+        <div className={cn("bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 space-y-3", className)}>
             <div className={`grid grid-cols-1 sm:grid-cols-2 ${canFilterByAssignee ? 'lg:grid-cols-6' : 'lg:grid-cols-5'} gap-3 items-center`}>
                 {/* Search */}
                 <div className="sm:col-span-2 relative">
@@ -367,8 +369,8 @@ export const TaskFilters = ({
             </div>
 
             {/* Quick Presets Bar: Time & Status Matrix */}
-            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100 text-xs">
-                <span className="text-gray-400 font-medium mr-1">Thời gian:</span>
+            {showQuickPresets && <div className="flex items-center gap-2 pt-2 border-t border-gray-100 text-xs overflow-x-auto whitespace-nowrap scrollbar-none">
+                <span className="text-gray-400 font-medium mr-1 shrink-0 whitespace-nowrap">Thời gian:</span>
                 
                 {/* Preset: Hôm nay */}
                 <button
@@ -379,14 +381,14 @@ export const TaskFilters = ({
                             : { deadline: 'today', deadlineFrom: '', deadlineTo: '' }
                     )}
                     className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all",
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all shrink-0 whitespace-nowrap",
                         isTodayActive
                             ? "bg-orange-500 text-white shadow-sm shadow-orange-200 font-semibold"
                             : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200/60"
                     )}
                 >
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>Hôm nay</span>
+                    <Calendar className="w-3.5 h-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">Hôm nay</span>
                 </button>
 
                 {/* Preset: Tuần này */}
@@ -398,14 +400,14 @@ export const TaskFilters = ({
                             : { deadline: '', deadlineFrom: startWeekStr, deadlineTo: endWeekStr }
                     )}
                     className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all",
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all shrink-0 whitespace-nowrap",
                         isThisWeekActive
                             ? "bg-orange-500 text-white shadow-sm shadow-orange-200 font-semibold"
                             : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200/60"
                     )}
                 >
-                    <CalendarDays className="w-3.5 h-3.5" />
-                    <span>Tuần này</span>
+                    <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">Tuần này</span>
                 </button>
 
                 {/* Preset: Tháng này */}
@@ -417,33 +419,33 @@ export const TaskFilters = ({
                             : { deadline: '', deadlineFrom: startMonthStr, deadlineTo: endMonthStr }
                     )}
                     className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all",
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all shrink-0 whitespace-nowrap",
                         isThisMonthActive
                             ? "bg-orange-500 text-white shadow-sm shadow-orange-200 font-semibold"
                             : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200/60"
                     )}
                 >
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>Tháng này (Tháng {currentMonthNumber})</span>
+                    <Calendar className="w-3.5 h-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">Tháng này (Tháng {currentMonthNumber})</span>
                 </button>
 
-                <div className="h-4 w-[1px] bg-gray-200 mx-1" />
+                <div className="h-4 w-[1px] bg-gray-200 mx-1 shrink-0" />
 
-                <span className="text-gray-400 font-medium mr-1">Trạng thái:</span>
+                <span className="text-gray-400 font-medium mr-1 shrink-0 whitespace-nowrap">Trạng thái:</span>
 
                 {/* Status: Quá hạn */}
                 <button
                     type="button"
                     onClick={() => onFilterChange('status', filters.status === 'OVERDUE' ? 'ALL' : 'OVERDUE')}
                     className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all",
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all shrink-0 whitespace-nowrap",
                         filters.status === 'OVERDUE'
                             ? "bg-red-500 text-white shadow-sm shadow-red-200 font-semibold"
                             : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200/60"
                     )}
                 >
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    <span>Quá hạn</span>
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">Quá hạn</span>
                 </button>
 
                 {/* Status: Đang làm */}
@@ -451,14 +453,14 @@ export const TaskFilters = ({
                     type="button"
                     onClick={() => onFilterChange('status', filters.status === 'DOING' ? 'ALL' : 'DOING')}
                     className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all",
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all shrink-0 whitespace-nowrap",
                         filters.status === 'DOING'
                             ? "bg-blue-600 text-white shadow-sm shadow-blue-200 font-semibold"
                             : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200/60"
                     )}
                 >
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Đang thực hiện</span>
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">Đang thực hiện</span>
                 </button>
 
                 {/* Status: Cần làm lại */}
@@ -466,27 +468,27 @@ export const TaskFilters = ({
                     type="button"
                     onClick={() => onFilterChange('status', filters.status === 'REWORKING' ? 'ALL' : 'REWORKING')}
                     className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all",
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all shrink-0 whitespace-nowrap",
                         filters.status === 'REWORKING'
                             ? "bg-amber-500 text-white shadow-sm shadow-amber-200 font-semibold"
                             : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200/60"
                     )}
                 >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Cần làm lại</span>
+                    <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">Cần làm lại</span>
                 </button>
 
                 {hasActiveFilters && (
                     <button
                         type="button"
                         onClick={onReset}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all ml-auto font-medium"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all ml-auto font-medium shrink-0 whitespace-nowrap"
                     >
-                        <X className="w-3.5 h-3.5" />
-                        <span>Xóa tất cả bộ lọc</span>
+                        <X className="w-3.5 h-3.5 shrink-0" />
+                        <span className="whitespace-nowrap">Xóa tất cả bộ lọc</span>
                     </button>
                 )}
-            </div>
+            </div>}
         </div>
     );
 };

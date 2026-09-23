@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
-export const Pagination = ({ currentPage, totalPages, onPageChange, totalItems }) => {
+export const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage = 10 }) => {
     if (totalPages <= 1) return null;
 
     const getPageNumbers = () => {
@@ -38,32 +38,32 @@ export const Pagination = ({ currentPage, totalPages, onPageChange, totalItems }
     const pages = getPageNumbers();
 
     return (
-        <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-gray-100">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-white border-t border-gray-100 flex-wrap gap-3">
             <div className="flex flex-1 justify-between sm:hidden">
                 <button
                     onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    className="relative inline-flex items-center rounded-xl border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-40 shadow-2xs"
                 >
-                    Previous
+                    Trước
                 </button>
                 <button
                     onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    className="relative ml-3 inline-flex items-center rounded-xl border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-40 shadow-2xs"
                 >
-                    Next
+                    Sau
                 </button>
             </div>
-            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                <div>
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between flex-wrap gap-3">
+                <div className="min-w-0">
                     <p className="text-xs text-gray-500 font-medium">
-                        Hiển thị <span className="font-bold text-gray-900">{Math.min(totalItems, (currentPage - 1) * 10 + 1)}</span> đến{' '}
-                        <span className="font-bold text-gray-900">{Math.min(totalItems, currentPage * 10)}</span> trong số{' '}
+                        Hiển thị <span className="font-bold text-gray-900">{totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> đến{' '}
+                        <span className="font-bold text-gray-900">{Math.min(totalItems, currentPage * itemsPerPage)}</span> trong số{' '}
                         <span className="font-bold text-gray-900">{totalItems}</span> kết quả
                     </p>
                 </div>
-                <div>
+                <div className="overflow-x-auto max-w-full">
                     <nav className="isolate inline-flex -space-x-px rounded-xl shadow-sm bg-gray-50/50 p-1" aria-label="Pagination">
                         <button
                             onClick={() => onPageChange(currentPage - 1)}
