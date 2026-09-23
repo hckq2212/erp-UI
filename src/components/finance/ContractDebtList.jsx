@@ -18,6 +18,7 @@ import {
     Filter
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useActivateDebtMutation } from '../../api/debts';
 import { formatCurrency } from '../../utils/format';
 import { cn } from '../../utils/cn';
 import { DebtDetailsModal } from './DebtDetailsModal';
@@ -29,6 +30,8 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
     const [expandedContracts, setExpandedContracts] = useState(new Set());
     const [selectedDebt, setSelectedDebt] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [activateDebt, { isLoading: activatingDebt }] = useActivateDebtMutation();
+    const [activatingMilestoneId, setActivatingMilestoneId] = useState(null);
 
     const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
     const [planContract, setPlanContract] = useState(null);
@@ -47,31 +50,25 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
             }
 
             // Find matching debt for this milestone
-            const debt = debts.find(d => d.milestoneId === milestone.id || d.milestone?.id === milestone.id || milestone.debt?.id === d.id);
-            const effectiveDebt = debt || milestone.debt;
+            const debt = debts.find(d => d.milestoneId === milestone.id || d.milestone?.id === milestone.id);
             const amount = Number(milestone.amount || 0);
 
             let paidAmount = 0;
             let payments = [];
+            let status = 'PLANNED';
 
-            if (effectiveDebt) {
-                payments = effectiveDebt.payments?.map(p => ({
+            if (debt) {
+                payments = debt.payments?.map(p => ({
                     ...p,
                     amount: Number(p.amount || 0)
                 })) || [];
                 paidAmount = payments.reduce((sum, p) => sum + p.amount, 0);
-            }
-
-            let status = 'UNPAID';
-            if (paidAmount >= amount && amount > 0) {
-                status = 'COMPLETED';
-            } else if (paidAmount > 0) {
-                status = 'PARTIAL';
+                status = paidAmount >= amount ? 'COMPLETED' : 'ACTIVE';
             }
 
             grouped[contractId].push({
                 ...milestone,
-                debt: effectiveDebt,
+                debt,
                 payments,
                 paidAmount,
                 status,
@@ -110,6 +107,19 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
         setPlanContract(contract);
         setFocusMilestoneId(milestoneId || null);
         setIsPlanModalOpen(true);
+    };
+
+    const handleActivateDebt = async (milestoneId) => {
+        if (!milestoneId) return;
+        try {
+            setActivatingMilestoneId(String(milestoneId));
+            await activateDebt({ milestoneId }).unwrap();
+            toast.success('Đã kích hoạt công nợ cho đợt thanh toán này');
+        } catch (err) {
+            toast.error(err?.data?.message || 'Không thể kích hoạt công nợ');
+        } finally {
+            setActivatingMilestoneId(null);
+        }
     };
 
     const getSortIcon = (key) => {
@@ -151,7 +161,7 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
                 {paginatedContracts.map((contract) => {
                     const contractMilestones = milestonesByContract[contract.id] || [];
                     const totalPaid = contractMilestones.reduce((sum, m) => sum + m.paidAmount, 0);
-                    const totalDebt = contractMilestones.reduce((sum, m) => sum + m.remaining, 0);
+                    const totalDebt = contractMilestones.reduce((sum, m) => sum + (m.status === 'ACTIVE' ? m.remaining : 0), 0);
                     const isExpanded = expandedContracts.has(contract.id);
                     const sellingPrice = Number(contract.sellingPrice || contract.selling_price || 0);
                     const progressPercent = sellingPrice > 0 ? Math.round((totalPaid / sellingPrice) * 100) : 0;
@@ -267,19 +277,19 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
                                                                             {m.percentage}%
                                                                         </span>
                                                                     )}
-                                                                    {m.status === 'UNPAID' && (
-                                                                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[8px] font-bold uppercase tracking-widest whitespace-nowrap">
-                                                                            Chưa thu
+                                                                    {m.status === 'PLANNED' && (
+                                                                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[8px] font-bold uppercase tracking-widest whitespace-nowrap">
+                                                                            Chưa kích hoạt
                                                                         </span>
                                                                     )}
-                                                                    {m.status === 'PARTIAL' && (
-                                                                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[8px] font-bold uppercase tracking-widest whitespace-nowrap">
+                                                                    {m.status === 'ACTIVE' && (
+                                                                        <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[8px] font-bold uppercase tracking-widest whitespace-nowrap">
                                                                             Đang thu
                                                                         </span>
                                                                     )}
                                                                     {m.status === 'COMPLETED' && (
                                                                         <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[8px] font-bold uppercase tracking-widest whitespace-nowrap">
-                                                                            Đã thu đủ
+                                                                            Đã thu
                                                                         </span>
                                                                     )}
                                                                     {overdue && (
@@ -303,15 +313,39 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
                                                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Còn nợ</p>
                                                                     <p className={cn(
                                                                         "text-sm font-extrabold",
-                                                                        remaining > 0
-                                                                            ? overdue ? "text-rose-600" : "text-amber-600"
-                                                                            : "text-emerald-700"
+                                                                        m.status === 'PLANNED'
+                                                                            ? "text-slate-400"
+                                                                            : remaining > 0 && m.status === 'ACTIVE'
+                                                                                ? "text-rose-600"
+                                                                                : m.status === 'COMPLETED'
+                                                                                    ? "text-emerald-700"
+                                                                                    : "text-slate-500"
                                                                     )}>
-                                                                        {formatCurrency(remaining)}
+                                                                        {m.status === 'PLANNED' ? '—' : formatCurrency(remaining)}
                                                                     </p>
                                                                 </div>
 
                                                                 <div className="flex items-center gap-2">
+                                                                    {m.status === 'PLANNED' && (
+                                                                        <button
+                                                                            type="button"
+                                                                            disabled={activatingDebt && activatingMilestoneId === String(m.id)}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleActivateDebt(m.id);
+                                                                            }}
+                                                                            className={cn(
+                                                                                "px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                                                                                activatingDebt && activatingMilestoneId === String(m.id)
+                                                                                    ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                                                                                    : "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
+                                                                            )}
+                                                                            title="Kích hoạt công nợ"
+                                                                        >
+                                                                            {activatingDebt && activatingMilestoneId === String(m.id) ? 'Đang kích hoạt…' : 'Kích hoạt'}
+                                                                        </button>
+                                                                    )}
+
                                                                     <button
                                                                         type="button"
                                                                         onClick={(e) => {

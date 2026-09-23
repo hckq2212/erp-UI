@@ -1,34 +1,44 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
     AlertTriangle,
     Briefcase,
     Calendar,
     CheckCircle2,
+    ChevronDown,
+    ChevronUp,
+    Download,
     FileText,
     History,
-    Link as LinkIcon,
     Loader2,
     PackageCheck,
+    Paperclip,
     Plus,
     Send,
+    Sparkles,
     Trash2,
     Upload,
     XCircle
 } from 'lucide-react';
 import {
+    useAiFormatProjectProductDescriptionMutation,
     useApproveProjectProductDescriptionMutation,
     useCreateProjectProductDescriptionMutation,
+    useExtractProjectProductDescriptionFileMutation,
     useGetProjectProductDescriptionsQuery,
     useRejectProjectProductDescriptionMutation,
     useSubmitProjectProductDescriptionMutation,
+    useUpdateProjectMutation,
     useUpdateProjectProductDescriptionMutation,
 } from '../../../api/projects';
 import { useGetMeQuery } from '../../../api/auth';
 import { getCurrentUserId, getUserAccountRole, isSameUser } from '../../../utils/authUser';
 import { TEAM_MEMBER_ROLE } from '../../../utils/enums';
 import { getFilePreviewUrl, uploadToCloudinary } from '../../../utils/cloudinary';
+import { htmlToPlainText } from '../../../utils/html';
 import { toast } from 'react-toastify';
 import { Modal } from '../../../components/ui/Modal';
+import { RichTextEditor } from '../../../components/ui/RichTextEditor';
+import { generateProductDescriptionPdf } from '../../../utils/productDescriptionPdf';
 import { ProjectWorkingFilesSection } from './ProjectWorkingFilesSection';
 
 const STATUS_LABELS = {
@@ -59,6 +69,95 @@ const formatDateTime = (value) => {
     });
 };
 
+const formatDateOnly = (value) => {
+    if (!value) return 'Chưa xác định';
+    return new Date(value).toLocaleDateString('vi-VN');
+};
+
+const toDateInputValue = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+        return value.slice(0, 10);
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const parseDateOnly = (value) => {
+    if (!value) return null;
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return new Date(`${value}T00:00:00`);
+    }
+    return new Date(value);
+};
+
+const getProjectTimeline = (startDate, endDate) => {
+    const start = parseDateOnly(startDate);
+    const end = parseDateOnly(endDate);
+
+    if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return {
+            hasTimeline: false,
+            percent: 0,
+            label: 'Chưa xác định',
+            remainingText: 'Chưa có đủ ngày bắt đầu và ngày kết thúc từ cơ hội',
+        };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+
+    if (end < start) {
+        return {
+            hasTimeline: false,
+            percent: 0,
+            label: 'Ngày không hợp lệ',
+            remainingText: 'Ngày kết thúc đang nhỏ hơn ngày bắt đầu',
+        };
+    }
+
+    const totalMs = Math.max(end.getTime() - start.getTime(), 1);
+    const elapsedMs = today.getTime() - start.getTime();
+    const percent = Math.min(100, Math.max(0, Math.round((elapsedMs / totalMs) * 100)));
+    const oneDayMs = 24 * 60 * 60 * 1000;
+
+    if (today < start) {
+        const daysUntilStart = Math.ceil((start.getTime() - today.getTime()) / oneDayMs);
+        return {
+            hasTimeline: true,
+            percent: 0,
+            label: 'Chưa bắt đầu',
+            remainingText: `Còn ${daysUntilStart} ngày đến ngày bắt đầu`,
+        };
+    }
+
+    if (today > end) {
+        const daysOver = Math.ceil((today.getTime() - end.getTime()) / oneDayMs);
+        return {
+            hasTimeline: true,
+            percent: 100,
+            label: 'Đã quá hạn',
+            remainingText: `Quá hạn ${daysOver} ngày so với kế hoạch`,
+        };
+    }
+
+    const daysRemaining = Math.ceil((end.getTime() - today.getTime()) / oneDayMs);
+    return {
+        hasTimeline: true,
+        percent,
+        label: 'Đang thực hiện',
+        remainingText: daysRemaining === 0 ? 'Hôm nay là ngày kết thúc theo kế hoạch' : `Còn ${daysRemaining} ngày theo kế hoạch`,
+    };
+};
+
 const SPEC_TYPE_OPTIONS = [
     { value: 'text', label: 'Chữ tự do', inputType: 'text' },
     { value: 'number', label: 'Số', inputType: 'number' },
@@ -75,84 +174,141 @@ const emptySpec = () => ({ key: '', value: '', type: 'text', useSubKeys: false, 
 const emptyProduct = () => ({
     id: null,
     productName: '',
-    specs: [emptySpec()],
     note: '',
-    docUrl: '',
-    docMethod: 'LINK',
+    fileUrl: '',
+    fileName: '',
+    extractedText: '',
+    documents: [],
     docUploading: false,
     docUploadProgress: 0,
+    docsUploading: false,
+    extracting: false,
+    aiFormatting: false,
+    collapsed: true,
 });
 
 const toEditableProduct = (item) => ({
     id: item?.id || null,
     productName: item?.productName || '',
-    specs: Array.isArray(item?.specs) && item.specs.length > 0
-        ? item.specs.map((spec) => ({
-            key: spec.key || '',
-            value: spec.value || '',
-            type: spec.type || 'text',
-            useSubKeys: Array.isArray(spec.subKeys) && spec.subKeys.length > 0,
-            subKeys: Array.isArray(spec.subKeys) && spec.subKeys.length > 0
-                ? spec.subKeys.map((sk) => ({ key: sk.key || '', value: sk.value || '' }))
-                : [{ key: '', value: '' }],
-        }))
-        : [emptySpec()],
     note: item?.note || '',
-    docUrl: item?.docUrl || '',
-    docMethod: 'LINK',
+    fileUrl: item?.fileUrl || '',
+    fileName: item?.fileName || '',
+    extractedText: item?.extractedText || '',
+    documents: Array.isArray(item?.documents) ? item.documents : [],
     docUploading: false,
     docUploadProgress: 0,
+    docsUploading: false,
+    extracting: false,
+    aiFormatting: false,
+    collapsed: true,
 });
 
 const ProductSpecsView = ({ item }) => {
-    const specs = Array.isArray(item?.specs) ? item.specs : [];
+    const documents = Array.isArray(item?.documents) ? item.documents : [];
+    const [isTextExpanded, setIsTextExpanded] = useState(false);
+    const [isTextOverflowing, setIsTextOverflowing] = useState(false);
+    const textRef = useRef(null);
+
+    useLayoutEffect(() => {
+        const el = textRef.current;
+        if (!el) {
+            setIsTextOverflowing(false);
+            return;
+        }
+        setIsTextOverflowing(el.scrollHeight > el.clientHeight + 1);
+    }, [item?.extractedText]);
 
     return (
-        <div className="min-w-0 space-y-1">
-            {specs.length > 0 && (
-                <div className="flex flex-col gap-y-1">
-                    {specs.map((spec, idx) => (
-                        <div key={idx} className="text-xs text-gray-600">
-                            {Array.isArray(spec.subKeys) && spec.subKeys.length > 0 ? (
-                                <div>
-                                    <span className="font-bold text-gray-700">{spec.key}:</span>
-                                    <ul className="ml-3 mt-0.5 list-disc space-y-0.5">
-                                        {spec.subKeys.map((sk, skIdx) => (
-                                            <li key={skIdx}><span className="font-semibold text-gray-600">{sk.key}:</span> {sk.value}</li>
-                                        ))}
-                                    </ul>
-                                </div>
+        <div className="min-w-0 space-y-2">
+            {item?.extractedText && (
+                <div className="rounded-lg border border-slate-300 bg-slate-50">
+                    <div
+                        ref={textRef}
+                        className={`rich-content px-3 py-2 text-sm font-medium text-slate-900 ${isTextExpanded ? 'max-h-96 overflow-y-auto' : 'line-clamp-6'}`}
+                        dangerouslySetInnerHTML={{ __html: item.extractedText }}
+                    />
+                    {isTextOverflowing && (
+                        <button
+                            type="button"
+                            onClick={() => setIsTextExpanded((prev) => !prev)}
+                            className="flex w-full items-center justify-center gap-1 border-t border-slate-200 py-1 text-[11px] font-bold text-blue-600 hover:bg-slate-100"
+                        >
+                            {isTextExpanded ? (
+                                <>
+                                    Thu gọn <ChevronUp className="w-3 h-3" />
+                                </>
                             ) : (
                                 <>
-                                    <span className="font-bold text-gray-700">{spec.key}:</span> {spec.value}
-                                    {spec.type === 'percent' ? '%' : ''}
+                                    Xem đầy đủ <ChevronDown className="w-3 h-3" />
                                 </>
                             )}
-                        </div>
-                    ))}
+                        </button>
+                    )}
                 </div>
             )}
             {item?.note && (
-                <p className="text-xs italic text-gray-500">
-                    <span className="font-semibold not-italic text-gray-600">Ghi chú:</span> {item.note}
-                </p>
+                <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Chú thích</p>
+                    <div
+                        className="rich-content mt-0.5 text-xs italic text-slate-400"
+                        dangerouslySetInnerHTML={{ __html: item.note }}
+                    />
+                </div>
             )}
-            {item?.docUrl && (
+            {item?.fileUrl && (
                 <a
-                    href={getFilePreviewUrl(item.docUrl, 'LINK')}
+                    href={getFilePreviewUrl(item.fileUrl, 'FILE')}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
                 >
-                    <LinkIcon className="w-3 h-3 shrink-0" />
-                    <span className="truncate">Tài liệu</span>
+                    <FileText className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{item.fileName || 'Tài liệu thông tin chuẩn'}</span>
                 </a>
+            )}
+            {documents.length > 0 && (
+                <div className="flex flex-col gap-1">
+                    {documents.map((doc, docIdx) => (
+                        <a
+                            key={docIdx}
+                            href={getFilePreviewUrl(doc?.url, 'FILE')}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                        >
+                            <Paperclip className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{doc?.name || 'Tài liệu bổ sung'}</span>
+                        </a>
+                    ))}
+                </div>
             )}
         </div>
     );
 };
 
-const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onReject, onEdit, isReviewing }) => {
+const ProductItemCard = ({ item }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    return (
+        <div className="flex flex-col gap-2 rounded-lg bg-white p-3">
+            <button
+                type="button"
+                onClick={() => setIsExpanded((prev) => !prev)}
+                className="flex items-center justify-between gap-2 text-left outline-none"
+            >
+                <p className="min-w-0 shrink-0 text-sm font-bold text-gray-800">{item?.productName || 'Chưa có tên sản phẩm'}</p>
+                {isExpanded ? (
+                    <ChevronUp className="h-4 w-4 shrink-0 text-gray-400" />
+                ) : (
+                    <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
+                )}
+            </button>
+            {isExpanded && <ProductSpecsView item={item} />}
+        </div>
+    );
+};
+
+const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onReject, onEdit, isReviewing, projectName }) => {
     const [isRejectingInline, setIsRejectingInline] = useState(false);
     const [reviewNote, setReviewNote] = useState('');
 
@@ -164,6 +320,15 @@ const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onRe
     const handleConfirmReject = async () => {
         await onReject(submission.id, reviewNote);
         handleCancelReject();
+    };
+
+    const handleDownloadPdf = () => {
+        const items = Array.isArray(submission.items) ? submission.items : [];
+        generateProductDescriptionPdf({
+            title: submission.versionNumber ? `Thong tin chuan san pham - Version ${submission.versionNumber}` : 'Thong tin chuan san pham',
+            projectName,
+            items,
+        });
     };
 
     return (
@@ -188,6 +353,14 @@ const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onRe
                 </div>
 
                 <div className="flex shrink-0 gap-2">
+                    <button
+                        type="button"
+                        onClick={handleDownloadPdf}
+                        className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50"
+                    >
+                        <Download className="w-4 h-4" />
+                        Tải PDF
+                    </button>
                     {canEditSubmission && ['DRAFT', 'REJECTED'].includes(submission.status) && (
                         <button
                             type="button"
@@ -256,10 +429,7 @@ const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onRe
 
             <div className="mt-4 space-y-2">
                 {(Array.isArray(submission.items) ? submission.items : []).map((item, index) => (
-                    <div key={item?.id || index} className="flex flex-col gap-2 rounded-lg bg-white p-3">
-                        <p className="min-w-0 shrink-0 text-sm font-bold text-gray-800">{item?.productName || 'Chưa có tên sản phẩm'}</p>
-                        <ProductSpecsView item={item} />
-                    </div>
+                    <ProductItemCard key={item?.id || index} item={item} />
                 ))}
             </div>
         </div>
@@ -325,10 +495,7 @@ const ProductDescriptionHistoryModal = ({ isOpen, onClose, submissions, canEditS
                             <div className="mt-4 space-y-2">
                                 {Array.isArray(submission.items) && submission.items.length > 0 ? (
                                     submission.items.map((item, index) => (
-                                        <div key={item?.id || index} className="flex flex-col gap-2 rounded-lg bg-white p-3">
-                                            <p className="min-w-0 shrink-0 text-sm font-bold text-gray-800">{item?.productName || 'Chưa có tên sản phẩm'}</p>
-                                            <ProductSpecsView item={item} />
-                                        </div>
+                                        <ProductItemCard key={item?.id || index} item={item} />
                                     ))
                                 ) : (
                                     <p className="rounded-lg bg-white p-3 text-sm italic text-gray-400">Chưa có sản phẩm</p>
@@ -360,6 +527,8 @@ const ProductDescriptionSection = ({ project }) => {
     const [submitSubmission, { isLoading: isSubmitting }] = useSubmitProjectProductDescriptionMutation();
     const [approveSubmission, { isLoading: isApproving }] = useApproveProjectProductDescriptionMutation();
     const [rejectSubmission, { isLoading: isRejecting }] = useRejectProjectProductDescriptionMutation();
+    const [extractFile] = useExtractProjectProductDescriptionFileMutation();
+    const [aiFormat] = useAiFormatProjectProductDescriptionMutation();
 
     const currentUserId = getCurrentUserId(user);
     const userRole = getUserAccountRole(user);
@@ -402,71 +571,15 @@ const ProductDescriptionSection = ({ project }) => {
     };
 
     const addProduct = () => {
-        setProducts((prev) => [...prev, emptyProduct()]);
+        setProducts((prev) => [...prev.map((item) => ({ ...item, collapsed: true })), emptyProduct()]);
+    };
+
+    const toggleProductCollapsed = (index) => {
+        setProducts((prev) => prev.map((item, idx) => idx === index ? { ...item, collapsed: !item.collapsed } : item));
     };
 
     const removeProduct = (index) => {
         setProducts((prev) => prev.length === 1 ? prev : prev.filter((_, idx) => idx !== index));
-    };
-
-    const updateSpec = (productIndex, specIndex, patch) => {
-        setProducts((prev) => prev.map((item, idx) => {
-            if (idx !== productIndex) return item;
-            const specs = item.specs.map((spec, sIdx) => sIdx === specIndex ? { ...spec, ...patch } : spec);
-            return { ...item, specs };
-        }));
-    };
-
-    const addSpec = (productIndex) => {
-        setProducts((prev) => prev.map((item, idx) => (
-            idx === productIndex ? { ...item, specs: [...item.specs, emptySpec()] } : item
-        )));
-    };
-
-    const toggleSpecSubKeys = (productIndex, specIndex) => {
-        setProducts((prev) => prev.map((item, idx) => {
-            if (idx !== productIndex) return item;
-            const specs = item.specs.map((spec, sIdx) => sIdx === specIndex ? { ...spec, useSubKeys: !spec.useSubKeys } : spec);
-            return { ...item, specs };
-        }));
-    };
-
-    const updateSubKey = (productIndex, specIndex, subIndex, patch) => {
-        setProducts((prev) => prev.map((item, idx) => {
-            if (idx !== productIndex) return item;
-            const specs = item.specs.map((spec, sIdx) => {
-                if (sIdx !== specIndex) return spec;
-                const subKeys = spec.subKeys.map((sk, skIdx) => skIdx === subIndex ? { ...sk, ...patch } : sk);
-                return { ...spec, subKeys };
-            });
-            return { ...item, specs };
-        }));
-    };
-
-    const addSubKey = (productIndex, specIndex) => {
-        setProducts((prev) => prev.map((item, idx) => {
-            if (idx !== productIndex) return item;
-            const specs = item.specs.map((spec, sIdx) => sIdx === specIndex
-                ? { ...spec, subKeys: [...spec.subKeys, { key: '', value: '' }] }
-                : spec);
-            return { ...item, specs };
-        }));
-    };
-
-    const removeSubKey = (productIndex, specIndex, subIndex) => {
-        setProducts((prev) => prev.map((item, idx) => {
-            if (idx !== productIndex) return item;
-            const specs = item.specs.map((spec, sIdx) => {
-                if (sIdx !== specIndex) return spec;
-                if (spec.subKeys.length === 1) return spec;
-                return { ...spec, subKeys: spec.subKeys.filter((_, skIdx) => skIdx !== subIndex) };
-            });
-            return { ...item, specs };
-        }));
-    };
-
-    const setProductDocMethod = (productIndex, method) => {
-        updateProduct(productIndex, { docMethod: method, docUrl: method === 'FILE' ? '' : products[productIndex].docUrl });
     };
 
     const handleDocFileChange = async (productIndex, file) => {
@@ -478,19 +591,80 @@ const ProductDescriptionSection = ({ project }) => {
                 'GETVINI/ERP/product-description',
                 (progress) => updateProduct(productIndex, { docUploadProgress: progress })
             );
-            updateProduct(productIndex, { docUrl: uploaded.url, docUploading: false, docUploadProgress: 0 });
+            updateProduct(productIndex, {
+                fileUrl: uploaded.url,
+                fileName: file.name,
+                docUploading: false,
+                docUploadProgress: 0,
+                extracting: true,
+            });
+            try {
+                const result = await extractFile({ projectId, fileUrl: uploaded.url }).unwrap();
+                updateProduct(productIndex, {
+                    extractedText: result?.extractedText || '',
+                    hasComplexLayout: Boolean(result?.hasComplexLayout),
+                    extracting: false,
+                });
+                if (result?.hasComplexLayout) {
+                    toast.warn('File có nhiều cột/bảng phức tạp, vui lòng kiểm tra kỹ nội dung trích xuất trước khi gửi duyệt');
+                }
+            } catch (extractErr) {
+                toast.error(extractErr?.data?.message || extractErr?.message || 'Trích xuất nội dung file thất bại');
+                updateProduct(productIndex, { extracting: false });
+            }
         } catch (err) {
             toast.error(err?.message || 'Tải file lên thất bại');
             updateProduct(productIndex, { docUploading: false, docUploadProgress: 0 });
         }
     };
 
-    const removeSpec = (productIndex, specIndex) => {
-        setProducts((prev) => prev.map((item, idx) => {
-            if (idx !== productIndex) return item;
-            if (item.specs.length === 1) return item;
-            return { ...item, specs: item.specs.filter((_, sIdx) => sIdx !== specIndex) };
-        }));
+    const handleAiFormat = async (productIndex) => {
+        const product = products[productIndex];
+        const rawText = htmlToPlainText(product?.extractedText || '');
+        if (!rawText) {
+            toast.error('Chưa có nội dung trích xuất để format');
+            return;
+        }
+        updateProduct(productIndex, { aiFormatting: true });
+        try {
+            const result = await aiFormat({
+                projectId,
+                text: product.extractedText,
+                productName: product.productName,
+            }).unwrap();
+            updateProduct(productIndex, {
+                extractedText: result?.extractedText || product.extractedText,
+                aiFormatting: false,
+            });
+        } catch (err) {
+            toast.error(err?.data?.message || err?.message || 'AI formatting thất bại');
+            updateProduct(productIndex, { aiFormatting: false });
+        }
+    };
+
+    const handleAdditionalDocsChange = async (productIndex, fileList) => {
+        const files = Array.from(fileList || []);
+        if (files.length === 0) return;
+        updateProduct(productIndex, { docsUploading: true });
+        try {
+            const uploadedDocs = [];
+            for (const file of files) {
+                const uploaded = await uploadToCloudinary(file, 'GETVINI/ERP/product-description/attachments');
+                uploadedDocs.push({ url: uploaded.url, name: file.name });
+            }
+            setProducts((prev) => prev.map((item, idx) => idx === productIndex
+                ? { ...item, documents: [...item.documents, ...uploadedDocs], docsUploading: false }
+                : item));
+        } catch (err) {
+            toast.error(err?.message || 'Tải tài liệu lên thất bại');
+            updateProduct(productIndex, { docsUploading: false });
+        }
+    };
+
+    const removeAdditionalDoc = (productIndex, docIndex) => {
+        setProducts((prev) => prev.map((item, idx) => idx === productIndex
+            ? { ...item, documents: item.documents.filter((_, dIdx) => dIdx !== docIndex) }
+            : item));
     };
 
     const openCreateForm = () => {
@@ -520,30 +694,20 @@ const ProductDescriptionSection = ({ project }) => {
                 throw new Error(`Vui lòng nhập tên sản phẩm ở dòng ${index + 1}`);
             }
 
-            const specs = product.specs
-                .map((spec) => {
-                    const key = spec.key.trim();
-                    const type = spec.type || 'text';
-                    if (type === 'text' && spec.useSubKeys) {
-                        const subKeys = spec.subKeys
-                            .map((sk) => ({ key: sk.key.trim(), value: sk.value.trim() }))
-                            .filter((sk) => sk.key && sk.value);
-                        return { key, type, value: '', subKeys };
-                    }
-                    return { key, type, value: spec.value.trim() };
-                })
-                .filter((spec) => spec.key && (spec.value || (spec.subKeys && spec.subKeys.length > 0)));
+            const fileUrl = product.fileUrl.trim();
 
-            if (specs.length === 0) {
-                throw new Error(`Vui lòng nhập ít nhất một thông tin chuẩn (key:value) cho sản phẩm ${productName}`);
+            if (!fileUrl) {
+                throw new Error(`Vui lòng upload file thông tin chuẩn (doc/pdf) cho sản phẩm ${productName}`);
             }
 
             return {
                 id: product.id,
                 productName,
-                specs,
+                fileUrl,
+                fileName: product.fileName || null,
+                extractedText: product.extractedText || null,
                 note: product.note.trim() || null,
-                docUrl: product.docUrl.trim() || null,
+                documents: Array.isArray(product.documents) ? product.documents : [],
             };
         });
 
@@ -640,37 +804,8 @@ const ProductDescriptionSection = ({ project }) => {
                 </div>
             </div>
 
-            <div className="space-y-4">
-                {visibleSubmissions.length > 0 ? (
-                    visibleSubmissions.map((submission) => (
-                        <VersionCard
-                            key={submission.id}
-                            submission={submission}
-                            canReview={canReview}
-                            canEditSubmission={canManageSubmission && !hasPendingSubmission}
-                            onApprove={handleApprove}
-                            onReject={handleReject}
-                            onEdit={openEditForm}
-                            isReviewing={isReviewing}
-                        />
-                    ))
-                ) : (
-                    <p className="rounded-xl border border-dashed border-gray-200 py-6 text-center text-sm italic text-gray-400">
-                        Chưa có thông tin chuẩn sản phẩm
-                    </p>
-                )}
-            </div>
-
-            <ProductDescriptionHistoryModal
-                isOpen={isHistoryOpen}
-                onClose={() => setIsHistoryOpen(false)}
-                submissions={submissions}
-                canEditSubmission={canManageSubmission && !hasPendingSubmission}
-                onEdit={openEditForm}
-            />
-
             {canManageSubmission && isFormOpen && (
-                <div className="mt-6 rounded-xl border border-gray-100 bg-gray-50 p-4">
+                <div className="mb-6 rounded-xl border border-gray-100 bg-gray-50 p-4">
                     <div className="mb-4 flex items-center justify-between gap-2">
                         <div>
                             <h3 className="text-sm font-bold text-gray-900">
@@ -697,239 +832,203 @@ const ProductDescriptionSection = ({ project }) => {
                     <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
                         <p className="text-xs font-medium text-amber-700">
-                            Đây là các thông tin sẽ được dùng để đối chiếu khi chạy QC. Vui lòng ghi đầy đủ các thông tin quan trọng (giá, dung tích/trọng lượng, số lượng, deal, tính năng, thành phần, vị, hạn dùng...) để QC đối chiếu chính xác.
+                            Đây là các thông tin sẽ được dùng để đối chiếu khi chạy QC. Vui lòng upload đầy đủ file thông tin chuẩn (doc/pdf) cho từng sản phẩm để QC đối chiếu chính xác. Hệ thống chỉ trích xuất nội dung chữ trong file, bỏ qua hình ảnh.
                         </p>
                     </div>
 
                     <div className="space-y-3">
                         {products.map((product, index) => (
-                            <div key={index} className="rounded-xl border border-gray-200 bg-white p-4">
-                                <div className="flex items-start justify-between gap-3">
+                            <div key={index} className="overflow-hidden rounded-xl border-2 border-gray-200 bg-white">
+                                <div className="flex items-center justify-between gap-2 bg-gray-50 px-4 py-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleProductCollapsed(index)}
+                                        className="flex min-w-0 flex-1 items-center gap-2 text-left outline-none"
+                                    >
+                                        {product.collapsed ? (
+                                            <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
+                                        ) : (
+                                            <ChevronUp className="h-4 w-4 shrink-0 text-gray-400" />
+                                        )}
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block truncate text-sm font-bold text-gray-800">
+                                                {product.productName || `Sản phẩm ${index + 1}`}
+                                            </span>
+                                            {product.collapsed && (
+                                                <span className="block truncate text-xs font-medium text-gray-400">
+                                                    {product.fileUrl ? 'Đã có file thông tin chuẩn' : 'Chưa upload file'}
+                                                    {product.note ? ' • Có chú thích' : ''}
+                                                    {product.documents.length > 0 ? ` • ${product.documents.length} tài liệu bổ sung` : ''}
+                                                </span>
+                                            )}
+                                        </span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => removeProduct(index)}
+                                        disabled={!canEdit || isSaving || products.length === 1}
+                                        className="shrink-0 rounded-lg p-2 text-gray-400 outline-none hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
+
+                                {!product.collapsed && (
+                                <div className="space-y-3 p-4">
+                                <div>
+                                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-blue-600">
+                                        Thông tin chính - Tên sản phẩm
+                                    </label>
                                     <input
                                         type="text"
                                         value={product.productName}
                                         onChange={(event) => updateProduct(index, { productName: event.target.value })}
                                         disabled={!canEdit || isSaving}
                                         placeholder="Tên sản phẩm"
-                                        className="w-full flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                        className="w-full rounded-lg border-2 border-blue-200 bg-blue-50/40 px-3 py-2.5 text-sm font-bold text-gray-900 outline-none focus:border-blue-400 disabled:bg-gray-50"
                                     />
-
-                                    <button
-                                        type="button"
-                                        onClick={() => removeProduct(index)}
-                                        disabled={!canEdit || isSaving || products.length === 1}
-                                        className="rounded-lg p-2 text-gray-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
                                 </div>
 
-                                <div className="mt-3 space-y-3">
-                                    <p className="text-xs font-bold uppercase text-gray-400">Thông tin chuẩn (key : value)</p>
-                                    {product.specs.map((spec, specIndex) => {
-                                        const isText = (spec.type || 'text') === 'text';
-                                        return (
-                                            <div key={specIndex} className="rounded-lg border border-gray-100 bg-gray-50/60 p-2.5">
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="text"
-                                                        value={spec.key}
-                                                        onChange={(event) => updateSpec(index, specIndex, { key: event.target.value })}
-                                                        disabled={!canEdit || isSaving}
-                                                        placeholder="Key (vd: Giá, Trọng lượng...)"
-                                                        className={`rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50 ${isText ? 'w-1/3' : 'w-1/4'}`}
-                                                    />
-                                                    <select
-                                                        value={spec.type || 'text'}
-                                                        onChange={(event) => updateSpec(index, specIndex, { type: event.target.value })}
-                                                        disabled={!canEdit || isSaving}
-                                                        className="w-32 shrink-0 rounded-lg border border-gray-200 px-2 py-2 text-xs outline-none focus:border-blue-400 disabled:bg-gray-50"
-                                                    >
-                                                        {SPEC_TYPE_OPTIONS.map((opt) => (
-                                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                        ))}
-                                                    </select>
-
-                                                    {!isText && (
-                                                        <input
-                                                            type={getSpecInputType(spec.type)}
-                                                            step={getSpecInputType(spec.type) === 'number' ? 'any' : undefined}
-                                                            value={spec.value}
-                                                            onChange={(event) => updateSpec(index, specIndex, { value: event.target.value })}
-                                                            disabled={!canEdit || isSaving}
-                                                            placeholder="Value"
-                                                            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
-                                                        />
-                                                    )}
-
-                                                    {isText && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => toggleSpecSubKeys(index, specIndex)}
-                                                            disabled={!canEdit || isSaving}
-                                                            className="shrink-0 rounded-lg border border-blue-200 px-2 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 disabled:opacity-40"
-                                                        >
-                                                            {spec.useSubKeys ? 'Dùng văn bản tự do' : 'Cấu trúc subkey'}
-                                                        </button>
-                                                    )}
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeSpec(index, specIndex)}
-                                                        disabled={!canEdit || isSaving || product.specs.length === 1}
-                                                        className="shrink-0 rounded-lg p-2 text-gray-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-
-                                                {isText && !spec.useSubKeys && (
-                                                    <textarea
-                                                        rows="3"
-                                                        value={spec.value}
-                                                        onChange={(event) => updateSpec(index, specIndex, { value: event.target.value })}
-                                                        disabled={!canEdit || isSaving}
-                                                        placeholder="Nhập nội dung chi tiết (vd: mô tả thành phần, tính năng, ưu đãi...)"
-                                                        className="mt-2 w-full resize-y rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
-                                                    />
-                                                )}
-
-                                                {isText && spec.useSubKeys && (
-                                                    <div className="mt-2 space-y-2 rounded-lg border border-dashed border-gray-200 bg-white p-2">
-                                                        {spec.subKeys.map((sk, subIndex) => (
-                                                            <div key={subIndex} className="flex items-center gap-2">
-                                                                <input
-                                                                    type="text"
-                                                                    value={sk.key}
-                                                                    onChange={(event) => updateSubKey(index, specIndex, subIndex, { key: event.target.value })}
-                                                                    disabled={!canEdit || isSaving}
-                                                                    placeholder="Subkey (vd: Vitamin C)"
-                                                                    className="w-1/3 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
-                                                                />
-                                                                <input
-                                                                    type="text"
-                                                                    value={sk.value}
-                                                                    onChange={(event) => updateSubKey(index, specIndex, subIndex, { value: event.target.value })}
-                                                                    disabled={!canEdit || isSaving}
-                                                                    placeholder="Giá trị (vd: 500mg)"
-                                                                    className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
-                                                                />
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => removeSubKey(index, specIndex, subIndex)}
-                                                                    disabled={!canEdit || isSaving || spec.subKeys.length === 1}
-                                                                    className="rounded-lg p-2 text-gray-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </button>
-                                                            </div>
-                                                        ))}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => addSubKey(index, specIndex)}
-                                                            disabled={!canEdit || isSaving}
-                                                            className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 disabled:opacity-40"
-                                                        >
-                                                            <Plus className="h-3.5 w-3.5" />
-                                                            Thêm subkey
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                    <button
-                                        type="button"
-                                        onClick={() => addSpec(index)}
-                                        disabled={!canEdit || isSaving}
-                                        className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 disabled:opacity-40"
-                                    >
-                                        <Plus className="h-3.5 w-3.5" />
-                                        Thêm thông tin
-                                    </button>
-                                </div>
-
-                                <div className="mt-3">
-                                    <label className="mb-1 block text-xs font-bold uppercase text-gray-400">
-                                        Ghi chú
+                                <div className="rounded-xl border-2 border-blue-200 bg-blue-50/40 p-3">
+                                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-blue-600">
+                                        File thông tin chuẩn (doc/pdf)
                                     </label>
-                                    <textarea
-                                        rows="2"
-                                        value={product.note}
-                                        onChange={(event) => updateProduct(index, { note: event.target.value })}
-                                        disabled={!canEdit || isSaving}
-                                        placeholder="Nhập ghi chú cho sản phẩm (không bắt buộc)"
-                                        className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
-                                    />
+                                    <div className="relative">
+                                        <Upload className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-400" />
+                                        <input
+                                            type="file"
+                                            accept=".pdf,.doc,.docx"
+                                            onChange={(event) => handleDocFileChange(index, event.target.files?.[0])}
+                                            disabled={!canEdit || isSaving || product.docUploading}
+                                            className="w-full rounded-lg border border-blue-200 bg-white py-2 pl-9 pr-3 text-sm outline-none file:mr-3 file:rounded-md file:border-0 file:bg-blue-100 file:px-2 file:py-1 file:text-xs file:font-bold file:text-blue-700 focus:border-blue-400 disabled:bg-gray-50"
+                                        />
+                                    </div>
+                                    {product.docUploading && (
+                                        <div className="mt-2 flex items-center gap-2 text-xs text-blue-600">
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            Đang tải lên... {product.docUploadProgress}%
+                                        </div>
+                                    )}
+                                    {!product.docUploading && product.fileUrl && (
+                                        <a
+                                            href={product.fileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                                        >
+                                            <FileText className="h-3.5 w-3.5" />
+                                            {product.fileName || 'Xem file đã upload'}
+                                        </a>
+                                    )}
                                 </div>
 
-                                <div className="mt-3">
-                                    <div className="mb-2 flex gap-3">
-                                        <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
-                                            <input
-                                                type="radio"
-                                                name={`docMethod-${index}`}
-                                                checked={product.docMethod !== 'FILE'}
-                                                onChange={() => setProductDocMethod(index, 'LINK')}
-                                                disabled={!canEdit || isSaving}
-                                            />
-                                            Dán link
+                                <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3">
+                                    <div className="mb-1 flex items-center justify-between gap-2">
+                                        <label className="block text-xs font-bold uppercase tracking-wide text-emerald-700">
+                                            Nội dung trích xuất
                                         </label>
-                                        <label className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
-                                            <input
-                                                type="radio"
-                                                name={`docMethod-${index}`}
-                                                checked={product.docMethod === 'FILE'}
-                                                onChange={() => setProductDocMethod(index, 'FILE')}
-                                                disabled={!canEdit || isSaving}
-                                            />
-                                            Upload file
-                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAiFormat(index)}
+                                            disabled={!canEdit || isSaving || product.aiFormatting || product.extracting || !product.extractedText}
+                                            className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 disabled:opacity-40"
+                                        >
+                                            {product.aiFormatting ? (
+                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                            ) : (
+                                                <Sparkles className="h-3 w-3" />
+                                            )}
+                                            AI formatting
+                                        </button>
                                     </div>
-
-                                    {product.docMethod === 'FILE' ? (
-                                        <div>
-                                            <div className="relative">
-                                                <Upload className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                                <input
-                                                    type="file"
-                                                    onChange={(event) => handleDocFileChange(index, event.target.files?.[0])}
-                                                    disabled={!canEdit || isSaving || product.docUploading}
-                                                    className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm outline-none file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700 focus:border-blue-400 disabled:bg-gray-50"
-                                                />
-                                            </div>
-                                            {product.docUploading && (
-                                                <div className="mt-2 flex items-center gap-2 text-xs text-blue-600">
-                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                    Đang tải lên... {product.docUploadProgress}%
-                                                </div>
-                                            )}
-                                            {!product.docUploading && product.docUrl && (
-                                                <a
-                                                    href={product.docUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
-                                                >
-                                                    <FileText className="h-3.5 w-3.5" />
-                                                    Xem file đã upload
-                                                </a>
-                                            )}
+                                    {!product.extracting && product.hasComplexLayout && (
+                                        <div className="mb-2 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                                            File có nhiều cột/bảng phức tạp, nội dung trích xuất bên dưới có thể bị sai thứ tự hoặc thiếu sót. Vui lòng kiểm tra kỹ và chỉnh sửa trước khi gửi duyệt.
+                                        </div>
+                                    )}
+                                    {product.extracting ? (
+                                        <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-white px-3 py-2.5 text-xs text-emerald-600">
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            Đang trích xuất nội dung từ file...
                                         </div>
                                     ) : (
-                                        <div className="relative">
-                                            <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                            <input
-                                                type="url"
-                                                value={product.docUrl}
-                                                onChange={(event) => updateProduct(index, { docUrl: event.target.value })}
-                                                disabled={!canEdit || isSaving}
-                                                placeholder="Link tài liệu (không bắt buộc)"
-                                                className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-400 disabled:bg-gray-50"
-                                            />
+                                        <RichTextEditor
+                                            value={product.extractedText}
+                                            onChange={(html) => updateProduct(index, { extractedText: html })}
+                                            placeholder="Nội dung trích xuất từ file sẽ hiện ở đây, có thể chỉnh sửa"
+                                            minHeight={140}
+                                            mode="basic"
+                                        />
+                                    )}
+                                </div>
+
+                                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-3">
+                                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-400">
+                                        Chú thích
+                                    </label>
+                                    <RichTextEditor
+                                        value={product.note}
+                                        onChange={(html) => updateProduct(index, { note: html })}
+                                        placeholder="Nhập ghi chú cho sản phẩm (không bắt buộc)"
+                                        minHeight={160}
+                                        mode="link"
+                                    />
+                                </div>
+
+                                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-3">
+                                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500">
+                                        Tài liệu bổ sung
+                                    </label>
+                                    <div className="relative">
+                                        <Paperclip className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                        <input
+                                            type="file"
+                                            multiple
+                                            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                                            onChange={(event) => handleAdditionalDocsChange(index, event.target.files)}
+                                            disabled={!canEdit || isSaving || product.docsUploading}
+                                            className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm outline-none file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700 focus:border-blue-400 disabled:bg-gray-50"
+                                        />
+                                    </div>
+                                    {product.docsUploading && (
+                                        <div className="mt-2 flex items-center gap-2 text-xs text-blue-600">
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            Đang tải tài liệu lên...
+                                        </div>
+                                    )}
+                                    {product.documents.length > 0 && (
+                                        <div className="mt-2 space-y-1">
+                                            {product.documents.map((doc, docIdx) => (
+                                                <div
+                                                    key={docIdx}
+                                                    className="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-1.5 text-xs"
+                                                >
+                                                    <a
+                                                        href={doc.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex min-w-0 items-center gap-1 text-blue-600 hover:text-blue-700"
+                                                    >
+                                                        <FileText className="h-3.5 w-3.5 shrink-0" />
+                                                        <span className="truncate">{doc.name}</span>
+                                                    </a>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeAdditionalDoc(index, docIdx)}
+                                                        disabled={!canEdit || isSaving}
+                                                        className="shrink-0 rounded p-1 text-gray-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
+                                </div>
+                                )}
                             </div>
                         ))}
 
@@ -945,6 +1044,18 @@ const ProductDescriptionSection = ({ project }) => {
                     </div>
 
                     <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                        <button
+                            type="button"
+                            onClick={() => generateProductDescriptionPdf({
+                                title: 'Thong tin chuan san pham (nhap)',
+                                projectName: project?.name,
+                                items: products,
+                            })}
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50"
+                        >
+                            <Download className="h-4 w-4" />
+                            Tải PDF
+                        </button>
                         <button
                             type="button"
                             onClick={saveDraft}
@@ -966,13 +1077,85 @@ const ProductDescriptionSection = ({ project }) => {
                     </div>
                 </div>
             )}
+
+            <div className="space-y-4">
+                {visibleSubmissions.length > 0 ? (
+                    visibleSubmissions.map((submission) => (
+                        <VersionCard
+                            key={submission.id}
+                            submission={submission}
+                            canReview={canReview}
+                            canEditSubmission={canManageSubmission && !hasPendingSubmission}
+                            onApprove={handleApprove}
+                            onReject={handleReject}
+                            onEdit={openEditForm}
+                            isReviewing={isReviewing}
+                            projectName={project?.name}
+                        />
+                    ))
+                ) : (
+                    <p className="rounded-xl border border-dashed border-gray-200 py-6 text-center text-sm italic text-gray-400">
+                        Chưa có thông tin chuẩn sản phẩm
+                    </p>
+                )}
+            </div>
+
+            <ProductDescriptionHistoryModal
+                isOpen={isHistoryOpen}
+                onClose={() => setIsHistoryOpen(false)}
+                submissions={submissions}
+                canEditSubmission={canManageSubmission && !hasPendingSubmission}
+                onEdit={openEditForm}
+            />
         </div>
     );
 };
 
 export const ProjectInfo = ({ project }) => {
+    const { data: user } = useGetMeQuery();
+    const [updateProject, { isLoading: isUpdatingTimeline }] = useUpdateProjectMutation();
     const contract = project?.contract || {};
     const contractAttachments = Array.isArray(contract.attachments) ? contract.attachments : [];
+    const timeline = getProjectTimeline(project?.plannedStartDate, project?.plannedEndDate);
+    const [timelineForm, setTimelineForm] = useState({
+        plannedStartDate: toDateInputValue(project?.plannedStartDate),
+        plannedEndDate: toDateInputValue(project?.plannedEndDate),
+    });
+    const currentUserId = getCurrentUserId(user);
+    const userRole = getUserAccountRole(user);
+    const isAssignedPm = userRole === 'PM' && project?.team?.members?.some(member =>
+        (member.role === 'PROJECT_MANAGER' || member.role === 'PM' || member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER) &&
+        isSameUser(member.user?.id, currentUserId)
+    );
+    const canEditTimeline = userRole === 'ADMIN' || isAssignedPm;
+    const hasTimelineChanges = timelineForm.plannedStartDate !== toDateInputValue(project?.plannedStartDate) ||
+        timelineForm.plannedEndDate !== toDateInputValue(project?.plannedEndDate);
+
+    useEffect(() => {
+        setTimelineForm({
+            plannedStartDate: toDateInputValue(project?.plannedStartDate),
+            plannedEndDate: toDateInputValue(project?.plannedEndDate),
+        });
+    }, [project?.plannedStartDate, project?.plannedEndDate]);
+
+    const handleTimelineChange = (key, value) => {
+        setTimelineForm(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleSaveTimeline = async () => {
+        if (!canEditTimeline || !project?.id) return;
+
+        try {
+            await updateProject({
+                id: project.id,
+                plannedStartDate: timelineForm.plannedStartDate || null,
+                plannedEndDate: timelineForm.plannedEndDate || null,
+            }).unwrap();
+            toast.success('Đã cập nhật tiến trình dự án');
+        } catch (error) {
+            toast.error(error?.data?.message || 'Không thể cập nhật tiến trình dự án');
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -992,6 +1175,62 @@ export const ProjectInfo = ({ project }) => {
                             <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Tên hợp đồng</p>
                             <p className="text-sm font-medium text-gray-700">{contract.name || 'Chưa có'}</p>
                         </div>
+                    </div>
+                    <div className="border-t border-gray-100 pt-4">
+                        <div className="mb-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                            <div>
+                                <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Tiến trình dự án</p>
+                                <div className="flex flex-col gap-3 sm:flex-row sm:gap-12 pl-4">
+                                    <div className="flex flex-col">
+                                        <p className="font-medium text-gray-700">Ngày dự kiến bắt đầu</p>
+                                        {canEditTimeline ? (
+                                            <input
+                                                type="date"
+                                                value={timelineForm.plannedStartDate}
+                                                onChange={(event) => handleTimelineChange('plannedStartDate', event.target.value)}
+                                                disabled={isUpdatingTimeline}
+                                                className="mt-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                            />
+                                        ) : (
+                                            <p className="text-sm font-medium text-gray-700">{formatDateOnly(project?.plannedStartDate)}</p>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <p className="font-medium text-gray-700">Ngày dự kiến kết thúc</p>
+                                        {canEditTimeline ? (
+                                            <input
+                                                type="date"
+                                                value={timelineForm.plannedEndDate}
+                                                onChange={(event) => handleTimelineChange('plannedEndDate', event.target.value)}
+                                                disabled={isUpdatingTimeline}
+                                                className="mt-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                            />
+                                        ) : (
+                                            <p className="text-sm font-medium text-gray-700">{formatDateOnly(project?.plannedEndDate)}</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex flex-col items-start gap-2 lg:items-end">
+                                <p className="font-medium text-blue-700">{timeline.remainingText}</p>
+                                {canEditTimeline && (
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveTimeline}
+                                        disabled={!hasTimelineChanges || isUpdatingTimeline}
+                                        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                                    >
+                                        {isUpdatingTimeline ? (
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        ) : (
+                                            <CheckCircle2 className="h-3.5 w-3.5" />
+                                        )}
+                                        Sửa tiến trình
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
                     </div>
                     {contractAttachments.length > 0 ? (
                         <div className="flex flex-col items-start gap-2 overflow-hidden">

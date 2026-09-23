@@ -28,17 +28,30 @@ const buildMentionChip = (mention) => {
   return span;
 };
 
-export const RichTextEditor = ({ value, onChange, placeholder }) => {
+const BASIC_TOOLBAR_ITEMS = [
+  { command: 'insertUnorderedList', icon: List, label: 'Danh sách' },
+  { command: 'insertOrderedList', icon: ListOrdered, label: 'Danh sách số' },
+];
+
+export const RichTextEditor = ({ value, onChange, placeholder, minHeight, mode = 'full' }) => {
+  const isLinkOnly = mode === 'link';
+  const isBasic = mode === 'basic';
+  const isRestricted = isLinkOnly || isBasic;
+  const showFullToolbar = !isRestricted;
   const editorRef = useRef(null);
   const isInternalUpdate = useRef(false);
   const fileInputRef = useRef(null);
   const mentionAnchorRef = useRef(null);
+  const savedRangeRef = useRef(null);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const [mentionIndex, setMentionIndex] = useState(0);
+  const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkText, setLinkText] = useState('');
 
-  const { data: users = [] } = useGetUsersQuery();
+  const { data: users = [] } = useGetUsersQuery(undefined, { skip: isRestricted });
 
   useEffect(() => {
     if (isInternalUpdate.current) {
@@ -66,21 +79,6 @@ export const RichTextEditor = ({ value, onChange, placeholder }) => {
     emitChange();
   };
 
-  const handleLink = () => {
-    const url = window.prompt('Nhập đường dẫn (URL):', 'https://');
-    if (!url) return;
-    editorRef.current?.focus();
-    document.execCommand('createLink', false, url);
-    emitChange();
-  };
-
-  const handleClearFormat = () => {
-    editorRef.current?.focus();
-    document.execCommand('removeFormat', false);
-    document.execCommand('formatBlock', false, 'p');
-    emitChange();
-  };
-
   const insertNodeAtSelection = (node) => {
     editorRef.current?.focus();
     const selection = window.getSelection();
@@ -96,6 +94,81 @@ export const RichTextEditor = ({ value, onChange, placeholder }) => {
     range.setEndAfter(node);
     selection.removeAllRanges();
     selection.addRange(range);
+    emitChange();
+  };
+
+  const closeLinkPopover = () => {
+    setLinkPopoverOpen(false);
+    setLinkUrl('');
+    setLinkText('');
+    savedRangeRef.current = null;
+  };
+
+  const openLinkPopover = () => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0 && editorRef.current?.contains(selection.anchorNode)) {
+      savedRangeRef.current = selection.getRangeAt(0).cloneRange();
+      setLinkText(selection.toString());
+    } else {
+      savedRangeRef.current = null;
+      setLinkText('');
+    }
+    setLinkUrl('');
+    setLinkPopoverOpen(true);
+  };
+
+  const restoreSelection = () => {
+    const selection = window.getSelection();
+    if (!selection || !savedRangeRef.current) return;
+    selection.removeAllRanges();
+    selection.addRange(savedRangeRef.current);
+  };
+
+  const confirmLink = () => {
+    const url = linkUrl.trim();
+    if (!url) return;
+    editorRef.current?.focus();
+    restoreSelection();
+    const selection = window.getSelection();
+    const hasSelectedText = Boolean(selection && selection.rangeCount > 0 && !selection.isCollapsed);
+
+    if (hasSelectedText) {
+      document.execCommand('createLink', false, url);
+      const anchors = editorRef.current?.querySelectorAll(`a[href="${url}"]`) || [];
+      const lastAnchor = anchors[anchors.length - 1];
+      if (lastAnchor) {
+        lastAnchor.setAttribute('target', '_blank');
+        lastAnchor.setAttribute('rel', 'noopener noreferrer');
+      }
+    } else {
+      const anchor = document.createElement('a');
+      anchor.setAttribute('href', url);
+      anchor.setAttribute('target', '_blank');
+      anchor.setAttribute('rel', 'noopener noreferrer');
+      anchor.textContent = linkText.trim() || url;
+      insertNodeAtSelection(anchor);
+    }
+
+    emitChange();
+    closeLinkPopover();
+  };
+
+  const handleLink = () => {
+    if (isRestricted) {
+      openLinkPopover();
+      return;
+    }
+    const url = window.prompt('Nhập đường dẫn (URL):', 'https://');
+    if (!url) return;
+    editorRef.current?.focus();
+    document.execCommand('createLink', false, url);
+    emitChange();
+  };
+
+  const handleClearFormat = () => {
+    editorRef.current?.focus();
+    document.execCommand('removeFormat', false);
+    document.execCommand('formatBlock', false, 'p');
     emitChange();
   };
 
@@ -208,6 +281,7 @@ export const RichTextEditor = ({ value, onChange, placeholder }) => {
   };
 
   const handleKeyDown = (e) => {
+    if (isRestricted) return;
     if (mentionOpen) {
       const options = filteredMentions();
       if (e.key === 'ArrowDown') {
@@ -235,7 +309,7 @@ export const RichTextEditor = ({ value, onChange, placeholder }) => {
 
   const handleInput = () => {
     emitChange();
-    updateMentionFromCaret();
+    if (!isRestricted) updateMentionFromCaret();
   };
 
   const mentionOptions = mentionOpen ? filteredMentions() : [];
@@ -244,7 +318,7 @@ export const RichTextEditor = ({ value, onChange, placeholder }) => {
     <div className="relative">
     <div className="border border-gray-200 rounded-xl overflow-hidden">
       <div className="flex items-center gap-1 flex-wrap p-1.5 bg-gray-50 border-b border-gray-200">
-        {TOOLBAR_ITEMS.map(({ command, icon: Icon, label }) => (
+        {showFullToolbar && TOOLBAR_ITEMS.map(({ command, icon: Icon, label }) => (
           <button
             key={command}
             type="button"
@@ -256,79 +330,157 @@ export const RichTextEditor = ({ value, onChange, placeholder }) => {
             <Icon className="w-3.5 h-3.5" />
           </button>
         ))}
-        <button
-          type="button"
-          title="Chèn liên kết"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={handleLink}
-          className="p-2 rounded-lg text-gray-500 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all"
-        >
-          <Link2 className="w-3.5 h-3.5" />
-        </button>
-        <div className="w-px h-4 bg-gray-200 mx-1" />
-        <button
-          type="button"
-          title="Chèn ảnh/video"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={handlePickMedia}
-          disabled={isUploadingMedia}
-          className="p-2 rounded-lg text-gray-500 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all disabled:opacity-50 flex items-center gap-1"
-        >
-          {isUploadingMedia ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <>
-              <ImageIcon className="w-3.5 h-3.5" />
-              <Video className="w-3.5 h-3.5" />
-            </>
+        {isBasic && BASIC_TOOLBAR_ITEMS.map(({ command, icon: Icon, label }) => (
+          <button
+            key={command}
+            type="button"
+            title={label}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => runCommand(command)}
+            className="p-2 rounded-lg text-gray-500 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all"
+          >
+            <Icon className="w-3.5 h-3.5" />
+          </button>
+        ))}
+        {(showFullToolbar || isBasic) && <div className="w-px h-4 bg-gray-200 mx-1" />}
+
+        <div className="relative">
+          <button
+            type="button"
+            title="Chèn liên kết"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={handleLink}
+            className={`flex items-center gap-1 rounded-lg text-gray-500 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all ${isRestricted ? 'px-2.5 py-1.5' : 'p-2'}`}
+          >
+            <Link2 className="w-3.5 h-3.5" />
+            {isRestricted && <span className="text-xs font-bold">Chèn link</span>}
+          </button>
+
+          {isRestricted && linkPopoverOpen && (
+            <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-xl border border-gray-100 bg-white p-3 shadow-2xl">
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                Văn bản hiển thị
+              </label>
+              <input
+                type="text"
+                value={linkText}
+                onChange={(e) => setLinkText(e.target.value)}
+                placeholder="Tuỳ chọn"
+                className="mb-2 w-full rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs outline-none focus:border-blue-400"
+              />
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                Đường dẫn
+              </label>
+              <input
+                type="text"
+                autoFocus
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    confirmLink();
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeLinkPopover();
+                  }
+                }}
+                placeholder="https://..."
+                className="w-full rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs outline-none focus:border-blue-400"
+              />
+              <div className="mt-2 flex justify-end gap-1.5">
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={closeLinkPopover}
+                  className="rounded-lg px-2.5 py-1 text-[11px] font-bold text-gray-500 hover:bg-gray-50"
+                >
+                  Huỷ
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={confirmLink}
+                  disabled={!linkUrl.trim()}
+                  className="rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-blue-700 disabled:opacity-40"
+                >
+                  Chèn
+                </button>
+              </div>
+            </div>
           )}
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,video/*"
-          multiple
-          className="hidden"
-          onChange={handleMediaSelected}
-        />
-        <button
-          type="button"
-          title="Gắn thẻ (@)"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => {
-            editorRef.current?.focus();
-            document.execCommand('insertText', false, '@');
-            emitChange();
-            updateMentionFromCaret();
-          }}
-          className="p-2 rounded-lg text-gray-500 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all"
-        >
-          <AtSign className="w-3.5 h-3.5" />
-        </button>
-        <div className="w-px h-4 bg-gray-200 mx-1" />
-        <button
-          type="button"
-          title="Xoá định dạng"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={handleClearFormat}
-          className="p-2 rounded-lg text-gray-500 hover:bg-white hover:text-red-500 hover:shadow-sm transition-all"
-        >
-          <RemoveFormatting className="w-3.5 h-3.5" />
-        </button>
+        </div>
+
+        {showFullToolbar && (
+          <>
+            <div className="w-px h-4 bg-gray-200 mx-1" />
+            <button
+              type="button"
+              title="Chèn ảnh/video"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handlePickMedia}
+              disabled={isUploadingMedia}
+              className="p-2 rounded-lg text-gray-500 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all disabled:opacity-50 flex items-center gap-1"
+            >
+              {isUploadingMedia ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <>
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  <Video className="w-3.5 h-3.5" />
+                </>
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              className="hidden"
+              onChange={handleMediaSelected}
+            />
+            <button
+              type="button"
+              title="Gắn thẻ (@)"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                editorRef.current?.focus();
+                document.execCommand('insertText', false, '@');
+                emitChange();
+                updateMentionFromCaret();
+              }}
+              className="p-2 rounded-lg text-gray-500 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all"
+            >
+              <AtSign className="w-3.5 h-3.5" />
+            </button>
+            <div className="w-px h-4 bg-gray-200 mx-1" />
+            <button
+              type="button"
+              title="Xoá định dạng"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleClearFormat}
+              className="p-2 rounded-lg text-gray-500 hover:bg-white hover:text-red-500 hover:shadow-sm transition-all"
+            >
+              <RemoveFormatting className="w-3.5 h-3.5" />
+            </button>
+          </>
+        )}
       </div>
       <div
         ref={editorRef}
         contentEditable
         onInput={handleInput}
-        onBlur={() => { emitChange(); setTimeout(() => closeMentionMenu(), 150); }}
+        onBlur={() => { emitChange(); if (!isRestricted) setTimeout(() => closeMentionMenu(), 150); }}
         onKeyDown={handleKeyDown}
         data-placeholder={placeholder}
+        style={minHeight ? { minHeight } : undefined}
         className="rich-editor px-4 py-2.5 max-h-64 overflow-y-auto"
         suppressContentEditableWarning
       />
     </div>
 
-      {mentionOpen && (
+      {showFullToolbar && mentionOpen && (
         <div className="absolute left-3 top-full mt-1 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50">
           <div className="max-h-56 overflow-y-auto py-1">
             {mentionOptions.length === 0 && (
