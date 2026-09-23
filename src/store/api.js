@@ -83,7 +83,7 @@ export const api = createApi({
     'Auth', 'Opportunities', 'Services', 'Jobs', 'Contracts',
     'Quotations', 'PaymentMilestones', 'Projects', 'Tasks',
     'Users', 'Customers', 'Teams', 'Notifications',
-    'ReferralPartners', 'Vendors', 'Debts', 'JobCriterias', 'TaskReviews',
+    'ReferralPartners', 'Vendors', 'Debts', 'PaymentRequests', 'JobCriterias', 'TaskReviews',
     'ContractAddendums', 'Dashboard', 'Acceptance', 'ServicePackages', 'Chat',
     'ProjectProductDescriptions', 'TaskResultChecks',
     'ProjectProductDescriptions', 'ProjectSpellCheckWhitelist',

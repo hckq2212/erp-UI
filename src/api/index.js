@@ -11,6 +11,7 @@ export * from './tasks';
 export * from './customers';
 export * from './users';
 export * from './debts';
+export * from './paymentRequests';
 export * from './jobCriterias';
 export * from './taskReviews';
 export * from './spellingCheck';

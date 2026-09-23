@@ -19,6 +19,7 @@ import { TasksPage } from './pages/Tasks/TasksPage';
 import { TaskDetailPage } from './pages/Tasks/TaskDetailPage';
 import { TaskReviewPage } from './pages/Tasks/TaskReviewPage';
 import { FinancePage } from './pages/Finance/FinancePage';
+import { PaymentRequestsPage } from './pages/PaymentRequests/PaymentRequestsPage';
 import { VendorsPage } from './pages/Vendors/VendorsPage';
 import { VendorDetailPage } from './pages/Vendors/VendorDetailPage';
 import { LoginPage } from './pages/Auth/LoginPage';
@@ -255,6 +256,26 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <FinancePage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/payment-requests'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PaymentRequestsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/payment-requests/:id'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PaymentRequestsPage />
               </Layout>
             </ProtectedRoute>
           }

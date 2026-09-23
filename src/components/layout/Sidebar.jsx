@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Briefcase, FileText,
   FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store,
   CheckCircle2, Package, User, Handshake, FolderOpenDotIcon, Video, BookText, Megaphone, Bell, Archive,
-  Sparkles, ChevronDown, ChartNoAxesCombined, MessageSquare
+  Sparkles, ChevronDown, ChartNoAxesCombined, MessageSquare, Wallet
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useGetMeQuery } from '../../api/auth';
@@ -19,6 +19,7 @@ const menuItems = [
   { path: '/tasks', icon: CheckSquare, label: 'Công Việc' },
   { path: '/acceptance', icon: CheckCircle2, label: 'Nghiệm thu', roles: ['ADMIN', 'BOD', 'ADMIN_SALE', 'PM'] },
   { path: '/finance', icon: DollarSign, label: 'Lộ trình thanh toán', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
+  { path: '/payment-requests', icon: Wallet, label: 'Yêu cầu thanh toán' },
   { path: '/service-packages', icon: Package, label: 'Gói dịch vụ', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
   { path: '/services', icon: Briefcase, label: 'Dịch vụ', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
   { path: '/jobs', icon: CheckSquare, label: 'Hạng mục công việc', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE', 'PM'] },
