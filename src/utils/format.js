@@ -148,15 +148,20 @@ export const formatPercent = (value) => {
  * @returns {object} Object containing text and color
  */
 export const getRemainingTime = (endDate, status) => {
-  if (!endDate) return { text: '---', color: 'text-gray-400' };
+  
+  if (status === 'CANCELLED') {
+    return { text: '---', color: 'text-red-600 font-black text-xl' };
+  }
+  
+  if (!endDate) 
+  {
+    return { text: '---', color: 'text-gray-400' };
+  }  
 
   if (['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED'].includes(status)) {
     return { text: '●', color: 'text-emerald-600 font-black text-3xl' };
   }
 
-  if (status === 'CANCELLED') {
-    return { text: '■', color: 'text-rose-600 font-black text-3xl' };
-  }
 
   const now = new Date();
   const end = new Date(endDate);

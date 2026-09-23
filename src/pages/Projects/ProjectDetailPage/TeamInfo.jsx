@@ -47,7 +47,7 @@ const WorkloadBadge = ({ workload }) => {
     );
 };
 
-export const TeamInfo = ({ team }) => {
+export const TeamInfo = ({ team, isOnHold = false }) => {
     const { data: currentUser } = useGetMeQuery();
     const workloadDate = useMemo(() => {
         const now = new Date();
@@ -70,11 +70,12 @@ export const TeamInfo = ({ team }) => {
     const [draftRoles, setDraftRoles] = useState([]);
 
     const currentUserId = getCurrentUserId(currentUser);
-    const isCurrentProjectManager = currentUser?.role === 'PM' && members.some(member =>
-        isSameUser(member.user?.id, currentUserId) && member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER
-    );
-    const canManageTeam = currentUser?.role === 'ADMIN' || isCurrentProjectManager;
-    const canAddMember = canManageTeam;
+    const currentMembership = members.find(member => isSameUser(member.user?.id, currentUserId));
+    const isCurrentProjectManager = currentUser?.role === 'PM' && currentMembership?.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER;
+    const isCurrentTeamLead = isSameUser(currentUserId, team?.teamLead?.id);
+    const canManageTeam = !isOnHold && (currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD' || isCurrentProjectManager);
+    const memberUserIds = useMemo(() => new Set(members.map(member => member.user?.id)), [members]);
+    const availableUsers = users.filter(user => !memberUserIds.has(user.id));
     const assignableMemberRoles = useMemo(
         () => prioritizeLeadRole(Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER)),
         []
