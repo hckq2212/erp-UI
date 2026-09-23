@@ -37,7 +37,6 @@ const menuItems = [
     ],
   },
   { path: '/document-library', icon: Archive, label: 'Kho tài liệu' },
-  { path: '/chat', icon: MessageSquare, label: 'Tin nhắn' },
   { path: '/settings', icon: Settings, label: 'Cài đặt', roles: ['ADMIN'] },
 ];
 

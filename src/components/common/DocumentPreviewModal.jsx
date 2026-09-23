@@ -17,7 +17,15 @@ import {
   Image as ImageIcon,
   Check
 } from 'lucide-react';
-import { detectFileType, getFileMeta, getFileNameFromUrl, isValidFileUrl, FILE_TYPES } from '../../utils/fileDetector';
+import { 
+  detectFileType, 
+  getFileMeta, 
+  getFileNameFromUrl, 
+  isValidFileUrl, 
+  FILE_TYPES,
+  isGoogleUrl,
+  getGoogleEmbedUrl
+} from '../../utils/fileDetector';
 import * as docx from 'docx-preview';
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -109,6 +117,12 @@ export const DocumentPreviewModal = ({
     if (!isValidFileUrl(url)) {
       setError('Đường dẫn tài liệu không hợp lệ hoặc không được hỗ trợ xem trước. Vui lòng kiểm tra lại liên kết tệp đính kèm.');
       return; // dừng luôn, không gọi render/fetch nào cả
+    }
+
+    if (isGoogleUrl(url)) {
+      setUseFallbackViewer(true);
+      setLoading(false);
+      return;
     }
 
     if (fileType === FILE_TYPES.DOCX) {
@@ -254,8 +268,8 @@ export const DocumentPreviewModal = ({
 
     } catch (err) {
       console.warn('Lỗi khi tải hoặc render PDF qua pdfjs-dist:', err);
-      setError('Không thể tải trực tiếp file PDF qua trình duyệt (thường do giới hạn CORS của link Cloudinary). Bạn có thể xem qua trình xem trực tuyến bên dưới hoặc tải về máy.');
       setUseFallbackViewer(true);
+      setFallbackType('gdocs');
     } finally {
       setLoading(false);
     }
@@ -495,15 +509,27 @@ export const DocumentPreviewModal = ({
               </button>
             )}
 
-            {/* Nút Tải về máy */}
-            <button
-              type="button"
-              onClick={handleDownload}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
-              title="Tải tệp xuống"
-            >
-              <Download className="w-4 h-4" />
-            </button>
+            {/* Nút Mở tài liệu gốc / Tải về máy */}
+            {isGoogleUrl(url) ? (
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-600 border border-slate-200 text-slate-700 transition-colors cursor-pointer"
+                title="Mở tài liệu gốc trong tab mới"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
+                title="Tải tệp xuống"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            )}
 
             {/* Nút Toàn màn hình */}
             <button
@@ -709,17 +735,21 @@ export const DocumentPreviewModal = ({
             </div>
           )}
 
-          {/* 6. FALLBACK IFRAME (Google Docs Viewer hoặc Office Online) */}
+          {/* 6. FALLBACK IFRAME (Google Docs / Sheets / Drive / Online Document Viewer) */}
           {useFallbackViewer && (
             <div className="w-full h-full flex flex-col flex-1 min-h-[650px] relative">
               <iframe
                 src={
-                  fallbackType === 'office'
-                    ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
-                    : `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`
+                  getGoogleEmbedUrl(url) || (
+                    fallbackType === 'office'
+                      ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
+                      : `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`
+                  )
                 }
                 title="Online Document Viewer"
                 className="w-full h-full flex-1 rounded-xl border border-slate-200 shadow-lg bg-white"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
               />
             </div>
           )}

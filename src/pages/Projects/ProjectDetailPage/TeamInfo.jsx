@@ -47,7 +47,7 @@ const WorkloadBadge = ({ workload }) => {
     );
 };
 
-export const TeamInfo = ({ team }) => {
+export const TeamInfo = ({ team, isOnHold = false }) => {
     const { data: currentUser } = useGetMeQuery();
     const workloadDate = useMemo(() => {
         const now = new Date();

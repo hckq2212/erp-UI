@@ -43,7 +43,6 @@ export const debtsApi = api.injectEndpoints({
             invalidatesTags: (result, error, { debtId }) => [
                 { type: 'Debts', id: debtId },
                 { type: 'Debts', id: 'LIST' },
-                { type: 'PaymentMilestones', id: 'LIST' },
             ],
         }),
         deletePayment: builder.mutation({
@@ -51,10 +50,7 @@ export const debtsApi = api.injectEndpoints({
                 url: `/debts/payments/${id}`,
                 method: 'DELETE',
             }),
-            invalidatesTags: [
-                { type: 'Debts', id: 'LIST' },
-                { type: 'PaymentMilestones', id: 'LIST' },
-            ],
+            invalidatesTags: [{ type: 'Debts', id: 'LIST' }],
         }),
         getDebtsByContract: builder.query({
             query: (contractId) => `/debts/contract/${contractId}`,
@@ -65,6 +61,21 @@ export const debtsApi = api.injectEndpoints({
                         { type: 'Debts', id: 'LIST' },
                     ]
                     : [{ type: 'Debts', id: 'LIST' }],
+        }),
+        /**
+         * Mở khóa công nợ — chỉ BOD/ADMIN, BẮT BUỘC nhập lý do.
+         * Dùng khi dự án bị đóng nhầm và cần thu lại khoản nợ đã bị khóa.
+         */
+        unlockDebt: builder.mutation({
+            query: ({ id, reason }) => ({
+                url: `/debts/${id}/unlock`,
+                method: 'POST',
+                body: { reason },
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'Debts', id },
+                { type: 'Debts', id: 'LIST' },
+            ],
         }),
     }),
 });
@@ -77,4 +88,5 @@ export const {
     useCreatePaymentMutation,
     useDeletePaymentMutation,
     useGetDebtsByContractQuery,
+    useUnlockDebtMutation,
 } = debtsApi;

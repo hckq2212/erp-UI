@@ -15,7 +15,7 @@ export const ServiceDetailPage = () => {
     const navigate = useNavigate();
     const [isAddJobModalOpen, setIsAddJobModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState({ name: '', unit: '', description: '' });
+    const [editForm, setEditForm] = useState({ name: '', code: '', unit: '', description: '' });
 
     const { data: service, isLoading, error } = useGetServiceQuery(id);
     const [addJob] = useAddJobMutation();
@@ -64,6 +64,7 @@ export const ServiceDetailPage = () => {
         if (!isEditing) {
             setEditForm({
                 name: service.name,
+                code: service.code || '',
                 unit: service.unit || '',
                 description: service.description || ''
             });
@@ -75,6 +76,7 @@ export const ServiceDetailPage = () => {
         try {
             const cleanedForm = {
                 ...editForm,
+                code: editForm.code.trim(),
                 description: editForm.description ? editForm.description.trim() : ''
             };
             await updateService({ id, ...cleanedForm }).unwrap();
@@ -197,6 +199,20 @@ export const ServiceDetailPage = () => {
                                     />
                                 ) : (
                                     <p className="text-lg font-bold text-blue-600">{service.name}</p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Mã dịch vụ</label>
+                                {isEditing ? (
+                                    <input
+                                        type="text"
+                                        value={editForm.code}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, code: e.target.value }))}
+                                        className="w-full mt-1 px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/10 text-md font-bold text-blue-900"
+                                        placeholder="Ví dụ: SV-VID"
+                                    />
+                                ) : (
+                                    <p className="text-md font-mono font-bold text-blue-600">{service.code || '---'}</p>
                                 )}
                             </div>
                             <div>

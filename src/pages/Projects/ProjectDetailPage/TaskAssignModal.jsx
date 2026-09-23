@@ -37,7 +37,7 @@ const WorkloadBar = ({ workload }) => {
 };
 import { useGetUsersQuery } from '../../../api/users';
 
-export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
+export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) => {
     const isBulk = Array.isArray(task);
     const tasks = isBulk ? task : [task];
     const representativeTask = tasks[0];
@@ -240,12 +240,13 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project }) => {
                 }
                 toast.success('Phân công công việc thành công');
             }
+            onSuccess?.();
             onClose();
         } catch (err) {
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi phân công');
         }
-    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, plannedEndDate, requestSupport]);
+    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedEndDate, requestSupport]);
 
     return (
         <AnimatePresence>

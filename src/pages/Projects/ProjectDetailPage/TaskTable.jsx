@@ -1,4 +1,4 @@
-import { useState, useMemo, Fragment } from 'react';
+import { useState, useMemo, useEffect, Fragment } from 'react';
 import { Calendar, Users, FileText, Search, UserPlus, UserMinus, Plus, AlertCircle, ChevronRight, ChevronDown } from 'lucide-react';
 import { TaskAssignModal } from './TaskAssignModal';
 import { AddProjectServiceModal } from './AddProjectServiceModal';
@@ -13,6 +13,7 @@ import { formatDateTime, getRemainingTime } from '../../../utils/format';
 import { useGetMeQuery } from '../../../api/auth';
 import { InlineTaskNickname } from '../../../components/tasks/InlineTaskNickname';
 import { ResolveStaffingRequestModal } from '../../../components/tasks/ResolveStaffingRequestModal';
+import { TaskReminderButton } from '../../../components/tasks/TaskReminderButton';
 import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
@@ -44,7 +45,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     const isAssignee = tasks.some(t => isSameUser(t.assigneeId, currentUserId) || isSameUser(t.assignee?.id, currentUserId));
     const isTeamMember = Boolean(project?.team?.members?.some(m => isSameUser(m.user?.id, currentUserId)));
 
-    const canSeeTable = canManageAllTasks || isSupportLead || isHelper || isAssignee || isTeamMember;
+    const canSeeTable = true;
     const canAddTask = isAdminOrBOD || isProjectLead;
     const canCreateProjectWork = user?.role === 'PM' || user?.role === 'ADMIN';
     const isProjectInProgress = project?.status === 'IN_PROGRESS' || project?.status === 'CONFIRMED';
@@ -149,6 +150,16 @@ export const TaskTable = ({ tasks = [], project }) => {
 
     const isTaskSelectable = selectionMode === 'unassign' ? isTaskUnassignable : isTaskBatchAssignable;
 
+    // Tự động loại bỏ các task đã phân công hoặc không còn thoả mãn điều kiện chọn khỏi selectedTasks
+    useEffect(() => {
+        if (selectedTasks.length === 0) return;
+        const selectableIds = new Set(tasks.filter(isTaskSelectable).map(t => t.id));
+        setSelectedTasks(prev => {
+            const next = prev.filter(id => selectableIds.has(id));
+            return next.length === prev.length ? prev : next;
+        });
+    }, [tasks, selectionMode]);
+
     const handleToggleUnassignMode = () => {
         setSelectedTasks([]);
         setSelectionMode(prev => prev === 'unassign' ? 'assign' : 'unassign');
@@ -235,14 +246,6 @@ export const TaskTable = ({ tasks = [], project }) => {
 
     const filteredTasks = useMemo(() => {
         const filtered = tasks.filter(task => {
-            if (!canManageAllTasks) {
-                const isUserTask = isSameUser(currentUserId, task.assigneeId) ||
-                    isSameUser(currentUserId, task.assignee?.id) ||
-                    isSameUser(currentUserId, task.helperId) ||
-                    isSameUser(currentUserId, task.helper?.id);
-                if (!isUserTask) return false;
-            }
-
             const search = filter.search.toLowerCase();
             const matchesSearch = task.name?.toLowerCase().includes(search) ||
                 task.nickname?.toLowerCase().includes(search) ||
@@ -254,7 +257,7 @@ export const TaskTable = ({ tasks = [], project }) => {
 
         // Sắp xếp các task theo mã code tăng dần (sử dụng natural sort để nhận diện số cuối chính xác)
         return [...filtered].sort((a, b) => (a.code || '').localeCompare(b.code || '', undefined, { numeric: true }));
-    }, [tasks, filter, canManageAllTasks, currentUserId]);
+    }, [tasks, filter]);
 
     const groupedTasks = useMemo(() => {
         const groups = {};
@@ -325,22 +328,20 @@ export const TaskTable = ({ tasks = [], project }) => {
                         <option key={value} value={value}>{label}</option>
                     ))}
                 </select>
-                {canManageAllTasks && (
-                    <select
-                        className="px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 outline-none hover:bg-gray-100 shrink-0 max-w-[160px] truncate"
-                        value={filter.assigneeId}
-                        onChange={(e) => setFilter({ ...filter, assigneeId: e.target.value })}
-                    >
-                        <option value="ALL">Tất cả nhân sự</option>
-                        {members.map((member) => (
-                            <option key={member.user.id} value={member.user.id}>
-                                {member.user.fullName}
-                            </option>
-                        ))}
-                    </select>
-                )}
+                <select
+                    className="px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 outline-none hover:bg-gray-100 shrink-0 max-w-[160px] truncate"
+                    value={filter.assigneeId}
+                    onChange={(e) => setFilter({ ...filter, assigneeId: e.target.value })}
+                >
+                    <option value="ALL">Tất cả nhân sự</option>
+                    {members.map((member) => (
+                        <option key={member.user.id} value={member.user.id}>
+                            {member.user.fullName}
+                        </option>
+                    ))}
+                </select>
                 <div className="flex items-center gap-2 shrink-0 whitespace-nowrap ml-auto">
-                    {isProjectLead && (
+                    {isProjectLead && isProjectInProgress && (
                         <button
                             type="button"
                             onClick={handleOpenStaffingModal}
@@ -365,7 +366,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                             <span>{selectionMode === 'unassign' ? 'Huỷ xoá phân công' : 'Xoá phân công'}</span>
                         </button>
                     )}
-                    {canCreateProjectWork && (
+                    {canCreateProjectWork && isProjectInProgress && (
                         <button
                             type="button"
                             onClick={() => setShowAddServiceModal(true)}
@@ -412,10 +413,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                             {renderHeader('Bên thực hiện')}
                             {renderHeader('Người thực hiện', 'center')}
                             {renderHeader('Trạng thái', 'center')}
-                            {isProjectInProgress && (
-                                <th className="px-6 py-4 font-medium text-center">Hành động</th>
-                            )}
-
+                            <th className="px-6 py-4 font-medium text-center">Hành động</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -452,7 +450,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 />
                                             </td>
                                             <td
-                                                colSpan={isProjectInProgress ? 8 : 7}
+                                                colSpan={7}
                                                 className="px-6 py-3 font-bold text-gray-800 cursor-pointer"
                                                 onClick={() => toggleGroup(group.job.id)}
                                             >
@@ -474,12 +472,13 @@ export const TaskTable = ({ tasks = [], project }) => {
                                         {expandedGroups[group.job.id] && group.tasks.map((task, index) => (
                                             <tr
                                                 key={task.id}
+                                                onClick={() => navigate(`/tasks/${task.id}`)}
                                                 className={cn(
-                                                    "transition-colors",
-                                                    task.isSupportRequested ? "bg-red-50/50 hover:bg-red-50 border-l-4 border-l-red-500" : "hover:bg-gray-50/50"
+                                                    "transition-colors cursor-pointer",
+                                                    task.isSupportRequested ? "bg-red-50/50 hover:bg-red-50 border-l-4 border-l-red-500" : "hover:bg-blue-50/40"
                                                 )}
                                             >
-                                                <td className="px-6 py-4 text-center">
+                                                <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                                                     <input
                                                         type="checkbox"
                                                         className={cn(
@@ -507,7 +506,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                     <InlineTaskNickname
                                                         task={task}
                                                         projectId={project.id}
-                                                        canEdit={isAdminOrBOD || isProjectLead}
+                                                        canEdit={isProjectInProgress && task.status !== 'ON_HOLD' && (isAdminOrBOD || isProjectLead)}
                                                     />
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -524,9 +523,9 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 <td className="px-3 py-2 text-center w-fit">
                                                     {getStatusBadge(task.status)}
                                                 </td>
-                                                <td className="px-6 py-4">
+                                                <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                                                     <div className="flex flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
-                                                        {isProjectInProgress &&
+                                                        {isProjectInProgress && canManageAllTasks &&
                                                             (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
                                                             <button
                                                                 onClick={() => setAssigningTask(task)}
@@ -594,7 +593,9 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                             </button>
                                                         )}
 
-                                                        {task.supportRequestType === 'STAFFING' &&
+                                                        {isProjectInProgress &&
+                                                            task.status !== 'ON_HOLD' &&
+                                                            task.supportRequestType === 'STAFFING' &&
                                                             task.isSupportRequested &&
                                                             !task.isSupportAccepted &&
                                                             (isSameUser(task.supportLeadId, currentUserId) || isProjectManager || hasStaffingAdminOverride) && (
@@ -666,6 +667,12 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                             )
                                                         )}
 
+                                                        <TaskReminderButton
+                                                            task={task}
+                                                            isProjectInProgress={isProjectInProgress}
+                                                            canManage={canManageAllTasks}
+                                                        />
+
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
@@ -685,7 +692,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                             })
                         ) : (
                             <tr>
-                                <td colSpan={isProjectInProgress ? 9 : 8} className="px-6 py-10 text-center text-gray-400 italic">
+                                <td colSpan={8} className="px-6 py-10 text-center text-gray-400 italic">
                                     Không tìm thấy công việc nào
                                 </td>
                             </tr>
@@ -698,6 +705,13 @@ export const TaskTable = ({ tasks = [], project }) => {
                 <TaskAssignModal
                     isOpen={!!assigningTask}
                     onClose={() => setAssigningTask(null)}
+                    onSuccess={() => {
+                        const assignedIds = Array.isArray(assigningTask)
+                            ? assigningTask.map(t => t.id)
+                            : [assigningTask?.id];
+                        setSelectedTasks(prev => prev.filter(id => !assignedIds.includes(id)));
+                        if (selectionMode === 'unassign') setSelectionMode('assign');
+                    }}
                     task={assigningTask}
                     project={project}
                 />
