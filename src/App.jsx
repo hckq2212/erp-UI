@@ -41,6 +41,7 @@ import Chatbot from './components/Chatbot';
 import { CreateVideoAIPage } from './pages/CreateVideoAI/CreateVideoAIPage';
 import { CreateVideoMotionControlPage } from './pages/CreateVideoAI/CreateVideoMotionControlPage';
 import { LibraryVideoAiPage } from './pages/LibraryVideoAi/LibraryVideoAiPage';
+import { DashboardAIPage } from './pages/DashboardAI/DashboardAIPage';
 import { SettingsPage } from './pages/Settings/SettingsPage';
 import { ChatPage } from './pages/Chat/ChatPage';
 import { ChatBubbleWidget } from './components/chat/ChatBubbleWidget';
@@ -397,6 +398,16 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <AcceptanceInboxPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/dashboard-ai'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <DashboardAIPage />
               </Layout>
             </ProtectedRoute>
           }

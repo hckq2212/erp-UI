@@ -58,12 +58,12 @@ export const ContractDetailPage = () => {
 
   const handleUploadProposal = async ({ file, contractLink, quotationLink, quotationFile }) => {
     if (!file && !contractLink) {
-      toast.error('Vui lòng tải file Word/Excel hoặc nhập link hợp đồng');
+      toast.error('Vui lòng tải file Word/PDF hoặc nhập link hợp đồng');
       return false;
     }
 
-    if (file && !/\.(docx|xls|xlsx)$/i.test(file.name)) {
-      toast.error('Chỉ chấp nhận file .docx, .xls hoặc .xlsx cho hợp đồng');
+    if (file && !/\.(docx|pdf)$/i.test(file.name)) {
+      toast.error('Chỉ chấp nhận file .docx hoặc .pdf cho hợp đồng');
       return false;
     }
 

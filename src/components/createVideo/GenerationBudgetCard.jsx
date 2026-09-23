@@ -27,6 +27,28 @@ export default function GenerationBudgetCard({ taskId }) {
     )
   }
 
+  if (data.budgetMode === 'UNLIMITED') {
+    return (
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-3">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-900">
+            <WalletCards className="h-4 w-4" /> Ngân sách Video AI demo
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+              Không giới hạn
+            </span>
+            {isFetching && <span className="text-[10px] text-emerald-600">Đang cập nhật...</span>}
+          </div>
+        </div>
+        <div className="flex items-center justify-between rounded-lg bg-white/70 px-3 py-2">
+          <p className="text-[10px] text-slate-500">Đã dùng/đang xử lý</p>
+          <p className="text-xs font-bold text-orange-700">{formatMoney(data.used)}</p>
+        </div>
+      </div>
+    )
+  }
+
   const usagePercent = data.limit > 0 ? Math.min(100, (data.used / data.limit) * 100) : 0
   const remainingClass = data.remaining > 0 ? 'text-emerald-700' : 'text-red-700'
 
