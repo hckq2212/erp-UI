@@ -4,7 +4,7 @@ import { Clock, ChevronRight } from 'lucide-react';
 import { TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../../utils/enums';
 import { getTaskDisplayName } from '../../../utils/taskName';
 
-export const TimelineList = ({ tasks = [], navigate }) => {
+export const TimelineList = ({ tasks = [], navigate, buildTasksUrl }) => {
     const sortedTasks = [...tasks].sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 
     return (
@@ -25,7 +25,13 @@ export const TimelineList = ({ tasks = [], navigate }) => {
                     </div>
                 </div>
                 <button
-                    onClick={() => navigate('/tasks')}
+                    onClick={() => {
+                        if (buildTasksUrl) {
+                            navigate(buildTasksUrl({ sortBy: 'plannedEndDate', sortDir: 'ASC' }));
+                        } else {
+                            navigate('/tasks?sortBy=plannedEndDate&sortDir=ASC');
+                        }
+                    }}
                     className="text-[9px] font-black text-slate-400 hover:text-amber-500 transition-colors uppercase tracking-widest flex items-center gap-1"
                 >
                     Xem lịch đầy đủ <ChevronRight size={10} />

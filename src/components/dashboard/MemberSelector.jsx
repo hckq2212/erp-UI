@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, User, Check, Users } from 'lucide-react';
+import { ChevronDown, User, Check, Users, LayoutDashboard, UserCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../utils/enums';
 import { isSameUser } from '../../utils/authUser';
@@ -38,7 +38,16 @@ const WorkloadProgressBar = ({ workload }) => {
     );
 };
 
-export const MemberSelector = ({ members = [], workloads = [], selectedId, onSelect, currentUserId }) => {
+export const MemberSelector = ({
+    members = [],
+    workloads = [],
+    selectedId,
+    onSelect,
+    currentUserId,
+    isPM = false,
+    viewMode = 'overview',
+    onSelectViewMode
+}) => {
     const [isOpen, setIsOpen] = useState(false);
 
     // Filter out the current user (the lead viewing their team)
@@ -62,6 +71,12 @@ export const MemberSelector = ({ members = [], workloads = [], selectedId, onSel
 
     const selectedWorkload = getMemberWorkload(selectedMember);
 
+    const getDisplayName = () => {
+        if (selectedId) return selectedMember?.user?.fullName || 'Thành viên';
+        if (isPM) return viewMode === 'personal' ? 'Công việc của tôi' : 'Tổng quan dự án';
+        return 'Dashboard cá nhân';
+    };
+
     return (
         <div className="relative w-full">
             <button
@@ -69,14 +84,20 @@ export const MemberSelector = ({ members = [], workloads = [], selectedId, onSel
                 className="flex items-center justify-between gap-3 px-4 py-2 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all group w-[100%]"
             >
                 <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors uppercase font-bold text-xs shrink-0">
-                        {selectedId ? (selectedMember?.user?.fullName?.charAt(0) || <User className="w-4 h-4" />) : <User className="w-4 h-4" />}
+                    <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#F38820] flex items-center justify-center group-hover:bg-[#F38820] group-hover:text-white transition-colors uppercase font-bold text-xs shrink-0">
+                        {selectedId ? (
+                            selectedMember?.user?.fullName?.charAt(0) || <User className="w-4 h-4" />
+                        ) : isPM && viewMode === 'overview' ? (
+                            <LayoutDashboard className="w-4 h-4" />
+                        ) : (
+                            <UserCheck className="w-4 h-4" />
+                        )}
                     </div>
                     <div className="text-left hidden md:block min-w-0">
                         <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest leading-none mb-1">Đang xem</p>
                         <div className="flex items-center gap-1.5">
                             <p className="text-sm font-bold text-gray-900 leading-none truncate max-w-[130px]">
-                                {selectedId ? (selectedMember?.user?.fullName || 'Thành viên') : 'Dashboard cá nhân'}
+                                {getDisplayName()}
                             </p>
                             {selectedId && selectedWorkload && (
                                 <WorkloadBadge workload={selectedWorkload} />
@@ -97,21 +118,77 @@ export const MemberSelector = ({ members = [], workloads = [], selectedId, onSel
                         className="absolute right-0 mt-3 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl shadow-gray-200/50 border border-gray-100 p-3 z-50 overflow-hidden"
                     >
                         <div className="space-y-1">
-                            <button
-                                onClick={() => {
-                                    onSelect(null);
-                                    setIsOpen(false);
-                                }}
-                                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${!selectedId ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50 text-gray-600'}`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${!selectedId ? 'bg-white shadow-sm text-blue-600' : 'bg-gray-100'}`}>
-                                        <Users className="w-4 h-4" />
+                            {isPM ? (
+                                <>
+                                    {/* 1. Tổng quan dự án */}
+                                    <button
+                                        onClick={() => {
+                                            onSelect(null);
+                                            onSelectViewMode && onSelectViewMode('overview');
+                                            setIsOpen(false);
+                                        }}
+                                        className={`w-full flex items-center justify-between p-2.5 rounded-xl transition-all ${
+                                            !selectedId && viewMode === 'overview'
+                                                ? 'bg-orange-50 text-orange-600 font-black'
+                                                : 'hover:bg-gray-50 text-gray-700'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                                                !selectedId && viewMode === 'overview'
+                                                    ? 'bg-white shadow-sm text-orange-600'
+                                                    : 'bg-gray-100 text-gray-500'
+                                            }`}>
+                                                <LayoutDashboard className="w-3.5 h-3.5" />
+                                            </div>
+                                            <span className="text-xs font-bold text-left">Tổng quan dự án</span>
+                                        </div>
+                                        {!selectedId && viewMode === 'overview' && <Check className="w-4 h-4 text-orange-600" />}
+                                    </button>
+
+                                    {/* 2. Công việc của tôi */}
+                                    <button
+                                        onClick={() => {
+                                            onSelect(null);
+                                            onSelectViewMode && onSelectViewMode('personal');
+                                            setIsOpen(false);
+                                        }}
+                                        className={`w-full flex items-center justify-between p-2.5 rounded-xl transition-all ${
+                                            !selectedId && viewMode === 'personal'
+                                                ? 'bg-orange-50 text-orange-600 font-black'
+                                                : 'hover:bg-gray-50 text-gray-700'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                                                !selectedId && viewMode === 'personal'
+                                                    ? 'bg-white shadow-sm text-orange-600'
+                                                    : 'bg-gray-100 text-gray-500'
+                                            }`}>
+                                                <UserCheck className="w-3.5 h-3.5" />
+                                            </div>
+                                            <span className="text-xs font-bold text-left">Công việc của tôi</span>
+                                        </div>
+                                        {!selectedId && viewMode === 'personal' && <Check className="w-4 h-4 text-orange-600" />}
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    onClick={() => {
+                                        onSelect(null);
+                                        setIsOpen(false);
+                                    }}
+                                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${!selectedId ? 'bg-orange-50 text-orange-600' : 'hover:bg-gray-50 text-gray-600'}`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${!selectedId ? 'bg-white shadow-sm text-orange-600' : 'bg-gray-100'}`}>
+                                            <Users className="w-4 h-4" />
+                                        </div>
+                                        <span className="text-sm font-bold text-left">Quay lại Dashboard của tôi</span>
                                     </div>
-                                    <span className="text-sm font-bold text-left">Quay lại Dashboard của tôi</span>
-                                </div>
-                                {!selectedId && <Check className="w-4 h-4" />}
-                            </button>
+                                    {!selectedId && <Check className="w-4 h-4 text-orange-600" />}
+                                </button>
+                            )}
 
                             <div className="h-px bg-gray-50 my-2 mx-2" />
 

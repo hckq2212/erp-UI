@@ -57,8 +57,8 @@ export const TaskReminderButton = ({
         )}
         {...props}
       >
-        <Bell className="w-5 h-5" />
-        Nhắc việc
+        <Bell className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+        <span>Nhắc việc</span>
       </Button>
     );
   }
