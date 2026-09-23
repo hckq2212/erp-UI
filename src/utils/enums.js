@@ -65,6 +65,7 @@ export const PROJECT_STATUS_LABELS = {
   PLANNING: 'Lập kế hoạch',
   CONFIRMED: 'Đã xác nhận',
   IN_PROGRESS: 'Đang thực hiện',
+  PENDING_PAUSE_APPROVAL: 'Chờ duyệt tạm dừng',
   ON_HOLD: 'Tạm dừng',
   COMPLETED: 'Hoàn thành',
   CANCELLED: 'Đã hủy'
@@ -74,9 +75,16 @@ export const PROJECT_STATUS_COLORS = {
   PENDING_CONFIRMATION: 'bg-orange-50 text-orange-700 border-orange-100',
   CONFIRMED: 'bg-blue-50 text-blue-700 border-blue-100',
   IN_PROGRESS: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  PENDING_PAUSE_APPROVAL: 'bg-yellow-50 text-yellow-700 border-yellow-100',
   ON_HOLD: 'bg-amber-50 text-amber-700 border-amber-100',
   COMPLETED: 'bg-purple-50 text-purple-700 border-purple-100',
   CANCELLED: 'bg-rose-50 text-rose-700 border-rose-100'
+};
+
+// Task Status — 2 trạng thái mới của tính năng tạm dừng dự án
+export const TASK_STATUS_LABELS_PAUSE = {
+  ON_HOLD: 'Tạm dừng',
+  CANCELLED: 'Đã hủy'
 };
 
 // Opportunity Status

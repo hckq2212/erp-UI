@@ -39,6 +39,7 @@ import { toast } from 'react-toastify';
 import { Modal } from '../../../components/ui/Modal';
 import { RichTextEditor } from '../../../components/ui/RichTextEditor';
 import { generateProductDescriptionPdf } from '../../../utils/productDescriptionPdf';
+import { ProjectWorkingFilesSection } from './ProjectWorkingFilesSection';
 
 const STATUS_LABELS = {
     DRAFT: 'Bản nháp',
@@ -1275,6 +1276,8 @@ export const ProjectInfo = ({ project }) => {
                     )}
                 </div>
             </div>
+
+            <ProjectWorkingFilesSection project={project} />
 
             <ProductDescriptionSection project={project} />
         </div>

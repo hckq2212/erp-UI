@@ -6,9 +6,11 @@ import {
   Download, 
   Eye, 
   Link as LinkIcon,
-  ExternalLink
+  ExternalLink,
+  Copy,
+  Trash2
 } from 'lucide-react';
-import { detectFileType, getFileNameFromUrl, getFileMeta, isValidFileUrl, FILE_TYPES } from '../../utils/fileDetector';
+import { detectFileType, getFileNameFromUrl, getFileMeta, isValidFileUrl, FILE_TYPES, isGoogleUrl } from '../../utils/fileDetector';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
 
 /**
@@ -48,7 +50,11 @@ export const DocumentCard = ({
   fileName = '',
   fileSize = '',
   className = '',
-  onPreview
+  onPreview,
+  metadata = '',
+  onCopy,
+  onDelete,
+  forceFullCard = false,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -76,9 +82,41 @@ export const DocumentCard = ({
     document.body.removeChild(a);
   };
 
-  // Render Icon đại diện theo chuẩn Word / Excel / PDF
+  // Render Icon đại diện theo chuẩn Word / Excel / PDF / Link
   const renderAppIcon = () => {
+    if (!fileIsValid) {
+      return (
+        <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-xs select-none shrink-0">
+          <LinkIcon className="w-5 h-5" />
+        </div>
+      );
+    }
+
     switch (fileType) {
+      case FILE_TYPES.GDOCS:
+        return (
+          <div className="w-10 h-10 rounded-lg bg-[#4285F4] flex items-center justify-center text-white font-bold shadow-xs select-none shrink-0" title="Google Docs">
+            <span className="text-xs font-black tracking-tight">DOC</span>
+          </div>
+        );
+      case FILE_TYPES.GSHEETS:
+        return (
+          <div className="w-10 h-10 rounded-lg bg-[#0F9D58] flex items-center justify-center text-white font-bold shadow-xs select-none shrink-0" title="Google Sheets">
+            <span className="text-[10px] font-black tracking-tighter">SHEET</span>
+          </div>
+        );
+      case FILE_TYPES.GSLIDES:
+        return (
+          <div className="w-10 h-10 rounded-lg bg-[#FBBC05] flex items-center justify-center text-white font-bold shadow-xs select-none shrink-0" title="Google Slides">
+            <span className="text-[10px] font-black tracking-tighter">SLIDE</span>
+          </div>
+        );
+      case FILE_TYPES.GDRIVE:
+        return (
+          <div className="w-10 h-10 rounded-lg bg-[#4285F4] flex items-center justify-center text-white font-bold shadow-xs select-none shrink-0" title="Google Drive">
+            <span className="text-[10px] font-black tracking-tighter">DRIVE</span>
+          </div>
+        );
       case FILE_TYPES.DOCX:
       case FILE_TYPES.DOC:
         return (
@@ -119,8 +157,8 @@ export const DocumentCard = ({
     }
   };
 
-  // Nếu url không phải file thật (không có đuôi hợp lệ) -> chỉ hiển thị chip liên kết gọn
-  if (!fileIsValid) {
+  // Nếu url không phải file thật (không có đuôi hợp lệ) và không yêu cầu render full card -> chỉ hiển thị chip liên kết gọn
+  if (!fileIsValid && !forceFullCard) {
     let displayLabel = cleanFileName;
     if (!displayLabel || displayLabel === 'Tài liệu') {
       displayLabel = 'Xem liên kết';
@@ -140,49 +178,115 @@ export const DocumentCard = ({
   return (
     <>
       <div 
-        className={`group relative flex items-center justify-between gap-3 px-3.5 py-2.5 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] rounded-xl transition-all duration-150 shadow-[0_1px_2px_rgba(0,0,0,0.03)] ${className}`}
+        className={`group relative flex items-center justify-between gap-3 px-3.5 py-2.5 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] hover:border-blue-200 rounded-xl transition-all duration-150 shadow-[0_1px_2px_rgba(0,0,0,0.03)] ${className}`}
       >
         {/* Left: App Icon & File Info */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {renderAppIcon()}
 
           <div className="flex flex-col min-w-0 pr-2">
-            <span 
-              onClick={handleOpenPreview}
-              title={cleanFileName}
-              className="text-sm font-semibold text-slate-800 hover:text-blue-600 cursor-pointer truncate select-none transition-colors"
-            >
-              {cleanFileName}
-            </span>
+            {fileIsValid ? (
+              <span 
+                onClick={handleOpenPreview}
+                title={cleanFileName}
+                className="text-sm font-semibold text-slate-800 hover:text-blue-600 cursor-pointer truncate select-none transition-colors"
+              >
+                {cleanFileName}
+              </span>
+            ) : (
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={cleanFileName}
+                className="text-sm font-semibold text-slate-800 hover:text-blue-600 truncate transition-colors"
+              >
+                {cleanFileName}
+              </a>
+            )}
+
             <span className="text-xs text-slate-500 font-normal truncate mt-0.5">
-              {fileSize ? `${meta.label} • ${fileSize}` : meta.label}
+              {fileIsValid
+                ? (fileSize ? `${meta.label} • ${fileSize}` : meta.label)
+                : 'Liên kết trực tuyến'}
+              {metadata ? ` • ${metadata}` : ''}
             </span>
           </div>
         </div>
 
-        {/* Right: Cụm nút thao tác [Xem trước] [Tải về] */}
+        {/* Right: Cụm nút thao tác */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Nút Xem trước */}
-          <button
-            type="button"
-            onClick={handleOpenPreview}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-medium shadow-xs transition-colors cursor-pointer"
-            title="Xem trước tài liệu"
-          >
-            <Eye className="w-3.5 h-3.5 text-blue-600" />
-            <span>Xem trước</span>
-          </button>
+          {onCopy && (
+            <button
+              type="button"
+              onClick={onCopy}
+              className="inline-flex items-center justify-center p-1.5 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-medium shadow-xs transition-colors cursor-pointer"
+              title="Sao chép đường dẫn"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+          )}
 
-          {/* Nút Tải về */}
-          <button
-            type="button"
-            onClick={handleDownload}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-medium shadow-xs transition-colors cursor-pointer"
-            title="Tải tệp về máy"
-          >
-            <Download className="w-3.5 h-3.5 text-slate-600" />
-            <span>Tải về</span>
-          </button>
+          {fileIsValid ? (
+            <>
+              {/* Nút Xem trước */}
+              <button
+                type="button"
+                onClick={handleOpenPreview}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-medium shadow-xs transition-colors cursor-pointer"
+                title="Xem trước tài liệu"
+              >
+                <Eye className="w-3.5 h-3.5 text-blue-600" />
+                <span>Xem trước</span>
+              </button>
+
+              {/* Nút Tải về máy hoặc Mở liên kết nếu là link Google */}
+              {isGoogleUrl(url) ? (
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-blue-600 hover:text-blue-700 border border-slate-200 rounded-lg text-xs font-medium shadow-xs transition-colors cursor-pointer"
+                  title="Mở tài liệu gốc trong tab mới"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Mở liên kết</span>
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-medium shadow-xs transition-colors cursor-pointer"
+                  title="Tải tệp về máy"
+                >
+                  <Download className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Tải về</span>
+                </button>
+              )}
+            </>
+          ) : (
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-blue-600 hover:text-blue-700 border border-slate-200 rounded-lg text-xs font-medium shadow-xs transition-colors cursor-pointer"
+              title="Mở liên kết trong tab mới"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Mở liên kết</span>
+            </a>
+          )}
+
+          {onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="inline-flex items-center justify-center p-1.5 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 rounded-lg text-xs font-medium shadow-xs transition-colors cursor-pointer"
+              title="Xóa tài liệu này"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

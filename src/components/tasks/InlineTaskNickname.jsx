@@ -93,7 +93,7 @@ export const InlineTaskNickname = ({ task, canEdit = false, projectId, className
   }
 
   return (
-    <div className={`group/nickname flex min-w-0 items-start gap-2 ${className}`} onClick={stopRowNavigation}>
+    <div className={`group/nickname flex min-w-0 items-start gap-2 ${className}`}>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-bold text-gray-900" title={getTaskDisplayName(task)}>
           {getTaskDisplayName(task)}
@@ -104,7 +104,10 @@ export const InlineTaskNickname = ({ task, canEdit = false, projectId, className
           type="button"
           title={task?.nickname ? 'Sửa nickname' : 'Thêm nickname'}
           aria-label={task?.nickname ? 'Sửa nickname' : 'Thêm nickname'}
-          onClick={() => setIsEditing(true)}
+          onClick={(event) => {
+            event.stopPropagation();
+            setIsEditing(true);
+          }}
           className="shrink-0 rounded-md p-1 text-gray-400 opacity-100 transition-all hover:bg-blue-50 hover:text-blue-600 sm:text-gray-300 sm:opacity-0 sm:group-hover/nickname:opacity-100 sm:focus:opacity-100"
         >
           <Pencil className="h-3.5 w-3.5" />
