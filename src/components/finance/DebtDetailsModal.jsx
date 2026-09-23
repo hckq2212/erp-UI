@@ -105,7 +105,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
         const currentTotalPaid = debt.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0;
         const remaining = Math.round(Number(debt.amount || 0) - currentTotalPaid);
         const amount = Number(paymentAmount);
-        
+
         if (!paymentAmount || isNaN(amount) || amount <= 0) {
             toast.error('Vui lòng nhập số tiền thanh toán hợp lệ (lớn hơn 0)');
             return;

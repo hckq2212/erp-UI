@@ -1,7 +1,8 @@
 import { Fragment, useState, useRef, useEffect } from 'react';
 import {
   FileText, Plus, Eye, FileCheck, Receipt, ChevronDown, Check,
-  CalendarDays, CheckCircle, CheckCircle2, Clock, X, ShieldCheck, AlertCircle, ArrowUpRight
+  CalendarDays, CheckCircle, CheckCircle2, Clock, X, ShieldCheck, AlertCircle, ArrowUpRight,
+  Paperclip
 } from 'lucide-react';
 import { formatCurrency, formatDateToDDMMYYYY } from '../../utils/format';
 import { CONTRACT_STATUS_LABELS, PROJECT_STATUS_LABELS, QUOTATION_STATUS_LABELS } from '../../utils/enums';
@@ -528,96 +529,125 @@ const MilestoneList = ({ row, onPreviewDocument }) => {
 
       {/* Accordion sub-table header (chuẩn 1.html) */}
       <div className="rounded-xl bg-white p-5 shadow-xs border border-[#e5eeff] flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#e5eeff]/60 pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e5eeff]/60 pb-3">
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#ffdbca]/60 text-[#9d4300]">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#eff4ff] text-[#006c49]">
               <CalendarDays className="h-4 w-4" />
             </span>
-            <span className="text-sm font-semibold text-[#0b1c30]">
+            <span className="text-sm font-bold text-[#0b1c30]">
               Lịch thanh toán — {row.projectName || row.contractName} ({milestones.length} đợt)
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-[#e5eeff] text-[#006c49] text-xs font-semibold">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#eff4ff] border border-[#dce9ff] text-xs text-[#565e74] font-medium shadow-2xs">
+              <span>Tổng kỳ thu:</span>
+              <strong className="text-[#0b1c30] tabular-nums font-bold">{currency(row.sellingPrice)}</strong>
+              <span>net</span>
+              <span className="text-slate-400">·</span>
+              <span>(<strong className="text-[#0b1c30] tabular-nums font-bold">{currency(row.totalWithVat)}</strong> có VAT {row.vatRate}%)</span>
+            </span>
+            <span className="px-2.5 py-1 rounded-lg bg-[#e5eeff] text-[#006c49] border border-emerald-200/50 text-xs font-semibold">
               Đã thu {paidCount}/{milestones.length} đợt ({percentageCompleted}%)
             </span>
           </div>
-          <div className="text-xs text-[#565e74] font-medium">
-            Tổng kỳ thu: <b className="text-[#0b1c30]">{currency(row.sellingPrice)}</b> net (<b className="text-[#0b1c30]">{currency(row.totalWithVat)}</b> có VAT {row.vatRate}%)
-          </div>
         </div>
 
-        {/* 4 Đợt Grid Cards chuẩn giao diện 1.html */}
+        {/* 4 Đợt Grid Cards */}
         {milestones.length ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {milestones.map((item, index) => {
               const paid = Number(item.paidAmount || 0);
               const remaining = Number(item.unpaidAmount || 0);
               const isPaid = remaining <= 0 && paid > 0;
+              const payments = item.payments || [];
+              const attachmentCount = payments.reduce(
+                (sum, p) => sum + (p.attachments?.length || 0),
+                0
+              );
+              const hasFile = attachmentCount > 0;
 
               return (
                 <div
                   key={item.id}
                   onClick={() => setSelectedMilestone(item)}
-                  className={`p-4 rounded-xl cursor-pointer transition-all flex flex-col justify-between gap-3 group shadow-xs ${
-                    isPaid
-                      ? 'bg-[#eff4ff]/70 hover:bg-[#eff4ff] hover:shadow-md border border-transparent hover:border-[#006c49]/30'
-                      : 'bg-[#ffdbca]/30 hover:bg-[#ffdbca]/50 hover:shadow-md border border-[#9d4300]/20'
-                  }`}
+                  className="p-4 rounded-xl bg-[#eff4ff]/70 hover:bg-[#eff4ff] hover:shadow-md cursor-pointer transition-all flex flex-col justify-between gap-3 group border border-transparent hover:border-[#006c49]/30 shadow-xs"
                 >
-                  {/* Card Header: Tên đợt + Badge trạng thái */}
-                  <div className="flex items-center justify-between">
+                  {/* Card Header: Tên đợt + Badge trạng thái chuẩn task style */}
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className={`text-sm truncate transition-colors ${
-                        isPaid
-                          ? 'font-semibold text-[#0b1c30] group-hover:text-[#006c49]'
-                          : 'font-bold text-[#9d4300]'
-                      }`}>
+                      <span className="text-sm font-semibold text-[#0b1c30] group-hover:text-[#006c49] truncate transition-colors">
                         Đợt {index + 1} · {item.name}
                       </span>
                     </div>
-                    {isPaid ? (
-                      <span className="flex items-center text-[#006c49]" title="Đã thanh toán đủ">
-                        <CheckCircle2 className="h-4.5 w-4.5 text-[#006c49]" />
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold shadow-xs bg-[#9d4300] text-white">
-                        {remaining > 0 && paid > 0 ? 'MỘT PHẦN' : 'CHƯA THU'}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {hasFile && (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/60 text-[10px] font-bold shadow-2xs"
+                          title={`${attachmentCount} tệp chứng từ/UNC đính kèm`}
+                        >
+                          <FileText className="h-3 w-3 text-blue-600" />
+                          <span>{attachmentCount} {attachmentCount > 1 ? 'files' : 'file'}</span>
+                        </span>
+                      )}
+                      {isPaid ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60 text-[10px] font-bold uppercase tracking-wider shadow-2xs">
+                          <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                          <span>ĐÃ THU ĐỦ</span>
+                        </span>
+                      ) : remaining > 0 && paid > 0 ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/60 text-[10px] font-bold uppercase tracking-wider shadow-2xs">
+                          <Clock className="h-3 w-3 text-amber-600" />
+                          <span>MỘT PHẦN</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold uppercase tracking-wider shadow-2xs">
+                          <AlertCircle className="h-3 w-3 text-rose-600" />
+                          <span>CHƯA THU</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Card Amount & Due Date */}
                   <div className="flex items-baseline justify-between pt-1">
-                    <span className={`text-xs ${
-                      isPaid ? 'text-[#565e74]' : 'text-[#9d4300] font-medium'
-                    }`}>
+                    <span className="text-xs text-[#565e74]">
                       {isPaid ? 'Ngày: ' : 'Dự kiến: '}
-                      {formatDateToDDMMYYYY(item.dueDate) || 'Chưa có'}
+                      <span className="font-medium text-[#0b1c30]">
+                        {formatDateToDDMMYYYY(item.dueDate) || 'Chưa có'}
+                      </span>
                     </span>
-                    <span className={`text-sm font-bold tabular-nums ${
-                      isPaid ? 'text-[#0b1c30]' : 'text-[#9d4300]'
-                    }`}>
+                    <span className="text-sm font-bold tabular-nums text-[#0b1c30]">
                       {currency(item.amount)}
                     </span>
                   </div>
 
                   {/* Card Status Footer */}
-                  <div className={`pt-2 flex items-center justify-between text-xs border-t ${
-                    isPaid ? 'border-[#e5eeff]/60' : 'border-[#9d4300]/20'
-                  }`}>
+                  <div className="pt-2 flex items-center justify-between text-xs border-t border-[#dce9ff]/80">
                     {isPaid ? (
                       <span className="text-[#006c49] font-medium flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#006c49]" />
                         Đã thanh toán đủ
                       </span>
+                    ) : remaining > 0 && paid > 0 ? (
+                      <span className="text-amber-700 font-medium flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        Còn {currency(remaining)}
+                      </span>
                     ) : (
-                      <span className="text-[#9d4300] font-medium flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#9d4300]" />
+                      <span className="text-rose-700 font-medium flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                         Còn {currency(remaining)}
                       </span>
                     )}
-                    <span className={`text-xs ${isPaid ? 'text-[#565e74]' : 'text-[#9d4300]/70 font-medium'}`}>
-                      {item.percentage}% HĐ
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {hasFile && (
+                        <span className="text-[11px] text-[#565e74] flex items-center gap-1" title="Có chứng từ/UNC đính kèm">
+                          <Paperclip className="h-3 w-3 text-slate-400" />
+                          <span>{attachmentCount} UNC</span>
+                        </span>
+                      )}
+                      <span className="text-xs text-[#565e74] font-medium">
+                        {item.percentage}% HĐ
+                      </span>
+                    </div>
                   </div>
 
                   {/* Nút Xem lịch sử thanh toán */}
@@ -627,13 +657,9 @@ const MilestoneList = ({ row, onPreviewDocument }) => {
                       e.stopPropagation();
                       setSelectedMilestone(item);
                     }}
-                    className={`mt-1 w-full py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-xs ${
-                      isPaid
-                        ? 'bg-white hover:bg-[#ffdbca]/30 text-[#9d4300] border border-[#e5eeff]'
-                        : 'bg-white hover:bg-[#ffdbca]/40 text-[#9d4300] border border-[#9d4300]/20'
-                    }`}
+                    className="mt-1 w-full py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-2xs bg-white hover:bg-orange-50 hover:border-orange-200 text-[#0b1c30] hover:text-[#9d4300] border border-[#dce9ff]"
                   >
-                    <Receipt className="h-3.5 w-3.5" />
+                    <Receipt className="h-3.5 w-3.5 text-[#565e74]" />
                     <span>Xem lịch sử thanh toán</span>
                   </button>
                 </div>
@@ -695,15 +721,17 @@ export const PaymentOverviewTable = ({ rows, onAddDocument, onPreviewDocument })
         <thead className="bg-[#eff4ff] text-[10px] uppercase tracking-wide text-[#584237]">
           <tr>
             {[
-              'Khách hàng', 'Dự án', 'Team KD', 'Số HĐ', 'Trạng thái báo giá', 'Trạng thái hợp đồng',
-              'PM', 'Account dự án', 'TT triển khai', 'Tháng theo dõi thu', 'Tổng GT HĐ (có VAT)',
-              'GT thanh toán (chưa VAT)', 'Ngày TT gần nhất', 'Chưa thanh toán',
+              'Khách hàng', 'Dự án', 'Team KD', 'Số HĐ',
+              'Tổng GT HĐ (có VAT)', 'GT thanh toán (chưa VAT)',
+              'Trạng thái báo giá', 'Trạng thái hợp đồng',
+              'PM', 'Account dự án', 'TT triển khai', 'Tháng theo dõi thu',
+              'Ngày TT gần nhất', 'Chưa thanh toán',
               'Hợp đồng', 'BBNT', 'HĐ VAT', 'Ghi chú'
             ].map((title, index) => (
               <th
                 key={title}
                 className={`whitespace-nowrap px-3 py-3 font-semibold ${
-                  [10, 11, 13].includes(index)
+                  [4, 5, 13].includes(index)
                     ? 'text-right'
                     : [12, 14, 15, 16].includes(index)
                       ? 'text-center'
@@ -743,6 +771,12 @@ export const PaymentOverviewTable = ({ rows, onAddDocument, onPreviewDocument })
                 </td>
                 <td className="px-3 py-3">{row.salesOwner?.name || '—'}</td>
                 <td className="px-3 py-3 font-medium">{row.contractCode}</td>
+                <td className="whitespace-nowrap px-3 py-3 text-right font-semibold tabular-nums">
+                  {currency(row.totalWithVat)}
+                </td>
+                <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">
+                  {currency(row.sellingPrice)}
+                </td>
                 <td className="px-3 py-3">
                   <StatusBadge status={row.quotationStatus}>
                     {QUOTATION_STATUS_LABELS[row.quotationStatus] || 'Chưa có báo giá'}
@@ -762,12 +796,6 @@ export const PaymentOverviewTable = ({ rows, onAddDocument, onPreviewDocument })
                 </td>
                 <td className="px-3 py-3">
                   {row.collectionMonth ? `Tháng ${new Date(row.collectionMonth).getMonth() + 1}` : '—'}
-                </td>
-                <td className="whitespace-nowrap px-3 py-3 text-right font-semibold tabular-nums">
-                  {currency(row.totalWithVat)}
-                </td>
-                <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">
-                  {currency(row.sellingPrice)}
                 </td>
                 <td className="px-3 py-3 text-center">
                   {formatDateToDDMMYYYY(row.latestPaymentDate) || (

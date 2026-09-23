@@ -441,7 +441,7 @@ export const ContractDebtList = ({ contracts = [], debts = [], milestones = [] }
                     setFocusMilestoneId(null);
                 }}
                 contractId={planContract?.id}
-                sellingPrice={Number(planContract?.sellingPrice || planContract?.selling_price || 0)}
+                sellingPrice={Number(planContract?.totalWithVat || planContract?.selling_price || 0)}
                 initialFocusMilestoneId={focusMilestoneId}
                 isReadOnly={
                     ['COMPLETED', 'CANCELLED'].includes(planContract?.status) ||

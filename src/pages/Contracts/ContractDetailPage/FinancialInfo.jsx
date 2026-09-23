@@ -64,8 +64,8 @@ export const FinancialInfo = ({ contract, project }) => {
     }
   };
 
-  const sellingPrice = Number(contract.sellingPrice || contract.selling_price || 0);
-
+  const sellingPrice = Number(contract.totalWithVat || contract.selling_price || 0);
+  console.log("sellingPrice", sellingPrice);
   // Unified Data Processing
   const processedMilestones = milestones?.map(m => {
     // Find debt associated with this milestone

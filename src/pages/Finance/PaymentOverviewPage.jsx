@@ -376,30 +376,97 @@ export const PaymentOverviewPage = () => {
                   onPreviewDocument={(target) => setPreviewTarget(target)}
                 />
               )}
-              <footer className="flex flex-col justify-between gap-3 px-5 py-3 text-xs text-[#565e74] sm:flex-row sm:items-center border-t border-slate-100">
-                <span>
-                  Hiển thị <b className="text-[#0b1c30]">{rows.length}</b> trong tổng số <b className="text-[#0b1c30]">{data?.meta?.total || 0}</b> dự án
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    disabled={filters.page <= 1}
-                    onClick={() => setFilters((state) => ({ ...state, page: state.page - 1 }))}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eff4ff] disabled:opacity-40"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <span className="flex h-8 min-w-8 items-center justify-center rounded-lg bg-[#f97316] px-2 font-semibold text-white">
-                    {filters.page}
-                  </span>
-                  <button
-                    disabled={filters.page >= (data?.meta?.totalPages || 1)}
-                    onClick={() => setFilters((state) => ({ ...state, page: state.page + 1 }))}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eff4ff] disabled:opacity-40"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </footer>
+              {(() => {
+                const totalItems = data?.meta?.total ?? rows.length ?? 0;
+                const limit = filters.limit || 10;
+                const currentPage = filters.page || 1;
+                const totalPages = data?.meta?.totalPages || Math.max(1, Math.ceil(totalItems / limit));
+                const startItem = totalItems > 0 ? (currentPage - 1) * limit + 1 : 0;
+                const endItem = Math.min(totalItems, currentPage * limit);
+
+                const getPageNumbers = () => {
+                  const pages = [];
+                  const showThreshold = 7;
+                  if (totalPages <= showThreshold) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                  } else {
+                    pages.push(1);
+                    const left = Math.max(2, currentPage - 1);
+                    const right = Math.min(totalPages - 1, currentPage + 1);
+                    if (left > 2) pages.push('...');
+                    for (let i = left; i <= right; i++) pages.push(i);
+                    if (right < totalPages - 1) pages.push('...');
+                    pages.push(totalPages);
+                  }
+                  return pages;
+                };
+
+                return (
+                  <footer className="flex flex-col justify-between gap-3 px-5 py-3.5 text-xs text-[#565e74] sm:flex-row sm:items-center border-t border-slate-100 bg-white">
+                    <div className="flex flex-wrap items-center gap-4">
+                      <span>
+                        Hiển thị <strong className="text-[#0b1c30] font-semibold">{totalItems > 0 ? `${startItem} – ${endItem}` : '0'}</strong> trong tổng số <strong className="text-[#0b1c30] font-semibold">{totalItems}</strong> dự án
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span>Dòng mỗi trang:</span>
+                        <select
+                          value={filters.limit || 10}
+                          onChange={(e) => setFilters((state) => ({ ...state, limit: Number(e.target.value), page: 1 }))}
+                          className="h-8 px-2 rounded-lg bg-[#eff4ff] text-[#0b1c30] font-medium text-xs outline-none border border-[#dce9ff] cursor-pointer hover:bg-[#e2ebfc] transition-colors"
+                        >
+                          <option value={10}>10 dòng</option>
+                          <option value={25}>25 dòng</option>
+                          <option value={50}>50 dòng</option>
+                          <option value={100}>100 dòng</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                      <button
+                        disabled={currentPage <= 1}
+                        onClick={() => setFilters((state) => ({ ...state, page: state.page - 1 }))}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eff4ff] text-[#565e74] hover:bg-[#e2ebfc] hover:text-[#0b1c30] disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
+                        title="Trang trước"
+                        type="button"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+
+                      {getPageNumbers().map((pageItem, idx) => (
+                        pageItem === '...' ? (
+                          <span key={`ellipsis-${idx}`} className="px-1 text-xs text-[#565e74]">
+                            ...
+                          </span>
+                        ) : (
+                          <button
+                            key={pageItem}
+                            onClick={() => setFilters((state) => ({ ...state, page: pageItem }))}
+                            className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2.5 text-xs font-semibold transition-all ${
+                              currentPage === pageItem
+                                ? 'bg-[#f97316] text-white shadow-xs font-bold'
+                                : 'bg-[#eff4ff] text-[#565e74] hover:bg-[#e2ebfc] hover:text-[#0b1c30]'
+                            }`}
+                            type="button"
+                          >
+                            {pageItem}
+                          </button>
+                        )
+                      ))}
+
+                      <button
+                        disabled={currentPage >= totalPages}
+                        onClick={() => setFilters((state) => ({ ...state, page: state.page + 1 }))}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eff4ff] text-[#565e74] hover:bg-[#e2ebfc] hover:text-[#0b1c30] disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
+                        title="Trang sau"
+                        type="button"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </footer>
+                );
+              })()}
             </section>
       </div>
 
