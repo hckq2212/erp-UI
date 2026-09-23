@@ -22,7 +22,7 @@
     "date-fns": "^4.1.0",
     "docx-preview": "^0.4.0",
     "framer-motion": "^12.33.0",
-    "jspdf": "^2.5.2",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.563.0",
     "pdfjs-dist": "^6.3.289",
     "postcss": "^8.5.6",
