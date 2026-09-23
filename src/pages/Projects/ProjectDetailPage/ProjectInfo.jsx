@@ -21,6 +21,7 @@ import {
     useGetProjectProductDescriptionsQuery,
     useRejectProjectProductDescriptionMutation,
     useSubmitProjectProductDescriptionMutation,
+    useUpdateProjectMutation,
     useUpdateProjectProductDescriptionMutation,
 } from '../../../api/projects';
 import { useGetMeQuery } from '../../../api/auth';
@@ -56,6 +57,95 @@ const formatDateTime = (value) => {
         hour: '2-digit',
         minute: '2-digit',
     });
+};
+
+const formatDateOnly = (value) => {
+    if (!value) return 'Chưa xác định';
+    return new Date(value).toLocaleDateString('vi-VN');
+};
+
+const toDateInputValue = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+        return value.slice(0, 10);
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const parseDateOnly = (value) => {
+    if (!value) return null;
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return new Date(`${value}T00:00:00`);
+    }
+    return new Date(value);
+};
+
+const getProjectTimeline = (startDate, endDate) => {
+    const start = parseDateOnly(startDate);
+    const end = parseDateOnly(endDate);
+
+    if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return {
+            hasTimeline: false,
+            percent: 0,
+            label: 'Chưa xác định',
+            remainingText: 'Chưa có đủ ngày bắt đầu và ngày kết thúc từ cơ hội',
+        };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+
+    if (end < start) {
+        return {
+            hasTimeline: false,
+            percent: 0,
+            label: 'Ngày không hợp lệ',
+            remainingText: 'Ngày kết thúc đang nhỏ hơn ngày bắt đầu',
+        };
+    }
+
+    const totalMs = Math.max(end.getTime() - start.getTime(), 1);
+    const elapsedMs = today.getTime() - start.getTime();
+    const percent = Math.min(100, Math.max(0, Math.round((elapsedMs / totalMs) * 100)));
+    const oneDayMs = 24 * 60 * 60 * 1000;
+
+    if (today < start) {
+        const daysUntilStart = Math.ceil((start.getTime() - today.getTime()) / oneDayMs);
+        return {
+            hasTimeline: true,
+            percent: 0,
+            label: 'Chưa bắt đầu',
+            remainingText: `Còn ${daysUntilStart} ngày đến ngày bắt đầu`,
+        };
+    }
+
+    if (today > end) {
+        const daysOver = Math.ceil((today.getTime() - end.getTime()) / oneDayMs);
+        return {
+            hasTimeline: true,
+            percent: 100,
+            label: 'Đã quá hạn',
+            remainingText: `Quá hạn ${daysOver} ngày so với kế hoạch`,
+        };
+    }
+
+    const daysRemaining = Math.ceil((end.getTime() - today.getTime()) / oneDayMs);
+    return {
+        hasTimeline: true,
+        percent,
+        label: 'Đang thực hiện',
+        remainingText: daysRemaining === 0 ? 'Hôm nay là ngày kết thúc theo kế hoạch' : `Còn ${daysRemaining} ngày theo kế hoạch`,
+    };
 };
 
 const SPEC_TYPE_OPTIONS = [
@@ -970,8 +1060,50 @@ const ProductDescriptionSection = ({ project }) => {
 };
 
 export const ProjectInfo = ({ project }) => {
+    const { data: user } = useGetMeQuery();
+    const [updateProject, { isLoading: isUpdatingTimeline }] = useUpdateProjectMutation();
     const contract = project?.contract || {};
     const contractAttachments = Array.isArray(contract.attachments) ? contract.attachments : [];
+    const timeline = getProjectTimeline(project?.plannedStartDate, project?.plannedEndDate);
+    const [timelineForm, setTimelineForm] = useState({
+        plannedStartDate: toDateInputValue(project?.plannedStartDate),
+        plannedEndDate: toDateInputValue(project?.plannedEndDate),
+    });
+    const currentUserId = getCurrentUserId(user);
+    const userRole = getUserAccountRole(user);
+    const isAssignedPm = userRole === 'PM' && project?.team?.members?.some(member =>
+        (member.role === 'PROJECT_MANAGER' || member.role === 'PM' || member.role === TEAM_MEMBER_ROLE.PROJECT_MANAGER) &&
+        isSameUser(member.user?.id, currentUserId)
+    );
+    const canEditTimeline = userRole === 'ADMIN' || isAssignedPm;
+    const hasTimelineChanges = timelineForm.plannedStartDate !== toDateInputValue(project?.plannedStartDate) ||
+        timelineForm.plannedEndDate !== toDateInputValue(project?.plannedEndDate);
+
+    useEffect(() => {
+        setTimelineForm({
+            plannedStartDate: toDateInputValue(project?.plannedStartDate),
+            plannedEndDate: toDateInputValue(project?.plannedEndDate),
+        });
+    }, [project?.plannedStartDate, project?.plannedEndDate]);
+
+    const handleTimelineChange = (key, value) => {
+        setTimelineForm(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleSaveTimeline = async () => {
+        if (!canEditTimeline || !project?.id) return;
+
+        try {
+            await updateProject({
+                id: project.id,
+                plannedStartDate: timelineForm.plannedStartDate || null,
+                plannedEndDate: timelineForm.plannedEndDate || null,
+            }).unwrap();
+            toast.success('Đã cập nhật tiến trình dự án');
+        } catch (error) {
+            toast.error(error?.data?.message || 'Không thể cập nhật tiến trình dự án');
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -991,6 +1123,62 @@ export const ProjectInfo = ({ project }) => {
                             <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Tên hợp đồng</p>
                             <p className="text-sm font-medium text-gray-700">{contract.name || 'Chưa có'}</p>
                         </div>
+                    </div>
+                    <div className="border-t border-gray-100 pt-4">
+                        <div className="mb-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                            <div>
+                                <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Tiến trình dự án</p>
+                                <div className="flex flex-col gap-3 sm:flex-row sm:gap-12 pl-4">
+                                    <div className="flex flex-col">
+                                        <p className="font-medium text-gray-700">Ngày dự kiến bắt đầu</p>
+                                        {canEditTimeline ? (
+                                            <input
+                                                type="date"
+                                                value={timelineForm.plannedStartDate}
+                                                onChange={(event) => handleTimelineChange('plannedStartDate', event.target.value)}
+                                                disabled={isUpdatingTimeline}
+                                                className="mt-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                            />
+                                        ) : (
+                                            <p className="text-sm font-medium text-gray-700">{formatDateOnly(project?.plannedStartDate)}</p>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <p className="font-medium text-gray-700">Ngày dự kiến kết thúc</p>
+                                        {canEditTimeline ? (
+                                            <input
+                                                type="date"
+                                                value={timelineForm.plannedEndDate}
+                                                onChange={(event) => handleTimelineChange('plannedEndDate', event.target.value)}
+                                                disabled={isUpdatingTimeline}
+                                                className="mt-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-blue-400 disabled:bg-gray-50"
+                                            />
+                                        ) : (
+                                            <p className="text-sm font-medium text-gray-700">{formatDateOnly(project?.plannedEndDate)}</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex flex-col items-start gap-2 lg:items-end">
+                                <p className="font-medium text-blue-700">{timeline.remainingText}</p>
+                                {canEditTimeline && (
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveTimeline}
+                                        disabled={!hasTimelineChanges || isUpdatingTimeline}
+                                        className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                                    >
+                                        {isUpdatingTimeline ? (
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        ) : (
+                                            <CheckCircle2 className="h-3.5 w-3.5" />
+                                        )}
+                                        Sửa tiến trình
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
                     </div>
                     {contractAttachments.length > 0 ? (
                         <div className="flex flex-col items-start gap-2 overflow-hidden">

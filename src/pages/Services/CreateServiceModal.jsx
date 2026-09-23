@@ -12,6 +12,7 @@ import { toast } from 'react-toastify';
 
 const serviceSchema = z.object({
     name: z.string().min(1, 'Tên dịch vụ là bắt buộc'),
+    code: z.string().trim().min(1, 'Mã dịch vụ là bắt buộc'),
     description: z.string().optional(),
     unit: z.string().min(1, 'Đơn vị tính là bắt buộc'),
     // outputJobId: z.string().min(1, 'Vui lòng chọn công việc đầu ra'),
@@ -39,6 +40,7 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
         resolver: zodResolver(serviceSchema),
         defaultValues: {
             name: '',
+            code: '',
             description: '',
             unit: '',
             outputJobId: '',
@@ -51,6 +53,7 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
         try {
             const cleanedData = {
                 ...data,
+                code: data.code.trim(),
                 description: data.description ? data.description.trim() : ''
             };
             const res = await createService(cleanedData).unwrap();
@@ -116,6 +119,13 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
                     {...register('name')}
                     error={errors.name?.message}
                     placeholder="Ví dụ: Quay phim, Thiết kế..."
+                />
+
+                <Input
+                    label="Mã dịch vụ *"
+                    {...register('code')}
+                    error={errors.code?.message}
+                    placeholder="Ví dụ: SV-VID, SVC-DES..."
                 />
 
                 <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">

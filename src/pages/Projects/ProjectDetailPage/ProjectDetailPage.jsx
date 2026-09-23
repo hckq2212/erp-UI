@@ -97,7 +97,7 @@ export const ProjectDetailPage = () => {
   const handleSyncServiceJobs = async () => {
     try {
       const result = await syncProjectServiceJobs(id).unwrap();
-      toast.success(`Đồng bộ xong: tạo ${result.createdTasks || 0} task, cập nhật ${result.updatedOutputTasks || 0} task đầu ra, bổ sung ${result.backfilledResults || 0} kết quả.`);
+      toast.success(`Đồng bộ xong: tạo ${result.createdContractServices || 0} dịch vụ, cập nhật ${result.updatedContractServices || 0} dịch vụ, tạo ${result.createdTasks || 0} task, cập nhật ${result.updatedOutputTasks || 0} task đầu ra, bổ sung ${result.backfilledResults || 0} kết quả.`);
     } catch (err) {
       toast.error(err?.data?.message || 'Có lỗi xảy ra khi đồng bộ công việc');
     }
@@ -172,7 +172,7 @@ export const ProjectDetailPage = () => {
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm transition-all active:scale-95 disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${isSyncingServiceJobs ? 'animate-spin' : ''}`} />
-                <span>{isSyncingServiceJobs ? 'Đang đồng bộ...' : 'Đồng bộ công việc'}</span>
+                <span>{isSyncingServiceJobs ? 'Đang đồng bộ...' : 'Đồng bộ'}</span>
               </button>
             )}
             {canConfirmProject && (
