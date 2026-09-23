@@ -32,9 +32,10 @@ import { cn } from '../../../utils/cn';
 import { formatCurrency, formatDate } from '../../../utils/format';
 import { canUnlockDebt } from '../../../utils/projectPause';
 
-export const FinancialInfo = ({ contract }) => {
+export const FinancialInfo = ({ contract, project }) => {
   const contractId = contract.id;
   const currentUser = useSelector(selectCurrentUser);
+  const isClosed = ['COMPLETED', 'CANCELLED'].includes(contract?.status) || ['COMPLETED', 'CANCELLED'].includes(project?.status);
 
   // Queries
   const { data: milestones, isLoading: loadingMilestones } = useGetPaymentMilestonesByContractQuery(contractId);
@@ -183,7 +184,7 @@ export const FinancialInfo = ({ contract }) => {
             onClick={() => setIsMilestoneModalOpen(true)}
             className="rounded-xl border-gray-200 hover:bg-white hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm h-10 px-4"
           >
-            <Settings2 className="w-4 h-4 mr-2" /> Quản lý lộ trình
+            <Settings2 className="w-4 h-4 mr-2" /> {isClosed ? 'Xem lộ trình' : 'Quản lý lộ trình'}
           </Button>
         </div>
 
@@ -354,6 +355,7 @@ export const FinancialInfo = ({ contract }) => {
         milestones={milestones || []}
         contractId={contractId}
         sellingPrice={sellingPrice}
+        isReadOnly={isClosed}
       />
 
       {/* Modal mở khóa công nợ — chỉ BOD/ADMIN, bắt buộc lý do */}

@@ -148,14 +148,15 @@ export const ProjectDetailPage = () => {
   const daysLeft = daysUntilAutoClose(project);
   const inReminderWindow = isInReminderWindow(daysLeft);
   const isOnHold = project?.status === PAUSE_STATUS.ON_HOLD;
+  const isClosed = ['COMPLETED', 'CANCELLED'].includes(project?.status);
   const isPendingPauseApproval = project?.status === PAUSE_STATUS.PENDING_PAUSE_APPROVAL;
   const showPauseTab = isOnHold || isPendingPauseApproval
     || Boolean(project?.pausedAt) || isAdminOrBOD || isProjectManager;
 
-  const canAssignPm = !isOnHold && (user?.role === 'ADMIN' || user?.role === 'BOD') && !hasProjectManager;
-  const canConfirmProject = !isOnHold && project?.status === 'PENDING_CONFIRMATION' &&
+  const canAssignPm = !isOnHold && !isClosed && (user?.role === 'ADMIN' || user?.role === 'BOD') && !hasProjectManager;
+  const canConfirmProject = !isOnHold && !isClosed && project?.status === 'PENDING_CONFIRMATION' &&
     (user?.role === 'ADMIN' || isSameUser(project?.team?.teamLead?.id, currentUserId));
-  const canSyncServiceJobs = !isOnHold && (user?.role === 'ADMIN' || user?.role === 'PM') && !isProjectLead;
+  const canSyncServiceJobs = !isOnHold && !isClosed && (user?.role === 'ADMIN' || user?.role === 'PM') && !isProjectLead;
 
   const handleResume = async () => {
     try {
@@ -522,7 +523,7 @@ export const ProjectDetailPage = () => {
             <ProjectInfo project={project} formatDate={formatDate} />
           </div>
           <div className="space-y-6">
-            <TeamInfo team={project.team} isOnHold={isOnHold} />
+            <TeamInfo team={project.team} isOnHold={isOnHold} isClosed={isClosed} project={project} />
           </div>
         </div>
       )}

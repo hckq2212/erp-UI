@@ -148,7 +148,13 @@ export const ContractDetailPage = () => {
     input.click();
   };
 
+  const isContractOrProjectClosed = ['COMPLETED', 'CANCELLED'].includes(contract?.status) || ['COMPLETED', 'CANCELLED'].includes(project?.status);
+
   const handleAddMilestone = async () => {
+    if (isContractOrProjectClosed) {
+      toast.error('Dự án hoặc hợp đồng đã hoàn tất/đã đóng, không thể thêm mốc thanh toán');
+      return;
+    }
     const title = window.prompt('Tiêu đề mốc thanh toán:');
     if (!title) return;
     const dueDate = window.prompt('Ngày đến hạn (YYYY-MM-DD):');
@@ -163,6 +169,10 @@ export const ContractDetailPage = () => {
   };
 
   const handleEditMilestone = async (milestone) => {
+    if (isContractOrProjectClosed) {
+      toast.error('Dự án hoặc hợp đồng đã hoàn tất/đã đóng, không thể sửa mốc thanh toán');
+      return;
+    }
     const title = window.prompt('Tiêu đề mốc thanh toán:', milestone.title) || milestone.title;
     const dueDate = window.prompt('Ngày đến hạn (YYYY-MM-DD):', milestone.dueDate) || milestone.dueDate;
     const amountStr = window.prompt('Số tiền (VNĐ):', milestone.amount) || String(milestone.amount || '0');
@@ -176,6 +186,10 @@ export const ContractDetailPage = () => {
   };
 
   const handleDeleteMilestone = async (milestone) => {
+    if (isContractOrProjectClosed) {
+      toast.error('Dự án hoặc hợp đồng đã hoàn tất/đã đóng, không thể xóa mốc thanh toán');
+      return;
+    }
     if (!window.confirm(`Bạn có chắc chắn muốn xóa mốc "${milestone.title}"?`)) return;
     try {
       await deleteMilestone(milestone.id).unwrap();
@@ -312,7 +326,7 @@ export const ContractDetailPage = () => {
               uploadProgress={uploadProgress}
               currentUser={currentUser}
             />
-            <FinancialInfo contract={contract} />
+            <FinancialInfo contract={contract} project={project} />
           </div>
 
           {/* Sidebar - Right Side (1/3) */}

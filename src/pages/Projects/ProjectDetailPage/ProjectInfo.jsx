@@ -545,8 +545,10 @@ const ProductDescriptionSection = ({ project }) => {
             hasTeamMemberRole(member, TEAM_MEMBER_ROLE.ACCOUNT) &&
             isSameUser(member.user?.id, currentUserId)
         );
-    const canManageSubmission = isAdmin || isAccount || isAssignedPm;
-    const canReview = Boolean(isAssignedPm || isAdmin);
+    const isClosed = ['COMPLETED', 'CANCELLED'].includes(project?.status);
+    const isOnHold = project?.status === 'ON_HOLD' || Boolean(project?.isOnHold);
+    const canManageSubmission = !isClosed && !isOnHold && (isAdmin || isAccount || isAssignedPm);
+    const canReview = !isClosed && !isOnHold && Boolean(isAssignedPm || isAdmin);
     const [products, setProducts] = useState([emptyProduct()]);
     const [loadedSubmissionId, setLoadedSubmissionId] = useState(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -669,12 +671,28 @@ const ProductDescriptionSection = ({ project }) => {
     };
 
     const openCreateForm = () => {
+        if (isClosed) {
+            toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể tạo bản gửi.');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể tạo bản gửi.');
+            return;
+        }
         setProducts([emptyProduct()]);
         setLoadedSubmissionId(null);
         setIsFormOpen(true);
     };
 
     const openEditForm = (submission) => {
+        if (isClosed) {
+            toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể chỉnh sửa.');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể chỉnh sửa.');
+            return;
+        }
         const editableItems = Array.isArray(submission.items) ? submission.items : [];
         setProducts(editableItems.length ? editableItems.map(toEditableProduct) : [emptyProduct()]);
         setLoadedSubmissionId(submission.id);
@@ -716,6 +734,14 @@ const ProductDescriptionSection = ({ project }) => {
     };
 
     const saveDraft = async () => {
+        if (isClosed) {
+            toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể lưu.');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể lưu.');
+            return;
+        }
         try {
             const payload = buildPayload();
             if (activeSubmission?.status === 'REJECTED') {
@@ -736,6 +762,14 @@ const ProductDescriptionSection = ({ project }) => {
     };
 
     const submitForReview = async () => {
+        if (isClosed) {
+            toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể gửi duyệt.');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể gửi duyệt.');
+            return;
+        }
         try {
             const payload = buildPayload();
             if (activeSubmission?.status === 'REJECTED') {
@@ -755,6 +789,14 @@ const ProductDescriptionSection = ({ project }) => {
     };
 
     const handleApprove = async (submissionId) => {
+        if (isClosed) {
+            toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể duyệt.');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể duyệt.');
+            return;
+        }
         try {
             await approveSubmission({ projectId, submissionId }).unwrap();
             toast.success('Đã duyệt version mô tả sản phẩm');
@@ -764,6 +806,14 @@ const ProductDescriptionSection = ({ project }) => {
     };
 
     const handleReject = async (submissionId, reviewNote = '') => {
+        if (isClosed) {
+            toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể từ chối.');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể từ chối.');
+            return;
+        }
         try {
             await rejectSubmission({ projectId, submissionId, reviewNote }).unwrap();
             toast.success('Đã không duyệt bản mô tả sản phẩm');
@@ -1128,7 +1178,9 @@ export const ProjectInfo = ({ project }) => {
         hasTeamMemberRole(member, TEAM_MEMBER_ROLE.PROJECT_MANAGER) &&
         isSameUser(member.user?.id, currentUserId)
     );
-    const canEditTimeline = userRole === 'ADMIN' || isAssignedPm;
+    const isClosed = ['COMPLETED', 'CANCELLED'].includes(project?.status);
+    const isOnHold = project?.status === 'ON_HOLD' || Boolean(project?.isOnHold);
+    const canEditTimeline = !isClosed && !isOnHold && (userRole === 'ADMIN' || isAssignedPm);
     const hasTimelineChanges = timelineForm.plannedStartDate !== toDateInputValue(project?.plannedStartDate) ||
         timelineForm.plannedEndDate !== toDateInputValue(project?.plannedEndDate);
 
@@ -1144,6 +1196,14 @@ export const ProjectInfo = ({ project }) => {
     };
 
     const handleSaveTimeline = async () => {
+        if (isClosed) {
+            toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể chỉnh sửa tiến trình dự án');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể chỉnh sửa tiến trình dự án');
+            return;
+        }
         if (!canEditTimeline || !project?.id) return;
 
         try {

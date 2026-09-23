@@ -48,7 +48,7 @@ const WorkloadBadge = ({ workload }) => {
     );
 };
 
-export const TeamInfo = ({ team, isOnHold = false }) => {
+export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) => {
     const { data: currentUser } = useGetMeQuery();
     const workloadDate = useMemo(() => {
         const now = new Date();
@@ -74,7 +74,9 @@ export const TeamInfo = ({ team, isOnHold = false }) => {
     const isCurrentProjectManager = currentUser?.role === 'PM' && members.some(member =>
         isSameUser(member.user?.id, currentUserId) && hasTeamMemberRole(member, TEAM_MEMBER_ROLE.PROJECT_MANAGER)
     );
-    const canManageTeam = currentUser?.role === 'ADMIN' || isCurrentProjectManager;
+    const isProjectClosed = isClosed || ['COMPLETED', 'CANCELLED'].includes(project?.status);
+    const isProjectOnHold = isOnHold || project?.status === 'ON_HOLD' || Boolean(project?.isOnHold);
+    const canManageTeam = !isProjectClosed && !isProjectOnHold && (currentUser?.role === 'ADMIN' || isCurrentProjectManager);
     const canAddMember = canManageTeam;
     const assignableMemberRoles = useMemo(
         () => prioritizeLeadRole(Object.values(TEAM_MEMBER_ROLE).filter(role => role !== TEAM_MEMBER_ROLE.PROJECT_MANAGER)),
@@ -126,6 +128,14 @@ export const TeamInfo = ({ team, isOnHold = false }) => {
     if (!team) return null;
 
     const handleAddMember = async () => {
+        if (isProjectClosed) {
+            toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể thêm nhân sự.');
+            return;
+        }
+        if (isProjectOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể thêm nhân sự.');
+            return;
+        }
         if (!selectedUserId || selectedRoles.length === 0) return;
         try {
             await addMember({ id: team.id, userId: selectedUserId, roles: selectedRoles }).unwrap();
@@ -153,6 +163,14 @@ export const TeamInfo = ({ team, isOnHold = false }) => {
     };
 
     const openRoleEditor = (group) => {
+        if (isProjectClosed) {
+            toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể chỉnh sửa vai trò.');
+            return;
+        }
+        if (isProjectOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể chỉnh sửa vai trò.');
+            return;
+        }
         setEditingUserId(group.userId);
         setDraftRoles(group.roles);
     };
@@ -164,6 +182,14 @@ export const TeamInfo = ({ team, isOnHold = false }) => {
     };
 
     const handleUpdateRoles = async (userId) => {
+        if (isProjectClosed) {
+            toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể cập nhật vai trò.');
+            return;
+        }
+        if (isProjectOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể cập nhật vai trò.');
+            return;
+        }
         if (draftRoles.length === 0) return;
         try {
             await updateMemberRoles({ teamId: team.id, userId, roles: draftRoles }).unwrap();
@@ -176,6 +202,14 @@ export const TeamInfo = ({ team, isOnHold = false }) => {
     };
 
     const handleRemoveMember = async (group) => {
+        if (isProjectClosed) {
+            toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể xóa nhân sự.');
+            return;
+        }
+        if (isProjectOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể xóa nhân sự.');
+            return;
+        }
         try {
             for (const membership of group.memberships) {
                 await removeMember({ memberId: membership.id, teamId: team.id }).unwrap();

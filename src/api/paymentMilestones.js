@@ -45,7 +45,10 @@ export const paymentMilestonesApi = api.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: [{ type: 'PaymentMilestones', id: 'LIST' }],
+      invalidatesTags: [
+        { type: 'PaymentMilestones', id: 'LIST' },
+        { type: 'Debts', id: 'LIST' },
+      ],
     }),
     updatePaymentMilestone: builder.mutation({
       query: ({ id, ...data }) => ({
@@ -56,6 +59,7 @@ export const paymentMilestonesApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [
         { type: 'PaymentMilestones', id },
         { type: 'PaymentMilestones', id: 'LIST' },
+        { type: 'Debts', id: 'LIST' },
       ],
     }),
     deletePaymentMilestone: builder.mutation({
@@ -63,7 +67,10 @@ export const paymentMilestonesApi = api.injectEndpoints({
         url: `/payment-milestones/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: [{ type: 'PaymentMilestones', id: 'LIST' }],
+      invalidatesTags: [
+        { type: 'PaymentMilestones', id: 'LIST' },
+        { type: 'Debts', id: 'LIST' },
+      ],
     }),
     updatePaymentStatus: builder.mutation({
       query: ({ id, status, paidDate }) => ({
@@ -74,6 +81,7 @@ export const paymentMilestonesApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [
         { type: 'PaymentMilestones', id },
         { type: 'PaymentMilestones', id: 'LIST' },
+        { type: 'Debts', id: 'LIST' },
       ],
     }),
     bulkSavePaymentMilestones: builder.mutation({
@@ -82,7 +90,10 @@ export const paymentMilestonesApi = api.injectEndpoints({
         method: 'PUT',
         body: { milestones },
       }),
-      invalidatesTags: [{ type: 'PaymentMilestones', id: 'LIST' }],
+      invalidatesTags: [
+        { type: 'PaymentMilestones', id: 'LIST' },
+        { type: 'Debts', id: 'LIST' },
+      ],
     }),
   }),
 });
