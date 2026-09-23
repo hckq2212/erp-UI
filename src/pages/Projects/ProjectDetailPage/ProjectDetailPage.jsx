@@ -1,13 +1,27 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CalendarPlus, CheckCircle, RefreshCw, UserPlus } from 'lucide-react';
+import {
+  ArrowLeft, CalendarPlus, CheckCircle, RefreshCw, UserPlus,
+  PauseCircle, Archive, PlayCircle, AlertTriangle, Clock,
+} from 'lucide-react';
 import {
   useGetProjectQuery,
   useAssignProjectMutation,
   useConfirmProjectMutation,
   useSyncProjectServiceJobsMutation,
+  useResumeProjectMutation,
 } from '../../../api/projects';
 import { PROJECT_MANAGEMENT_ROLES, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS, USER_ROLE } from '../../../utils/enums';
+import {
+  PROJECT_STATUS as PAUSE_STATUS,
+  canRequestPause,
+  canPauseDirect,
+  canResume,
+  canCloseDirect,
+  canRequestClose,
+  daysUntilAutoClose,
+  isInReminderWindow,
+} from '../../../utils/projectPause';
 import { useGetUsersQuery } from '../../../api/users';
 import { TaskStatistics } from './TaskStatistics';
 import { TaskTable } from './TaskTable';
@@ -19,6 +33,9 @@ import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../../store/authSlice';
 import { CreateMonthlyWorkModal } from './CreateMonthlyWorkModal';
 import { ExtraTasksSection } from './ExtraTasksSection';
+import { PauseProjectModal } from './PauseProjectModal';
+import { CloseProjectModal } from './CloseProjectModal';
+import { PauseHistorySection } from './PauseHistorySection';
 import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
 import { cn } from '../../../utils/cn';
 
@@ -30,38 +47,55 @@ export const ProjectDetailPage = () => {
   const [assignProject, { isLoading: isAssigningProject }] = useAssignProjectMutation();
   const [confirmProject, { isLoading: isConfirming }] = useConfirmProjectMutation();
   const [syncProjectServiceJobs, { isLoading: isSyncingServiceJobs }] = useSyncProjectServiceJobsMutation();
+  const [resumeProject, { isLoading: isResuming }] = useResumeProjectMutation();
   const [isMonthlyWorkModalOpen, setIsMonthlyWorkModalOpen] = useState(false);
+  const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
+  const [isPauseDirectModalOpen, setIsPauseDirectModalOpen] = useState(false);
+  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  const [isCloseDirectModalOpen, setIsCloseDirectModalOpen] = useState(false);
   const [selectedPmId, setSelectedPmId] = useState('');
   const [activeTab, setActiveTab] = useState('MAIN');
   const user = useSelector(selectCurrentUser);
   const currentUserId = getCurrentUserId(user);
   const projectManagerMember = project?.team?.members?.find(member => member.role === 'PROJECT_MANAGER');
   const hasProjectManager = Boolean(projectManagerMember?.user?.id);
-  const canAssignPm = (user?.role === 'ADMIN' || user?.role === 'BOD') && !hasProjectManager;
-  const canConfirmProject = project?.status === 'PENDING_CONFIRMATION' &&
-    (user?.role === 'ADMIN' || isSameUser(project?.team?.teamLead?.id, currentUserId));
-
+  const isAdminOrBOD = ['ADMIN', 'BOD'].includes(user?.role);
   const isProjectLead = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
     isSameUser(project?.team?.teamLeadId, currentUserId);
   const isProjectManager = isSameUser(projectManagerMember?.user?.id, currentUserId) ||
     isSameUser(project?.projectManager?.id, currentUserId) ||
     Boolean(project?.team?.members?.some(m => m.role === 'PROJECT_MANAGER' && isSameUser(m.user?.id, currentUserId)));
-  const isAdminOrBOD = ['ADMIN', 'BOD'].includes(user?.role);
-  const canSyncServiceJobs = (user?.role === 'ADMIN' || user?.role === 'PM') && !isProjectLead;
-  const canSeeAllProjectTasks = isAdminOrBOD || isProjectLead || isProjectManager;
+  // ── Tạm dừng dự án ────────────────────────────────────────────────────
+  const showRequestPause = canRequestPause(project, user);
+  const showPauseDirect = canPauseDirect(project, user);
+  const showResume = canResume(project, user);
+  const showCloseDirect = canCloseDirect(project, user);
+  const showRequestClose = canRequestClose(project, user);
+  const daysLeft = daysUntilAutoClose(project);
+  const inReminderWindow = isInReminderWindow(daysLeft);
+  const isOnHold = project?.status === PAUSE_STATUS.ON_HOLD;
+  const isPendingPauseApproval = project?.status === PAUSE_STATUS.PENDING_PAUSE_APPROVAL;
+  const showPauseTab = isOnHold || isPendingPauseApproval
+    || Boolean(project?.pausedAt) || isAdminOrBOD || isProjectManager;
 
-  const isUserTask = (task) => {
-    return isSameUser(currentUserId, task.assigneeId) ||
-      isSameUser(currentUserId, task.assignee?.id) ||
-      isSameUser(currentUserId, task.helperId) ||
-      isSameUser(currentUserId, task.helper?.id);
+  const canAssignPm = !isOnHold && (user?.role === 'ADMIN' || user?.role === 'BOD') && !hasProjectManager;
+  const canConfirmProject = !isOnHold && project?.status === 'PENDING_CONFIRMATION' &&
+    (user?.role === 'ADMIN' || isSameUser(project?.team?.teamLead?.id, currentUserId));
+  const canSyncServiceJobs = !isOnHold && (user?.role === 'ADMIN' || user?.role === 'PM') && !isProjectLead;
+
+  const handleResume = async () => {
+    try {
+      await resumeProject({ id, resumeReason: 'Làm tiếp dự án' }).unwrap();
+      toast.success('Đã mở lại dự án — các công việc được khôi phục');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Không thể mở lại dự án');
+    }
   };
 
   const displayedTasks = useMemo(() => {
     if (!Array.isArray(project?.tasks)) return [];
-    if (canSeeAllProjectTasks) return project.tasks;
-    return project.tasks.filter(isUserTask);
-  }, [project?.tasks, canSeeAllProjectTasks, currentUserId]);
+    return project.tasks;
+  }, [project?.tasks]);
 
   const isCoreMember = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
     project?.team?.members?.some(m => isSameUser(m.user?.id, currentUserId)) ||
@@ -97,7 +131,7 @@ export const ProjectDetailPage = () => {
   const handleSyncServiceJobs = async () => {
     try {
       const result = await syncProjectServiceJobs(id).unwrap();
-      toast.success(`Đồng bộ xong: tạo ${result.createdTasks || 0} task, cập nhật ${result.updatedOutputTasks || 0} task đầu ra, bổ sung ${result.backfilledResults || 0} kết quả.`);
+      toast.success(`Đồng bộ xong: tạo ${result.createdContractServices || 0} dịch vụ, cập nhật ${result.updatedContractServices || 0} dịch vụ, tạo ${result.createdTasks || 0} task, cập nhật ${result.updatedOutputTasks || 0} task đầu ra, bổ sung ${result.backfilledResults || 0} kết quả.`);
     } catch (err) {
       toast.error(err?.data?.message || 'Có lỗi xảy ra khi đồng bộ công việc');
     }
@@ -164,7 +198,7 @@ export const ProjectDetailPage = () => {
             )}
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             {canSyncServiceJobs && (
               <button
                 onClick={handleSyncServiceJobs}
@@ -172,7 +206,7 @@ export const ProjectDetailPage = () => {
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm transition-all active:scale-95 disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${isSyncingServiceJobs ? 'animate-spin' : ''}`} />
-                <span>{isSyncingServiceJobs ? 'Đang đồng bộ...' : 'Đồng bộ công việc'}</span>
+                <span>{isSyncingServiceJobs ? 'Đang đồng bộ...' : 'Đồng bộ'}</span>
               </button>
             )}
             {canConfirmProject && (
@@ -185,8 +219,128 @@ export const ProjectDetailPage = () => {
                 <span>{isConfirming ? 'Đang xử lý...' : 'Chấp nhận'}</span>
               </button>
             )}
+
+            {/* Tạm dừng — BOD/ADMIN dừng ngay, PM/BD gửi yêu cầu */}
+            {showPauseDirect && (
+              <button
+                onClick={() => setIsPauseDirectModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-xl hover:bg-amber-600 shadow-sm transition-all active:scale-95"
+                title="Tạm dừng ngay, không cần duyệt"
+              >
+                <PauseCircle className="w-4 h-4" />
+                <span>Tạm dừng ngay</span>
+              </button>
+            )}
+            {!showPauseDirect && showRequestPause && (
+              <button
+                onClick={() => setIsPauseModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 shadow-sm transition-all active:scale-95"
+                title="Gửi yêu cầu tạm dừng để BOD duyệt"
+              >
+                <PauseCircle className="w-4 h-4" />
+                <span>Yêu cầu tạm dừng</span>
+              </button>
+            )}
+
+            {/* Đóng dự án — BD/BOD/ADMIN đóng ngay, PM gửi đề nghị */}
+            {showCloseDirect && (
+              <button
+                onClick={() => setIsCloseDirectModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 shadow-sm transition-all active:scale-95"
+                title="Đóng dự án ngay, không cần duyệt"
+              >
+                <Archive className="w-4 h-4" />
+                <span>Đóng dự án</span>
+              </button>
+            )}
+            {!showCloseDirect && showRequestClose && (
+              <button
+                onClick={() => setIsCloseModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-xl hover:bg-slate-800 shadow-sm transition-all active:scale-95"
+                title="Gửi đề nghị đóng dự án để BOD duyệt"
+              >
+                <Archive className="w-4 h-4" />
+                <span>Đề nghị đóng</span>
+              </button>
+            )}
+
+            {/* Làm tiếp */}
+            {showResume && (
+              <button
+                onClick={handleResume}
+                disabled={isResuming}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                title="Mở lại dự án và khôi phục công việc"
+              >
+                <PlayCircle className="w-4 h-4" />
+                <span>{isResuming ? 'Đang xử lý...' : 'Làm tiếp'}</span>
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Banner trạng thái tạm dừng */}
+        {isOnHold && (
+          <div className={cn(
+            'mt-4 rounded-2xl border p-4',
+            inReminderWindow
+              ? 'border-red-200 bg-red-50/70'
+              : 'border-amber-200 bg-amber-50/70'
+          )}>
+            <div className="flex items-start gap-3">
+              <div className={cn(
+                'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white',
+                inReminderWindow ? 'bg-red-600' : 'bg-amber-500'
+              )}>
+                {inReminderWindow ? <AlertTriangle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={cn(
+                  'font-bold',
+                  inReminderWindow ? 'text-red-900' : 'text-amber-900'
+                )}>
+                  Dự án đang tạm dừng
+                  {daysLeft !== null && (
+                    <> — còn <b>{daysLeft} ngày</b> sẽ tự động đóng</>
+                  )}
+                </p>
+                <div className="mt-1 text-xs font-medium space-y-0.5">
+                  {project.autoAcceptAt && (
+                    <p className={inReminderWindow ? 'text-red-700' : 'text-amber-700'}>
+                      Tự động đóng lúc: <b>{new Date(project.autoAcceptAt).toLocaleString('vi-VN')}</b>
+                    </p>
+                  )}
+                  {project.pausedBy?.fullName && (
+                    <p className={inReminderWindow ? 'text-red-700' : 'text-amber-700'}>
+                      Người tạm dừng: <b>{project.pausedBy.fullName}</b>
+                    </p>
+                  )}
+                  {inReminderWindow && (
+                    <p className="text-red-700 font-semibold">
+                      ⚠️ Hệ thống đang gửi thông báo nhắc nhở hằng ngày. Hãy chốt đóng dự án hoặc làm tiếp trước hạn.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Banner chờ duyệt tạm dừng */}
+        {isPendingPauseApproval && (
+          <div className="mt-4 rounded-2xl border border-yellow-200 bg-yellow-50/70 p-4 flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-yellow-500 flex items-center justify-center shrink-0 text-white">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-yellow-900">Đang chờ BOD duyệt yêu cầu tạm dừng</p>
+              <p className="mt-1 text-xs text-yellow-800 font-medium">
+                Dự án <b>vẫn đang chạy bình thường</b>. Yêu cầu cần được BOD/ADMIN duyệt ở tab
+                {' '}<b>Lịch sử tạm dừng</b>.
+              </p>
+            </div>
+          </div>
+        )}
 
         {canAssignPm && (
           <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/60 p-4">
@@ -270,6 +424,22 @@ export const ProjectDetailPage = () => {
             </span>
           )}
         </button>
+        {showPauseTab && (
+          <button
+            onClick={() => setActiveTab('PAUSE')}
+            className={cn(
+              "flex shrink-0 items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold transition-all",
+              activeTab === 'PAUSE' ? "bg-white text-amber-600 shadow-sm" : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
+            )}
+          >
+            Lịch sử tạm dừng
+            {isOnHold && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-700">
+                ON_HOLD
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       {activeTab === 'MAIN' && (
@@ -278,7 +448,7 @@ export const ProjectDetailPage = () => {
             <ProjectInfo project={project} formatDate={formatDate} />
           </div>
           <div className="space-y-6">
-            <TeamInfo team={project.team} />
+            <TeamInfo team={project.team} isOnHold={isOnHold} />
           </div>
         </div>
       )}
@@ -298,10 +468,40 @@ export const ProjectDetailPage = () => {
         <ExtraTasksSection tasks={project.tasks} />
       )}
 
+      {activeTab === 'PAUSE' && showPauseTab && (
+        <PauseHistorySection projectId={project.id} currentUser={user} />
+      )}
+
       <CreateMonthlyWorkModal
         isOpen={isMonthlyWorkModalOpen}
         onClose={() => setIsMonthlyWorkModalOpen(false)}
         projectId={project.id}
+      />
+
+      {/* Modals tạm dừng / đóng dự án */}
+      <PauseProjectModal
+        isOpen={isPauseModalOpen}
+        onClose={() => setIsPauseModalOpen(false)}
+        project={project}
+        direct={false}
+      />
+      <PauseProjectModal
+        isOpen={isPauseDirectModalOpen}
+        onClose={() => setIsPauseDirectModalOpen(false)}
+        project={project}
+        direct
+      />
+      <CloseProjectModal
+        isOpen={isCloseModalOpen}
+        onClose={() => setIsCloseModalOpen(false)}
+        project={project}
+        direct={false}
+      />
+      <CloseProjectModal
+        isOpen={isCloseDirectModalOpen}
+        onClose={() => setIsCloseDirectModalOpen(false)}
+        project={project}
+        direct
       />
     </div >
   );

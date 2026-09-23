@@ -8,40 +8,67 @@ import {
   Clock,
   Settings2,
   ArrowRight,
+  PlusCircle,
   TrendingUp,
-  Percent
+  Percent,
+  Lock,
+  Unlock,
+  X
 } from 'lucide-react';
 import {
   useGetPaymentMilestonesByContractQuery
 } from '../../../api/paymentMilestones';
 import {
-  useGetDebtsByContractQuery
+  useGetDebtsByContractQuery,
+  useUnlockDebtMutation
 } from '../../../api/debts';
 import { Button } from '../../../components/ui/Button';
 import { MilestoneModal } from '../../../components/finance/MilestoneModal';
 import { DebtDetailsModal } from '../../../components/finance/DebtDetailsModal';
 import { toast } from 'react-toastify';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../../../store/authSlice';
 import { cn } from '../../../utils/cn';
 import { formatCurrency, formatDate } from '../../../utils/format';
+import { canUnlockDebt } from '../../../utils/projectPause';
 
 export const FinancialInfo = ({ contract }) => {
   const contractId = contract.id;
+  const currentUser = useSelector(selectCurrentUser);
 
   // Queries
   const { data: milestones, isLoading: loadingMilestones } = useGetPaymentMilestonesByContractQuery(contractId);
   const { data: rawDebts, isLoading: loadingDebts } = useGetDebtsByContractQuery(contractId);
+  const [unlockDebt, { isLoading: isUnlocking }] = useUnlockDebtMutation();
 
   // Modal states
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
   const [isDebtDetailsModalOpen, setIsDebtDetailsModalOpen] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState(null);
+  const [unlockTarget, setUnlockTarget] = useState(null);
+  const [unlockReason, setUnlockReason] = useState('');
+
+  const handleUnlock = async () => {
+    if (!unlockReason.trim()) {
+      toast.error('Vui lòng nhập lý do mở khóa công nợ');
+      return;
+    }
+    try {
+      await unlockDebt({ id: unlockTarget.id, reason: unlockReason.trim() }).unwrap();
+      toast.success('Đã mở khóa công nợ');
+      setUnlockTarget(null);
+      setUnlockReason('');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Không thể mở khóa công nợ');
+    }
+  };
 
   const sellingPrice = Number(contract.sellingPrice || contract.selling_price || 0);
 
   // Unified Data Processing
   const processedMilestones = milestones?.map(m => {
     // Find debt associated with this milestone
-    const debt = rawDebts?.find(d => d.milestone?.id === m.id || d.milestoneId === m.id || d.id === m.debt?.id) || m.debt;
+    const debt = rawDebts?.find(d => d.milestone?.id === m.id || d.milestoneId === m.id);
 
     let paidAmount = 0;
     let payments = [];
@@ -54,34 +81,34 @@ export const FinancialInfo = ({ contract }) => {
     }
 
     const amount = Number(m.amount || 0);
-    const isCompleted = paidAmount >= amount && amount > 0;
+    const isCompleted = debt && paidAmount >= amount;
+    const isActive = !!debt;
     const remaining = Math.max(0, amount - paidAmount);
-
-    const effectiveDebt = debt || {
-      id: m.id,
-      name: `Phải thu: ${m.name}`,
-      amount: m.amount,
-      dueDate: m.dueDate,
-      contract: contract,
-      milestone: m,
-      payments: []
-    };
 
     return {
       ...m,
       amount,
-      debt: effectiveDebt,
+      debt,
       payments,
       paidAmount,
       remaining,
       isCompleted,
-      isActive: true
+      isActive
     };
   }) || [];
 
   const totalPaid = processedMilestones.reduce((sum, m) => sum + m.paidAmount, 0);
-  const totalDebt = processedMilestones.reduce((sum, m) => sum + m.remaining, 0);
+  const totalDebt = processedMilestones.reduce((sum, m) => sum + (m.isActive ? m.remaining : 0), 0);
   const progressPercent = sellingPrice > 0 ? Math.round((totalPaid / sellingPrice) * 100) : 0;
+
+  const handleActivateDebt = async (milestoneId) => {
+    try {
+      await activateDebt({ milestoneId }).unwrap();
+      toast.success('Đã kích hoạt công nợ cho đợt thanh toán này');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Không thể kích hoạt công nợ');
+    }
+  };
 
   const openDebtDetails = (debt) => {
     setSelectedDebt(debt);
@@ -185,6 +212,11 @@ export const FinancialInfo = ({ contract }) => {
                               Quá hạn nộp
                             </span>
                           )}
+                          {m.debt?.status === 'LOCKED' && (
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[9px] font-black uppercase flex items-center gap-1">
+                              <Lock size={9} /> Đã khóa
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-4 text-[11px] font-medium text-gray-400">
                           <span className="flex items-center gap-1">
@@ -209,17 +241,33 @@ export const FinancialInfo = ({ contract }) => {
                           )}>{formatCurrency(m.remaining)}</p>
                         </div>
                         {m.debt && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openDebtDetails(m.debt);
-                            }}
-                            className="p-2 bg-white text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
-                            title="Chi tiết"
-                          >
-                            <ArrowRight size={16} />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            {m.debt.status === 'LOCKED' && canUnlockDebt(currentUser) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setUnlockTarget(m.debt);
+                                  setUnlockReason('');
+                                }}
+                                className="p-2 bg-white text-amber-600 rounded-xl hover:bg-amber-500 hover:text-white transition-all shadow-sm border border-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+                                title="Mở khóa công nợ (dự án đã đóng)"
+                              >
+                                <Unlock size={16} />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openDebtDetails(m.debt);
+                              }}
+                              className="p-2 bg-white text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+                              title="Chi tiết"
+                            >
+                              <ArrowRight size={16} />
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -303,10 +351,77 @@ export const FinancialInfo = ({ contract }) => {
       <MilestoneModal
         isOpen={isMilestoneModalOpen}
         onClose={() => setIsMilestoneModalOpen(false)}
-        milestones={processedMilestones}
+        milestones={milestones || []}
         contractId={contractId}
         sellingPrice={sellingPrice}
       />
+
+      {/* Modal mở khóa công nợ — chỉ BOD/ADMIN, bắt buộc lý do */}
+      {unlockTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl">
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center text-white">
+                  <Unlock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900">Mở khóa công nợ</h3>
+                  <p className="text-[11px] text-gray-500 font-medium truncate max-w-[220px]">
+                    {unlockTarget.milestone?.name || unlockTarget.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setUnlockTarget(null); setUnlockReason(''); }}
+                className="p-1.5 hover:bg-gray-100 rounded-full text-gray-500"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-800 font-medium">
+                Công nợ này đã bị khóa do dự án đã đóng.
+                {unlockTarget.lockReason && (
+                  <p className="mt-1">Lý do khóa: <b>{unlockTarget.lockReason}</b></p>
+                )}
+                <p className="mt-1">Mở khóa sẽ đưa khoản nợ về trạng thái thu tiền bình thường và được ghi vết vào lịch sử.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase">
+                  Lý do mở khóa <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 outline-none text-sm resize-none"
+                  rows="3"
+                  value={unlockReason}
+                  onChange={(e) => setUnlockReason(e.target.value)}
+                  placeholder="Ví dụ: Đóng dự án nhầm, khách vẫn còn nợ cần thu..."
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="p-5 pt-0 flex gap-3">
+              <button
+                onClick={() => { setUnlockTarget(null); setUnlockReason(''); }}
+                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 text-sm"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleUnlock}
+                disabled={isUnlocking || !unlockReason.trim()}
+                className="flex-1 px-4 py-2.5 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 disabled:bg-amber-300 text-sm"
+              >
+                {isUnlocking ? 'Đang xử lý...' : 'Xác nhận mở khóa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

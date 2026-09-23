@@ -65,6 +65,7 @@ export const PROJECT_STATUS_LABELS = {
   PLANNING: 'Lập kế hoạch',
   CONFIRMED: 'Đã xác nhận',
   IN_PROGRESS: 'Đang thực hiện',
+  PENDING_PAUSE_APPROVAL: 'Chờ duyệt tạm dừng',
   ON_HOLD: 'Tạm dừng',
   COMPLETED: 'Hoàn thành',
   CANCELLED: 'Đã hủy'
@@ -74,9 +75,16 @@ export const PROJECT_STATUS_COLORS = {
   PENDING_CONFIRMATION: 'bg-orange-50 text-orange-700 border-orange-100',
   CONFIRMED: 'bg-blue-50 text-blue-700 border-blue-100',
   IN_PROGRESS: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  PENDING_PAUSE_APPROVAL: 'bg-yellow-50 text-yellow-700 border-yellow-100',
   ON_HOLD: 'bg-amber-50 text-amber-700 border-amber-100',
   COMPLETED: 'bg-purple-50 text-purple-700 border-purple-100',
   CANCELLED: 'bg-rose-50 text-rose-700 border-rose-100'
+};
+
+// Task Status — 2 trạng thái mới của tính năng tạm dừng dự án
+export const TASK_STATUS_LABELS_PAUSE = {
+  ON_HOLD: 'Tạm dừng',
+  CANCELLED: 'Đã hủy'
 };
 
 // Opportunity Status
@@ -87,8 +95,9 @@ export const OPPORTUNITY_STATUS_LABELS = {
   QUOTATION: 'Báo giá',
   QUOTATION_DRAFTING: 'Đang làm báo giá',
   PENDING_QUOTE_APPROVAL: 'Chờ duyệt báo giá',
-  QUOTE_APPROVED: 'Đang làm hợp đồng',
-  CONTRACT_CREATED: 'Đã tạo hợp đồng',
+  QUOTE_APPROVED: 'Đã duyệt báo giá',
+  CONTRACT_CREATED: 'Đang làm hợp đồng',
+  CONTRACT_APPROVED: 'Đã tạo hợp đồng',
   IMPLEMENTATION: 'Đã triển khai',
   PROJECT_ASSIGNED: 'Đã giao dự án'
 };
@@ -102,6 +111,7 @@ export const OPPORTUNITY_STATUS_COLORS = {
   PENDING_QUOTE_APPROVAL: 'bg-amber-100 text-amber-800',
   QUOTE_APPROVED: 'bg-emerald-100 text-emerald-800',
   CONTRACT_CREATED: 'bg-cyan-100 text-cyan-800',
+  CONTRACT_APPROVED: 'bg-green-100 text-green-800',
   IMPLEMENTATION: 'bg-teal-100 text-teal-800',
   LEAD: 'bg-gray-100 text-gray-800',
   QUALIFIED: 'bg-blue-100 text-blue-800',
@@ -228,6 +238,36 @@ export const FIELD_LABELS = {
   Khac: 'Khác'
 };
 
+export const JOB_CATEGORY_LABELS = {
+  QUAY_PHIM: 'Quay phim',
+  DUNG_PHIM: 'Dựng phim',
+  THIET_KE: 'Thiết kế',
+  AI_CONTENT: 'AI Content',
+  MARKETING: 'Marketing',
+  BIEN_KICH: 'Biên kịch',
+  KHAC: 'Khác'
+};
+
+export const JOB_CATEGORY_COLORS = {
+  QUAY_PHIM: 'bg-blue-50 text-blue-700 border-blue-100',
+  DUNG_PHIM: 'bg-purple-50 text-purple-700 border-purple-100',
+  THIET_KE: 'bg-pink-50 text-pink-700 border-pink-100',
+  AI_CONTENT: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+  MARKETING: 'bg-orange-50 text-orange-700 border-orange-100',
+  BIEN_KICH: 'bg-amber-50 text-amber-700 border-amber-100',
+  KHAC: 'bg-gray-100 text-gray-600 border-gray-200'
+};
+
+export const JOB_CATEGORY_OPTIONS = [
+  { value: 'QUAY_PHIM', label: JOB_CATEGORY_LABELS.QUAY_PHIM },
+  { value: 'DUNG_PHIM', label: JOB_CATEGORY_LABELS.DUNG_PHIM },
+  { value: 'THIET_KE', label: JOB_CATEGORY_LABELS.THIET_KE },
+  { value: 'AI_CONTENT', label: JOB_CATEGORY_LABELS.AI_CONTENT },
+  { value: 'MARKETING', label: JOB_CATEGORY_LABELS.MARKETING },
+  { value: 'BIEN_KICH', label: JOB_CATEGORY_LABELS.BIEN_KICH },
+  { value: 'KHAC', label: JOB_CATEGORY_LABELS.KHAC }
+];
+
 export const JOB_PERFORMER_TYPE = {
   INTERNAL: "Nội bộ",
   PARTNER: "Đối tác",
@@ -298,7 +338,7 @@ export const TEAM_MEMBER_ROLE_LABELS = {
   [TEAM_MEMBER_ROLE.GRAPHIC_DESIGNER]: 'Thiết kế đồ họa',
   [TEAM_MEMBER_ROLE.CAMERAMAN]: 'Quay phim',
   [TEAM_MEMBER_ROLE.PROJECT_MANAGER]: 'Quản lý dự án',
-  [TEAM_MEMBER_ROLE.ACCOUNT]: 'Account',
+  [TEAM_MEMBER_ROLE.ACCOUNT]: 'Lead dự án',
   [TEAM_MEMBER_ROLE.SCRIPTER]: 'Biên kịch',
   [TEAM_MEMBER_ROLE.SOCIAL_MEDIA_MANAGER]: 'Quản lý MXH',
   [TEAM_MEMBER_ROLE.SEO_SPECIALIST]: 'Chuyên viên SEO'

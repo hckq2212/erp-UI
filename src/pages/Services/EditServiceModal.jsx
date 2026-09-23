@@ -12,6 +12,7 @@ import { toast } from 'react-toastify';
 
 const serviceSchema = z.object({
     name: z.string().min(1, 'Tên dịch vụ là bắt buộc'),
+    code: z.string().trim().min(1, 'Mã dịch vụ là bắt buộc'),
     description: z.string().optional(),
     unit: z.string().min(1, 'Đơn vị tính là bắt buộc'),
     jobIds: z.array(z.string()).optional().default([]),
@@ -37,6 +38,7 @@ export const EditServiceModal = ({ isOpen, onClose, service }) => {
         resolver: zodResolver(serviceSchema),
         defaultValues: {
             name: '',
+            code: '',
             description: '',
             unit: '',
             jobIds: [],
@@ -48,6 +50,7 @@ export const EditServiceModal = ({ isOpen, onClose, service }) => {
         if (service && isOpen) {
             reset({
                 name: service.name || '',
+                code: service.code || '',
                 description: service.description || '',
                 unit: service.unit || '',
                 jobIds: service.serviceJobs?.map(sj => sj.jobId) || [],
@@ -58,7 +61,7 @@ export const EditServiceModal = ({ isOpen, onClose, service }) => {
 
     const onSubmit = async (data) => {
         try {
-            await updateService({ id: service.id, ...data }).unwrap();
+            await updateService({ id: service.id, ...data, code: data.code.trim() }).unwrap();
             toast.success('Cập nhật dịch vụ thành công');
             onClose();
         } catch (err) {
@@ -119,6 +122,13 @@ export const EditServiceModal = ({ isOpen, onClose, service }) => {
                     {...register('name')}
                     error={errors.name?.message}
                     placeholder="Ví dụ: Quay phim, Thiết kế..."
+                />
+
+                <Input
+                    label="Mã dịch vụ *"
+                    {...register('code')}
+                    error={errors.code?.message}
+                    placeholder="Ví dụ: SV-VID, SVC-DES..."
                 />
 
                 <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">

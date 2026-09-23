@@ -60,13 +60,29 @@ export const useSSE = () => {
             'contract_rejected': ['Contracts', 'Opportunities'],
             'contract_deleted': ['Contracts'],
             'project_created': ['Projects', 'Contracts'],
-            'project_updated': ['Projects'],
+            'project_updated': ['Projects', 'Tasks', 'PauseHistory', 'Debts'],
             'project_deleted': ['Projects'],
             'task_review_updated': ['TaskReviews', 'Tasks'],
             'task_result_check_updated': ['TaskResultChecks'],
           };
 
-          const tagsToInvalidate = eventToTags[payload.event] || [];
+          const baseTags = eventToTags[payload.event] || [];
+          const tagsToInvalidate = [...baseTags];
+
+          // Invalidate specific entity ID if available
+          if (payload.data?.id) {
+            if (payload.event?.startsWith('project_')) {
+              tagsToInvalidate.push(
+                { type: 'Projects', id: payload.data.id },
+                { type: 'PauseHistory', id: payload.data.id }
+              );
+            } else if (payload.event?.startsWith('task_')) {
+              tagsToInvalidate.push({ type: 'Tasks', id: payload.data.id });
+            } else if (payload.event?.startsWith('contract_')) {
+              tagsToInvalidate.push({ type: 'Contracts', id: payload.data.id });
+            }
+          }
+
           if (tagsToInvalidate.length > 0) {
             console.log('[SSE] Invalidating tags:', tagsToInvalidate);
             dispatch(api.util.invalidateTags(tagsToInvalidate));
@@ -94,6 +110,23 @@ export const useSSE = () => {
         dispatch(notificationsApi.util.invalidateTags(['Notifications']));
         if (payload.type === 'TASK_COMPLETED') {
           dispatch(api.util.invalidateTags(['Opportunities']));
+        }
+
+        // Real-time invalidation for project lifecycle & pause/close notifications
+        if (
+          payload.type?.startsWith('PROJECT_') ||
+          payload.type?.includes('PAUSE') ||
+          payload.type?.includes('CLOSE')
+        ) {
+          const projectTags = ['Projects', 'Tasks', 'PauseHistory', 'Debts'];
+          if (payload.relatedEntityId) {
+            projectTags.push(
+              { type: 'Projects', id: payload.relatedEntityId },
+              { type: 'PauseHistory', id: payload.relatedEntityId }
+            );
+          }
+          console.log('[SSE] Project notification -> invalidating tags:', projectTags);
+          dispatch(api.util.invalidateTags(projectTags));
         }
       } catch (error) {
         console.error('[SSE] Error parsing event data:', error);

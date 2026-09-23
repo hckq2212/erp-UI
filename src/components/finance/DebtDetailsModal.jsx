@@ -7,10 +7,14 @@ import {
     ChevronRight,
     FileText,
     Image as ImageIcon,
-    Loader2
+    Loader2,
+    Lock,
+    Unlock,
+    AlertTriangle
 } from 'lucide-react';
 import {
-    useCreatePaymentMutation
+    useCreatePaymentMutation,
+    useUnlockDebtMutation
 } from '../../api/debts';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -19,9 +23,14 @@ import { toast } from 'react-toastify';
 import { formatNumber, parseNumber } from '../../utils/format';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import { PaymentDetailModal } from './PaymentDetailModal';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../../store/authSlice';
+import { canUnlockDebt } from '../../utils/projectPause';
 
 export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
     const [createPayment] = useCreatePaymentMutation();
+    const [unlockDebt, { isLoading: isUnlocking }] = useUnlockDebtMutation();
+    const currentUser = useSelector(selectCurrentUser);
 
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
@@ -30,6 +39,27 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
     const [fileError, setFileError] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [selectedPaymentForDetail, setSelectedPaymentForDetail] = useState(null);
+    const [unlockReason, setUnlockReason] = useState('');
+    const [showUnlockForm, setShowUnlockForm] = useState(false);
+
+    const isLocked = debt?.status === 'LOCKED';
+    const showUnlockButton = isLocked && canUnlockDebt(currentUser);
+
+    const handleUnlock = async () => {
+        if (!unlockReason.trim()) {
+            toast.error('Vui lòng nhập lý do mở khóa công nợ');
+            return;
+        }
+        try {
+            await unlockDebt({ id: debt.id, reason: unlockReason.trim() }).unwrap();
+            toast.success('Đã mở khóa công nợ');
+            setUnlockReason('');
+            setShowUnlockForm(false);
+            onClose?.();
+        } catch (err) {
+            toast.error(err?.data?.message || 'Không thể mở khóa công nợ');
+        }
+    };
 
     // Update payment amount suggestion when debt changes or modal opens
     useEffect(() => {
@@ -150,10 +180,90 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
                 size="lg"
             >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Cảnh báo + form mở khóa khi công nợ đã khóa (dự án đã đóng) */}
+                    {isLocked && (
+                        <div className="md:col-span-2 space-y-3">
+                            <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 flex items-start gap-3">
+                                <Lock className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-amber-900 text-sm">
+                                        Công nợ đã bị KHÓA do dự án đã đóng
+                                    </p>
+                                    <div className="mt-1 text-xs text-amber-800 font-medium space-y-0.5">
+                                        <p>Không thể ghi nhận thanh toán hay xóa khoản nợ này.</p>
+                                        {debt.lockReason && <p>Lý do khóa: <b>{debt.lockReason}</b></p>}
+                                        {debt.lockedAt && (
+                                            <p>Khóa lúc: {new Date(debt.lockedAt).toLocaleString('vi-VN')}</p>
+                                        )}
+                                        {debt.lockedBy?.fullName && <p>Người khóa: <b>{debt.lockedBy.fullName}</b></p>}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {showUnlockButton && !showUnlockForm && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowUnlockForm(true)}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-amber-300 text-amber-700 text-sm font-bold rounded-xl hover:bg-amber-50 transition-all active:scale-95"
+                                >
+                                    <Unlock className="w-4 h-4" />
+                                    Mở khóa công nợ
+                                </button>
+                            )}
+
+                            {showUnlockButton && showUnlockForm && (
+                                <div className="rounded-2xl border border-amber-200 bg-white p-4 space-y-3">
+                                    <div className="flex items-start gap-2">
+                                        <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                                        <p className="text-xs text-amber-800 font-medium">
+                                            Mở khóa sẽ đưa khoản nợ về trạng thái thu tiền bình thường.
+                                            Hành động này được ghi vết vào lịch sử.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
+                                            Lý do mở khóa <span className="text-red-500">*</span>
+                                        </label>
+                                        <textarea
+                                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 outline-none text-sm resize-none min-h-[60px]"
+                                            value={unlockReason}
+                                            onChange={(e) => setUnlockReason(e.target.value)}
+                                            placeholder="Ví dụ: Đóng dự án nhầm, khách vẫn còn nợ cần thu..."
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setShowUnlockForm(false); setUnlockReason(''); }}
+                                            className="flex-1 px-3 py-2 bg-gray-100 text-gray-600 text-sm font-bold rounded-xl hover:bg-gray-200"
+                                        >
+                                            Hủy
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleUnlock}
+                                            disabled={isUnlocking || !unlockReason.trim()}
+                                            className="flex-1 px-3 py-2 bg-amber-500 text-white text-sm font-bold rounded-xl hover:bg-amber-600 disabled:bg-amber-300"
+                                        >
+                                            {isUnlocking ? 'Đang xử lý...' : 'Xác nhận mở khóa'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                     {/* Payment Form */}
                     <div className="space-y-4">
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Ghi nhận thanh toán mới</h4>
+                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                                Ghi nhận thanh toán mới
+                            </h4>
+                            {isLocked && (
+                                <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] font-medium text-amber-800">
+                                    Công nợ đã khóa — không thể ghi nhận thanh toán mới.
+                                </div>
+                            )}
                             <form onSubmit={handleCreatePayment} className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
@@ -261,7 +371,7 @@ export const DebtDetailsModal = ({ isOpen, onClose, debt, allDebts = [] }) => {
                                 <Button
                                     type="submit"
                                     variant="primary"
-                                    disabled={debt.paidAmount >= debt.amount || isUploading}
+                                    disabled={isLocked || debt.paidAmount >= debt.amount || isUploading}
                                     className="w-full flex items-center justify-center gap-2"
                                 >
                                     {isUploading ? (

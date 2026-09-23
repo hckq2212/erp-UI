@@ -64,7 +64,8 @@ export const TaskDelegationPanel = ({
     const isAccount = isSameUser(team?.teamLead?.id, currentUserId) || currentMembership?.role === 'ACCOUNT';
     const isAdminOverride = ['ADMIN', 'BOD'].includes(userRole);
     const isTeamLead = isSameUser(team?.teamLead?.id, currentUserId);
-    const canDelegate = isAccount || isPM || isAdminOverride || isTeamLead;
+    const isProjectOnHold = task?.project?.status === 'ON_HOLD' || task?.status === 'ON_HOLD';
+    const canDelegate = !isProjectOnHold && (isAccount || isPM || isAdminOverride || isTeamLead);
     const isStaffRole = !userRole ||
         userRole.startsWith('STAFF') ||
         ['STAFF', 'STAFF_A', 'STAFF_B', 'STAFF_C', 'STAFF_D', 'EMPLOYEE', 'USER'].includes(userRole);
@@ -73,7 +74,7 @@ export const TaskDelegationPanel = ({
     const isPendingStaffingRequest = task?.supportRequestType === 'STAFFING' &&
         task?.isSupportRequested &&
         !task?.isSupportAccepted;
-    const canRespondStaffing = isPendingStaffingRequest &&
+    const canRespondStaffing = !isProjectOnHold && isPendingStaffingRequest &&
         (isPM || isAdminOverride);
 
     const assignableMembers = useMemo(() => (
