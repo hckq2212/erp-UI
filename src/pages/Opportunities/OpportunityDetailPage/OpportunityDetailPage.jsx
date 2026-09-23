@@ -6,11 +6,12 @@ import {
   Edit,
   Trash2,
   CheckCircle,
+  XCircle,
   FileText,
   Copy,
 } from 'lucide-react';
 import { selectCurrentUser } from '../../../store/authSlice';
-import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation, useApproveOpportunityMutation } from '../../../api/opportunities';
+import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation, useApproveOpportunityMutation, useRejectOpportunityMutation } from '../../../api/opportunities';
 import { useGetCustomersQuery } from '../../../api/customers';
 import { useGetQuotationsByOpportunityQuery, useCreateQuotationMutation, useUpdateQuotationMutation } from '../../../api/quotations';
 import { useGetReferralPartnersQuery, useGetReferralPartnerQuery } from '../../../api/referralPartners';
@@ -46,6 +47,7 @@ export const OpportunityDetailPage = () => {
   const [createQuotation, { isLoading: isCreatingQuotation }] = useCreateQuotationMutation();
   const [updateQuotation, { isLoading: isUpdatingQuotation }] = useUpdateQuotationMutation();
   const [approveOpportunity, { isLoading: isApproving }] = useApproveOpportunityMutation();
+  const [rejectOpportunity, { isLoading: isRejecting }] = useRejectOpportunityMutation();
 
   const draftCount = useMemo(() =>
     quotations.filter(q => q.status === 'DRAFT' || q.status === 'PENDING_APPROVAL').length,
@@ -70,6 +72,8 @@ export const OpportunityDetailPage = () => {
   const [showQuotationModal, setShowQuotationModal] = useState(false);
   const [showQuotationsListModal, setShowQuotationsListModal] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
   const [editingQuotation, setEditingQuotation] = useState(null);
   const [customerType, setCustomerType] = useState('DIRECT');
   const [customerStatus, setCustomerStatus] = useState('');
@@ -205,6 +209,23 @@ export const OpportunityDetailPage = () => {
     setShowQuotationModal(true);
   };
 
+  const handleRejectOpportunity = async () => {
+    const reason = rejectionReason.trim();
+    if (!reason) {
+      toast.error('Vui lòng nhập lý do không duyệt');
+      return;
+    }
+
+    try {
+      await rejectOpportunity({ id, reason }).unwrap();
+      setShowRejectModal(false);
+      setRejectionReason('');
+      toast.success('Đã không duyệt cơ hội');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Có lỗi xảy ra khi không duyệt cơ hội');
+    }
+  };
+
   const handleCreateQuotation = () => {
     if (incompleteAiJobs.length > 0) {
       const jobNames = [...new Set(incompleteAiJobs.map(job => job.name))].join(', ');
@@ -310,14 +331,24 @@ export const OpportunityDetailPage = () => {
                 )}
                 {opportunity.status === 'PENDING_OPP_APPROVAL' && (opportunity.customer || opportunity.leadName) &&
                   (currentUser.role == 'ADMIN' || currentUser.role == 'BOD') && (
-                    <button
-                      onClick={handleApproveOpportunity}
-                      disabled={isApproving}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      {isApproving ? 'Đang duyệt...' : 'Duyệt cơ hội'}
-                    </button>
+                    <>
+                      <button
+                        onClick={() => setShowRejectModal(true)}
+                        disabled={isApproving || isRejecting}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Không duyệt
+                      </button>
+                      <button
+                        onClick={handleApproveOpportunity}
+                        disabled={isApproving || isRejecting}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        {isApproving ? 'Đang duyệt...' : 'Duyệt cơ hội'}
+                      </button>
+                    </>
                   )}
               </>
             )}
@@ -359,6 +390,60 @@ export const OpportunityDetailPage = () => {
       </div>
 
       {/* Modals */}
+      {showRejectModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !isRejecting) {
+              setShowRejectModal(false);
+              setRejectionReason('');
+            }
+          }}
+        >
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-bold text-gray-900">Không duyệt cơ hội</h2>
+
+            <div className="mt-5">
+              <label htmlFor="opportunity-rejection-reason" className="mb-2 block text-sm font-medium text-gray-700">
+                Vui lòng nhập lý do không duyệt cơ hội này
+              </label>
+              <textarea
+                id="opportunity-rejection-reason"
+                value={rejectionReason}
+                onChange={(event) => setRejectionReason(event.target.value)}
+                rows={5}
+                autoFocus
+                disabled={isRejecting}
+                placeholder="Nhập lý do không duyệt..."
+                className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-gray-900 outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100 disabled:bg-gray-100"
+              />
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectionReason('');
+                }}
+                disabled={isRejecting}
+                className="rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleRejectOpportunity}
+                disabled={isRejecting || !rejectionReason.trim()}
+                className="rounded-lg bg-red-600 px-4 py-2 font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isRejecting ? 'Đang xử lý...' : 'Xác nhận không duyệt'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <QuotationModal
         opportunity={opportunity}
         isOpen={showQuotationModal}

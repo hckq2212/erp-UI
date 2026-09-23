@@ -45,6 +45,7 @@ export const useSSE = () => {
             'opportunity_created': ['Opportunities'],
             'opportunity_updated': ['Opportunities'],
             'opportunity_approved': ['Opportunities'],
+            'opportunity_rejected': ['Opportunities'],
             'opportunity_deleted': ['Opportunities'],
             'quotation_created': ['Quotations', 'Opportunities'],
             'quotation_updated': ['Quotations', 'Opportunities'],
