@@ -19,6 +19,9 @@ import { TasksPage } from './pages/Tasks/TasksPage';
 import { TaskDetailPage } from './pages/Tasks/TaskDetailPage';
 import { TaskReviewPage } from './pages/Tasks/TaskReviewPage';
 import { FinancePage } from './pages/Finance/FinancePage';
+import { PaymentOverviewPage } from './pages/Finance/PaymentOverviewPage';
+import { AcceptanceMinutesPage } from './pages/Finance/AcceptanceMinutesPage';
+import { VatInvoicesPage } from './pages/Finance/VatInvoicesPage';
 import { VendorsPage } from './pages/Vendors/VendorsPage';
 import { VendorDetailPage } from './pages/Vendors/VendorDetailPage';
 import { LoginPage } from './pages/Auth/LoginPage';
@@ -255,6 +258,36 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <FinancePage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/finance/overview'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PaymentOverviewPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/finance/acceptance-minutes'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AcceptanceMinutesPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/finance/vat-invoices'
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <VatInvoicesPage />
               </Layout>
             </ProtectedRoute>
           }
