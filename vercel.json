@@ -5,6 +5,10 @@
             "destination": "https://erp-z63c.onrender.com/api/:path*"
         },
         {
+            "source": "/socket.io/:path*",
+            "destination": "https://erp-z63c.onrender.com/socket.io/:path*"
+        },
+        {
             "source": "/((?!api/).*)",
             "destination": "/index.html"
         }
