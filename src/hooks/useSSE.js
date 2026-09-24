@@ -113,6 +113,17 @@ export const useSSE = () => {
           dispatch(api.util.invalidateTags(['Opportunities']));
         }
 
+        // Yêu cầu thanh toán: làm mới danh sách, tổng nợ và chính yêu cầu được nhắc tới
+        // để bấm popup/thông báo là thấy đúng trạng thái mới nhất.
+        if (payload.type?.startsWith('PAYMENT_REQUEST')) {
+          const prTags = [
+            { type: 'PaymentRequests', id: 'LIST' },
+            { type: 'PaymentRequests', id: 'TOTAL_DEBT' },
+          ];
+          if (payload.relatedEntityId) prTags.push({ type: 'PaymentRequests', id: payload.relatedEntityId });
+          dispatch(api.util.invalidateTags(prTags));
+        }
+
         // Real-time invalidation for project lifecycle & pause/close notifications
         if (
           payload.type?.startsWith('PROJECT_') ||

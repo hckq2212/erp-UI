@@ -104,7 +104,11 @@ export const GlobalTaskTable = ({
                             paginatedTasks.map((task) => (
                                 <tr
                                     key={task.id}
-                                    className="hover:bg-blue-50/30 transition-all group cursor-pointer"
+                                    className={cn(
+                                        "transition-all group cursor-pointer",
+                                        Number(task.spentAmount || 0) > Number(task.cost || 0) ? "bg-red-50/40 hover:bg-red-50 border-l-4 border-l-red-400" :
+                                        task.isExtra ? "bg-amber-50/50 hover:bg-amber-50 border-l-4 border-l-amber-400" : "hover:bg-blue-50/30"
+                                    )}
                                     onClick={() => navigate(`/tasks/${task.id}`)}
                                 >
                                     <td className="px-6 py-4 whitespace-nowrap">

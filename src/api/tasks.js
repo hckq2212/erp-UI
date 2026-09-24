@@ -39,6 +39,13 @@ export const tasksApi = api.injectEndpoints({
           ]
           : [{ type: 'Tasks', id: 'LIST' }],
     }),
+    getAssigneeDailyWorkload: builder.query({
+      query: ({ userId, startDate, endDate }) => ({
+        url: `/tasks/assignee/${userId}/daily-workload`,
+        params: { startDate, endDate },
+      }),
+      providesTags: [{ type: 'Tasks', id: 'DAILY_WORKLOAD' }],
+    }),
     getTasksByOpportunity: builder.query({
       query: (opportunityId) => `/tasks/opportunity/${opportunityId}`,
       providesTags: (result) =>
@@ -405,6 +412,7 @@ export const {
   useGetTaskQuery,
   useGetTasksByProjectQuery,
   useGetTasksByAssigneeQuery,
+  useGetAssigneeDailyWorkloadQuery,
   useGetTasksByOpportunityQuery,
   useCreateTaskMutation,
   useUpdateTaskMutation,

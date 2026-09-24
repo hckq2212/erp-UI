@@ -38,7 +38,7 @@ export const ServicesPage = () => {
     const handleCopy = async (service) => {
         try {
             const { id, createdAt, updatedAt, serviceJobs, ...rest } = service;
-            
+
             // Map serviceJobs to jobIds and outputJobIds to create new associations
             const jobIds = serviceJobs ? serviceJobs.map(sj => sj.jobId) : [];
             const outputJobIds = serviceJobs ? serviceJobs.filter(sj => sj.isOutput).map(sj => sj.jobId) : [];
@@ -213,8 +213,8 @@ export const ServicesPage = () => {
                                                 </button>
                                             </th>
                                         )}
-                                        {renderSortableHeader('Mã Dịch Vụ', 'code')}
                                         {renderSortableHeader('Tên Dịch Vụ', 'name')}
+                                        {renderSortableHeader('Mã Dịch Vụ', 'code')}
                                         {renderSortableHeader('Đơn vị', 'unit')}
                                         {renderSortableHeader('Giá vốn', 'costPrice')}
                                         {!isSelectionMode && <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Thao tác</th>}
@@ -241,8 +241,8 @@ export const ServicesPage = () => {
                                                     </div>
                                                 </td>
                                             )}
-                                            <td className="px-6 py-4 text-sm font-mono text-blue-600 font-bold">{service.code}</td>
                                             <td className="px-6 py-4 text-sm text-gray-900 font-medium uppercase">{service.name}</td>
+                                            <td className="px-6 py-4 text-sm font-mono text-blue-600 font-bold">{service.code}</td>
                                             <td className="px-6 py-4 text-sm text-gray-500 italic lowercase">{service.unit || '---'}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-bold">{formatCurrency(service.costPrice)}</td>
                                             {!isSelectionMode && (

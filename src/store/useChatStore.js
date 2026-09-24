@@ -3,7 +3,8 @@ import { io } from "socket.io-client";
 import axios from "axios";
 import { API_ORIGIN, BASE_URL } from "./api";
 
-const SOCKET_URL = API_ORIGIN;
+const configuredSocketUrl = (import.meta.env.VITE_SOCKET_URL || "").replace(/\/$/, "");
+const SOCKET_URL = configuredSocketUrl || API_ORIGIN;
 
 const chatAxios = axios.create({
     baseURL: BASE_URL,
