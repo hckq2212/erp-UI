@@ -8,6 +8,7 @@ export const videoGenerationsApi = api.injectEndpoints({
         url: '/video-generations/create',
         method: 'POST',
         body: formData,
+
       }),
       invalidatesTags: [{ type: 'VideoGenerations', id: 'LIST' }],
     }),
@@ -20,9 +21,9 @@ export const videoGenerationsApi = api.injectEndpoints({
       providesTags: (result) =>
         Array.isArray(result)
           ? [
-              ...result.map(({ id }) => ({ type: 'VideoGenerations', id })),
-              { type: 'VideoGenerations', id: 'LIST' },
-            ]
+            ...result.map(({ id }) => ({ type: 'VideoGenerations', id })),
+            { type: 'VideoGenerations', id: 'LIST' },
+          ]
           : [{ type: 'VideoGenerations', id: 'LIST' }],
     }),
   }),
