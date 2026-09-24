@@ -7,13 +7,19 @@ import {
     ChevronRight,
     Clock,
     FileText,
+    Loader2,
     LayoutList,
     ListChecks,
     Package,
+    Pencil,
+    Save,
     Send,
     AlertTriangle,
+    X,
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { CreateAcceptanceModal } from './CreateAcceptanceModal';
+import { useUpdateContractServiceNicknameMutation } from '../../../api/contracts';
 import {
     CONTRACT_SERVICE_STATUS_LABELS,
     CONTRACT_SERVICE_STATUS_COLORS,
@@ -57,7 +63,8 @@ const ISSUE_TASK_STATUSES = new Set([
 
 const serviceNameCollator = new Intl.Collator('vi', { numeric: true, sensitivity: 'base' });
 
-const getServiceName = (item) => item.name || item.service?.name || `Hạng mục #${item.id}`;
+const getServiceName = (item) => item.nickname?.trim() || item.name || item.service?.name || `Hạng mục #${item.id}`;
+const getServiceOriginalName = (item) => item.name || item.service?.name || '';
 const getServiceCode = (item) => item.code || item.service?.code || null;
 const getTaskOwner = (task) => task.assignee?.fullName || task.helper?.fullName || task.vendor?.name || task.vendorId || 'Chưa phân công';
 
@@ -329,6 +336,9 @@ export const ContractInfo = ({ contract, projectId, project }) => {
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [expandedGroups, setExpandedGroups] = useState({});
     const [expandedServices, setExpandedServices] = useState({});
+    const [editingServiceId, setEditingServiceId] = useState(null);
+    const [nicknameDraft, setNicknameDraft] = useState('');
+    const [updateContractServiceNickname, { isLoading: isUpdatingNickname }] = useUpdateContractServiceNicknameMutation();
     const services = Array.isArray(contract?.services) ? contract.services : [];
     const user = useSelector(selectCurrentUser);
     const currentUserId = getCurrentUserId(user);
@@ -343,7 +353,8 @@ export const ContractInfo = ({ contract, projectId, project }) => {
     const isOnHold = project?.status === 'ON_HOLD' || Boolean(project?.isOnHold);
     const isAdminOrBOD = ['ADMIN', 'BOD'].includes(user?.role);
     const canSeeAllTasks = isAdminOrBOD || isProjectLead || isProjectManager;
-    const canSendAcceptance = !isClosed && !isOnHold && (canSeeAllTasks || user?.role === 'ADMIN_SALE');
+    const canSendAcceptance = canSeeAllTasks || user?.role === 'ADMIN_SALE';
+    const canEditServiceNickname = canSeeAllTasks;
 
     const projectTasksMap = useMemo(() => {
         const map = new Map();
@@ -430,6 +441,31 @@ export const ContractInfo = ({ contract, projectId, project }) => {
             ...prev,
             [serviceId]: !prev[serviceId],
         }));
+    };
+
+    const startEditServiceNickname = (service) => {
+        setEditingServiceId(service.id);
+        setNicknameDraft(service.nickname || '');
+    };
+
+    const cancelEditServiceNickname = () => {
+        setEditingServiceId(null);
+        setNicknameDraft('');
+    };
+
+    const saveServiceNickname = async (service) => {
+        try {
+            await updateContractServiceNickname({
+                id: service.id,
+                nickname: nicknameDraft,
+                contractId: contract?.id,
+                projectId,
+            }).unwrap();
+            toast.success('Đã cập nhật nickname hạng mục dịch vụ');
+            cancelEditServiceNickname();
+        } catch (err) {
+            toast.error(err?.data?.message || 'Không thể cập nhật nickname hạng mục dịch vụ');
+        }
     };
 
     if (!contract) return null;
@@ -537,31 +573,60 @@ export const ContractInfo = ({ contract, projectId, project }) => {
                                                     : enrichedTasks.filter(isUserTask);
                                                 const results = Array.isArray(item.results) ? item.results : [];
                                                 const serviceCode = getServiceCode(item);
+                                                const serviceName = getServiceName(item);
+                                                const originalServiceName = getServiceOriginalName(item);
                                                 const isServiceOpen = Boolean(expandedServices[item.id]);
+                                                const isEditingNickname = editingServiceId === item.id;
                                                 const hasDetails = serviceTasks.length > 0 || results.length > 0 || item.feedback;
 
                                                 return (
                                                     <div key={item.id} className="px-5 py-4">
                                                         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => hasDetails && toggleService(item.id)}
-                                                                className={cn(
-                                                                    'flex min-w-0 flex-1 items-start gap-3 text-left',
-                                                                    hasDetails ? 'cursor-pointer' : 'cursor-default'
-                                                                )}
-                                                            >
-                                                                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-gray-500">
+                                                            <div className="flex min-w-0 flex-1 items-start gap-3">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => hasDetails && toggleService(item.id)}
+                                                                    className={cn(
+                                                                        'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-gray-500',
+                                                                        hasDetails ? 'hover:bg-blue-50 hover:text-blue-600' : 'cursor-default'
+                                                                    )}
+                                                                    disabled={!hasDetails}
+                                                                    aria-label={isServiceOpen ? 'Thu gọn hạng mục' : 'Mở chi tiết hạng mục'}
+                                                                >
                                                                     {hasDetails && (isServiceOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
-                                                                </div>
-                                                                <div className="min-w-0">
+                                                                </button>
+                                                                <div className="min-w-0 flex-1">
                                                                     <div className="flex flex-wrap items-center gap-2">
                                                                         {serviceCode && (
                                                                             <span className="rounded-md bg-blue-50 px-2 py-1 font-mono text-xs font-black text-blue-700">
                                                                                 {serviceCode}
                                                                             </span>
                                                                         )}
-                                                                        <h4 className="font-bold text-gray-900">{getServiceName(item)}</h4>
+                                                                        {isEditingNickname ? (
+                                                                            <input
+                                                                                value={nicknameDraft}
+                                                                                onChange={(event) => setNicknameDraft(event.target.value)}
+                                                                                onKeyDown={(event) => {
+                                                                                    if (event.key === 'Enter') saveServiceNickname(item);
+                                                                                    if (event.key === 'Escape') cancelEditServiceNickname();
+                                                                                }}
+                                                                                maxLength={120}
+                                                                                autoFocus
+                                                                                placeholder={originalServiceName || 'Nickname hạng mục'}
+                                                                                className="min-w-[220px] flex-1 rounded-lg border border-blue-200 px-3 py-1.5 text-sm font-bold text-gray-900 outline-none ring-2 ring-blue-50 focus:border-blue-400"
+                                                                            />
+                                                                        ) : (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => hasDetails && toggleService(item.id)}
+                                                                                className={cn(
+                                                                                    'min-w-0 text-left font-bold text-gray-900',
+                                                                                    hasDetails && 'hover:text-blue-700'
+                                                                                )}
+                                                                            >
+                                                                                <span className="block truncate" title={serviceName}>{serviceName}</span>
+                                                                            </button>
+                                                                        )}
                                                                     </div>
                                                                     <div className="mt-1 flex flex-wrap gap-2 text-xs font-semibold text-gray-400">
                                                                         <span>
@@ -570,14 +635,50 @@ export const ContractInfo = ({ contract, projectId, project }) => {
                                                                                 : `${serviceTasks.length} công việc của bạn`}
                                                                         </span>
                                                                         <span>{results.length} kết quả</span>
+                                                                        {item.nickname?.trim() && originalServiceName && (
+                                                                            <span title={originalServiceName}>Gốc: {originalServiceName}</span>
+                                                                        )}
                                                                     </div>
                                                                 </div>
-                                                            </button>
+                                                            </div>
 
                                                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center xl:justify-end">
                                                                 <ServiceProgress tasks={serviceTasks} />
                                                                 <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
                                                                     <ServiceStatusBadge status={item.status} />
+                                                                    {canEditServiceNickname && (
+                                                                        isEditingNickname ? (
+                                                                            <>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => saveServiceNickname(item)}
+                                                                                    disabled={isUpdatingNickname}
+                                                                                    className="inline-flex items-center gap-1 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                                                >
+                                                                                    {isUpdatingNickname ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                                                                                    Lưu
+                                                                                </button>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={cancelEditServiceNickname}
+                                                                                    disabled={isUpdatingNickname}
+                                                                                    className="inline-flex items-center gap-1 rounded-lg border border-gray-100 px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                                                >
+                                                                                    <X className="h-3.5 w-3.5" />
+                                                                                    Hủy
+                                                                                </button>
+                                                                            </>
+                                                                        ) : (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => startEditServiceNickname(item)}
+                                                                                className="inline-flex items-center gap-1 rounded-lg border border-gray-100 px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50"
+                                                                            >
+                                                                                <Pencil className="h-3.5 w-3.5" />
+                                                                                Sửa tên
+                                                                            </button>
+                                                                        )
+                                                                    )}
                                                                     {hasDetails && (
                                                                         <button
                                                                             type="button"

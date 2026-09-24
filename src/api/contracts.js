@@ -49,6 +49,18 @@ export const contractsApi = api.injectEndpoints({
       }),
       invalidatesTags: [{ type: 'Contracts', id: 'LIST' }],
     }),
+    updateContractServiceNickname: builder.mutation({
+      query: ({ id, nickname }) => ({
+        url: `/contracts/services/${id}/nickname`,
+        method: 'PATCH',
+        body: { nickname },
+      }),
+      invalidatesTags: (result, error, { contractId, projectId }) => [
+        contractId ? { type: 'Contracts', id: contractId } : { type: 'Contracts', id: 'LIST' },
+        { type: 'Contracts', id: 'LIST' },
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' },
+      ],
+    }),
     uploadProposal: builder.mutation({
       query: ({ id, file, contractLink, quotationLink }) => ({
         url: `/contracts/${id}/proposal`,
@@ -147,6 +159,7 @@ export const {
   useCreateContractMutation,
   useUpdateContractMutation,
   useDeleteContractMutation,
+  useUpdateContractServiceNicknameMutation,
   useUploadProposalMutation,
   useApproveProposalMutation,
   useRejectProposalMutation,
