@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect, Fragment } from 'react';
-import { Calendar, Users, FileText, Search, UserPlus, UserMinus, Plus, AlertCircle, ChevronRight, ChevronDown } from 'lucide-react';
+import { Calendar, Users, FileText, Search, UserPlus, UserMinus, Plus, AlertCircle, ChevronRight, ChevronDown, Play } from 'lucide-react';
 import { TaskAssignModal } from './TaskAssignModal';
 import { AddProjectServiceModal } from './AddProjectServiceModal';
 import { useNavigate } from 'react-router-dom';
 import { useGetTeamMembersQuery } from '../../../api/teams';
 import { useRequestProjectStaffingMutation } from '../../../api/projects';
-import { useApproveByCustomerMutation, useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useRequestTaskStaffingMutation } from '../../../api/tasks';
+import { useApproveByCustomerMutation, useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useRequestTaskStaffingMutation, useStartTaskMutation } from '../../../api/tasks';
 import { cn } from '../../../utils/cn';
 import { PROJECT_MANAGEMENT_ROLES, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../../utils/enums';
 import { toast } from 'react-toastify';
@@ -32,6 +32,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [approveByCustomer, { isLoading: isApprovingByCustomer }] = useApproveByCustomerMutation();
     const [requestTaskStaffing, { isLoading: isRequestingStaffing }] = useRequestTaskStaffingMutation();
     const [requestProjectStaffing, { isLoading: isRequestingProjectStaffing }] = useRequestProjectStaffingMutation();
+    const [startTask, { isLoading: isStartingTask }] = useStartTaskMutation();
 
     const currentUserId = getCurrentUserId(user);
     const isAdminOrBOD = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
@@ -85,6 +86,19 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [selectionMode, setSelectionMode] = useState('assign');
     const [expandedGroups, setExpandedGroups] = useState({});
     const [approvingTaskId, setApprovingTaskId] = useState(null);
+    const [startingTaskId, setStartingTaskId] = useState(null);
+
+    const handleStartTask = async (task) => {
+        setStartingTaskId(task.id);
+        try {
+            await startTask({ id: task.id, projectId: project?.id }).unwrap();
+            toast.success('Đã bắt đầu công việc!');
+        } catch (error) {
+            toast.error(error?.data?.message || 'Không thể bắt đầu công việc');
+        } finally {
+            setStartingTaskId(null);
+        }
+    };
 
     const toggleGroup = (groupId) => {
         setExpandedGroups(prev => ({
@@ -148,7 +162,7 @@ export const TaskTable = ({ tasks = [], project }) => {
 
     const isTaskUnassignable = (task) => {
         if (!isProjectInProgress || !canManageTaskAssignment(task)) return false;
-        if (task.status !== 'DOING') return false;
+        if (!['NOT_STARTED', 'DOING'].includes(task.status)) return false;
 
         const hasPerformer = Boolean(task.assigneeId) || task.performerType === 'VENDOR';
         if (!hasPerformer) return false;
@@ -543,6 +557,23 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 </td>
                                                 <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                                                     <div className="flex flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
+                                                        {task.status === 'NOT_STARTED' &&
+                                                            (!task.parentTaskId || task.subtaskPlanStatus === 'APPROVED') &&
+                                                            (isSameUser(currentUserId, task.assigneeId) ||
+                                                                isSameUser(currentUserId, task.assignee?.id) ||
+                                                                isSameUser(currentUserId, task.helperId) ||
+                                                                isSameUser(currentUserId, task.helper?.id)) && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleStartTask(task)}
+                                                                    disabled={isStartingTask && startingTaskId === task.id}
+                                                                    className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all active:scale-95 text-xs font-bold uppercase disabled:opacity-60"
+                                                                >
+                                                                    <Play className="h-3.5 w-3.5" />
+                                                                    {isStartingTask && startingTaskId === task.id ? 'Đang bắt đầu...' : 'Bắt đầu công việc'}
+                                                                </button>
+                                                            )}
+
                                                         {isProjectInProgress && canManageTaskAssignment(task) &&
                                                             (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
                                                             <button
@@ -554,7 +585,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                         )}
 
                                                         {/* Original Team Lead Actions */}
-                                                        {isProjectInProgress && canManageTaskAssignment(task) && ['DOING', 'REWORKING', 'OVERDUE', 'REJECTED'].includes(task.status) && (
+                                                        {isProjectInProgress && canManageTaskAssignment(task) && ['NOT_STARTED', 'DOING', 'REWORKING', 'OVERDUE', 'REJECTED'].includes(task.status) && (
                                                             <button
                                                                 onClick={() => setAssigningTask(task)}
                                                                 className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"

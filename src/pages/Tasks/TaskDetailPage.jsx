@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip, Plus } from 'lucide-react';
-import { useGetTaskQuery, useSubmitTaskResultMutation, useSubmitTaskResultFileMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation } from '../../api/tasks';
+import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip, Plus, Play } from 'lucide-react';
+import { useGetTaskQuery, useSubmitTaskResultMutation, useSubmitTaskResultFileMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation, useStartTaskMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetTaskResultCheckQuery } from '../../api/taskResultChecks';
 import { ConfirmedCheckErrors } from '../../components/tasks/ConfirmedCheckErrors';
@@ -38,6 +38,7 @@ export const TaskDetailPage = () => {
     const [approveByCustomer, { isLoading: isApprovingByCustomer }] = useApproveByCustomerMutation();
     const [sendReminder, { isLoading: isSendingReminder }] = useSendTaskReminderMutation();
     const [updateTask, { isLoading: isUpdatingTask }] = useUpdateTaskMutation();
+    const [startTask, { isLoading: isStartingTask }] = useStartTaskMutation();
     const [requestSupport] = useRequestSupportMutation();
     const [respondToSupport] = useRespondToSupportMutation();
     const [returnSupport] = useReturnSupportMutation();
@@ -53,6 +54,10 @@ export const TaskDetailPage = () => {
         isSameUser(currentUserId, task?.assignee?.id) ||
         isSameUser(currentUserId, task?.helperId) ||
         isSameUser(currentUserId, task?.helper?.id);
+    const canStartTask = !isProjectOnHold &&
+        task?.status === 'NOT_STARTED' &&
+        isAssigneeOrHelper &&
+        (!task?.parentTaskId || task?.subtaskPlanStatus === 'APPROVED');
     const isAssigner = isSameUser(currentUserId, task?.assignerId) || isSameUser(currentUserId, task?.assigner?.id);
     const canSubmitResult = !isProjectOnHold && (isAssigneeOrHelper || isAssigner || canManageProjectTask || ['ADMIN', 'BOD'].includes(user?.role));
     const isReviewerForThisTask = !isProjectOnHold && canManageProjectTask && !isAssigneeOrHelper;
@@ -108,7 +113,7 @@ export const TaskDetailPage = () => {
         !task?.parentTaskId &&
         (!task?.subtasks || task?.subtasks?.length === 0) &&
         task?.performerType === 'INTERNAL' &&
-        ['PENDING', 'DOING', 'REWORKING', 'OVERDUE', 'AWAITING_SUPPORT'].includes(task?.status);
+        ['PENDING', 'NOT_STARTED', 'DOING', 'REWORKING', 'OVERDUE', 'AWAITING_SUPPORT'].includes(task?.status);
 
     useEffect(() => {
         if (isResultModalOpen) {
@@ -128,7 +133,7 @@ export const TaskDetailPage = () => {
         const label = TASK_STATUS_LABELS[status] || status;
         const icon = ['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED'].includes(status)
             ? <CheckCircle2 className="w-3 h-3" />
-            : ['DOING', 'REWORKING', 'SUPPORT_AWAITING_RETURN'].includes(status)
+            : ['NOT_STARTED', 'DOING', 'REWORKING', 'SUPPORT_AWAITING_RETURN'].includes(status)
                 ? <Clock className="w-3 h-3" />
                 : <AlertCircle className="w-3 h-3" />;
 
@@ -319,6 +324,15 @@ export const TaskDetailPage = () => {
         }
     };
 
+    const handleStartTask = async () => {
+        try {
+            await startTask({ id, projectId: task.project?.id }).unwrap();
+            toast.success('Đã bắt đầu công việc!');
+        } catch (err) {
+            toast.error(err?.data?.message || 'Không thể bắt đầu công việc');
+        }
+    };
+
     const handleRequestSupport = async () => {
         try {
             await requestSupport({ id, note: 'Yêu cầu hỗ trợ từ thành viên', projectId: task.project?.id }).unwrap();
@@ -427,14 +441,25 @@ export const TaskDetailPage = () => {
                     <p className="text-gray-500 font-mono text-sm bg-gray-100 px-3 py-1 rounded-lg inline-block">{task.code}</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-3 shrink-0">
+                <div className="flex max-w-full flex-nowrap items-center justify-end gap-2.5 overflow-x-auto pb-1 sm:gap-3 shrink-0">
                     {canAssignUnassignedTask && (
                         <Button
                             onClick={() => setIsAssignModalOpen(true)}
-                            className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-lg shadow-blue-100 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 whitespace-nowrap text-sm"
+                            className="justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-lg shadow-blue-100 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 whitespace-nowrap text-sm"
                         >
                             <Users className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
                             <span>Phân công</span>
+                        </Button>
+                    )}
+                    {canStartTask && (
+                        <Button
+                            onClick={handleStartTask}
+                            isLoading={isStartingTask}
+                            disabled={isStartingTask}
+                            className="justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-lg shadow-blue-100 bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 whitespace-nowrap text-sm"
+                        >
+                            <Play className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                            <span>Bắt đầu công việc</span>
                         </Button>
                     )}
                     {task.status === 'AWAITING_REVIEW' && isReviewerForThisTask && (
@@ -442,7 +467,7 @@ export const TaskDetailPage = () => {
                             <Button
                                 variant="outline"
                                 onClick={() => setIsReworkModalOpen(true)}
-                                className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-sm border-purple-200 text-purple-600 hover:bg-purple-50 flex items-center gap-2 whitespace-nowrap text-sm"
+                                className="justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-sm border-purple-200 text-purple-600 hover:bg-purple-50 flex items-center gap-2 whitespace-nowrap text-sm"
                             >
                                 <History className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
                                 <span>Yêu cầu làm lại</span>
@@ -452,7 +477,7 @@ export const TaskDetailPage = () => {
                                 onClick={() => navigate(`/tasks/${id}/review`)}
                                 disabled={isParentBlockedBySubtasks}
                                 title={isParentBlockedBySubtasks ? 'Cần hoàn tất tất cả subtask trước khi duyệt task chính' : undefined}
-                                className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-lg shadow-blue-100 flex items-center gap-2 whitespace-nowrap text-sm"
+                                className="justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-lg shadow-blue-100 flex items-center gap-2 whitespace-nowrap text-sm"
                             >
                                 <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
                                 <span>Đánh giá & Duyệt</span>
@@ -466,7 +491,7 @@ export const TaskDetailPage = () => {
                             isLoading={isApprovingByCustomer}
                             disabled={isParentBlockedBySubtasks}
                             title={isParentBlockedBySubtasks ? 'Cần hoàn tất tất cả subtask trước khi hoàn thành task chính' : undefined}
-                            className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-lg shadow-emerald-100 bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 whitespace-nowrap text-sm"
+                            className="justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-lg shadow-emerald-100 bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 whitespace-nowrap text-sm"
                         >
                             <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
                             <span>Khách hàng duyệt</span>
@@ -477,7 +502,7 @@ export const TaskDetailPage = () => {
                         <Button
                             variant="outline"
                             onClick={() => setIsReworkModalOpen(true)}
-                            className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-sm border-purple-200 text-purple-600 hover:bg-purple-50 flex items-center gap-2 whitespace-nowrap text-sm"
+                            className="justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 shadow-sm border-purple-200 text-purple-600 hover:bg-purple-50 flex items-center gap-2 whitespace-nowrap text-sm"
                         >
                             <History className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
                             <span>Yêu cầu làm lại</span>
@@ -490,7 +515,7 @@ export const TaskDetailPage = () => {
                             <Button
                                 variant="outline"
                                 onClick={handleRequestSupport}
-                                className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-2 whitespace-nowrap text-sm"
+                                className="justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-2 whitespace-nowrap text-sm"
                             >
                                 <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
                                 <span>Nhờ hỗ trợ</span>
@@ -565,14 +590,14 @@ export const TaskDetailPage = () => {
 
                     {task?.performerType === 'INTERNAL' &&
                         !isProjectOnHold &&
-                        ['PENDING', 'DOING', 'REWORKING', 'OVERDUE'].includes(task?.status) &&
+                        ['PENDING', 'NOT_STARTED', 'DOING', 'REWORKING', 'OVERDUE'].includes(task?.status) &&
                         task?.project?.team &&
                         (isProjectLead || isTeamLead) && (
                             <Button
                                 variant="outline"
                                 onClick={() => setIsStaffingModalOpen(true)}
                                 disabled={task?.supportRequestType === 'STAFFING' && task?.isSupportRequested && !task?.isSupportAccepted}
-                                className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 border-orange-200 text-orange-700 hover:bg-orange-50 flex items-center gap-2 whitespace-nowrap text-sm disabled:opacity-60"
+                                className="justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 border-orange-200 text-orange-700 hover:bg-orange-50 flex items-center gap-2 whitespace-nowrap text-sm disabled:opacity-60"
                             >
                                 <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-[#F38820]" />
                                 <span>
@@ -587,7 +612,7 @@ export const TaskDetailPage = () => {
                         <Button
                             variant="outline"
                             onClick={() => setIsSubtaskModalOpen(true)}
-                            className="w-full justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 border-orange-200 text-orange-700 hover:bg-orange-50 flex items-center gap-2 whitespace-nowrap text-sm"
+                            className="justify-center rounded-2xl py-2.5 sm:py-3 px-4 sm:px-6 border-orange-200 text-orange-700 hover:bg-orange-50 flex items-center gap-2 whitespace-nowrap text-sm"
                         >
                             <Plus className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-[#F38820]" />
                             <span>Thêm subtask</span>

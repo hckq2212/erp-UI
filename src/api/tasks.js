@@ -116,6 +116,18 @@ export const tasksApi = api.injectEndpoints({
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
+    startTask: builder.mutation({
+      query: ({ id }) => ({
+        url: `/tasks/${id}/start`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: (result, error, { id, projectId }) => [
+        { type: 'Tasks', id },
+        { type: 'Tasks', id: 'LIST' },
+        { type: 'Dashboard' },
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' },
+      ],
+    }),
     submitTaskResult: builder.mutation({
       query: ({ id, ...data }) => ({
         url: `/tasks/${id}/submit-result`,
@@ -400,6 +412,7 @@ export const {
   useDeleteTaskMutation,
   useUpdateTaskStatusMutation,
   useAssignTaskMutation,
+  useStartTaskMutation,
   useSubmitTaskResultMutation,
   useSubmitTaskResultFileMutation,
   useUpdatePricingMutation,

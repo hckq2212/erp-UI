@@ -126,6 +126,7 @@ export const OPPORTUNITY_STATUS_COLORS = {
 // Task Status Keys
 export const TASK_STATUS = {
   PENDING: 'PENDING',
+  NOT_STARTED: 'NOT_STARTED',
   DOING: 'DOING',
   DONE: 'DONE',
   CANCELLED: 'CANCELLED',
@@ -146,6 +147,7 @@ export const TASK_STATUS = {
 // Task Status Display Labels
 export const TASK_STATUS_LABELS = {
   [TASK_STATUS.PENDING]: 'Chờ phân công',
+  [TASK_STATUS.NOT_STARTED]: 'Chưa thực hiện',
   [TASK_STATUS.DOING]: 'Đang thực hiện',
   [TASK_STATUS.DONE]: 'Hoàn thành',
   [TASK_STATUS.CANCELLED]: 'Đã hủy',
@@ -166,6 +168,7 @@ export const TASK_STATUS_LABELS = {
 // Task Status Colors
 export const TASK_STATUS_COLORS = {
   [TASK_STATUS.PENDING]: 'bg-amber-50 text-amber-700 border-amber-100',
+  [TASK_STATUS.NOT_STARTED]: 'bg-slate-50 text-slate-700 border-slate-200',
   [TASK_STATUS.DOING]: 'bg-blue-50 text-blue-700 border-blue-100',
   [TASK_STATUS.DONE]: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   [TASK_STATUS.CANCELLED]: 'bg-rose-50 text-rose-700 border-rose-100',

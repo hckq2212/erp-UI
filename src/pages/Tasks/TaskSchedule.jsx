@@ -192,7 +192,13 @@ export const TaskSchedule = ({ tasks = [] }) => {
                                             >
                                                 <div className="flex items-center gap-2 overflow-hidden w-full">
                                                     <span className="text-[10px] font-black uppercase tracking-tighter text-inherit whitespace-nowrap bg-white/20 px-1.5 py-0.5 rounded">
-                                                        {task.status === 'COMPLETED' ? 'DONE' : task.status === 'PENDING' ? 'WAIT' : 'DOING'}
+                                                        {task.status === 'COMPLETED'
+                                                            ? 'DONE'
+                                                            : task.status === 'PENDING'
+                                                                ? 'WAIT'
+                                                                : task.status === 'NOT_STARTED'
+                                                                    ? 'CHƯA LÀM'
+                                                                    : 'DOING'}
                                                     </span>
                                                     <span className="text-[10px] font-bold truncate text-inherit">
                                                         {task.code}

@@ -24,8 +24,8 @@ const emptySubtaskForm = {
     description: '',
 };
 
-const SPLITTABLE_TASK_STATUSES = new Set(['PENDING', 'DOING', 'REWORKING', 'OVERDUE', 'AWAITING_SUPPORT']);
-const SPLITTABLE_STATUS_TEXT = 'Chờ thực hiện, Đang thực hiện, Đang làm lại, Quá hạn, Đang nhờ hỗ trợ';
+const SPLITTABLE_TASK_STATUSES = new Set(['PENDING', 'NOT_STARTED', 'DOING', 'REWORKING', 'OVERDUE', 'AWAITING_SUPPORT']);
+const SPLITTABLE_STATUS_TEXT = 'Chờ phân công, Chưa thực hiện, Đang thực hiện, Đang làm lại, Quá hạn, Đang nhờ hỗ trợ';
 
 const getAllocationPercent = subtask => {
     const percent = Number(subtask?.allocationPercent || 0);

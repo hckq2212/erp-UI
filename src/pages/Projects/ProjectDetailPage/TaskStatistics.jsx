@@ -22,6 +22,7 @@ export const TaskStatistics = ({ tasks = [] }) => {
         
         inProgress: tasks.filter(t => 
             t.status === TASK_STATUS.PENDING || 
+            t.status === TASK_STATUS.NOT_STARTED ||
             t.status === TASK_STATUS.DOING || 
             t.status === TASK_STATUS.REWORKING || 
             t.status === TASK_STATUS.AWAITING_PRICING || 
