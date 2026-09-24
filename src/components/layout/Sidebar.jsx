@@ -57,6 +57,21 @@ export const Sidebar = ({ isCollapsed }) => {
   const location = useLocation();
   const { data: me } = useGetMeQuery();
   const [collapsedFlyout, setCollapsedFlyout] = useState(null);
+  const [hoveredTooltip, setHoveredTooltip] = useState(null);
+
+  const handleMouseEnter = (label, event) => {
+    if (!isCollapsed) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    setHoveredTooltip({
+      label,
+      top: rect.top + rect.height / 2,
+      left: rect.right + 12,
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredTooltip(null);
+  };
 
   const filteredMenuItems = menuItems
     .filter((item) => {
@@ -93,11 +108,13 @@ export const Sidebar = ({ isCollapsed }) => {
       }
     });
     setCollapsedFlyout(null);
+    setHoveredTooltip(null);
   }, [location.pathname]);
 
   useEffect(() => {
     if (!isCollapsed) {
       setCollapsedFlyout(null);
+      setHoveredTooltip(null);
       return undefined;
     }
 
@@ -107,20 +124,26 @@ export const Sidebar = ({ isCollapsed }) => {
       setCollapsedFlyout(null);
     };
 
-    window.addEventListener('resize', closeFlyout);
-    window.addEventListener('scroll', closeFlyout, true);
+    const handleScrollOrResize = (event) => {
+      closeFlyout(event);
+      setHoveredTooltip(null);
+    };
+
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
     document.addEventListener('pointerdown', closeFlyout);
     document.addEventListener('keydown', closeFlyout);
 
     return () => {
-      window.removeEventListener('resize', closeFlyout);
-      window.removeEventListener('scroll', closeFlyout, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
       document.removeEventListener('pointerdown', closeFlyout);
       document.removeEventListener('keydown', closeFlyout);
     };
   }, [isCollapsed]);
 
   const toggleSubmenu = (item, event) => {
+    setHoveredTooltip(null);
     const menuId = item.id || item.label;
     if (isCollapsed) {
       const rect = event.currentTarget.getBoundingClientRect();
@@ -176,6 +199,12 @@ export const Sidebar = ({ isCollapsed }) => {
                 <button
                   type="button"
                   onClick={(event) => toggleSubmenu(item, event)}
+                  onMouseEnter={(event) => {
+                    if (collapsedFlyout?.menuId !== (item.id || item.label)) {
+                      handleMouseEnter(item.label, event);
+                    }
+                  }}
+                  onMouseLeave={handleMouseLeave}
                   data-sidebar-flyout
                   aria-expanded={isCollapsed
                     ? collapsedFlyout?.menuId === (item.id || item.label)
@@ -295,6 +324,9 @@ export const Sidebar = ({ isCollapsed }) => {
             <Link
               key={item.path}
               to={item.path}
+              onMouseEnter={(event) => handleMouseEnter(item.label, event)}
+              onMouseLeave={handleMouseLeave}
+              onClick={handleMouseLeave}
               className={cn(
                 'flex items-center px-3 py-3 text-sm font-bold rounded-xl transition-all group relative',
                 isActive
@@ -308,12 +340,6 @@ export const Sidebar = ({ isCollapsed }) => {
                 isActive ? 'text-[#F38820]' : 'text-slate-400 group-hover:text-[#F38820]',
                 isCollapsed ? 'mr-0' : 'mr-3',
               )} />
-              {isCollapsed && (
-                <div className="absolute left-full ml-3 px-3 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 translate-x-3 group-hover:translate-x-0 transition-all pointer-events-none whitespace-nowrap shadow-xl z-50 ">
-                  {item.label}
-                  <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-900 rotate-45" />
-                </div>
-              )}
               {!isCollapsed && (
                 <span className="truncate transition-opacity duration-300 opacity-100">
                   {item.label}
@@ -328,6 +354,21 @@ export const Sidebar = ({ isCollapsed }) => {
           );
         })}
       </nav>
+
+      {isCollapsed && hoveredTooltip && createPortal(
+        <div
+          className="fixed px-3 py-2 bg-white text-slate-800 text-xs font-semibold rounded-xl border border-slate-200 shadow-xl shadow-slate-900/10 pointer-events-none whitespace-nowrap z-[100] transition-all animate-in fade-in zoom-in-95 duration-150"
+          style={{
+            top: hoveredTooltip.top,
+            left: hoveredTooltip.left,
+            transform: 'translateY(-50%)',
+          }}
+        >
+          {hoveredTooltip.label}
+          <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-white border-l border-b border-slate-200 rotate-45" />
+        </div>,
+        document.body
+      )}
     </aside>
   );
 };
