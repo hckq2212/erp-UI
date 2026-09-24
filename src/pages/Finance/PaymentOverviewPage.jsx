@@ -221,7 +221,7 @@ export const PaymentOverviewPage = () => {
             }
             icon={FolderKanban}
           >
-            {/* <span>{summary.cancelledContracts || 0} hợp đồng đã hủy không tính KPI</span> */}
+            <span>{summary.cancelledContracts || 0} hợp đồng đã hủy không tính KPI</span>
           </MetricCard>
         </section>
 
