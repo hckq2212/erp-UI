@@ -219,31 +219,66 @@ export const PaymentOverviewPage = () => {
                 <p className="text-[11px] text-[#565e74]">Dòng tiền phân bổ theo các kỳ thực tế và kế hoạch</p>
               </div>
             </div>
-            <div className="flex gap-4 text-[11px] text-[#565e74]">
+            <div className="flex flex-wrap gap-4 text-[11px] text-[#565e74]">
               <span><i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-[#006c49]" />Đã thanh toán</span>
               <span><i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-[#f97316]" />Chưa thu</span>
+              <span><i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-[#ffdbca] border border-[#f97316]/40" />Thu 1 phần</span>
               <span><i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-[#e5eeff]" />Không phát sinh</span>
             </div>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-1.5 sm:grid-cols-6 xl:grid-cols-12">
             {(data?.monthly || []).map((month) => {
-              const pending = Math.max(0, Number(month.planned) - Number(month.paid));
-              const active = month.paid > 0 || pending > 0;
+              const paid = Number(month.paid || 0);
+              const planned = Number(month.planned || 0);
+              const pending = Math.max(0, planned - paid);
+              const isPartial = paid > 0 && pending > 0;
+              const isPaid = paid > 0 && pending <= 0;
+              const isPending = paid <= 0 && pending > 0;
+              const active = paid > 0 || pending > 0;
+
               return (
                 <div
                   key={month.month}
-                  className={`flex min-h-20 flex-col items-center justify-center rounded-xl p-2 text-center ${
+                  title={`Tháng ${month.month}: Đã thu ${money(paid)} · Kế hoạch ${money(planned)} · Còn nợ ${money(pending)}`}
+                  className={`flex min-h-[92px] flex-col items-center justify-between rounded-xl p-2 text-center transition-all ${
                     active ? 'bg-white shadow-[0_1px_6px_rgba(33,49,69,0.08)] border border-slate-100' : 'bg-[#eff4ff]/70 text-[#565e74]'
                   }`}
                 >
-                  <span className="text-[11px] font-semibold">T{month.month}</span>
-                  <b className={`my-1 text-xs ${pending > 0 ? 'text-[#9d4300]' : 'text-[#0b1c30]'}`}>
-                    {active ? compactMoney(month.paid || pending) : '—'}
-                  </b>
-                  <span className={`rounded px-1 text-[10px] font-semibold ${
-                    pending > 0 ? 'bg-[#9d4300] text-white' : month.paid > 0 ? 'bg-[#e5eeff] text-[#006c49]' : 'text-[#8c7164]'
+                  <span className="text-[11px] font-semibold text-slate-600">T{month.month}</span>
+
+                  <div className="my-1 flex flex-col items-center justify-center min-w-0 w-full px-0.5">
+                    {isPartial ? (
+                      <>
+                        <b className="text-[10px] font-bold text-[#006c49] tabular-nums truncate w-full" title={`Đã nhận: ${money(paid)}`}>
+                          {money(paid)}
+                        </b>
+                        <span className="text-[9px] font-semibold text-[#9d4300] tabular-nums truncate w-full" title={`Còn nợ: ${money(pending)}`}>
+                          Còn {money(pending)}
+                        </span>
+                      </>
+                    ) : isPaid ? (
+                      <b className="text-[10px] font-bold text-[#006c49] tabular-nums truncate w-full" title={`Đã nhận: ${money(paid)}`}>
+                        {money(paid)}
+                      </b>
+                    ) : isPending ? (
+                      <b className="text-[10px] font-bold text-[#9d4300] tabular-nums truncate w-full" title={`Chưa thu: ${money(pending)}`}>
+                        {money(pending)}
+                      </b>
+                    ) : (
+                      <b className="text-xs text-slate-400">—</b>
+                    )}
+                  </div>
+
+                  <span className={`rounded px-1.5 py-0.5 text-[9.5px] font-bold leading-tight ${
+                    isPartial
+                      ? 'bg-[#ffdbca] text-[#9d4300]'
+                      : isPending
+                        ? 'bg-[#ffdad6] text-[#93000a]'
+                        : isPaid
+                          ? 'bg-[#e5eeff] text-[#006c49]'
+                          : 'text-slate-400 font-medium'
                   }`}>
-                    {pending > 0 ? 'Chưa thu' : month.paid > 0 ? 'Đã nhận' : '0 tr'}
+                    {isPartial ? 'Thu 1 phần' : isPending ? 'Chưa thu' : isPaid ? 'Đã nhận' : '0 ₫'}
                   </span>
                 </div>
               );
