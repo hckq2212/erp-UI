@@ -49,7 +49,16 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
     const teamId = project?.team?.id;
     const isVideoDemoTask = Boolean(representativeTask?.opportunityServiceJob?.isBriefVideo);
     const fileInputRef = useRef(null);
+    const [plannedStartDate, setPlannedStartDate] = useState(formatDateTimeISO(representativeTask?.plannedStartDate) || '');
     const [plannedEndDate, setPlannedEndDate] = useState(formatDateTimeISO(representativeTask?.plannedEndDate) || '');
+    const minimumDeadline = useMemo(() => {
+        if (!plannedStartDate) return '';
+        const startDate = new Date(plannedStartDate);
+        if (Number.isNaN(startDate.getTime())) return '';
+        startDate.setDate(startDate.getDate() + 1);
+        startDate.setHours(0, 0, 0, 0);
+        return formatDateTimeISO(startDate);
+    }, [plannedStartDate]);
     const workloadDate = useMemo(() => {
         const date = plannedEndDate ? new Date(plannedEndDate) : new Date();
         const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
@@ -162,6 +171,17 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
             return;
         }
 
+        if (!plannedStartDate) {
+            toast.error('Vui lòng nhập ngày dự kiến bắt đầu');
+            return;
+        }
+
+        const parsedStartDate = new Date(plannedStartDate);
+        if (Number.isNaN(parsedStartDate.getTime())) {
+            toast.error('Ngày dự kiến bắt đầu không hợp lệ');
+            return;
+        }
+
         if (!plannedEndDate) {
             toast.error('Vui lòng nhập deadline');
             return;
@@ -170,6 +190,15 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
         const parsedDeadline = new Date(plannedEndDate);
         if (Number.isNaN(parsedDeadline.getTime())) {
             toast.error('Deadline không hợp lệ');
+            return;
+        }
+
+        const startDay = new Date(parsedStartDate);
+        const deadlineDay = new Date(parsedDeadline);
+        startDay.setHours(0, 0, 0, 0);
+        deadlineDay.setHours(0, 0, 0, 0);
+        if (deadlineDay <= startDay) {
+            toast.error('Deadline phải sau ngày dự kiến bắt đầu ít nhất 1 ngày');
             return;
         }
 
@@ -222,8 +251,8 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                         taskIds: tasks.map(t => t.id),
                         assigneeId: formData.assigneeId,
                         performerType: formData.performerType,
-                        plannedEndDate: plannedEndDate || undefined,
-                        plannedStartDate: formatDateTimeISO(new Date()),
+                        plannedEndDate: parsedDeadline.toISOString(),
+                        plannedStartDate: parsedStartDate.toISOString(),
                         description: formData.description || undefined,
                         attachments,
                         projectId
@@ -233,8 +262,8 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                         id: task.id,
                         assigneeId: formData.assigneeId,
                         performerType: formData.performerType,
-                        plannedEndDate: plannedEndDate || undefined,
-                        plannedStartDate: formatDateTimeISO(new Date()),
+                        plannedEndDate: parsedDeadline.toISOString(),
+                        plannedStartDate: parsedStartDate.toISOString(),
                         description: formData.description || undefined,
                         attachments,
                         projectId
@@ -248,7 +277,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi phân công');
         }
-    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedEndDate, requestSupport]);
+    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedStartDate, plannedEndDate, requestSupport]);
 
     return (
         <AnimatePresence>
@@ -630,12 +659,25 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
 
                             {/* Dates Grid */}
                             <div className="space-y-3">
+                                <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">Ngày dự kiến bắt đầu</label>
+                                <div className="relative group">
+                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                                    <input
+                                        type="datetime-local"
+                                        required
+                                        className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all text-slate-700 font-medium"
+                                        value={plannedStartDate}
+                                        onChange={(e) => setPlannedStartDate(e.target.value)}
+                                    />
+                                </div>
+
                                 <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">Deadline</label>
                                 <div className="relative group">
                                     <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                     <input
                                         type="datetime-local"
                                         required
+                                        min={minimumDeadline}
                                         className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all text-slate-700 font-medium"
                                         value={plannedEndDate}
                                         onChange={(e) => setPlannedEndDate(e.target.value)}
