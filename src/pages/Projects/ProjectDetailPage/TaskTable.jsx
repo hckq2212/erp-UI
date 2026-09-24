@@ -476,7 +476,10 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 onClick={() => navigate(`/tasks/${task.id}`)}
                                                 className={cn(
                                                     "transition-colors cursor-pointer",
-                                                    task.isSupportRequested ? "bg-red-50/50 hover:bg-red-50 border-l-4 border-l-red-500" : "hover:bg-blue-50/40"
+                                                    task.isSupportRequested ? "bg-red-50/50 hover:bg-red-50 border-l-4 border-l-red-500" :
+                                                    Number(task.spentAmount || 0) > Number(task.cost || 0) ? "bg-red-50/40 hover:bg-red-50 border-l-4 border-l-red-400" :
+                                                    task.isExtra ? "bg-amber-50/50 hover:bg-amber-50 border-l-4 border-l-amber-400" :
+                                                    "hover:bg-blue-50/40"
                                                 )}
                                             >
                                                 <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>

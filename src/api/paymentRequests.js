@@ -126,6 +126,18 @@ export const paymentRequestsApi = api.injectEndpoints({
                 { type: 'PaymentRequests', id: 'TOTAL_DEBT' },
             ],
         }),
+        cancelPaymentRequest: builder.mutation({
+            query: ({ id, reason }) => ({
+                url: `/payment-requests/${id}/cancel`,
+                method: 'POST',
+                body: { reason },
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'PaymentRequests', id },
+                { type: 'PaymentRequests', id: 'LIST' },
+                { type: 'PaymentRequests', id: 'TOTAL_DEBT' },
+            ],
+        }),
         uploadPaymentRequestProof: builder.mutation({
             query: ({ id, ...file }) => ({
                 url: `/payment-requests/${id}/payment-proofs`,
@@ -147,6 +159,7 @@ export const {
     useSubmitPaymentRequestMutation,
     useSupplementPaymentRequestMutation,
     useDeletePaymentRequestMutation,
+    useCancelPaymentRequestMutation,
     useAddPaymentRequestInvoicePdfMutation,
     useReviewPaymentRequestMutation,
     useBodDecidePaymentRequestMutation,

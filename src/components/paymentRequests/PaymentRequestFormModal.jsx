@@ -1,12 +1,13 @@
 import { useMemo, useRef, useState } from 'react';
 import {
-    X, Briefcase, ClipboardList, Calendar, Wallet, FileText,
+    Briefcase, ClipboardList, Calendar, Wallet, Info,
     Upload, Image as ImageIcon, File as FileIcon, Loader2, Trash2, AlertCircle,
 } from 'lucide-react';
 import { useGetTasksByProjectQuery } from '../../api/tasks';
 import { useUploadPaymentRequestInvoiceFileMutation } from '../../api/paymentRequests';
-import { formatNumber, parseNumber } from '../../utils/format';
 import { cn } from '../../utils/cn';
+import { ModalShell, ModalHeader, AmountInput } from './PaymentRequestParts';
+import { inputCls, labelCls, btnPrimary, btnSecondary } from './paymentRequestConfig';
 
 const MAX_FILE_MB = 15;
 const ACCEPTED_TYPES = ['image/', 'application/pdf'];
@@ -71,15 +72,12 @@ const DueDateField = ({ value, onChange, hasError }) => {
                 onChange={handleTextChange}
                 placeholder='dd/mm/yyyy'
                 maxLength={10}
-                className={cn(
-                    'w-full rounded-lg border px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100',
-                    hasError ? 'border-red-300 focus:border-red-400' : 'border-slate-200 focus:border-blue-400'
-                )}
+                className={cn(inputCls, 'pr-9', hasError && 'border-red-300 focus:border-red-400')}
             />
             <button
                 type='button'
                 onClick={openPicker}
-                className='absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600'
+                className='absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-orange-600'
                 tabIndex={-1}
             >
                 <Calendar size={16} />
@@ -102,24 +100,24 @@ const InvoiceFileList = ({ files, onRemove }) => {
     return (
         <div className='mt-3 space-y-2'>
             {files.map((f) => (
-                <div key={f.publicId || f.url} className='flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2'>
+                <div key={f.publicId || f.url} className='flex items-center gap-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2'>
                     <div className={cn(
                         'flex h-8 w-8 shrink-0 items-center justify-center rounded-md',
-                        f.fileType === 'PDF' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                        f.fileType === 'PDF' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'
                     )}>
                         {f.fileType === 'PDF' ? <FileIcon size={16} /> : <ImageIcon size={16} />}
                     </div>
                     <div className='min-w-0 flex-1'>
-                        <p className='truncate text-sm font-medium text-slate-700'>{f.name}</p>
-                        {f.size ? <p className='text-xs text-slate-400'>{(f.size / 1024).toFixed(0)} KB</p> : null}
+                        <p className='truncate text-sm font-medium text-stone-700'>{f.name}</p>
+                        {f.size ? <p className='text-xs text-stone-400'>{(f.size / 1024).toFixed(0)} KB</p> : null}
                     </div>
                     {f.uploading ? (
-                        <Loader2 size={16} className='animate-spin text-slate-400' />
+                        <Loader2 size={16} className='animate-spin text-stone-400' />
                     ) : (
                         <button
                             type='button'
                             onClick={() => onRemove(f)}
-                            className='text-slate-400 hover:text-red-600'
+                            className='text-stone-400 hover:text-red-600'
                         >
                             <Trash2 size={16} />
                         </button>
@@ -154,6 +152,14 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
     );
 
     const isUploadingFiles = invoiceFiles.some((f) => f.uploading);
+    const isDirty = Boolean(content.trim() || amount || dueDate || invoiceFiles.length || projectId);
+
+    // Esc / bấm nền / nút X đều đi qua đây; nếu đã nhập dở thì hỏi lại để khỏi mất dữ liệu.
+    const requestClose = () => {
+        if (isSubmitting) return;
+        if (isDirty && !window.confirm('Bạn có thông tin chưa gửi. Đóng và bỏ các thay đổi này?')) return;
+        onClose();
+    };
 
     const handleFilesSelected = async (fileList) => {
         const files = Array.from(fileList || []);
@@ -228,172 +234,151 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
         }
     };
 
+    const typeBtn = (value, Icon, label, onPick) => (
+        <button
+            type='button'
+            onClick={onPick}
+            className={cn(
+                'flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition',
+                type === value ? 'bg-white text-orange-600 shadow-sm ring-1 ring-orange-200' : 'text-stone-500 hover:text-stone-700'
+            )}
+        >
+            <Icon size={15} /> {label}
+        </button>
+    );
+
     return (
-        <div className='fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm'>
-            <div className='flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl'>
-                <div className='flex items-center justify-between border-b border-slate-100 px-6 py-4'>
-                    <div className='flex items-center gap-3'>
-                        <div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600'>
-                            <Wallet size={20} />
-                        </div>
-                        <div>
-                            <h2 className='text-lg font-semibold text-slate-800'>Tạo yêu cầu thanh toán</h2>
-                            <p className='text-xs text-slate-400'>Điền thông tin để gửi yêu cầu duyệt</p>
-                        </div>
+        <ModalShell onClose={requestClose} maxWidth='max-w-lg'>
+            <ModalHeader
+                icon={Wallet}
+                title='Tạo yêu cầu thanh toán'
+                subtitle='Điền thông tin để gửi Admin Sale duyệt'
+                onClose={requestClose}
+            />
+
+            <form id='payment-request-form' onSubmit={handleSubmit} className='flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6'>
+                <div>
+                    <label className={labelCls}>Loại yêu cầu</label>
+                    <div className='grid grid-cols-2 gap-1 rounded-lg bg-orange-50 p-1'>
+                        {typeBtn('PROJECT', Briefcase, 'Theo dự án', () => setType('PROJECT'))}
+                        {typeBtn('OTHER_WORK', ClipboardList, 'Công việc khác', () => { setType('OTHER_WORK'); setProjectId(''); setTaskId(''); })}
                     </div>
-                    <button onClick={onClose} className='rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700'>
-                        <X size={20} />
-                    </button>
+                    <p className='mt-2 flex items-start gap-1.5 text-xs text-stone-500'>
+                        <Info size={13} className='mt-0.5 shrink-0 text-orange-500' />
+                        Khi giao việc cho vendor, hệ thống tự tạo sẵn yêu cầu (thuộc loại “Theo dự án”), bạn không cần tạo thủ công.
+                    </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className='flex-1 space-y-5 overflow-y-auto px-6 py-5'>
-                    <div>
-                        <label className='mb-2 block text-xs font-medium text-slate-500'>Loại yêu cầu</label>
-                        <div className='grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1'>
-                            <button
-                                type='button'
-                                onClick={() => setType('PROJECT')}
-                                className={cn(
-                                    'flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition',
-                                    type === 'PROJECT' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                                )}
+                {type === 'PROJECT' && (
+                    <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                        <div>
+                            <label className={labelCls}>Dự án</label>
+                            <select
+                                value={projectId}
+                                onChange={(e) => { setProjectId(e.target.value); setTaskId(''); }}
+                                className={inputCls}
                             >
-                                <Briefcase size={15} /> Theo dự án
-                            </button>
-                            <button
-                                type='button'
-                                onClick={() => { setType('OTHER_WORK'); setProjectId(''); setTaskId(''); }}
-                                className={cn(
-                                    'flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition',
-                                    type === 'OTHER_WORK' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                                )}
+                                <option value=''>-- Chọn dự án --</option>
+                                {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className={labelCls}>Công việc của bạn</label>
+                            <select
+                                value={taskId}
+                                onChange={(e) => setTaskId(e.target.value)}
+                                disabled={!projectId || isLoadingTasks}
+                                className={inputCls}
                             >
-                                <ClipboardList size={15} /> Công việc khác
-                            </button>
+                                <option value=''>
+                                    {isLoadingTasks ? 'Đang tải công việc...' : '-- Chọn công việc --'}
+                                </option>
+                                {myTasks.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                            </select>
+                            {projectId && !isLoadingTasks && !isTasksError && myTasks.length === 0 && (
+                                <p className='mt-1 text-xs text-orange-600'>Bạn chưa được giao công việc nào trong dự án này</p>
+                            )}
+                            {isTasksError && (
+                                <p className='mt-1 flex items-center gap-1 text-xs text-red-600'>
+                                    <AlertCircle size={12} /> Không tải được danh sách công việc
+                                </p>
+                            )}
                         </div>
                     </div>
+                )}
 
-                    {type === 'PROJECT' && (
-                        <div className='grid grid-cols-2 gap-3'>
-                            <div>
-                                <label className='mb-1 block text-xs text-slate-500'>Dự án</label>
-                                <select
-                                    value={projectId}
-                                    onChange={(e) => { setProjectId(e.target.value); setTaskId(''); }}
-                                    className='w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100'
-                                >
-                                    <option value=''>-- Chọn dự án --</option>
-                                    {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className='mb-1 block text-xs text-slate-500'>Công việc của bạn</label>
-                                <select
-                                    value={taskId}
-                                    onChange={(e) => setTaskId(e.target.value)}
-                                    disabled={!projectId || isLoadingTasks}
-                                    className='w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-400'
-                                >
-                                    <option value=''>
-                                        {isLoadingTasks ? 'Đang tải công việc...' : '-- Chọn công việc --'}
-                                    </option>
-                                    {myTasks.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                </select>
-                                {projectId && !isLoadingTasks && !isTasksError && myTasks.length === 0 && (
-                                    <p className='mt-1 text-xs text-amber-600'>Bạn chưa được giao công việc nào trong dự án này</p>
-                                )}
-                                {isTasksError && (
-                                    <p className='mt-1 flex items-center gap-1 text-xs text-red-600'>
-                                        <AlertCircle size={12} /> Không tải được danh sách công việc
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                <div>
+                    <label className={labelCls}>Nội dung</label>
+                    <textarea
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        rows={3}
+                        placeholder='Mô tả nội dung yêu cầu thanh toán...'
+                        className={inputCls}
+                    />
+                </div>
 
+                <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
                     <div>
-                        <label className='mb-1 block text-xs text-slate-500'>Nội dung</label>
-                        <textarea
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            rows={3}
-                            placeholder='Mô tả nội dung yêu cầu thanh toán...'
-                            className='w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100'
+                        <label className={labelCls}>Số tiền</label>
+                        <AmountInput value={amount} onChange={setAmount} />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Thời hạn thanh toán</label>
+                        <DueDateField value={dueDate} onChange={setDueDate} />
+                    </div>
+                </div>
+
+                <div>
+                    <label className={labelCls}>Hóa đơn (ảnh hoặc PDF)</label>
+                    <div
+                        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={handleDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={cn(
+                            'flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed px-4 py-6 text-center transition',
+                            isDragging ? 'border-orange-400 bg-orange-50' : 'border-stone-200 hover:border-orange-300 hover:bg-orange-50/50'
+                        )}
+                    >
+                        <Upload size={20} className='text-orange-400' />
+                        <p className='text-sm text-stone-500'>
+                            <span className='font-semibold text-orange-600'>Chọn file</span> hoặc kéo thả vào đây
+                        </p>
+                        <p className='text-xs text-stone-400'>Ảnh (jpg, png...) hoặc PDF, tối đa {MAX_FILE_MB}MB</p>
+                        <input
+                            ref={fileInputRef}
+                            type='file'
+                            accept='image/*,application/pdf'
+                            multiple
+                            onChange={(e) => { handleFilesSelected(e.target.files); e.target.value = ''; }}
+                            className='hidden'
                         />
                     </div>
-
-                    <div className='grid grid-cols-2 gap-3'>
-                        <div>
-                            <label className='mb-1 block text-xs text-slate-500'>Số tiền</label>
-                            <div className='relative'>
-                                <input
-                                    type='text'
-                                    inputMode='numeric'
-                                    value={formatNumber(amount)}
-                                    onChange={(e) => setAmount(parseNumber(e.target.value))}
-                                    placeholder='0'
-                                    className='w-full rounded-lg border border-slate-200 px-3 py-2 pr-12 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100'
-                                />
-                                <span className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400'>VNĐ</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label className='mb-1 block text-xs text-slate-500'>Thời hạn thanh toán</label>
-                            <DueDateField value={dueDate} onChange={setDueDate} />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className='mb-1 block text-xs text-slate-500'>Hóa đơn (ảnh hoặc PDF)</label>
-                        <div
-                            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                            onDragLeave={() => setIsDragging(false)}
-                            onDrop={handleDrop}
-                            onClick={() => fileInputRef.current?.click()}
-                            className={cn(
-                                'flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed px-4 py-6 text-center transition',
-                                isDragging ? 'border-blue-400 bg-blue-50' : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'
-                            )}
-                        >
-                            <Upload size={20} className='text-slate-400' />
-                            <p className='text-sm text-slate-500'>
-                                <span className='font-medium text-blue-600'>Chọn file</span> hoặc kéo thả vào đây
-                            </p>
-                            <p className='text-xs text-slate-400'>Ảnh (jpg, png...) hoặc PDF, tối đa {MAX_FILE_MB}MB</p>
-                            <input
-                                ref={fileInputRef}
-                                type='file'
-                                accept='image/*,application/pdf'
-                                multiple
-                                onChange={(e) => { handleFilesSelected(e.target.files); e.target.value = ''; }}
-                                className='hidden'
-                            />
-                        </div>
-                        <InvoiceFileList files={invoiceFiles} onRemove={handleRemoveFile} />
-                    </div>
-
-                    {error && (
-                        <p className='flex items-center gap-1.5 text-sm text-red-600'>
-                            <AlertCircle size={14} /> {error}
-                        </p>
-                    )}
-                </form>
-
-                <div className='flex justify-end gap-3 border-t border-slate-100 px-6 py-4'>
-                    <button type='button' onClick={onClose} className='rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50'>
-                        Hủy
-                    </button>
-                    <button
-                        type='submit'
-                        onClick={handleSubmit}
-                        disabled={isSubmitting || isUploadingFiles}
-                        className='flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60'
-                    >
-                        {(isSubmitting || isUploadingFiles) && <Loader2 size={15} className='animate-spin' />}
-                        {isSubmitting ? 'Đang gửi...' : isUploadingFiles ? 'Đang tải file...' : 'Gửi yêu cầu'}
-                    </button>
+                    <InvoiceFileList files={invoiceFiles} onRemove={handleRemoveFile} />
                 </div>
+
+                {error && (
+                    <p className='flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600'>
+                        <AlertCircle size={14} className='shrink-0' /> {error}
+                    </p>
+                )}
+            </form>
+
+            <div className='flex shrink-0 justify-end gap-3 border-t border-stone-100 bg-stone-50/60 px-5 py-3.5 sm:px-6'>
+                <button type='button' onClick={requestClose} className={btnSecondary}>
+                    Hủy
+                </button>
+                <button
+                    type='submit'
+                    form='payment-request-form'
+                    disabled={isSubmitting || isUploadingFiles}
+                    className={btnPrimary}
+                >
+                    {(isSubmitting || isUploadingFiles) && <Loader2 size={15} className='animate-spin' />}
+                    {isSubmitting ? 'Đang gửi...' : isUploadingFiles ? 'Đang tải file...' : 'Gửi yêu cầu'}
+                </button>
             </div>
-        </div>
+        </ModalShell>
     );
 };

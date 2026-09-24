@@ -261,17 +261,7 @@ function AppContent() {
           }
         />
         <Route
-          path='/payment-requests'
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <PaymentRequestsPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/payment-requests/:id'
+          path='/payment-requests/:id?'
           element={
             <ProtectedRoute>
               <Layout>
