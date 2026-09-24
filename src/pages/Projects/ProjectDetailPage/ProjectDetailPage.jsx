@@ -45,7 +45,7 @@ const serviceSummaryCollator = new Intl.Collator('vi', { numeric: true, sensitiv
 const getContractServiceName = (service) => service.name || service.service?.name || `Dịch vụ #${service.id}`;
 const getContractServiceKey = (service) => service.serviceId || service.service?.id || getContractServiceName(service);
 
-const ServiceExecutionSummary = ({ services = [] }) => {
+const ServiceExecutionSummary = ({ services = [], title = 'Thống kê dịch vụ' }) => {
   const rows = useMemo(() => {
     const grouped = new Map();
 
@@ -77,7 +77,7 @@ const ServiceExecutionSummary = ({ services = [] }) => {
   return (
     <div className="overflow-hidden rounded-[1.5rem] border border-slate-100 bg-white shadow-sm">
       <div className="border-b border-slate-100 px-5 py-4">
-        <p className="text-sm font-extrabold text-slate-900">Thống kê dịch vụ</p>
+        <p className="text-sm font-extrabold text-slate-900">{title}</p>
         <p className="mt-1 text-xs font-medium text-slate-400">Tổng hợp theo từng contract service khác nhau</p>
       </div>
 
@@ -174,6 +174,14 @@ export const ProjectDetailPage = () => {
     if (!Array.isArray(project?.tasks)) return [];
     return project.tasks;
   }, [project?.tasks]);
+
+  const myTasks = useMemo(() => {
+    if (!currentUserId) return [];
+    return displayedTasks.filter(task =>
+      isSameUser(task.assigneeId, currentUserId) ||
+      isSameUser(task.assignee?.id, currentUserId)
+    );
+  }, [displayedTasks, currentUserId]);
 
   const isCoreMember = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
     project?.team?.members?.some(m => isSameUser(m.user?.id, currentUserId)) ||
@@ -477,6 +485,18 @@ export const ProjectDetailPage = () => {
             {displayedTasks.length}
           </span>
         </button>
+        <button
+          onClick={() => setActiveTab('MY_TASKS')}
+          className={cn(
+            "flex shrink-0 items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold transition-all",
+            activeTab === 'MY_TASKS' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
+          )}
+        >
+          Công việc của tôi
+          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] text-blue-700">
+            {myTasks.length}
+          </span>
+        </button>
         {isCoreMember && (
           <button
             onClick={() => setActiveTab('SERVICES')}
@@ -538,6 +558,23 @@ export const ProjectDetailPage = () => {
             <ServiceExecutionSummary services={project.contract?.services || []} />
           </div>
           <TaskTable tasks={displayedTasks} project={project} className="min-w-[2000px]" />
+        </div>
+      )}
+
+      {activeTab === 'MY_TASKS' && (
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <TaskStatistics tasks={myTasks} />
+            <ServiceExecutionSummary
+              services={project.contract?.services || []}
+              title="Thống kê dịch vụ toàn dự án"
+            />
+          </div>
+          <TaskTable
+            tasks={myTasks}
+            project={project}
+            emptyMessage="Bạn chưa được phân công công việc nào trong dự án này"
+          />
         </div>
       )}
 

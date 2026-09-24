@@ -18,8 +18,9 @@ import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
 import { hasTeamMemberRole } from '../../../utils/teamMember';
+import { getTaskDisplayName } from '../../../utils/taskName';
 
-export const TaskTable = ({ tasks = [], project }) => {
+export const TaskTable = ({ tasks = [], project, emptyMessage = 'Không tìm thấy công việc nào' }) => {
     const navigate = useNavigate();
     const { data: user } = useGetMeQuery();
     const teamId = project?.team?.id;
@@ -281,7 +282,10 @@ export const TaskTable = ({ tasks = [], project }) => {
             const search = filter.search.toLowerCase();
             const matchesSearch = task.name?.toLowerCase().includes(search) ||
                 task.nickname?.toLowerCase().includes(search) ||
-                task.code?.toLowerCase().includes(search);
+                task.code?.toLowerCase().includes(search) ||
+                task.parentTask?.name?.toLowerCase().includes(search) ||
+                task.parentTask?.nickname?.toLowerCase().includes(search) ||
+                task.parentTask?.code?.toLowerCase().includes(search);
             const matchesStatus = filter.status === 'ALL' || task.status === filter.status;
             const matchesAssignee = filter.assigneeId === 'ALL' || task.assigneeId?.toString() === filter.assigneeId;
             return matchesSearch && matchesStatus && matchesAssignee;
@@ -543,6 +547,15 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                         projectId={project.id}
                                                         canEdit={isProjectInProgress && task.status !== 'ON_HOLD' && (isAdminOrBOD || isProjectLead)}
                                                     />
+                                                    {task.parentTaskId && task.parentTask && (
+                                                        <p
+                                                            className="mt-1 truncate text-xs text-gray-500"
+                                                            title={`${task.parentTask.code || '---'} - ${getTaskDisplayName(task.parentTask)}`}
+                                                        >
+                                                            Công việc cha: <span className="font-mono">{task.parentTask.code || '---'}</span>
+                                                            {' - '}{getTaskDisplayName(task.parentTask)}
+                                                        </p>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className={cn("text-xs uppercase", getRemainingTime(task.plannedEndDate, task.status).color)}>
@@ -745,7 +758,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                         ) : (
                             <tr>
                                 <td colSpan={8} className="px-6 py-10 text-center text-gray-400 italic">
-                                    Không tìm thấy công việc nào
+                                    {emptyMessage}
                                 </td>
                             </tr>
                         )}
