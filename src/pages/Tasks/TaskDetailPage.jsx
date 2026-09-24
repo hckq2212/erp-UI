@@ -108,7 +108,8 @@ export const TaskDetailPage = () => {
         !task?.parentTaskId &&
         (!task?.subtasks || task?.subtasks?.length === 0) &&
         task?.performerType === 'INTERNAL' &&
-        ['PENDING', 'DOING', 'REWORKING', 'OVERDUE', 'AWAITING_SUPPORT'].includes(task?.status);
+        ['PENDING', 'DOING', 'REWORKING', 'OVERDUE', 'AWAITING_SUPPORT'].includes(task?.status) &&
+        ['PENDING', 'ON_HOLD', 'COMPLETED', 'CANCELLED'].includes(task?.project?.status);
 
     useEffect(() => {
         if (isResultModalOpen) {
