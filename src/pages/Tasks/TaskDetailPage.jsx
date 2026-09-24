@@ -63,8 +63,7 @@ export const TaskDetailPage = () => {
         isSameUser(currentUserId, task?.helper?.id);
     const canStartTask = !isProjectOnHold &&
         task?.status === 'NOT_STARTED' &&
-        isAssigneeOrHelper &&
-        (!task?.parentTaskId || task?.subtaskPlanStatus === 'APPROVED');
+        isAssigneeOrHelper;
     const isAssigner = isSameUser(currentUserId, task?.assignerId) || isSameUser(currentUserId, task?.assigner?.id);
     const canSubmitResult = !isProjectOnHold && (isAssigneeOrHelper || isAssigner || canManageProjectTask || ['ADMIN', 'BOD'].includes(user?.role));
     const isReviewerForThisTask = !isProjectOnHold && canManageProjectTask && !isAssigneeOrHelper;

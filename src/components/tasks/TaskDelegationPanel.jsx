@@ -117,13 +117,9 @@ export const TaskDelegationPanel = ({
     const subtaskBlockedReason = sharedActionBlockedReason || (
         !task?.job
             ? 'Task chưa có hạng mục để xác định quỹ Vinicoin.'
-            : !task?.assigneeId
-                ? 'Cần phân công người thực hiện task chính trước khi chia subtask.'
-                : remainingPercent <= 0
-                    ? 'Phương án đã phân bổ đủ 100%.'
-                : assignableMembers.length === 0
-                    ? 'Đội dự án chưa có thành viên để nhận subtask.'
-                    : ''
+            : remainingPercent <= 0
+                ? 'Phương án đã phân bổ đủ 100%.'
+                : ''
     );
 
     if (!task?.project) return null;
@@ -198,8 +194,8 @@ export const TaskDelegationPanel = ({
         const allocationPercent = Number(String(subtaskForm.allocationPercent).replace(',', '.'));
         const editingSubtask = subtasks.find(subtask => subtask.id === editingSubtaskId);
         const editablePercent = remainingPercent + getAllocationPercent(editingSubtask);
-        if (!subtaskForm.name.trim() || !subtaskForm.assigneeId) {
-            toast.error('Vui lòng nhập tên và chọn người thực hiện');
+        if (!subtaskForm.name.trim()) {
+            toast.error('Vui lòng nhập tên');
             return;
         }
         if (!Number.isFinite(allocationPercent) || allocationPercent <= 0 || allocationPercent > editablePercent) {
@@ -210,7 +206,7 @@ export const TaskDelegationPanel = ({
         try {
             const payload = {
                 name: subtaskForm.name.trim(),
-                assigneeId: subtaskForm.assigneeId,
+                assigneeId: subtaskForm.assigneeId || undefined,
                 allocationPercent,
                 description: subtaskForm.description.trim() || undefined,
             };
@@ -495,24 +491,7 @@ export const TaskDelegationPanel = ({
                             placeholder="Nhập phần công việc cần thực hiện"
                         />
                     </div>
-                    <div>
-                        <label className="mb-2 block text-sm font-bold text-gray-700">Người thực hiện</label>
-                        <select
-                            value={subtaskForm.assigneeId}
-                            onChange={event => setSubtaskForm(current => ({ ...current, assigneeId: event.target.value }))}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                        >
-                            <option value="">Chọn thành viên đội dự án</option>
-                            {assignableMembers.map(member => (
-                                <option key={member.id} value={member.user.id}>
-                                    {member.user.fullName}{hasTeamMemberRole(member, 'ACCOUNT') ? ' (Account)' : ''}
-                                </option>
-                            ))}
-                        </select>
-                        {assignableMembers.length === 0 && (
-                            <p className="mt-2 text-xs font-semibold text-amber-600">PM cần thêm nhân sự vào đội dự án trước.</p>
-                        )}
-                    </div>
+
                     <div>
                         <label className="mb-2 block text-sm font-bold text-gray-700">% phân bổ công việc</label>
                         <input
@@ -548,7 +527,6 @@ export const TaskDelegationPanel = ({
                         <Button
                             onClick={handleCreateSubtask}
                             isLoading={isCreatingSubtask || isUpdatingSubtask}
-                            disabled={assignableMembers.length === 0}
                             className="bg-[#F38820] text-white hover:bg-[#D97010] focus:ring-orange-500"
                         >
                             {editingSubtaskId ? 'Lưu thay đổi' : 'Thêm vào phương án'}
