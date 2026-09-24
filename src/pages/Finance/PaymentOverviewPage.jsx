@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import {
   CalendarDays, CheckCircle2, ChevronLeft, ChevronRight,
   Download, FolderKanban, RefreshCw, Search, WalletCards,
-  FileText
+  FileText, X, Clock, ArrowUpRight
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useGetPaymentDashboardQuery } from '../../api/paymentDashboard';
@@ -61,10 +61,28 @@ export const PaymentOverviewPage = () => {
   // Target cho modal xem trước tài liệu đa năng
   const [previewTarget, setPreviewTarget] = useState(null);
 
+  // Tháng đang mở modal chi tiết phân bổ dòng tiền
+  const [selectedMonthDetail, setSelectedMonthDetail] = useState(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setSelectedMonthDetail(null);
+    };
+    if (selectedMonthDetail !== null) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedMonthDetail]);
+
   const { data, isLoading, isFetching, isError, refetch } = useGetPaymentDashboardQuery(filters);
   const rows = data?.rows || [];
   const summary = data?.summary || {};
   const options = data?.filterOptions || {};
+
+  const activeMonthData = useMemo(() => {
+    if (selectedMonthDetail === null) return null;
+    return (data?.monthly || []).find((m) => m.month === selectedMonthDetail) || null;
+  }, [selectedMonthDetail, data?.monthly]);
 
   const update = (key, value) => setFilters((state) => ({ ...state, [key]: value, page: 1 }));
 
@@ -215,36 +233,122 @@ export const PaymentOverviewPage = () => {
                 <CalendarDays className="h-4 w-4" />
               </span>
               <div>
-                <h2 className="text-sm font-semibold">Thu tiền theo tháng · năm {filters.year}</h2>
-                <p className="text-[11px] text-[#565e74]">Dòng tiền phân bổ theo các kỳ thực tế và kế hoạch</p>
+                <h2 className="text-sm font-semibold">Kế hoạch & Thực thu theo tháng · năm {filters.year}</h2>
+                <p className="text-[11px] text-[#565e74]">
+                  Bấm vào từng tháng để xem chi tiết phân bổ dòng tiền (Thu đúng kỳ, Thu nợ cũ, Thu trước hạn)
+                </p>
               </div>
             </div>
-            <div className="flex gap-4 text-[11px] text-[#565e74]">
-              <span><i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-[#006c49]" />Đã thanh toán</span>
+            <div className="flex flex-wrap gap-3.5 text-[11px] text-[#565e74]">
+              <span><i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-[#006c49]" />Đã thu đủ</span>
+              <span><i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-[#ffdbca] border border-[#f97316]/40" />Thu 1 phần</span>
               <span><i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-[#f97316]" />Chưa thu</span>
+              <span><i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-[#dbeafe] border border-blue-400" />Thu trước</span>
+              <span><i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-amber-100 border border-amber-400" />Trả trễ</span>
               <span><i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-[#e5eeff]" />Không phát sinh</span>
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-1.5 sm:grid-cols-6 xl:grid-cols-12">
+          <div className="mt-3.5 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {(data?.monthly || []).map((month) => {
-              const pending = Math.max(0, Number(month.planned) - Number(month.paid));
-              const active = month.paid > 0 || pending > 0;
+              const planned = Number(month.planned || 0);
+              const paid = Number(month.paid || 0);
+              const unpaid = month.unpaid !== undefined ? Number(month.unpaid) : Math.max(0, planned - paid);
+              const isOverduePayment = planned <= 0 && paid > 0 && (month.breakdown?.overdue || 0) > 0 && (month.breakdown?.prepaid || 0) <= 0;
+              const isPrepaid = planned <= 0 && paid > 0 && !isOverduePayment;
+              const isPaid = planned > 0 && paid > 0 && unpaid <= 0;
+              const isPartial = planned > 0 && paid > 0 && unpaid > 0;
+              const isPending = paid <= 0 && unpaid > 0;
+              const active = planned > 0 || paid > 0 || unpaid > 0;
+              const rate = planned > 0 ? Math.min(100, Math.round((paid / planned) * 100)) : (paid > 0 ? 100 : 0);
+              const isSelected = selectedMonthDetail === month.month;
+              const quarter = Math.ceil(month.month / 3);
+              const colIndex = (month.month - 1) % 3;
+
               return (
                 <div
                   key={month.month}
-                  className={`flex min-h-20 flex-col items-center justify-center rounded-xl p-2 text-center ${
-                    active ? 'bg-white shadow-[0_1px_6px_rgba(33,49,69,0.08)] border border-slate-100' : 'bg-[#eff4ff]/70 text-[#565e74]'
+                  onClick={() => setSelectedMonthDetail((prev) => prev === month.month ? null : month.month)}
+                  title={`Tháng ${month.month}: Bấm để xem chi tiết đối soát dòng tiền`}
+                  className={`group relative flex flex-col justify-between rounded-xl p-2.5 transition-all cursor-pointer select-none ${
+                    isSelected
+                      ? 'bg-white shadow-lg ring-2 ring-[#f97316] border-transparent z-40'
+                      : active
+                        ? 'bg-white shadow-[0_1px_4px_rgba(33,49,69,0.06)] border border-slate-100 hover:border-[#f97316]/50 hover:shadow-md'
+                        : 'bg-[#eff4ff]/60 border border-transparent text-[#565e74] hover:bg-[#eff4ff]'
                   }`}
                 >
-                  <span className="text-[11px] font-semibold">T{month.month}</span>
-                  <b className={`my-1 text-xs ${pending > 0 ? 'text-[#9d4300]' : 'text-[#0b1c30]'}`}>
-                    {active ? compactMoney(month.paid || pending) : '—'}
-                  </b>
-                  <span className={`rounded px-1 text-[10px] font-semibold ${
-                    pending > 0 ? 'bg-[#9d4300] text-white' : month.paid > 0 ? 'bg-[#e5eeff] text-[#006c49]' : 'text-[#8c7164]'
-                  }`}>
-                    {pending > 0 ? 'Chưa thu' : month.paid > 0 ? 'Đã nhận' : '0 tr'}
-                  </span>
+                  {/* Card Header: Tháng & Tag trạng thái */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-[#0b1c30]">Tháng {month.month}</span>
+                      <span className="text-[10px] font-medium text-slate-400">· Quý {quarter}</span>
+                    </div>
+                    <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold text-center leading-tight ${
+                      isOverduePayment
+                        ? 'bg-amber-100 text-amber-800'
+                        : isPrepaid
+                          ? 'bg-[#dbeafe] text-[#1e40af]'
+                          : isPaid
+                            ? 'bg-[#e5eeff] text-[#006c49]'
+                            : isPartial
+                              ? 'bg-[#ffdbca] text-[#9d4300]'
+                              : isPending
+                                ? 'bg-[#ffdad6] text-[#93000a]'
+                                : 'bg-slate-100 text-slate-400'
+                    }`}>
+                      {isOverduePayment ? 'Trả trễ' : isPrepaid ? 'Thu trước' : isPaid ? 'Đã thu đủ' : isPartial ? 'Thu 1 phần' : isPending ? 'Chưa thu' : 'Không phát sinh'}
+                    </span>
+                  </div>
+
+                  {/* Card Body: Các dòng số liệu tinh gọn */}
+                  <div className="my-1.5 flex flex-col gap-1 text-left text-[11px]">
+                    {active ? (
+                      <>
+                        {planned > 0 && (
+                          <div className="flex items-center justify-between text-slate-500">
+                            <span className="font-medium">Kế hoạch thu:</span>
+                            <span className="font-bold text-slate-700 tabular-nums">{money(planned)}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between text-[#006c49]">
+                          <span className="font-medium">Đã thực thu:</span>
+                          <span className="font-bold tabular-nums">{money(paid)}</span>
+                        </div>
+                        {unpaid > 0 && (
+                          <div className="flex items-center justify-between text-[#9d4300]">
+                            <span className="font-medium">Còn phải thu:</span>
+                            <span className="font-bold tabular-nums">{money(unpaid)}</span>
+                          </div>
+                        )}
+
+                        {/* Progress Bar mini khi có kế hoạch */}
+                        {planned > 0 && (
+                          <div className="mt-0.5 pt-0.5">
+                            <div className="flex justify-between text-[10px] mb-0.5">
+                              <span className="text-slate-400">Tiến độ thu</span>
+                              <b className={isPaid ? 'text-[#006c49]' : 'text-slate-700'}>{rate}%</b>
+                            </div>
+                            <div className="h-1 overflow-hidden rounded-full bg-slate-100">
+                              <div
+                                className={`h-full rounded-full transition-all duration-300 ${isPaid ? 'bg-[#006c49]' : 'bg-[#f97316]'}`}
+                                style={{ width: `${Math.min(100, rate)}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="py-2 text-center text-[11px] text-slate-400 font-medium">
+                        — Không phát sinh —
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card Footer: Gợi ý xem chi tiết */}
+                  <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Đối soát dòng tiền</span>
+                    <span className="font-medium text-[#f97316] group-hover:underline">Chi tiết →</span>
+                  </div>
                 </div>
               );
             })}
@@ -469,6 +573,167 @@ export const PaymentOverviewPage = () => {
               })()}
             </section>
       </div>
+
+      {/* Modal chi tiết phân bổ dòng tiền tháng */}
+      {activeMonthData && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setSelectedMonthDetail(null)}
+        >
+          <div
+            className="relative w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl animate-in zoom-in-95 duration-200 text-left border border-slate-100 max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header Modal */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-[#f97316]">
+                  <CalendarDays className="h-5 w-5" />
+                </span>
+                <div>
+                  <h3 className="text-base font-bold text-[#0b1c30]">
+                    Dòng tiền thực thu · Tháng {activeMonthData.month}/{filters.year}
+                  </h3>
+                  <p className="text-xs text-slate-500">Phân loại tiền về tài khoản theo kỳ hạn đợt thanh toán</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedMonthDetail(null)}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer"
+                title="Đóng (ESC)"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Nội dung Modal (Cuộn được nếu danh sách dài) */}
+            <div className="overflow-y-auto mt-4 pr-1 space-y-3 flex-1">
+              {/* Tổng thực nhận trong tháng */}
+              <div className="rounded-xl bg-gradient-to-r from-emerald-50/80 to-teal-50/50 p-3.5 border border-emerald-100/80 flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                    Tổng thực nhận trong tháng
+                  </span>
+                  <b className="text-xl font-bold text-[#006c49] tabular-nums mt-0.5 block">
+                    {money(activeMonthData.cashPaid || activeMonthData.breakdown?.total || 0)}
+                  </b>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 shadow-2xs">
+                  Tiền về tài khoản
+                </span>
+              </div>
+
+              {/* 3 Thẻ phân loại: Đúng kỳ / Nợ cũ / Thu trước */}
+              <div className="space-y-2">
+                {/* 1. Thu đúng kỳ */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="w-3 h-3 rounded-full bg-[#006c49] shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-[#006c49] block">
+                        Thu đúng kỳ (Tháng {activeMonthData.month})
+                      </span>
+                      <span className="text-[11px] text-slate-500">Đợt thanh toán có hạn trong tháng này</span>
+                    </div>
+                  </div>
+                  <b className="text-sm font-bold text-[#006c49] tabular-nums shrink-0">
+                    {money(activeMonthData.breakdown?.onTime || 0)}
+                  </b>
+                </div>
+
+                {/* 2. Thu nợ các kỳ trước */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50/50 border border-amber-100">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="w-3 h-3 rounded-full bg-[#b45309] shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-[#b45309] block">
+                        Thu nợ cũ (Kỳ trước)
+                      </span>
+                      <span className="text-[11px] text-slate-500">Khách trả trễ cho các đợt trước đó</span>
+                    </div>
+                  </div>
+                  <b className="text-sm font-bold text-[#b45309] tabular-nums shrink-0">
+                    {money(activeMonthData.breakdown?.overdue || 0)}
+                  </b>
+                </div>
+
+                {/* 3. Thu trước cho các kỳ sau */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-blue-50/50 border border-blue-100">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="w-3 h-3 rounded-full bg-[#1e40af] shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-[#1e40af] block">
+                        Thu trước (Kỳ sau)
+                      </span>
+                      <span className="text-[11px] text-slate-500">Khách thanh toán sớm cho các đợt sau</span>
+                    </div>
+                  </div>
+                  <b className="text-sm font-bold text-[#1e40af] tabular-nums shrink-0">
+                    {money(activeMonthData.breakdown?.prepaid || 0)}
+                  </b>
+                </div>
+              </div>
+
+              {/* Danh sách các giao dịch cụ thể */}
+              {activeMonthData.breakdown?.details && activeMonthData.breakdown.details.length > 0 ? (
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Chi tiết các khoản thu ({activeMonthData.breakdown.details.length})
+                    </span>
+                    <span className="text-[11px] text-slate-400">Dự án · Số tiền</span>
+                  </div>
+                  <div className="max-h-56 overflow-y-auto space-y-2 pr-1">
+                    {activeMonthData.breakdown.details.map((item, idx) => (
+                      <div key={item.id || idx} className="p-2.5 rounded-xl bg-slate-50/80 border border-slate-100 text-xs hover:bg-slate-100/70 transition-colors">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold text-slate-800 truncate" title={item.projectName}>
+                            {item.projectName}
+                          </span>
+                          <span className="font-bold text-[#006c49] tabular-nums shrink-0">
+                            +{money(item.amount)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mt-1 text-[11px] text-slate-500">
+                          <span className="truncate max-w-64" title={item.milestoneName}>
+                            {item.milestoneName || 'Đợt thanh toán'}
+                            {item.paymentDate ? ` · Ngày TT: ${formatDateToDDMMYYYY(item.paymentDate)}` : ''}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded font-semibold text-[10px] shrink-0 ${
+                            item.type === 'ON_TIME'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : item.type === 'OVERDUE'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {item.type === 'ON_TIME' ? 'Đúng kỳ' : item.type === 'OVERDUE' ? `Hạn T${item.dueMonth} (Trễ)` : `Hạn T${item.dueMonth} (Thu trước)`}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="py-6 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  Tháng này chưa ghi nhận giao dịch thu tiền vào tài khoản.
+                </div>
+              )}
+            </div>
+
+            {/* Footer Modal */}
+            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setSelectedMonthDetail(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal tải lên tài liệu */}
       {documentTarget && (
