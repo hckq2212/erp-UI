@@ -82,6 +82,14 @@ const buildMonthCells = (dateKey) => {
     return cells;
 };
 
+const getMonthRange = (date) => {
+    const value = date && !Number.isNaN(date.getTime()) ? date : new Date();
+    return {
+        startDate: formatDateKey(new Date(value.getFullYear(), value.getMonth(), 1)),
+        endDate: formatDateKey(new Date(value.getFullYear(), value.getMonth() + 1, 0))
+    };
+};
+
 const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSelectDate }) => {
     const days = data?.days || [];
     const maxDailyTasks = days.reduce((max, day) => Math.max(max, Number(day.taskCount || 0)), 0);
@@ -91,25 +99,25 @@ const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSe
     const weekdayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
     return (
-        <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+            <div className="mb-2 flex items-center justify-between gap-3">
                 <div>
-                    <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">
-                        Lịch task hiện có
+                    <p className="text-xs font-black text-slate-700">
+                        Lịch task tháng {monthLabelDate.getMonth() + 1}/{monthLabelDate.getFullYear()}
                     </p>
-                    <p className="mt-0.5 text-[11px] font-medium text-slate-400">
-                        Tính theo plannedStartDate đến plannedEndDate
+                    <p className="mt-0.5 text-[10px] font-bold text-slate-400">
+                        Chọn ngày để đặt deadline
                     </p>
                 </div>
                 {!isLoading && !isError && (
-                    <span className="shrink-0 rounded-full bg-white px-3 py-1 text-[11px] font-black text-slate-600 shadow-sm">
-                        Cao nhất {maxDailyTasks} task/ngày
+                    <span className="shrink-0 rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-black text-slate-500">
+                        Max {maxDailyTasks}/ngày
                     </span>
                 )}
             </div>
 
             {isLoading ? (
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                <div className="flex items-center gap-2 py-2 text-xs font-bold text-slate-400">
                     <span className="h-3 w-3 rounded-full border-2 border-slate-300 border-t-blue-500 animate-spin" />
                     Đang tải lịch task...
                 </div>
@@ -118,16 +126,8 @@ const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSe
                     Không tải được lịch task, bạn vẫn có thể phân công.
                 </p>
             ) : (
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <p className="text-sm font-black text-slate-700">
-                            Tháng {monthLabelDate.getMonth() + 1}/{monthLabelDate.getFullYear()}
-                        </p>
-                        <p className="text-[11px] font-bold text-slate-400">
-                            Chọn ngày trên lịch để đổi deadline
-                        </p>
-                    </div>
-                    <div className="grid grid-cols-7 gap-1.5">
+                <div className="space-y-2">
+                    <div className="grid grid-cols-7 gap-1">
                         {weekdayLabels.map(label => (
                             <div key={label} className="py-1 text-center text-[10px] font-black uppercase text-slate-400">
                                 {label}
@@ -147,13 +147,13 @@ const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSe
                                 <button
                                     key={dateKey}
                                     type="button"
-                                    className={`flex aspect-square min-h-12 flex-col items-center justify-center rounded-xl border text-center transition hover:border-blue-300 hover:bg-blue-50 ${getDailyWorkloadClassName(taskCount, isSelected, hasData)}`}
+                                    className={`flex aspect-square min-h-10 flex-col items-center justify-center rounded-lg border text-center transition hover:border-blue-300 hover:bg-blue-50 ${getDailyWorkloadClassName(taskCount, isSelected, hasData)}`}
                                     title={hasData ? `${formatDate(dateKey)}: ${taskCount} task` : `${formatDate(dateKey)}: ngoài khoảng đang xem`}
                                     onClick={() => onSelectDate(dateKey)}
                                 >
                                     <span className="text-xs font-black">{Number(dateKey.slice(8, 10))}</span>
-                                    <span className="mt-0.5 text-[9px] font-black leading-none">
-                                        {hasData ? `${taskCount} task` : '-'}
+                                    <span className="mt-0.5 rounded-full bg-white/70 px-1 text-[8px] font-black leading-tight">
+                                        {hasData ? taskCount : '-'}
                                     </span>
                                 </button>
                             );
@@ -227,7 +227,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
     const [files, setFiles] = useState([]);
     const [uploadProgress, setUploadProgress] = useState({}); // { index: progress }
     const [isUploading, setIsUploading] = useState(false);
-    const selectedDeadlineDateKey = useMemo(() => formatDateKey(plannedEndDate), [plannedEndDate]);
+    const selectedDeadlineDateKey = useMemo(() => formatDateKey(plannedEndDate) || formatDateKey(new Date()), [plannedEndDate]);
 
     useEffect(() => {
         if (isSupportMode && representativeTask?.supportTeamId) {
@@ -238,24 +238,9 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
     const internalMembers = isSupportMode && representativeTask?.supportTeamId ? supportMembers : members;
     const selectedMember = internalMembers.find(m => m.user?.id === formData.assigneeId);
     const dailyWorkloadRange = useMemo(() => {
-        if (!plannedEndDate) return null;
-        const end = new Date(plannedEndDate);
-        if (Number.isNaN(end.getTime())) return null;
-
-        const plannedStart = representativeTask?.plannedStartDate
-            ? new Date(representativeTask.plannedStartDate)
-            : new Date();
-        const start = Number.isNaN(plannedStart.getTime()) ? new Date() : plannedStart;
-        start.setHours(0, 0, 0, 0);
-        end.setHours(0, 0, 0, 0);
-
-        if (start > end) return null;
-
-        return {
-            startDate: formatDateKey(start),
-            endDate: formatDateKey(end)
-        };
-    }, [plannedEndDate, representativeTask?.plannedStartDate]);
+        const selectedDate = parseDateKey(selectedDeadlineDateKey) || new Date();
+        return getMonthRange(selectedDate);
+    }, [selectedDeadlineDateKey]);
     const shouldFetchDailyWorkload = Boolean(
         formData.assigneeId &&
         formData.performerType === 'INTERNAL' &&
@@ -799,6 +784,15 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                         <Info className="w-4 h-4" /> Chưa có vendor cung cấp dịch vụ này
                                     </div>
                                 )}
+                                {shouldFetchDailyWorkload && (
+                                    <DailyWorkloadCalendar
+                                        data={dailyWorkload}
+                                        isLoading={isLoadingDailyWorkload}
+                                        isError={isDailyWorkloadError}
+                                        selectedDateKey={selectedDeadlineDateKey}
+                                        onSelectDate={handleSelectDeadlineDate}
+                                    />
+                                )}
                             </div>
 
                             {/* Dates Grid */}
@@ -814,15 +808,6 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                         onChange={(e) => setPlannedEndDate(e.target.value)}
                                     />
                                 </div>
-                                {shouldFetchDailyWorkload && (
-                                    <DailyWorkloadCalendar
-                                        data={dailyWorkload}
-                                        isLoading={isLoadingDailyWorkload}
-                                        isError={isDailyWorkloadError}
-                                        selectedDateKey={selectedDeadlineDateKey}
-                                        onSelectDate={handleSelectDeadlineDate}
-                                    />
-                                )}
                             </div>
 
                             {/* Description */}
