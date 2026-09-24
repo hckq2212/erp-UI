@@ -1011,11 +1011,44 @@ export const TaskDetailPage = () => {
                         </div>
 
                         <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                            <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                <UserPlus className="w-5 h-5 text-indigo-500" />
+                                Nhân sự phân công
+                            </h2>
+
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center text-white text-lg font-bold shadow-lg shadow-indigo-100">
+                                    {task.assigner?.fullName?.charAt(0) || <UserPlus className="w-6 h-6" />}
+                                </div>
+
+                                <div className="min-w-0">
+                                    <p className="text-gray-900 font-bold truncate">
+                                        {task.assigner?.fullName || 'Chưa có thông tin'}
+                                    </p>
+                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">Người giao việc</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+                                    <Calendar className="w-5 h-5" />
+                                </div>
+                                <h2 className="text-lg font-bold text-gray-900 tracking-tight">Ngày dự kiến bắt đầu</h2>
+                            </div>
+
+                            <p className="text-md font-bold text-gray-700">
+                                {formatDateTime(task.plannedStartDate) || 'Chưa có thông tin'}
+                            </p>
+                        </div>
+
+                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
                                     <Calendar className="w-5 h-5" />
                                 </div>
-                                <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kế hoạch</h2>
+                                <h2 className="text-lg font-bold text-gray-900 tracking-tight">Kế hoạch</h2>
                             </div>
 
                             <div>
