@@ -561,7 +561,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                                                     <div className="flex flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
                                                         {task.status === 'NOT_STARTED' &&
-                                                            (!task.parentTaskId || task.subtaskPlanStatus === 'APPROVED') &&
+                                                            (!task.parentTaskId || !task.subtaskPlanStatus || task.subtaskPlanStatus === 'APPROVED') &&
                                                             (isSameUser(currentUserId, task.assigneeId) ||
                                                                 isSameUser(currentUserId, task.assignee?.id) ||
                                                                 isSameUser(currentUserId, task.helperId) ||
