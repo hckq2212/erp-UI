@@ -10,7 +10,9 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
     });
     const request = requestDetail || initialRequest;
 
-    const isReadOnly = request?.status !== 'PENDING';
+    const isProjectClosed = request?.project?.status && ['COMPLETED', 'CANCELLED'].includes(request.project.status);
+    const isProjectOnHold = request?.project?.status === 'ON_HOLD' || Boolean(request?.project?.isOnHold);
+    const isReadOnly = request?.status !== 'PENDING' || isProjectClosed || isProjectOnHold;
 
     const [processAcceptance, { isLoading: isSubmitting }] = useProcessAcceptanceRequestMutation();
     const [decisions, setDecisions] = useState({});
@@ -137,6 +139,14 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
     };
 
     const handleSubmit = async () => {
+        if (isProjectClosed) {
+            toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể duyệt nghiệm thu.');
+            return;
+        }
+        if (isProjectOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể duyệt nghiệm thu.');
+            return;
+        }
         // Guard: prevent submitting when there's nothing to review
         if (totalPendingResults === 0) {
             toast.info('Tất cả kết quả đã được duyệt, không cần xác nhận thêm.');
@@ -506,7 +516,13 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
                     <div className="p-5 border-t border-gray-100 flex items-center justify-between bg-gray-50/50 rounded-b-xl">
                         <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
                             <ShieldCheck className="w-4 h-4 text-slate-400" />
-                            <span>Biên bản đã được xử lý xong</span>
+                            <span>
+                                {isProjectClosed
+                                    ? 'Dự án đã hoàn tất hoặc đã đóng'
+                                    : isProjectOnHold
+                                    ? 'Dự án đang tạm dừng'
+                                    : 'Biên bản đã được xử lý xong'}
+                            </span>
                         </div>
                         <button
                             onClick={onClose}

@@ -128,7 +128,7 @@ export const EditServiceModal = ({ isOpen, onClose, service }) => {
                     label="Mã dịch vụ *"
                     {...register('code')}
                     error={errors.code?.message}
-                    placeholder="Ví dụ: SV-VID, SVC-DES..."
+                    placeholder="Ví dụ: VID, DES..."
                 />
 
                 <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700">

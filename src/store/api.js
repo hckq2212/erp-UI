@@ -89,7 +89,7 @@ export const api = createApi({
     'ProjectProductDescriptions', 'ProjectSpellCheckWhitelist',
     'VideoGenerations', 'AiModels', 'Assets', 'Elements',
     'Documents', 'DocumentVersions', 'Announcements', 'AnnouncementComments',
-    'Settings', 'PauseHistory'
+    'Settings', 'PauseHistory', 'PaymentDashboard', 'FinanceDocuments'
   ],
   endpoints: () => ({}),
 });

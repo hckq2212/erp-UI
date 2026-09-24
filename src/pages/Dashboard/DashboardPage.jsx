@@ -17,6 +17,7 @@ import { TeamLeadView } from '../../components/dashboard/TeamLeadView';
 import { BDView } from '../../components/dashboard/BDView';
 import { MemberView } from '../../components/dashboard/MemberView';
 import { getCurrentUserId } from '../../utils/authUser';
+import { PaymentOverviewPage } from '../Finance/PaymentOverviewPage';
 
 export const DashboardPage = () => {
     const navigate = useNavigate();
@@ -25,6 +26,7 @@ export const DashboardPage = () => {
     const userRole = user?.role || user?.account?.role;
     const isAdminOrBod = userRole === 'ADMIN' || userRole === 'BOD';
     const isPM = userRole === 'PM';
+    const isAdminSale = userRole === 'ADMIN_SALE';
     const [viewMode, setViewMode] = useState('overview'); // 'overview' | 'personal'
     const [selectedMemberId, setSelectedMemberId] = useState(null);
     const [selectedProjectId, setSelectedProjectId] = useState(null);
@@ -38,12 +40,18 @@ export const DashboardPage = () => {
         year: selectedDate.year,
         projectId: selectedProjectId,
         mode: isPM && !selectedMemberId ? (viewMode === 'personal' ? 'personal' : 'management') : undefined
+    }, {
+        skip: isAdminSale
     });
     const dashboard = dashboardData || {};
     const { data: awaitingReviewTasks, isLoading: isTasksLoading } = useGetTasksQuery(
         { status: 'AWAITING_REVIEW' },
-        { skip: isAdminOrBod }
+        { skip: isAdminOrBod || isAdminSale }
     );
+
+    if (isAdminSale) {
+        return <PaymentOverviewPage />;
+    }
 
     const dashboardScope = dashboard?.scope;
     const isExcludedSaleRole = userRole === 'BD' || userRole === 'ADMIN_SALE';

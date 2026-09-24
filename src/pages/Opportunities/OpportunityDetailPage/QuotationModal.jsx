@@ -8,7 +8,7 @@ import { toast } from 'react-toastify';
 
 export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuotation = null, isSubmitting = false }) => {
   const [items, setItems] = useState([]);
-  const [priceType, setPriceType] = useState('recommended'); // minimum, recommended, custom
+  const [priceType, setPriceType] = useState('custom'); // minimum, recommended, custom
   const [notes, setNotes] = useState('');
   const [showAddService, setShowAddService] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState('');
@@ -133,7 +133,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
 
       setItems([...standaloneItems, ...packageItems]);
       setNotes('');
-      setPriceType('recommended');
+      setPriceType('custom');
     }
   }, [isOpen, !isEditMode, servicesData, opportunity?.packages]);
 
@@ -174,46 +174,6 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
           customPrice: numValue,
           selectedPrice: priceType === 'custom' ? numValue : item.selectedPrice,
           profitMargin: priceType === 'custom' ? calculateProfitMargin(numValue, item.costPrice) : item.profitMargin
-        };
-      }
-      return item;
-    }));
-  };
-
-  const handlePackageCustomPriceChange = (packageName, value) => {
-    const newTotalCustomPrice = parseNumber(value);
-
-    // Find all items in this package
-    const packageItems = items.filter(item => item.packageName === packageName);
-    const currentTotalCustomPrice = packageItems.reduce((sum, item) => sum + (item.customPrice * (item.norm || 1)), 0);
-
-    if (currentTotalCustomPrice === 0) {
-      const share = newTotalCustomPrice / (packageItems.length || 1);
-      setItems(items.map(item => {
-        if (item.packageName === packageName) {
-          const unitShare = share / (item.norm || 1);
-          return {
-            ...item,
-            customPrice: unitShare,
-            selectedPrice: priceType === 'custom' ? unitShare : item.selectedPrice,
-            profitMargin: priceType === 'custom' ? calculateProfitMargin(unitShare, item.costPrice) : item.profitMargin
-          };
-        }
-        return item;
-      }));
-      return;
-    }
-
-    const ratio = newTotalCustomPrice / currentTotalCustomPrice;
-
-    setItems(items.map(item => {
-      if (item.packageName === packageName) {
-        const newCustomPrice = item.customPrice * ratio;
-        return {
-          ...item,
-          customPrice: newCustomPrice,
-          selectedPrice: priceType === 'custom' ? newCustomPrice : item.selectedPrice,
-          profitMargin: priceType === 'custom' ? calculateProfitMargin(newCustomPrice, item.costPrice) : item.profitMargin
         };
       }
       return item;
@@ -412,6 +372,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
 
     const submitData = {
       note: notes,
+      totalAmount: totals.totalWithVat,
       details: items.map(item => ({
         serviceId: item.serviceId,
         quantity: item.quantity,
@@ -522,13 +483,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                           {formatNumber(pkg.recommendedPrice)}
                         </td>
                         {priceType === 'custom' && (
-                          <td className="px-4 py-2">
-                            <input
-                              type="text"
-                              value={formatNumber(Math.round(pkg.customPrice))}
-                              onChange={(e) => handlePackageCustomPriceChange(pkg.name, e.target.value)}
-                              className="w-full px-2 py-1 text-right border-2 border-blue-200 rounded text-sm font-bold text-blue-900 bg-white focus:border-blue-500 outline-none transition-all"
-                            />
+                          <td className="px-4 py-2 text-right text-sm font-bold text-blue-900">
+                            {formatNumber(pkg.customPrice)}
                           </td>
                         )}
                         <td className={`px-4 py-2 text-right text-sm font-black ${pkg.profitMargin < 0 ? 'text-red-600' : 'text-blue-600'}`}>
@@ -551,17 +507,43 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                       </tr>
                       {/* Sub-items in package */}
                       {pkg.items.map((item, iIdx) => (
-                        <tr key={`pkg-${pIdx}-item-${iIdx}`} className="border-b border-gray-50 bg-blue-50/10 group">
+                        <tr key={`pkg-${pIdx}-item-${iIdx}`} className="border-b border-gray-50 bg-blue-50/10 group hover:bg-blue-50/30 transition-colors">
                           <td className="px-4 py-2 text-sm text-gray-600 pl-10 italic sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r border-blue-50">
                             • {item.serviceName}
                           </td>
-                          <td className="px-4 py-2 text-center text-[10px] text-gray-400 font-bold uppercase">
-                            {Number(item.norm) % 1 === 0 ? item.norm : Number(item.norm).toFixed(0).replace(/\.?0+$/, '')} {item?.unit} / gói
+                          <td className="px-2 py-2 text-center text-[11px] text-gray-500 font-medium whitespace-nowrap">
+                            {Number(item.norm) % 1 === 0 ? item.norm : Number(item.norm).toFixed(0).replace(/\.?0+$/, '')} {item?.unit ? `${item.unit} / gói` : '/ gói'}
                           </td>
-                          <td
-                            colSpan={priceType === 'custom' ? 8 : 7}
-                            className="px-4 py-2 text-xs italic text-gray-300"
-                          />
+                          <td className="px-4 py-2 text-right text-sm text-gray-600">
+                            {formatNumber(item.costPrice)}
+                          </td>
+                          <td className="px-4 py-2 text-right text-sm text-gray-600">
+                            {formatNumber(item.minPrice)}
+                          </td>
+                          <td className="px-4 py-2 text-right text-sm text-gray-600">
+                            {formatNumber(item.recommendedPrice)}
+                          </td>
+                          {priceType === 'custom' && (
+                            <td className="px-4 py-1.5">
+                              <input
+                                type="text"
+                                value={formatNumber(item.customPrice)}
+                                onChange={(e) => handleCustomPriceChange(item.originalIndex, e.target.value)}
+                                className="w-full px-2 py-1 text-right border border-gray-300 rounded text-sm bg-white focus:border-blue-500 outline-none transition-all"
+                              />
+                            </td>
+                          )}
+                          <td className={`px-4 py-2 text-right text-sm font-medium ${item.profitMargin < 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                            {item.profitMargin.toFixed(0)}%
+                          </td>
+                          <td className="px-4 py-2 text-right text-sm text-gray-600">
+                            {formatNumber((item.selectedPrice * item.quantity) * 0.08)}
+                          </td>
+                          <td className="px-4 py-2 text-right text-sm font-semibold text-gray-700">
+                            {formatNumber((item.selectedPrice * item.quantity) * 1.08)}
+                          </td>
+                          <td className="px-4 py-2 text-center text-xs text-gray-300">
+                          </td>
                         </tr>
                       ))}
                     </Fragment>
@@ -609,7 +591,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                             <td className="px-4 py-3">
                               <input
                                 type="text"
-                                value={formatNumber(Math.round(item.customPrice))}
+                                value={formatNumber(item.customPrice)}
                                 onChange={(e) => handleCustomPriceChange(item.originalIndex, e.target.value)}
                                 className="w-full px-2 py-1 text-right border border-gray-300 rounded text-sm"
                               />

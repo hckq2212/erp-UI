@@ -98,6 +98,7 @@ export const ProjectWorkingFilesSection = ({ project }) => {
   const currentUserId = getCurrentUserId(me);
   const userRole = getUserAccountRole(me);
   const isOnHold = project?.status === 'ON_HOLD' || Boolean(project?.isOnHold);
+  const isClosed = ['COMPLETED', 'CANCELLED'].includes(project?.status);
 
   const workingFiles = Array.isArray(project?.workingFiles) ? project.workingFiles : [];
 
@@ -105,7 +106,7 @@ export const ProjectWorkingFilesSection = ({ project }) => {
   const isTeamLead = project?.team?.teamLead?.id && isSameUser(project.team.teamLead.id, currentUserId);
 
   const canDeleteFile = (file) => {
-    if (isOnHold) return false;
+    if (isOnHold || isClosed) return false;
     if (canManageAll || isTeamLead) return true;
     return isSameUser(file?.createdById, currentUserId);
   };
@@ -122,6 +123,10 @@ export const ProjectWorkingFilesSection = ({ project }) => {
   };
 
   const handleDeleteFile = async (file) => {
+    if (isClosed) {
+      toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể xóa tài liệu.');
+      return;
+    }
     if (isOnHold) {
       toast.warning('Dự án đang tạm dừng, không thể xóa tài liệu.');
       return;
@@ -142,6 +147,10 @@ export const ProjectWorkingFilesSection = ({ project }) => {
   };
 
   const handleOpenModal = () => {
+    if (isClosed) {
+      toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể thêm tài liệu.');
+      return;
+    }
     if (isOnHold) {
       toast.warning('Dự án đang tạm dừng, không thể thêm tài liệu.');
       return;
@@ -331,16 +340,18 @@ export const ProjectWorkingFilesSection = ({ project }) => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleOpenModal}
-            disabled={isOnHold}
-            title={isOnHold ? 'Dự án đang tạm dừng' : 'Thêm tài liệu làm việc'}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl text-white bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Thêm tài liệu
-          </button>
+          {!isClosed && (
+            <button
+              type="button"
+              onClick={handleOpenModal}
+              disabled={isOnHold}
+              title={isOnHold ? 'Dự án đang tạm dừng' : 'Thêm tài liệu làm việc'}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl text-white bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Thêm tài liệu
+            </button>
+          )}
         </div>
       </div>
 

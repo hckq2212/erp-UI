@@ -4,7 +4,7 @@ import { useCreateAcceptanceRequestMutation } from '../../../api/acceptances';
 import { toast } from 'react-toastify';
 import { getFilePreviewUrl } from '../../../utils/cloudinary';
 
-export const CreateAcceptanceModal = ({ isOpen, onClose, contract, projectId }) => {
+export const CreateAcceptanceModal = ({ isOpen, onClose, contract, projectId, project }) => {
     const [createAcceptance, { isLoading }] = useCreateAcceptanceRequestMutation();
     const [selectedServiceIds, setSelectedServiceIds] = useState([]);
     const [formData, setFormData] = useState({
@@ -38,6 +38,14 @@ export const CreateAcceptanceModal = ({ isOpen, onClose, contract, projectId }) 
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (project?.status && ['COMPLETED', 'CANCELLED'].includes(project.status)) {
+            toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể gửi yêu cầu nghiệm thu.');
+            return;
+        }
+        if (project?.status === 'ON_HOLD' || Boolean(project?.isOnHold)) {
+            toast.warning('Dự án đang tạm dừng, không thể gửi yêu cầu nghiệm thu.');
+            return;
+        }
         if (selectedServiceIds.length === 0) {
             toast.error('Vui lòng chọn ít nhất một dịch vụ để nghiệm thu');
             return;

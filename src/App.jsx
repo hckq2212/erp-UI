@@ -1,50 +1,81 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
 import { useGetMeQuery } from './api/auth';
+
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SessionExpiredModal } from './components/auth/SessionExpiredModal';
+
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
+
 import { CustomersPage } from './pages/Customers/CustomersPage';
 import { CustomerDetailPage } from './pages/Customers/CustomerDetailPage';
+
 import { OpportunitiesPage } from './pages/Opportunities/OpportunitiesPage';
 import { OpportunityDetailPage } from './pages/Opportunities/OpportunityDetailPage/OpportunityDetailPage';
+
 import { ServicesPage } from './pages/Services/ServicesPage';
 import { ServiceDetailPage } from './pages/Services/ServiceDetailPage';
+
 import { JobsPage } from './pages/Jobs/JobsPage';
 import { JobDetailPage } from './pages/Jobs/JobDetailPage';
+
 import { ContractsPage } from './pages/Contracts/ContractsPage';
 import { ProjectsPage } from './pages/Projects/ProjectsPage';
 import { ProjectDetailPage } from './pages/Projects/ProjectDetailPage/ProjectDetailPage';
+
 import { TasksPage } from './pages/Tasks/TasksPage';
 import { TaskDetailPage } from './pages/Tasks/TaskDetailPage';
 import { TaskReviewPage } from './pages/Tasks/TaskReviewPage';
+
 import { FinancePage } from './pages/Finance/FinancePage';
 import { PaymentRequestsPage } from './pages/PaymentRequests/PaymentRequestsPage';
+import { PaymentOverviewPage } from './pages/Finance/PaymentOverviewPage';
+import { AcceptanceMinutesPage } from './pages/Finance/AcceptanceMinutesPage';
+import { VatInvoicesPage } from './pages/Finance/VatInvoicesPage';
+
 import { VendorsPage } from './pages/Vendors/VendorsPage';
 import { VendorDetailPage } from './pages/Vendors/VendorDetailPage';
+
 import { LoginPage } from './pages/Auth/LoginPage';
+
 import ContractDetailPage from './pages/Contracts/ContractDetailPage/ContractDetailPage';
+
 import { NotificationsPage } from './pages/Notifications/NotificationsPage';
+
 import { AnnouncementsPage } from './pages/Announcements/AnnouncementsPage';
 import { AnnouncementDetailPage } from './pages/Announcements/AnnouncementDetailPage';
+
 import { ReferralPartnersPage } from './pages/ReferralPartners/ReferralPartnersPage';
-import { DocumentLibraryPage } from './pages/DocumentLibrary/DocumentLibraryPage';
 import { PartnerDetailPage } from './pages/ReferralPartners/PartnerDetailPage';
+
+import { DocumentLibraryPage } from './pages/DocumentLibrary/DocumentLibraryPage';
+
 import { TeamsPage } from './pages/Teams/TeamsPage';
 import { TeamDetailPage } from './pages/Teams/TeamDetailPage';
+
 import { UserListPage } from './pages/Users/UserListPage';
 import { UserDetailPage } from './pages/Users/UserDetailPage';
+
 import { AcceptanceInboxPage } from './pages/Acceptance/AcceptanceInboxPage';
+
 import { ServicePackageListPage } from './pages/ServicePackages/ServicePackageListPage';
 import { ServicePackageDetailPage } from './pages/ServicePackages/ServicePackageDetailPage';
+
 import { MePage } from './pages/Me/MePage';
+
 import { CreateVideoAIPage } from './pages/CreateVideoAI/CreateVideoAIPage';
 import { CreateVideoMotionControlPage } from './pages/CreateVideoAI/CreateVideoMotionControlPage';
+
 import { LibraryVideoAiPage } from './pages/LibraryVideoAi/LibraryVideoAiPage';
+
 import { DashboardAIPage } from './pages/DashboardAI/DashboardAIPage';
+
 import { SettingsPage } from './pages/Settings/SettingsPage';
+
 import { ChatPage } from './pages/Chat/ChatPage';
 import { ChatBubbleWidget } from './components/chat/ChatBubbleWidget';
+
 
 function AppContent() {
   // Use the query to check if the user is logged in via cookies on startup
@@ -55,6 +86,7 @@ function AppContent() {
       <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+
           <p className="text-gray-400 text-xs font-black uppercase tracking-[0.2em] animate-pulse">
             Khởi tạo hệ thống...
           </p>
@@ -66,12 +98,23 @@ function AppContent() {
   return (
     <>
       <Routes>
-        {/* Public routes */}
-        <Route path='/login' element={<LoginPage />} />
 
-        {/* Protected routes */}
+        {/* =========================
+            Public routes
+        ========================== */}
+
         <Route
-          path='/'
+          path="/login"
+          element={<LoginPage />}
+        />
+
+
+        {/* =========================
+            Dashboard
+        ========================== */}
+
+        <Route
+          path="/"
           element={
             <ProtectedRoute>
               <Layout>
@@ -80,8 +123,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Customers
+        ========================== */}
+
         <Route
-          path='/customers'
+          path="/customers"
           element={
             <ProtectedRoute>
               <Layout>
@@ -90,8 +139,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/customers/:id'
+          path="/customers/:id"
           element={
             <ProtectedRoute>
               <Layout>
@@ -100,8 +150,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Opportunities
+        ========================== */}
+
         <Route
-          path='/opportunities'
+          path="/opportunities"
           element={
             <ProtectedRoute>
               <Layout>
@@ -110,8 +166,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/opportunities/:id'
+          path="/opportunities/:id"
           element={
             <ProtectedRoute>
               <Layout>
@@ -120,8 +177,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Services
+        ========================== */}
+
         <Route
-          path='/services'
+          path="/services"
           element={
             <ProtectedRoute>
               <Layout>
@@ -130,8 +193,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/services/:id'
+          path="/services/:id"
           element={
             <ProtectedRoute>
               <Layout>
@@ -140,8 +204,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Jobs
+        ========================== */}
+
         <Route
-          path='/jobs'
+          path="/jobs"
           element={
             <ProtectedRoute>
               <Layout>
@@ -150,8 +220,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/jobs/:id'
+          path="/jobs/:id"
           element={
             <ProtectedRoute>
               <Layout>
@@ -160,8 +231,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Contracts
+        ========================== */}
+
         <Route
-          path='/contracts'
+          path="/contracts"
           element={
             <ProtectedRoute>
               <Layout>
@@ -170,8 +247,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/contracts/:id'
+          path="/contracts/:id"
           element={
             <ProtectedRoute>
               <Layout>
@@ -180,8 +258,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Projects
+        ========================== */}
+
         <Route
-          path='/projects'
+          path="/projects"
           element={
             <ProtectedRoute>
               <Layout>
@@ -190,8 +274,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/projects/:id'
+          path="/projects/:id"
           element={
             <ProtectedRoute>
               <Layout>
@@ -200,8 +285,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Tasks
+        ========================== */}
+
         <Route
-          path='/tasks'
+          path="/tasks"
           element={
             <ProtectedRoute>
               <Layout>
@@ -210,8 +301,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/tasks/:id'
+          path="/tasks/:id"
           element={
             <ProtectedRoute>
               <Layout>
@@ -220,8 +312,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/tasks/:id/review'
+          path="/tasks/:id/review"
           element={
             <ProtectedRoute>
               <Layout>
@@ -230,28 +323,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Finance
+        ========================== */}
+
         <Route
-          path='/vendors'
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <VendorsPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/vendors/:id'
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <VendorDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path='/finance'
+          path="/finance"
           element={
             <ProtectedRoute>
               <Layout>
@@ -260,8 +339,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/payment-requests/:id?'
+          path="/payment-requests/:id?"
           element={
             <ProtectedRoute>
               <Layout>
@@ -270,8 +350,74 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/referral-partners'
+          path="/finance/overview"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <PaymentOverviewPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/finance/acceptance-minutes"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <AcceptanceMinutesPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/finance/vat-invoices"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <VatInvoicesPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+
+        {/* =========================
+            Vendors
+        ========================== */}
+
+        <Route
+          path="/vendors"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <VendorsPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/vendors/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <VendorDetailPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+
+        {/* =========================
+            Referral Partners
+        ========================== */}
+
+        <Route
+          path="/referral-partners"
           element={
             <ProtectedRoute>
               <Layout>
@@ -280,8 +426,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/referral-partners/:id'
+          path="/referral-partners/:id"
           element={
             <ProtectedRoute>
               <Layout>
@@ -290,8 +437,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Document Library
+        ========================== */}
+
         <Route
-          path='/document-library'
+          path="/document-library"
           element={
             <ProtectedRoute>
               <Layout>
@@ -300,8 +453,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Teams
+        ========================== */}
+
         <Route
-          path='/teams'
+          path="/teams"
           element={
             <ProtectedRoute>
               <Layout>
@@ -310,8 +469,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/teams/:id'
+          path="/teams/:id"
           element={
             <ProtectedRoute>
               <Layout>
@@ -320,8 +480,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Notifications
+        ========================== */}
+
         <Route
-          path='/notifications'
+          path="/notifications"
           element={
             <ProtectedRoute>
               <Layout>
@@ -330,8 +496,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Announcements
+        ========================== */}
+
         <Route
-          path='/announcements'
+          path="/announcements"
           element={
             <ProtectedRoute>
               <Layout>
@@ -340,8 +512,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/announcements/:id'
+          path="/announcements/:id"
           element={
             <ProtectedRoute>
               <Layout>
@@ -350,8 +523,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Users
+        ========================== */}
+
         <Route
-          path='/users'
+          path="/users"
           element={
             <ProtectedRoute>
               <Layout>
@@ -360,8 +539,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/users/:id'
+          path="/users/:id"
           element={
             <ProtectedRoute>
               <Layout>
@@ -370,8 +550,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Me
+        ========================== */}
+
         <Route
-          path='/me'
+          path="/me"
           element={
             <ProtectedRoute>
               <Layout>
@@ -381,8 +567,13 @@ function AppContent() {
           }
         />
 
+
+        {/* =========================
+            Service Packages
+        ========================== */}
+
         <Route
-          path='/service-packages'
+          path="/service-packages"
           element={
             <ProtectedRoute>
               <Layout>
@@ -391,8 +582,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/service-packages/:id'
+          path="/service-packages/:id"
           element={
             <ProtectedRoute>
               <Layout>
@@ -401,8 +593,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Acceptance
+        ========================== */}
+
         <Route
-          path='/acceptance'
+          path="/acceptance"
           element={
             <ProtectedRoute>
               <Layout>
@@ -412,8 +610,13 @@ function AppContent() {
           }
         />
 
+
+        {/* =========================
+            AI Dashboard
+        ========================== */}
+
         <Route
-          path='/dashboard-ai'
+          path="/dashboard-ai"
           element={
             <ProtectedRoute>
               <Layout>
@@ -422,8 +625,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Create Video AI
+        ========================== */}
+
         <Route
-          path='/create-video-ai'
+          path="/create-video-ai"
           element={
             <ProtectedRoute>
               <Layout>
@@ -432,8 +641,9 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path='/create-video-motion-control'
+          path="/create-video-motion-control"
           element={
             <ProtectedRoute>
               <Layout>
@@ -443,8 +653,13 @@ function AppContent() {
           }
         />
 
+
+        {/* =========================
+            Library Video AI
+        ========================== */}
+
         <Route
-          path='/library-video-ai'
+          path="/library-video-ai"
           element={
             <ProtectedRoute>
               <Layout>
@@ -453,8 +668,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Chat
+        ========================== */}
+
         <Route
-          path='/chat'
+          path="/chat"
           element={
             <ProtectedRoute>
               <Layout>
@@ -463,8 +684,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Settings
+        ========================== */}
+
         <Route
-          path='/settings'
+          path="/settings"
           element={
             <ProtectedRoute>
               <Layout>
@@ -474,13 +701,24 @@ function AppContent() {
           }
         />
 
-        <Route path='*' element={<Navigate to='/' replace />} />
+
+        {/* =========================
+            Fallback
+        ========================== */}
+
+        <Route
+          path="*"
+          element={<Navigate to="/" replace />}
+        />
+
       </Routes>
+
       <SessionExpiredModal />
       <ChatBubbleWidget />
     </>
   );
 }
+
 
 function App() {
   return (
@@ -489,5 +727,6 @@ function App() {
     </BrowserRouter>
   );
 }
+
 
 export default App;

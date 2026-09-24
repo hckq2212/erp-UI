@@ -90,7 +90,7 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
       <div className="flex items-center gap-4">
         <button
           onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          className="p-2.5 rounded-xl text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-transparent hover:border-indigo-100"
+          className="p-2.5 rounded-xl text-gray-400 hover:bg-orange-50 hover:text-[#F38820] transition-all border border-transparent hover:border-orange-100"
           title={isSidebarCollapsed ? "Mở danh mục" : "Thu gọn danh mục"}
         >
           <Menu className="h-6 w-6" />
@@ -115,7 +115,7 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
               setShowNews(false);
               navigate('/announcements');
             }}
-            className={`p-2 rounded-xl transition-all relative flex items-center gap-1.5 ${showNews ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-500 hover:bg-gray-50'}`}
+            className={`p-2 rounded-xl transition-all relative flex items-center gap-1.5 ${showNews ? 'bg-orange-50 text-[#F38820]' : 'text-gray-400 hover:text-[#F38820] hover:bg-orange-50'}`}
           >
             <Newspaper className="h-6 w-6" />
             {newsUnreadCount > 0 && (
@@ -137,7 +137,7 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                 <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
                   <h3 className="text-sm font-black text-gray-900 uppercase">Tin tức nội bộ</h3>
                   {newsUnreadCount > 0 && (
-                    <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">
+                    <span className="text-[10px] bg-[#F38820] text-white px-2 py-0.5 rounded-full font-bold">
                       {newsUnreadCount} Mới
                     </span>
                   )}
@@ -149,7 +149,7 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                       <div
                         key={item.id}
                         onClick={() => handleNewsClick(item)}
-                        className={`p-4 border-b border-gray-50 hover:bg-gray-50 transition-all cursor-pointer relative group ${!item.isRead ? 'bg-blue-50/40' : ''}`}
+                        className={`p-4 border-b border-gray-50 hover:bg-orange-50/50 transition-all cursor-pointer relative group ${!item.isRead ? 'bg-orange-50/30' : ''}`}
                       >
                         <div className="flex justify-between gap-3">
                           <div className="flex-1 min-w-0">
@@ -167,7 +167,7 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                             </div>
                           </div>
                           {!item.isRead && (
-                            <span className="self-start w-2 h-2 mt-1.5 rounded-full bg-blue-500 shrink-0" />
+                            <span className="self-start w-2 h-2 mt-1.5 rounded-full bg-[#F38820] shrink-0" />
                           )}
                         </div>
                       </div>
@@ -185,7 +185,7 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                     setShowNews(false);
                     navigate('/announcements');
                   }}
-                  className="w-full p-3 text-xs font-black text-blue-600 hover:bg-blue-50 transition-all border-t border-gray-50 flex items-center justify-center gap-1 uppercase"
+                  className="w-full p-3 text-xs font-black text-[#F38820] hover:bg-orange-50 transition-all border-t border-gray-50 flex items-center justify-center gap-1 uppercase"
                 >
                   Xem tất cả <ChevronRight className="w-4 h-4" />
                 </button>
@@ -204,7 +204,7 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
               setShowNotifications(false);
               navigate('/notifications');
             }}
-            className={`p-2 rounded-xl transition-all relative ${showNotifications ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-500 hover:bg-gray-50'}`}
+            className={`p-2 rounded-xl transition-all relative ${showNotifications ? 'bg-orange-50 text-[#F38820]' : 'text-gray-400 hover:text-[#F38820] hover:bg-orange-50'}`}
           >
             <Bell className="h-6 w-6" />
             {unreadCount > 0 && (
@@ -226,7 +226,7 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                 <div className="p-4 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
                   <h3 className="text-sm font-black text-gray-900 uppercase">Thông báo mới</h3>
                   {unreadCount > 0 && (
-                    <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">
+                    <span className="text-[10px] bg-[#F38820] text-white px-2 py-0.5 rounded-full font-bold">
                       {unreadCount} Mới
                     </span>
                   )}
@@ -238,7 +238,7 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                       <div
                         key={n.id}
                         onClick={() => handleNotificationClick(n)}
-                        className={`p-4 border-b border-gray-50 hover:bg-gray-50 transition-all cursor-pointer relative group ${!n.isRead ? 'bg-blue-50/40' : ''}`}
+                        className={`p-4 border-b border-gray-50 hover:bg-orange-50/50 transition-all cursor-pointer relative group ${!n.isRead ? 'bg-orange-50/30' : ''}`}
                       >
                         <div className="flex justify-between gap-3">
                           <div className="flex-1 min-w-0">
@@ -258,7 +258,7 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                           {!n.isRead && (
                             <button
                               onClick={(e) => handleMarkAsRead(e, n.id)}
-                              className="self-start p-1.5 text-gray-300 hover:text-blue-600 hover:bg-white rounded-lg transition-all shadow-sm opacity-0 group-hover:opacity-100"
+                              className="self-start p-1.5 text-gray-300 hover:text-[#F38820] hover:bg-white rounded-lg transition-all shadow-sm opacity-0 group-hover:opacity-100"
                               title="Đánh dấu đã đọc"
                             >
                               <Check className="w-4 h-4" />
@@ -280,7 +280,7 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                     setShowNotifications(false);
                     navigate('/notifications');
                   }}
-                  className="w-full p-3 text-xs font-black text-blue-600 hover:bg-blue-50 transition-all border-t border-gray-50 flex items-center justify-center gap-1 uppercase"
+                  className="w-full p-3 text-xs font-black text-[#F38820] hover:bg-orange-50 transition-all border-t border-gray-50 flex items-center justify-center gap-1 uppercase"
                 >
                   Xem tất cả <ChevronRight className="w-4 h-4" />
                 </button>
@@ -294,7 +294,7 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             className="flex items-center space-x-2"
             onClick={() => navigate(`/me`)}
           >
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-[#F38820] shadow-sm">
               <User className="h-5 w-5" />
             </div>
             <div className="flex flex-col items-start">

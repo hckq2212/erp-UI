@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Briefcase, FileText,
   FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store,
   CheckCircle2, Package, User, Handshake, FolderOpenDotIcon, Video, BookText, Megaphone, Bell, Archive,
-  Sparkles, ChevronDown, ChartNoAxesCombined, MessageSquare, Wallet
+  Sparkles, ChevronDown, ChartNoAxesCombined, MessageSquare, Wallet, FileCheck, Receipt
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useGetMeQuery } from '../../api/auth';
@@ -20,6 +20,18 @@ const menuItems = [
   { path: '/acceptance', icon: CheckCircle2, label: 'Nghiệm thu', roles: ['ADMIN', 'BOD', 'ADMIN_SALE', 'PM'] },
   { path: '/finance', icon: DollarSign, label: 'Lộ trình thanh toán', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
   { path: '/payment-requests', icon: Wallet, label: 'Yêu cầu thanh toán' },
+  {
+    id: 'payments',
+    label: 'Thanh toán',
+    icon: DollarSign,
+    roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'],
+    children: [
+      { path: '/finance/overview', icon: LayoutDashboard, label: 'Tổng quan' },
+      { path: '/finance/acceptance-minutes', icon: FileCheck, label: 'Biên bản nghiệm thu' },
+      { path: '/finance/vat-invoices', icon: Receipt, label: 'Hóa đơn VAT' },
+      { path: '/finance', icon: FileText, label: 'Lộ trình thanh toán' },
+    ],
+  },
   { path: '/service-packages', icon: Package, label: 'Gói dịch vụ', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
   { path: '/services', icon: Briefcase, label: 'Dịch vụ', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
   { path: '/jobs', icon: CheckSquare, label: 'Hạng mục công việc', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE', 'PM'] },
@@ -147,7 +159,17 @@ export const Sidebar = ({ isCollapsed }) => {
       <nav className="p-3 space-y-1.5">
         {filteredMenuItems.map((item) => {
           if (item.children) {
-            const isAnyChildActive = item.children.some((child) => location.pathname === child.path);
+            const checkChildActive = (childPath) => {
+              const currentFullUrl = location.pathname + location.search;
+              if (childPath.includes('?')) {
+                return currentFullUrl === childPath;
+              }
+              return location.pathname === childPath && !location.search;
+            };
+
+            const isAnyChildActive = item.children.some((child) =>
+              checkChildActive(child.path) || location.pathname === child.path.split('?')[0]
+            );
             const isOpen = Boolean(openMenus[item.id || item.label]);
 
             return (
@@ -162,15 +184,15 @@ export const Sidebar = ({ isCollapsed }) => {
                   className={cn(
                     'w-full flex items-center px-3 py-3 text-sm font-bold rounded-xl transition-all group relative',
                     isAnyChildActive
-                      ? 'bg-indigo-50/70 text-indigo-700 shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-indigo-600',
+                      ? 'bg-orange-50 text-[#F38820] shadow-xs'
+                      : 'text-slate-600 hover:bg-orange-50/60 hover:text-[#F38820]',
                     isCollapsed ? 'justify-center' : 'justify-between'
                   )}
                 >
                   <div className={cn('flex items-center min-w-0', isCollapsed ? 'justify-center' : '')}>
                     <item.icon className={cn(
                       'h-5 w-5 transition-all shrink-0',
-                      isAnyChildActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500',
+                      isAnyChildActive ? 'text-[#F38820]' : 'text-slate-400 group-hover:text-[#F38820]',
                       isCollapsed ? 'mr-0' : 'mr-3'
                     )} />
                     {!isCollapsed && (
@@ -183,12 +205,12 @@ export const Sidebar = ({ isCollapsed }) => {
                   {!isCollapsed && (
                     <ChevronDown className={cn(
                       'h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ml-2',
-                      isOpen ? 'rotate-180 text-indigo-600' : ''
+                      isOpen ? 'rotate-180 text-[#F38820]' : ''
                     )} />
                   )}
 
                   {isCollapsed && isAnyChildActive && (
-                    <div className="absolute left-0 w-1 h-6 bg-indigo-600 rounded-r-full" />
+                    <div className="absolute left-0 w-1 h-6 bg-[#F38820] rounded-r-full shadow-[0_0_8px_rgba(243,136,32,0.4)]" />
                   )}
                 </button>
 
@@ -197,29 +219,32 @@ export const Sidebar = ({ isCollapsed }) => {
                     data-sidebar-flyout
                     role="menu"
                     aria-label={item.label}
-                    className="fixed min-w-52 text-white text-xs font-bold whitespace-nowrap z-[100]"
+                    className="fixed min-w-56 text-slate-800 text-xs font-medium whitespace-nowrap z-[100] animate-in fade-in zoom-in-95 duration-150"
                     style={{ top: collapsedFlyout.top, left: collapsedFlyout.left }}
                   >
-                    <div className="max-h-[calc(100vh-1rem)] overflow-y-auto rounded-lg bg-slate-900 px-3 py-2 shadow-xl">
-                      <div className="text-[11px] font-bold text-slate-300 mb-1 border-b border-slate-700/60 pb-1">
-                        {item.label}
+                    <div className="max-h-[calc(100vh-1rem)] overflow-y-auto rounded-xl bg-white border border-slate-200 px-2 py-2 shadow-2xl shadow-slate-900/10">
+                      <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2.5 py-1 mb-1 border-b border-slate-100 flex items-center justify-between">
+                        <span>{item.label}</span>
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-0.5">
                         {item.children.map((child) => {
-                          const isChildActive = location.pathname === child.path;
+                          const isChildActive = checkChildActive(child.path);
                           return (
                             <Link
                               key={child.path}
                               to={child.path}
                               role="menuitem"
                               className={cn(
-                                'flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-semibold transition-colors',
+                                'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all group/flyout',
                                 isChildActive
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                                  ? 'bg-orange-50 text-[#F38820] shadow-xs'
+                                  : 'text-slate-600 hover:bg-orange-50/60 hover:text-[#F38820]'
                               )}
                             >
-                              <child.icon className="h-3.5 w-3.5 shrink-0" />
+                              <child.icon className={cn(
+                                'h-4 w-4 shrink-0 transition-colors',
+                                isChildActive ? 'text-[#F38820]' : 'text-slate-400 group-hover/flyout:text-[#F38820]'
+                              )} />
                               <span>{child.label}</span>
                             </Link>
                           );
@@ -227,7 +252,7 @@ export const Sidebar = ({ isCollapsed }) => {
                       </div>
                     </div>
                     <div
-                      className="absolute -left-1 w-2 h-2 bg-slate-900 rotate-45"
+                      className="absolute -left-1 w-2.5 h-2.5 bg-white border-l border-b border-slate-200 rotate-45"
                       style={{ top: collapsedFlyout.arrowTop }}
                     />
                   </div>,
@@ -237,7 +262,7 @@ export const Sidebar = ({ isCollapsed }) => {
                 {!isCollapsed && isOpen && (
                   <div className="pl-4 pr-1 py-0.5 space-y-1">
                     {item.children.map((child) => {
-                      const isChildActive = location.pathname === child.path;
+                      const isChildActive = checkChildActive(child.path);
                       return (
                         <Link
                           key={child.path}
@@ -245,17 +270,17 @@ export const Sidebar = ({ isCollapsed }) => {
                           className={cn(
                             'flex items-center px-3 py-2.5 text-xs font-bold rounded-lg transition-all relative group/sub',
                             isChildActive
-                              ? 'bg-indigo-50 text-indigo-700 shadow-xs'
-                              : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-600'
+                              ? 'bg-orange-50 text-[#F38820] shadow-xs'
+                              : 'text-slate-500 hover:bg-orange-50/50 hover:text-[#F38820]'
                           )}
                         >
                           <child.icon className={cn(
                             'h-4 w-4 mr-2.5 transition-all shrink-0',
-                            isChildActive ? 'text-indigo-600' : 'text-slate-400 group-hover/sub:text-indigo-500'
+                            isChildActive ? 'text-[#F38820]' : 'text-slate-400 group-hover/sub:text-[#F38820]'
                           )} />
                           <span className="truncate">{child.label}</span>
                           {isChildActive && (
-                            <div className="absolute left-0 w-1 h-4 bg-indigo-600 rounded-r-full" />
+                            <div className="absolute left-0 w-1 h-4 bg-[#F38820] rounded-r-full" />
                           )}
                         </Link>
                       );
@@ -274,14 +299,14 @@ export const Sidebar = ({ isCollapsed }) => {
               className={cn(
                 'flex items-center px-3 py-3 text-sm font-bold rounded-xl transition-all group relative',
                 isActive
-                  ? 'bg-indigo-50 text-indigo-700 shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-indigo-600',
+                  ? 'bg-orange-50 text-[#F38820] shadow-sm'
+                  : 'text-slate-600 hover:bg-orange-50/60 hover:text-[#F38820]',
                 isCollapsed ? 'justify-center' : ''
               )}
             >
               <item.icon className={cn(
                 'h-5 w-5 transition-all shrink-0',
-                isActive ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500',
+                isActive ? 'text-[#F38820]' : 'text-slate-400 group-hover:text-[#F38820]',
                 isCollapsed ? 'mr-0' : 'mr-3',
               )} />
               {isCollapsed && (
@@ -297,7 +322,7 @@ export const Sidebar = ({ isCollapsed }) => {
               )}
               {isCollapsed && isActive && (
                 <div
-                  className="absolute left-0 w-1 h-6 bg-indigo-600 rounded-r-full"
+                  className="absolute left-0 w-1 h-6 bg-[#F38820] rounded-r-full shadow-[0_0_8px_rgba(243,136,32,0.4)]"
                 />
               )}
             </Link>

@@ -35,9 +35,16 @@ export const TaskTable = ({ tasks = [], project }) => {
 
     const currentUserId = getCurrentUserId(user);
     const isAdminOrBOD = PROJECT_MANAGEMENT_ROLES.includes(user?.role);
+    const isAdmin = user?.role === 'ADMIN';
     const hasStaffingAdminOverride = ['ADMIN', 'BOD'].includes(user?.role);
     const isProjectLead = isSameUser(currentUserId, project?.team?.teamLead?.id) ||
-        isSameUser(currentUserId, project?.team?.teamLeadId);
+        isSameUser(currentUserId, project?.team?.teamLeadId) ||
+        Boolean(project?.team?.members?.some(member =>
+            hasTeamMemberRole(member, 'ACCOUNT') && isSameUser(member.user?.id, currentUserId)
+        )) ||
+        Boolean(members.some(member =>
+            hasTeamMemberRole(member, 'ACCOUNT') && isSameUser(member.user?.id, currentUserId)
+        ));
     const isProjectManager = isSameUser(currentUserId, project?.projectManager?.id) ||
         Boolean(project?.team?.members?.some(m => hasTeamMemberRole(m, 'PROJECT_MANAGER') && isSameUser(m.user?.id, currentUserId)));
     const canManageAllTasks = isAdminOrBOD || isProjectLead || isProjectManager;
@@ -47,9 +54,19 @@ export const TaskTable = ({ tasks = [], project }) => {
     const isTeamMember = Boolean(project?.team?.members?.some(m => isSameUser(m.user?.id, currentUserId)));
 
     const canSeeTable = true;
-    const canAddTask = isAdminOrBOD || isProjectLead;
     const canCreateProjectWork = user?.role === 'PM' || user?.role === 'ADMIN';
     const isProjectInProgress = project?.status === 'IN_PROGRESS' || project?.status === 'CONFIRMED';
+
+    const hasMainPerformer = (task) => Boolean(
+        task?.assigneeId || task?.assignee?.id || task?.vendor || task?.vendorId || task?.performerType === 'VENDOR'
+    );
+
+    const canManageTaskAssignment = (task) => {
+        if (isAdmin) return true;
+        if (!isProjectLead) return false;
+        if (!hasMainPerformer(task)) return true;
+        return !task?.assignerId || isSameUser(task.assignerId, currentUserId);
+    };
 
     const [filter, setFilter] = useState({
         status: 'ALL',
@@ -122,7 +139,7 @@ export const TaskTable = ({ tasks = [], project }) => {
         const validStatuses = ['PENDING', 'REJECTED', 'AWAITING_SUPPORT'];
         if (!validStatuses.includes(task.status)) return false;
 
-        if (isAdminOrBOD || isProjectLead) return true;
+        if (canManageTaskAssignment(task)) return true;
 
         if (isSameUser(task.supportLeadId, currentUserId)) return true;
 
@@ -130,7 +147,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     };
 
     const isTaskUnassignable = (task) => {
-        if (!isProjectInProgress || (!isAdminOrBOD && !isProjectLead)) return false;
+        if (!isProjectInProgress || !canManageTaskAssignment(task)) return false;
         if (task.status !== 'DOING') return false;
 
         const hasPerformer = Boolean(task.assigneeId) || task.performerType === 'VENDOR';
@@ -352,7 +369,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                             <span>Yêu cầu thêm người</span>
                         </button>
                     )}
-                    {canAddTask && isProjectInProgress && (
+                    {(isAdmin || isProjectLead) && isProjectInProgress && (
                         <button
                             type="button"
                             onClick={handleToggleUnassignMode}
@@ -529,7 +546,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 </td>
                                                 <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                                                     <div className="flex flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
-                                                        {isProjectInProgress && canManageAllTasks &&
+                                                        {isProjectInProgress && canManageTaskAssignment(task) &&
                                                             (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
                                                             <button
                                                                 onClick={() => setAssigningTask(task)}
@@ -540,7 +557,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                         )}
 
                                                         {/* Original Team Lead Actions */}
-                                                        {isProjectInProgress && (isProjectLead || isAdminOrBOD) && ['DOING', 'REWORKING', 'OVERDUE', 'REJECTED'].includes(task.status) && (
+                                                        {isProjectInProgress && canManageTaskAssignment(task) && ['DOING', 'REWORKING', 'OVERDUE', 'REJECTED'].includes(task.status) && (
                                                             <button
                                                                 onClick={() => setAssigningTask(task)}
                                                                 className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
