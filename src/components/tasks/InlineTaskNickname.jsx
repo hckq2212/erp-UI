@@ -95,9 +95,24 @@ export const InlineTaskNickname = ({ task, canEdit = false, projectId, className
   return (
     <div className={`group/nickname flex min-w-0 items-start gap-2 ${className}`}>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-gray-900" title={getTaskDisplayName(task)}>
-          {getTaskDisplayName(task)}
-        </p>
+        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+          <p className="truncate text-sm font-bold text-gray-900" title={getTaskDisplayName(task)}>
+            {getTaskDisplayName(task)}
+          </p>
+          {task?.isExtra && (
+            <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 border border-amber-300">
+              Phát sinh
+            </span>
+          )}
+          {Number(task?.spentAmount || 0) > Number(task?.cost || 0) && (
+            <span
+              className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-300"
+              title={`Đã chi ${Number(task.spentAmount || 0).toLocaleString('vi-VN')}đ / Dự toán ${Number(task.cost || 0).toLocaleString('vi-VN')}đ`}
+            >
+              Vượt chi phí
+            </span>
+          )}
+        </div>
       </div>
       {canEdit && (
         <button

@@ -412,6 +412,19 @@ export const TaskDetailPage = () => {
                     <div className="flex flex-wrap items-center gap-4">
                         <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{getTaskDisplayName(task)}</h1>
                         {getStatusBadge(task.status)}
+                        {task.isExtra && (
+                            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase text-amber-700 ring-1 ring-amber-300">
+                                Phát sinh
+                            </span>
+                        )}
+                        {Number(task.spentAmount || 0) > Number(task.cost || 0) && (
+                            <span
+                                className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold uppercase text-red-700 ring-1 ring-red-300"
+                                title={`Đã chi ${Number(task.spentAmount || 0).toLocaleString('vi-VN')}đ / Dự toán ${Number(task.cost || 0).toLocaleString('vi-VN')}đ`}
+                            >
+                                Vượt chi phí
+                            </span>
+                        )}
                         {task.customerDecision === 'APPROVED' && (
                             <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase text-emerald-700 ring-1 ring-emerald-200">
                                 Khách hàng duyệt
