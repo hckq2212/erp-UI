@@ -47,8 +47,15 @@ export const TaskDetailPage = () => {
     const isLoading = isTaskLoading || !user;
     const currentUserId = getCurrentUserId(user);
     const isProjectOnHold = task?.project?.status === 'ON_HOLD' || task?.status === 'ON_HOLD';
-    const isProjectLead = isSameUser(currentUserId, task?.project?.team?.teamLead?.id);
-    const canManageProjectTask = !isProjectOnHold && (PROJECT_MANAGEMENT_ROLES.includes(user?.role) || isProjectLead);
+    const team = task?.project?.team;
+    const currentMembership = team?.members?.find(member => isSameUser(member.user?.id, currentUserId));
+    const isProjectLead = isSameUser(currentUserId, team?.teamLead?.id);
+    const isAccount = isProjectLead || hasTeamMemberRole(currentMembership, 'ACCOUNT');
+    const isPM = hasTeamMemberRole(currentMembership, 'PROJECT_MANAGER') || isSameUser(task?.project?.projectManager?.id, currentUserId);
+    const isAdminOverride = ['ADMIN', 'BOD'].includes(user?.role);
+    const canManageProjectTask = !isProjectOnHold && (PROJECT_MANAGEMENT_ROLES.includes(user?.role) || isAccount);
+    const isProjectAccepted = ['CONFIRMED', 'IN_PROGRESS'].includes(task?.project?.status);
+    const canAssignProjectTask = !isProjectOnHold && isProjectAccepted && (user?.role === 'ADMIN' || isAccount);
     const isVideoDemoTask = Boolean(task?.opportunityId && task?.opportunityServiceJob?.isBriefVideo);
     const isAssigneeOrHelper = isSameUser(currentUserId, task?.assigneeId) ||
         isSameUser(currentUserId, task?.assignee?.id) ||
@@ -93,7 +100,7 @@ export const TaskDetailPage = () => {
     const [isLoadingResultSheets, setIsLoadingResultSheets] = useState(false);
 
     const isTaskAssigned = Boolean(task?.assigneeId || task?.assignee?.id || task?.vendorId);
-    const canAssignUnassignedTask = canManageProjectTask &&
+    const canAssignUnassignedTask = canAssignProjectTask &&
         !isTaskAssigned &&
         !['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED', 'AWAITING_REVIEW', 'CANCELLED'].includes(task?.status);
     const fileInputRef = useRef(null);
@@ -102,13 +109,7 @@ export const TaskDetailPage = () => {
         ? Boolean(resultFile)
         : Boolean(resultLink.trim());
 
-    const team = task?.project?.team;
-    const currentMembership = team?.members?.find(member => isSameUser(member.user?.id, currentUserId));
-    const isPM = hasTeamMemberRole(currentMembership, 'PROJECT_MANAGER') || isSameUser(task?.project?.projectManager?.id, currentUserId);
-    const isAccount = isSameUser(team?.teamLead?.id, currentUserId) || hasTeamMemberRole(currentMembership, 'ACCOUNT');
-    const isAdminOverride = ['ADMIN', 'BOD'].includes(user?.role);
-    const isTeamLead = isSameUser(team?.teamLead?.id, currentUserId);
-    const canDelegate = !isProjectOnHold && (isAccount || isPM || isAdminOverride || isTeamLead);
+    const canDelegate = !isProjectOnHold && (isAccount || isPM || isAdminOverride);
     const canAddSubtask = canDelegate &&
         !task?.parentTaskId &&
         (!task?.subtasks || task?.subtasks?.length === 0) &&
@@ -605,7 +606,7 @@ export const TaskDetailPage = () => {
                         !isProjectOnHold &&
                         ['PENDING', 'NOT_STARTED', 'DOING', 'REWORKING', 'OVERDUE'].includes(task?.status) &&
                         task?.project?.team &&
-                        (isProjectLead || isTeamLead) && (
+                        (isAccount || isAdminOverride) && (
                             <Button
                                 variant="outline"
                                 onClick={() => setIsStaffingModalOpen(true)}

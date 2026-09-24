@@ -136,6 +136,9 @@ export const ProjectDetailPage = () => {
   const isAdminOrBOD = ['ADMIN', 'BOD'].includes(user?.role);
   const isProjectLead = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
     isSameUser(project?.team?.teamLeadId, currentUserId);
+  const isProjectAccount = isProjectLead || Boolean(project?.team?.members?.some(member =>
+    hasTeamMemberRole(member, 'ACCOUNT') && isSameUser(member.user?.id, currentUserId)
+  ));
   const isProjectManager = isSameUser(projectManagerMember?.user?.id, currentUserId) ||
     isSameUser(project?.projectManager?.id, currentUserId) ||
     Boolean(project?.team?.members?.some(m => hasTeamMemberRole(m, 'PROJECT_MANAGER') && isSameUser(m.user?.id, currentUserId)));
@@ -155,7 +158,7 @@ export const ProjectDetailPage = () => {
 
   const canAssignPm = !isOnHold && !isClosed && (user?.role === 'ADMIN' || user?.role === 'BOD') && !hasProjectManager;
   const canConfirmProject = !isOnHold && !isClosed && project?.status === 'PENDING_CONFIRMATION' &&
-    (user?.role === 'ADMIN' || isSameUser(project?.team?.teamLead?.id, currentUserId));
+    (user?.role === 'ADMIN' || isProjectAccount);
   const canSyncServiceJobs = !isOnHold && !isClosed && (user?.role === 'ADMIN' || user?.role === 'PM') && !isProjectLead;
 
   const handleResume = async () => {
