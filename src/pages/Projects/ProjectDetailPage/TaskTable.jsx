@@ -173,6 +173,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     const isProjectManager = isSameUser(currentUserId, project?.projectManager?.id) ||
         Boolean(project?.team?.members?.some(m => hasTeamMemberRole(m, 'PROJECT_MANAGER') && isSameUser(m.user?.id, currentUserId)));
     const canManageAllTasks = isAdminOrBOD || isProjectLead || isProjectManager;
+    const isPersonalView = bulkAction === 'start';
     const isSupportLead = tasks.some(t => isSameUser(t.supportLeadId, currentUserId));
     const isHelper = tasks.some(t => isSameUser(t.helperId, currentUserId));
     const isAssignee = tasks.some(t => isSameUser(t.assigneeId, currentUserId) || isSameUser(t.assignee?.id, currentUserId));
@@ -579,7 +580,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                         styles={filterSelectStyles}
                     />
                 </div>
-                <div className="min-w-[190px] max-w-[300px] shrink-0">
+                {!isPersonalView && <div className="min-w-[190px] max-w-[300px] shrink-0">
                     <Select
                         aria-label="Lọc theo nhân sự"
                         options={assigneeOptions}
@@ -594,9 +595,9 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                         placeholder="Tất cả nhân sự"
                         styles={filterSelectStyles}
                     />
-                </div>
+                </div>}
                 <div className="flex items-center gap-2 shrink-0 whitespace-nowrap ml-auto">
-                    {isProjectLead && isProjectInProgress && (
+                    {!isPersonalView && isProjectLead && isProjectInProgress && (
                         <button
                             type="button"
                             onClick={handleOpenStaffingModal}
@@ -621,7 +622,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                             <span>{selectionMode === 'unassign' ? 'Huỷ xoá phân công' : 'Xoá phân công'}</span>
                         </button>
                     )}
-                    {canCreateProjectWork && isProjectInProgress && (
+                    {!isPersonalView && canCreateProjectWork && isProjectInProgress && (
                         <button
                             type="button"
                             onClick={() => setShowAddServiceModal(true)}
@@ -636,7 +637,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
 
             {/* Table */}
             <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left min-w-[1450px]">
+                <table className={cn("w-full text-sm text-left", isPersonalView ? "min-w-[900px]" : "min-w-[1450px]")}>
                     <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100">
                         <tr>
                             <th className="px-6 py-4 text-center">
@@ -665,8 +666,8 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                             {renderHeader('Mã')}
                             {renderHeader('Tên công việc')}
                             {renderHeader('Thời hạn')}
-                            {renderHeader('Bên thực hiện')}
-                            {renderHeader('Người thực hiện', 'center')}
+                            {!isPersonalView && renderHeader('Bên thực hiện')}
+                            {!isPersonalView && renderHeader('Người thực hiện', 'center')}
                             {renderHeader('Trạng thái', 'center')}
                             <th className="px-6 py-4 font-medium text-center">Hành động</th>
                         </tr>
@@ -705,7 +706,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                                 />
                                             </td>
                                             <td
-                                                colSpan={7}
+                                                colSpan={isPersonalView ? 5 : 7}
                                                 className="px-6 py-3 font-bold text-gray-800 cursor-pointer"
                                                 onClick={() => toggleGroup(group.job.id)}
                                             >
@@ -781,12 +782,16 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                                         {getRemainingTime(task.plannedEndDate, task.status).text}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 uppercase text-xs font-semibold text-gray-500">
-                                                    {task.performerType || '---'}
-                                                </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <span className="font-medium text-gray-700">{task.assignee?.fullName || task.vendorId || '---'}</span>
-                                                </td>
+                                                {!isPersonalView && (
+                                                    <td className="px-6 py-4 uppercase text-xs font-semibold text-gray-500">
+                                                        {task.performerType || '---'}
+                                                    </td>
+                                                )}
+                                                {!isPersonalView && (
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="font-medium text-gray-700">{task.assignee?.fullName || task.vendorId || '---'}</span>
+                                                    </td>
+                                                )}
                                                 <td className="px-3 py-2 text-center w-fit">
                                                     {getStatusBadge(task.status)}
                                                 </td>
@@ -809,7 +814,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                                                 </button>
                                                             )}
 
-                                                        {isProjectInProgress && canManageTaskAssignment(task) &&
+                                                        {!isPersonalView && isProjectInProgress && canManageTaskAssignment(task) &&
                                                             (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
                                                             <button
                                                                 onClick={() => setAssigningTask(task)}
@@ -820,7 +825,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                                         )}
 
                                                         {/* Original Team Lead Actions */}
-                                                        {isProjectInProgress && canManageTaskAssignment(task) && ['NOT_STARTED', 'DOING', 'REWORKING', 'OVERDUE', 'REJECTED'].includes(task.status) && (
+                                                        {!isPersonalView && isProjectInProgress && canManageTaskAssignment(task) && ['NOT_STARTED', 'DOING', 'REWORKING', 'OVERDUE', 'REJECTED'].includes(task.status) && (
                                                             <button
                                                                 onClick={() => setAssigningTask(task)}
                                                                 className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
@@ -867,7 +872,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                                             )}
                                                         */}
 
-                                                        {isProjectInProgress && canDecideTaskOutcome(task, currentUserId, project) && task.status === 'INTERNAL_COMPLETED' && (
+                                                        {!isPersonalView && isProjectInProgress && canDecideTaskOutcome(task, currentUserId, project) && task.status === 'INTERNAL_COMPLETED' && (
                                                             <button
                                                                 onClick={() => handleCustomerApprove(task.id)}
                                                                 disabled={isApprovingByCustomer && approvingTaskId === task.id}
@@ -877,7 +882,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                                             </button>
                                                         )}
 
-                                                        {isProjectInProgress &&
+                                                        {!isPersonalView && isProjectInProgress &&
                                                             task.status !== 'ON_HOLD' &&
                                                             task.supportRequestType === 'STAFFING' &&
                                                             task.isSupportRequested &&
@@ -927,7 +932,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                                 </button>
                                             )} */}
 
-                                                        {isProjectInProgress && isProjectLead && !['COMPLETED', 'CANCELLED'].includes(task.status) && (
+                                                        {!isPersonalView && isProjectInProgress && isProjectLead && !['COMPLETED', 'CANCELLED'].includes(task.status) && (
                                                             task.supportRequestType === 'STAFFING' && task.isSupportRequested && !task.isSupportAccepted ? (
                                                                 <span className="inline-flex whitespace-nowrap items-center gap-1 px-2.5 py-1.5 bg-amber-50 text-amber-600 rounded-xl text-xs font-medium border border-amber-200">
                                                                     <UserPlus className="w-3.5 h-3.5" />
@@ -951,11 +956,13 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                                             )
                                                         )}
 
-                                                        <TaskReminderButton
-                                                            task={task}
-                                                            isProjectInProgress={isProjectInProgress}
-                                                            canManage={canManageAllTasks}
-                                                        />
+                                                        {!isPersonalView && (
+                                                            <TaskReminderButton
+                                                                task={task}
+                                                                isProjectInProgress={isProjectInProgress}
+                                                                canManage={canManageAllTasks}
+                                                            />
+                                                        )}
 
                                                         <button
                                                             onClick={(e) => {
@@ -976,7 +983,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                             })
                         ) : (
                             <tr>
-                                <td colSpan={8} className="px-6 py-10 text-center text-gray-400 italic">
+                                <td colSpan={isPersonalView ? 6 : 8} className="px-6 py-10 text-center text-gray-400 italic">
                                     {emptyMessage}
                                 </td>
                             </tr>

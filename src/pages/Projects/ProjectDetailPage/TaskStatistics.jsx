@@ -1,7 +1,7 @@
-import { BadgeCheck, ClipboardList, Clock, Loader2, CheckCircle2, UserMinus } from 'lucide-react';
+import { BadgeCheck, ClipboardList, Clock, Loader2, CheckCircle2, CircleDashed, UserMinus } from 'lucide-react';
 import { TASK_STATUS } from '../../../utils/enums';
 
-export const TaskStatistics = ({ tasks = [] }) => {
+export const TaskStatistics = ({ tasks = [], personalView = false }) => {
     const stats = {
         total: tasks.filter(t => t.status !== TASK_STATUS.CANCELLED).length,
 
@@ -14,15 +14,19 @@ export const TaskStatistics = ({ tasks = [] }) => {
             !t.vendorId &&
             !t.vendor?.id
         ).length,
+
+        notStarted: tasks.filter(t => t.status === TASK_STATUS.NOT_STARTED).length,
         
         issues: tasks.filter(t => 
             t.status === TASK_STATUS.OVERDUE || 
             t.status === TASK_STATUS.REJECTED
         ).length,
         
-        inProgress: tasks.filter(t => 
-            t.status === TASK_STATUS.PENDING || 
-            t.status === TASK_STATUS.NOT_STARTED ||
+        inProgress: tasks.filter(t =>
+            (!personalView && (
+                t.status === TASK_STATUS.PENDING ||
+                t.status === TASK_STATUS.NOT_STARTED
+            )) ||
             t.status === TASK_STATUS.DOING || 
             t.status === TASK_STATUS.REWORKING || 
             t.status === TASK_STATUS.AWAITING_PRICING || 
@@ -57,11 +61,15 @@ export const TaskStatistics = ({ tasks = [] }) => {
 
             <div className="bg-sky-50/50 border border-sky-100/60 p-5 rounded-[1.5rem] flex items-center gap-4 transition-all hover:bg-white hover:shadow-sm">
                 <div className="w-12 h-12 bg-sky-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-sky-100">
-                    <UserMinus className="w-6 h-6" />
+                    {personalView ? <CircleDashed className="w-6 h-6" /> : <UserMinus className="w-6 h-6" />}
                 </div>
                 <div>
-                    <p className="text-[10px] font-bold text-sky-600/80 uppercase tracking-widest mb-1">Chưa phân công</p>
-                    <p className="text-2xl font-extrabold text-sky-900 leading-none">{stats.unassigned}</p>
+                    <p className="text-[10px] font-bold text-sky-600/80 uppercase tracking-widest mb-1">
+                        {personalView ? 'Chưa bắt đầu' : 'Chưa phân công'}
+                    </p>
+                    <p className="text-2xl font-extrabold text-sky-900 leading-none">
+                        {personalView ? stats.notStarted : stats.unassigned}
+                    </p>
                 </div>
             </div>
 
