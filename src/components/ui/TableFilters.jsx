@@ -8,11 +8,11 @@ const filterSelectStyles = {
         ...base,
         minHeight: '46px',
         backgroundColor: '#F9FAFB',
-        borderColor: state.isFocused ? '#3B82F6' : '#E5E7EB',
+        borderColor: state.isFocused ? '#F38820' : '#E5E7EB',
         borderRadius: '0.75rem',
-        boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
+        boxShadow: state.isFocused ? '0 0 0 2px rgba(243, 136, 32, 0.2)' : 'none',
         '&:hover': {
-            borderColor: state.isFocused ? '#3B82F6' : '#D1D5DB',
+            borderColor: state.isFocused ? '#F38820' : '#D1D5DB',
             backgroundColor: '#FFFFFF'
         },
         padding: '0 4px',
@@ -43,26 +43,26 @@ const filterSelectStyles = {
     }),
     multiValue: (base) => ({
         ...base,
-        backgroundColor: '#EFF6FF',
+        backgroundColor: '#FFF7ED',
         borderRadius: '0.5rem',
-        border: '1px solid #BFDBFE',
+        border: '1px solid #FED7AA',
         margin: '2px'
     }),
     multiValueLabel: (base) => ({
         ...base,
-        color: '#1D4ED8',
+        color: '#C2410C',
         fontSize: '0.75rem',
         fontWeight: 600,
         padding: '2px 6px'
     }),
     multiValueRemove: (base) => ({
         ...base,
-        color: '#3B82F6',
+        color: '#F38820',
         cursor: 'pointer',
         padding: '0 4px',
         borderRadius: '0 0.5rem 0.5rem 0',
         '&:hover': {
-            backgroundColor: '#DBEAFE',
+            backgroundColor: '#FFEDD5',
             color: '#DC2626'
         }
     }),
@@ -105,9 +105,13 @@ const filterSelectStyles = {
         padding: '8px 12px',
         margin: '1px 0',
         cursor: 'pointer',
-        backgroundColor: state.isSelected ? '#EFF6FF' : state.isFocused ? '#F3F4F6' : 'transparent',
-        color: state.isSelected ? '#2563EB' : '#374151',
-        fontWeight: state.isSelected ? 600 : 400
+        backgroundColor: state.isSelected ? '#FFF7ED' : state.isFocused ? '#F3F4F6' : 'transparent',
+        color: state.isSelected ? '#F38820' : '#374151',
+        fontWeight: state.isSelected ? 600 : 400,
+        ':active': {
+            backgroundColor: '#FFEDD5',
+            color: '#C2410C'
+        }
     })
 };
 
@@ -215,7 +219,7 @@ export const TableFilters = ({
             <div>
                 <button
                     onClick={onReset}
-                    className="w-full h-[46px] flex items-center justify-center gap-2 px-6 py-3 bg-gray-50 text-gray-500 font-black uppercase text-xs tracking-widest rounded-xl hover:bg-gray-100 hover:text-blue-600 transition-all active:scale-95 border border-gray-100"
+                    className="w-full h-[46px] flex items-center justify-center gap-2 px-6 py-3 bg-gray-50 text-gray-500 font-black uppercase text-xs tracking-widest rounded-xl hover:bg-gray-100 hover:text-[#F38820] transition-all active:scale-95 border border-gray-100"
                 >
                     <RotateCcw className="h-4 w-4" />
                     Làm mới

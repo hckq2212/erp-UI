@@ -1,9 +1,42 @@
 @import "tailwindcss";
 
 @theme {
-  --color-surface-container-low: #eff4ff;
-  --color-surface-container: #e5eeff;
+  --color-surface-container-low: #fffaf5;
+  --color-surface-container: #fff1e6;
   --color-surface-container-lowest: #ffffff;
+
+  --color-primary: #F38820;
+  --color-primary-hover: #D97010;
+  --color-primary-active: #C25E09;
+  --color-primary-focus: #F38820;
+  --color-primary-50: #FFF7ED;
+  --color-primary-100: #FFEDD5;
+  --color-primary-200: #FED7AA;
+  --color-primary-300: #FDBA74;
+  --color-primary-400: #FB923C;
+  --color-primary-500: #F38820;
+  --color-primary-600: #EA580C;
+  --color-primary-700: #C2410C;
+  --color-primary-800: #9A3412;
+  --color-primary-900: #7C2D12;
+
+  /* Global Brand Aliases */
+  --color-brand: #F38820;
+  --color-brand-hover: #D97010;
+  --color-brand-light: #FFF7ED;
+
+  /* Map legacy blue palette to Getvini orange brand so existing blue classes render in theme color */
+  --color-blue-50: #FFF7ED;
+  --color-blue-100: #FFEDD5;
+  --color-blue-200: #FED7AA;
+  --color-blue-300: #FDBA74;
+  --color-blue-400: #FB923C;
+  --color-blue-500: #F38820;
+  --color-blue-600: #F38820;
+  --color-blue-700: #D97010;
+  --color-blue-800: #C2410C;
+  --color-blue-900: #9A3412;
+  --color-blue-950: #7C2D12;
 }
 
 :root {
@@ -49,9 +82,9 @@
 .rich-content p, .rich-editor p { margin: 0 0 0.5em; }
 .rich-content ul, .rich-editor ul { list-style: disc; padding-left: 1.25em; margin: 0.25em 0; }
 .rich-content ol, .rich-editor ol { list-style: decimal; padding-left: 1.25em; margin: 0.25em 0; }
-.rich-content a, .rich-editor a { color: #2563eb; text-decoration: underline; }
+.rich-content a, .rich-editor a { color: #f38820; text-decoration: underline; }
 .rich-content blockquote, .rich-editor blockquote {
-  border-left: 3px solid #e5e7eb;
+  border-left: 3px solid #fed7aa;
   padding-left: 0.75em;
   color: #6b7280;
   margin: 0.5em 0;
@@ -82,8 +115,9 @@
   margin: 0 0.1em;
 }
 .rich-content .mention-chip-user, .rich-editor .mention-chip-user {
-  background: #eef2ff;
-  color: #4338ca;
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
 }
 .rich-content .mention-chip-everyone, .rich-editor .mention-chip-everyone {
   background: #fffbeb;
@@ -97,4 +131,23 @@
 
 main:has(> .flex.flex-col.overflow-hidden > header.flex.h-14.w-full) {
   padding: 0;
+}
+
+/* Global text selection in Getvini Orange brand */
+::selection {
+  background-color: #FED7AA;
+  color: #7C2D12;
+}
+
+/* Global React-Select active/hover/focus overrides to prevent blue highlight on press/hold */
+div[class*="-option"]:active,
+div[class*="__option"]:active {
+  background-color: #FFEDD5 !important;
+  color: #C2410C !important;
+}
+
+div[class*="-option"][class*="--is-selected"]:active,
+div[class*="__option"][class*="--is-selected"]:active {
+  background-color: #FED7AA !important;
+  color: #9A3412 !important;
 }

@@ -13,11 +13,11 @@ export const CONTRACT_STATUS_LABELS = {
 };
 
 export const CONTRACT_STATUS_COLORS = {
-  DRAFT: 'bg-blue-100 text-blue-800',
+  DRAFT: 'bg-orange-50 text-orange-700 border-orange-100',
   PENDING: 'bg-yellow-100 text-yellow-800',
   APPROVED: 'bg-green-100 text-green-800',
   PROPOSAL_APPROVED: 'bg-green-100 text-green-800',
-  ACTIVE: 'bg-blue-100 text-blue-800',
+  ACTIVE: 'bg-orange-50 text-orange-700 border-orange-100',
   COMPLETED: 'bg-purple-100 text-purple-800',
   CANCELLED: 'bg-red-100 text-red-800',
   SIGNED: 'bg-green-100 text-green-800',
@@ -31,11 +31,11 @@ export const CONTRACT_SERVICE_STATUS_LABELS = {
   AWAITING_ACCEPTANCE: 'Sẵn sàng nghiệm thu',
   ACCEPTANCE_REJECTED: 'Từ chối nghiệm thu',
   COMPLETED: 'Hoàn thành',
-  CANCELLED: 'Đã hủy',
+  CANCELLED: 'Đã hủy',  
 };
 
 export const CONTRACT_SERVICE_STATUS_COLORS = {
-  ACTIVE: 'bg-blue-50 text-blue-700 border-blue-100',
+  ACTIVE: 'bg-orange-50 text-orange-700 border-orange-100',
   AWAITING_ACCEPTANCE: 'bg-yellow-50 text-yellow-700 border-yellow-100',
   ACCEPTANCE_REJECTED: 'bg-red-50 text-red-700 border-red-100',
   COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -72,7 +72,7 @@ export const PROJECT_STATUS_LABELS = {
 
 export const PROJECT_STATUS_COLORS = {
   PENDING_CONFIRMATION: 'bg-orange-50 text-orange-700 border-orange-100',
-  CONFIRMED: 'bg-blue-50 text-blue-700 border-blue-100',
+  CONFIRMED: 'bg-orange-50 text-orange-700 border-orange-100',
   IN_PROGRESS: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   PENDING_PAUSE_APPROVAL: 'bg-yellow-50 text-yellow-700 border-yellow-100',
   ON_HOLD: 'bg-amber-50 text-amber-700 border-amber-100',
@@ -103,7 +103,7 @@ export const OPPORTUNITY_STATUS_LABELS = {
 };
 
 export const OPPORTUNITY_STATUS_COLORS = {
-  OPEN: 'bg-blue-100 text-blue-800',
+  OPEN: 'bg-orange-50 text-orange-700 border-orange-100',
   PENDING_OPP_APPROVAL: 'bg-yellow-100 text-yellow-800',
   OPP_REJECTED: 'bg-red-100 text-red-800',
   OPP_APPROVED: 'bg-green-100 text-green-800',
@@ -115,7 +115,7 @@ export const OPPORTUNITY_STATUS_COLORS = {
   CONTRACT_APPROVED: 'bg-green-100 text-green-800',
   IMPLEMENTATION: 'bg-teal-100 text-teal-800',
   LEAD: 'bg-gray-100 text-gray-800',
-  QUALIFIED: 'bg-blue-100 text-blue-800',
+  QUALIFIED: 'bg-orange-50 text-orange-700 border-orange-100',
   PROPOSAL: 'bg-yellow-100 text-yellow-800',
   NEGOTIATION: 'bg-orange-100 text-orange-800',
   WON: 'bg-green-100 text-green-800',
@@ -167,7 +167,7 @@ export const TASK_STATUS_LABELS = {
 export const TASK_STATUS_COLORS = {
   [TASK_STATUS.PENDING]: 'bg-amber-50 text-amber-700 border-amber-100',
   [TASK_STATUS.NOT_STARTED]: 'bg-slate-50 text-slate-700 border-slate-200',
-  [TASK_STATUS.DOING]: 'bg-blue-50 text-blue-700 border-blue-100',
+  [TASK_STATUS.DOING]: 'bg-orange-50 text-orange-700 border-orange-100',
   [TASK_STATUS.DONE]: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   [TASK_STATUS.CANCELLED]: 'bg-rose-50 text-rose-700 border-rose-100',
   [TASK_STATUS.AWAITING_PRICING]: 'bg-orange-50 text-orange-700 border-orange-100',
@@ -181,22 +181,22 @@ export const TASK_STATUS_COLORS = {
   [TASK_STATUS.AWAITING_ACCEPTANCE]: 'bg-amber-50 text-amber-700 border-amber-100',
   [TASK_STATUS.AWAITING_REVIEW]: 'bg-amber-50 text-amber-700 border-amber-100',
   [TASK_STATUS.OVERDUE]: 'bg-rose-50 text-rose-700 border-rose-100',
-  [TASK_STATUS.SUPPORT_AWAITING_RETURN]: 'bg-blue-50 text-blue-700 border-blue-100',
+  [TASK_STATUS.SUPPORT_AWAITING_RETURN]: 'bg-orange-50 text-orange-700 border-orange-100',
 };
 
 // Dashboard Urgency Themes
 export const URGENCY_THEMES = {
   overdue: { bg: 'bg-red-50', border: 'border-red-200', accent: 'bg-red-600', text: 'text-red-700', icon: 'text-red-500' },
-  today: { bg: 'bg-orange-50', border: 'border-orange-200', accent: 'bg-orange-600', text: 'text-orange-700', icon: 'text-orange-500' },
+  today: { bg: 'bg-orange-50', border: 'border-orange-200', accent: 'bg-[#F38820]', text: 'text-orange-700', icon: 'text-[#F38820]' },
   soon: { bg: 'bg-amber-50', border: 'border-amber-200', accent: 'bg-amber-600', text: 'text-amber-700', icon: 'text-amber-500' },
-  safe: { bg: 'bg-blue-50', border: 'border-blue-200', accent: 'bg-blue-400', text: 'text-blue-700', icon: 'text-blue-400' },
+  safe: { bg: 'bg-orange-50', border: 'border-orange-200', accent: 'bg-[#F38820]', text: 'text-orange-700', icon: 'text-[#F38820]' },
   completed: { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'bg-emerald-600', text: 'text-emerald-700', icon: 'text-emerald-500' },
   cancelled: { bg: 'bg-rose-50', border: 'border-rose-200', accent: 'bg-rose-600', text: 'text-rose-700', icon: 'text-rose-500' }
 };
 
 // Dashboard Project Themes
 export const PROJECT_CARD_THEMES = {
-  ACTIVE: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', accent: 'bg-blue-600' },
+  ACTIVE: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', accent: 'bg-[#F38820]' },
   INACTIVE: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', accent: 'bg-slate-400' }
 };
 
@@ -221,7 +221,7 @@ export const PRIORITY_INDICATOR_COLORS = {
 
 export const QUOTATION_STATUS_COLORS = {
   Draft: 'bg-slate-50 text-slate-700 border-slate-100',
-  Sent: 'bg-blue-50 text-blue-700 border-blue-100',
+  Sent: 'bg-orange-50 text-orange-700 border-orange-100',
   Approved: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   Rejected: 'bg-rose-50 text-rose-700 border-rose-100',
   Expired: 'bg-amber-50 text-amber-700 border-amber-100'

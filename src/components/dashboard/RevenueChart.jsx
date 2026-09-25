@@ -12,7 +12,7 @@ export const RevenueChart = () => {
             <XAxis dataKey="name" axisLine={false} tickLine={false} />
             <YAxis axisLine={false} tickLine={false} />
             <Tooltip />
-            <Bar dataKey="revenue" fill="#2563EB" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="revenue" fill="#F38820" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

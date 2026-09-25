@@ -127,13 +127,13 @@ export const CreateServicePackageModal = ({ isOpen, onClose }) => {
             backgroundColor: '#f9fafb',
             boxShadow: 'none',
             '&:hover': {
-                border: '1px solid #3b82f6'
+                border: '1px solid #F38820'
             }
         }),
         option: (base, state) => ({
             ...base,
             fontSize: '0.875rem',
-            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+            backgroundColor: state.isSelected ? '#F38820' : state.isFocused ? '#fff7ed' : 'white',
             color: state.isSelected ? 'white' : '#374151',
         })
     };

@@ -76,10 +76,10 @@ export const EditServiceModal = ({ isOpen, onClose, service }) => {
             padding: '1px',
             borderColor: hasError
                 ? '#ef4444'
-                : state.isFocused ? '#3b82f6' : '#d1d5db',
-            boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                : state.isFocused ? '#F38820' : '#d1d5db',
+            boxShadow: state.isFocused ? '0 0 0 1px #F38820' : 'none',
             '&:hover': {
-                borderColor: hasError ? '#ef4444' : '#3b82f6'
+                borderColor: hasError ? '#ef4444' : '#F38820'
             }
         }),
         placeholder: (base) => ({
@@ -90,26 +90,26 @@ export const EditServiceModal = ({ isOpen, onClose, service }) => {
         option: (base, state) => ({
             ...base,
             fontSize: '0.875rem',
-            backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+            backgroundColor: state.isSelected ? '#F38820' : state.isFocused ? '#fff7ed' : 'white',
             color: state.isSelected ? 'white' : '#374151',
         }),
         multiValue: (base) => ({
             ...base,
-            backgroundColor: '#eff6ff',
+            backgroundColor: '#fff7ed',
             borderRadius: '0.375rem',
         }),
         multiValueLabel: (base) => ({
             ...base,
-            color: '#1d4ed8',
+            color: '#c2410c',
             fontSize: '0.75rem',
             fontWeight: '600',
         }),
         multiValueRemove: (base) => ({
             ...base,
-            color: '#60a5fa',
+            color: '#f38820',
             '&:hover': {
-                backgroundColor: '#dbeafe',
-                color: '#1d4ed8',
+                backgroundColor: '#ffedd5',
+                color: '#c2410c',
             },
         }),
     });

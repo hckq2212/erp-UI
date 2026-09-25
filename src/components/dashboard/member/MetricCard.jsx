@@ -7,16 +7,16 @@ export const MetricCard = ({
     value,
     subValue,
     icon: Icon,
-    color = 'blue',
+    color = 'orange',
     sparklineData = [10, 40, 30, 50, 40, 70, 60], // Dummy path data
     trendColor = 'text-emerald-500',
     onClick
 }) => {
     const colorStyles = {
         blue: {
-            bg: 'bg-blue-50',
-            icon: 'text-blue-500',
-            stroke: '#3b82f6'
+            bg: 'bg-orange-50',
+            icon: 'text-[#F38820]',
+            stroke: '#F38820'
         },
         emerald: {
             bg: 'bg-emerald-50',

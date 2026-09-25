@@ -11,11 +11,11 @@ const assigneeSelectStyles = {
         ...base,
         minHeight: '44px',
         borderRadius: '0.75rem',
-        borderColor: state.isFocused ? '#3B82F6' : '#E5E7EB',
+        borderColor: state.isFocused ? '#F38820' : '#E5E7EB',
         backgroundColor: state.isFocused ? '#FFFFFF' : '#F9FAFB',
-        boxShadow: state.isFocused ? '0 0 0 1px #3B82F6' : 'none',
+        boxShadow: state.isFocused ? '0 0 0 1px #F38820' : 'none',
         cursor: 'pointer',
-        '&:hover': { borderColor: state.isFocused ? '#3B82F6' : '#D1D5DB' }
+        '&:hover': { borderColor: state.isFocused ? '#F38820' : '#D1D5DB' }
     }),
     valueContainer: (base) => ({ ...base, paddingLeft: '2.75rem' }),
     indicatorSeparator: () => ({ display: 'none' }),
@@ -28,8 +28,12 @@ const assigneeSelectStyles = {
         ...base,
         fontSize: '0.875rem',
         cursor: 'pointer',
-        backgroundColor: state.isSelected ? '#2563EB' : state.isFocused ? '#EFF6FF' : '#FFFFFF',
-        color: state.isSelected ? '#FFFFFF' : '#374151'
+        backgroundColor: state.isSelected ? '#F38820' : state.isFocused ? '#FFF7ED' : '#FFFFFF',
+        color: state.isSelected ? '#FFFFFF' : '#374151',
+        ':active': {
+            backgroundColor: '#FFEDD5',
+            color: '#C2410C'
+        }
     })
 };
 
@@ -38,11 +42,11 @@ const statusSelectStyles = {
         ...base,
         minHeight: '44px',
         borderRadius: '0.75rem',
-        borderColor: state.isFocused ? '#3B82F6' : '#E5E7EB',
+        borderColor: state.isFocused ? '#F38820' : '#E5E7EB',
         backgroundColor: state.isFocused ? '#FFFFFF' : '#F9FAFB',
-        boxShadow: state.isFocused ? '0 0 0 1px #3B82F6' : 'none',
+        boxShadow: state.isFocused ? '0 0 0 1px #F38820' : 'none',
         cursor: 'pointer',
-        '&:hover': { borderColor: state.isFocused ? '#3B82F6' : '#D1D5DB' }
+        '&:hover': { borderColor: state.isFocused ? '#F38820' : '#D1D5DB' }
     }),
     valueContainer: (base) => ({ ...base, paddingLeft: '0.75rem', paddingRight: '0.5rem' }),
     input: (base) => ({ ...base, margin: 0, padding: 0, color: '#1F2937', fontSize: '0.875rem' }),
@@ -59,25 +63,25 @@ const statusSelectStyles = {
     singleValue: (base) => ({ ...base, color: '#4B5563', fontSize: '0.875rem', fontWeight: 500 }),
     multiValue: (base) => ({
         ...base,
-        backgroundColor: '#EFF6FF',
+        backgroundColor: '#FFF7ED',
         borderRadius: '0.375rem',
-        border: '1px solid #BFDBFE',
+        border: '1px solid #FED7AA',
         margin: '1px'
     }),
     multiValueLabel: (base) => ({
         ...base,
-        color: '#1D4ED8',
+        color: '#C2410C',
         fontSize: '0.75rem',
         fontWeight: 600,
         padding: '1px 5px'
     }),
     multiValueRemove: (base) => ({
         ...base,
-        color: '#3B82F6',
+        color: '#F38820',
         cursor: 'pointer',
         padding: '0 3px',
         borderRadius: '0 0.375rem 0.375rem 0',
-        '&:hover': { backgroundColor: '#DBEAFE', color: '#DC2626' }
+        '&:hover': { backgroundColor: '#FFEDD5', color: '#DC2626' }
     }),
     menuPortal: (base) => ({ ...base, zIndex: 9999 }),
     menu: (base) => ({ ...base, zIndex: 9999, borderRadius: '0.75rem', overflow: 'hidden' }),
@@ -85,9 +89,13 @@ const statusSelectStyles = {
         ...base,
         fontSize: '0.875rem',
         cursor: 'pointer',
-        backgroundColor: state.isSelected ? '#EFF6FF' : state.isFocused ? '#F3F4F6' : '#FFFFFF',
-        color: state.isSelected ? '#2563EB' : '#374151',
-        fontWeight: state.isSelected ? 600 : 400
+        backgroundColor: state.isSelected ? '#FFF7ED' : state.isFocused ? '#F3F4F6' : '#FFFFFF',
+        color: state.isSelected ? '#F38820' : '#374151',
+        fontWeight: state.isSelected ? 600 : 400,
+        ':active': {
+            backgroundColor: '#FFEDD5',
+            color: '#C2410C'
+        }
     })
 };
 

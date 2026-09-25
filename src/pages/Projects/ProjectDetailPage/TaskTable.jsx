@@ -28,14 +28,14 @@ const filterSelectStyles = {
         ...base,
         minHeight: '38px',
         borderRadius: '0.5rem',
-        borderColor: state.isFocused ? '#3B82F6' : '#E5E7EB',
+        borderColor: state.isFocused ? '#F38820' : '#E5E7EB',
         backgroundColor: state.isFocused ? '#FFFFFF' : '#F9FAFB',
-        boxShadow: state.isFocused ? '0 0 0 1px #3B82F6' : 'none',
+        boxShadow: state.isFocused ? '0 0 0 1px #F38820' : 'none',
         cursor: 'pointer',
         fontSize: '0.875rem',
         transition: 'all 0.15s ease',
         '&:hover': {
-            borderColor: state.isFocused ? '#3B82F6' : '#D1D5DB',
+            borderColor: state.isFocused ? '#F38820' : '#D1D5DB',
             backgroundColor: state.isFocused ? '#FFFFFF' : '#F3F4F6'
         }
     }),
@@ -77,26 +77,26 @@ const filterSelectStyles = {
     }),
     multiValue: (base) => ({
         ...base,
-        backgroundColor: '#EFF6FF',
+        backgroundColor: '#FFF7ED',
         borderRadius: '0.375rem',
-        border: '1px solid #BFDBFE',
+        border: '1px solid #FED7AA',
         margin: '1px'
     }),
     multiValueLabel: (base) => ({
         ...base,
-        color: '#1D4ED8',
+        color: '#C2410C',
         fontSize: '0.75rem',
         fontWeight: 600,
         padding: '1px 5px'
     }),
     multiValueRemove: (base) => ({
         ...base,
-        color: '#3B82F6',
+        color: '#F38820',
         cursor: 'pointer',
         padding: '0 3px',
         borderRadius: '0 0.375rem 0.375rem 0',
         '&:hover': {
-            backgroundColor: '#DBEAFE',
+            backgroundColor: '#FFEDD5',
             color: '#DC2626'
         }
     }),
@@ -137,9 +137,13 @@ const filterSelectStyles = {
         padding: '7px 10px',
         margin: '1px 0',
         cursor: 'pointer',
-        backgroundColor: state.isSelected ? '#EFF6FF' : state.isFocused ? '#F3F4F6' : 'transparent',
-        color: state.isSelected ? '#2563EB' : '#374151',
-        fontWeight: state.isSelected ? 600 : 400
+        backgroundColor: state.isSelected ? '#FFF7ED' : state.isFocused ? '#F3F4F6' : 'transparent',
+        color: state.isSelected ? '#F38820' : '#374151',
+        fontWeight: state.isSelected ? 600 : 400,
+        ':active': {
+            backgroundColor: '#FFEDD5',
+            color: '#C2410C'
+        }
     })
 };
 
