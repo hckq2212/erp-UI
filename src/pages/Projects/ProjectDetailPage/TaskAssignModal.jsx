@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { X, Upload, Link as LinkIcon, Calendar, User, Users, FileText, Trash2, Plus, Info, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGetTeamMembersQuery, useGetTeamsQuery, useLazyGetTeamsQuery, useLazyGetTeamMembersQuery } from '../../../api/teams';
-import { useAssignTaskMutation, useAssignSupportTeamMutation, useRequestSupportMutation, useBulkAssignTasksMutation, useGetAssigneeDailyWorkloadQuery } from '../../../api/tasks';
+import { useAssignTaskMutation, useAssignSupportTeamMutation, useRequestSupportMutation, useBulkAssignTasksMutation, useGetAssigneeDailyWorkloadQuery, useGetTaskQuery } from '../../../api/tasks';
 import { formatDate, formatDateTimeISO } from '../../../utils/format';
 import { useGetVendorsByJobQuery } from '../../../api/vendors';
 import { uploadToCloudinary } from '../../../utils/cloudinary';
@@ -171,18 +171,57 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
     const tasks = isBulk ? task : [task];
     const representativeTask = tasks[0];
 
+    const parentTaskId = representativeTask?.parentTaskId;
+    const { data: fetchedParentTask } = useGetTaskQuery(parentTaskId, {
+        skip: !parentTaskId || Boolean(representativeTask?.parentTask?.plannedEndDate)
+    });
+    const parentTask = representativeTask?.parentTask || fetchedParentTask;
+
+    const latestSubtask = useMemo(() => {
+        const subtasks = representativeTask?.subtasks || [];
+        const withEndDates = subtasks.filter(st => st.plannedEndDate);
+        if (withEndDates.length === 0) return null;
+        return [...withEndDates].sort(
+            (a, b) => new Date(b.plannedEndDate).getTime() - new Date(a.plannedEndDate).getTime()
+        )[0];
+    }, [representativeTask?.subtasks]);
+
     const isSupportMode = !isBulk && task?.isSupportRequested;
     const projectId = project?.id;
     const teamId = project?.team?.id;
     const isVideoDemoTask = Boolean(representativeTask?.opportunityServiceJob?.isBriefVideo);
     const fileInputRef = useRef(null);
     const [plannedEndDate, setPlannedEndDate] = useState(formatDateTimeISO(representativeTask?.plannedEndDate) || '');
+
+    useEffect(() => {
+        if (isOpen && representativeTask) {
+            setPlannedEndDate(formatDateTimeISO(representativeTask?.plannedEndDate) || '');
+        }
+    }, [isOpen, representativeTask]);
+
+    const maximumDeadline = useMemo(() => {
+        if (!parentTask?.plannedEndDate) return '';
+        return formatDateTimeISO(parentTask.plannedEndDate);
+    }, [parentTask?.plannedEndDate]);
+
     const minimumDeadline = useMemo(() => {
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() + 1);
-        startDate.setHours(0, 0, 0, 0);
-        return formatDateTimeISO(startDate);
-    }, [isOpen]);
+        let minDate = new Date();
+        if (latestSubtask?.plannedEndDate) {
+            const subtaskDate = new Date(latestSubtask.plannedEndDate);
+            if (!Number.isNaN(subtaskDate.getTime()) && subtaskDate > minDate) {
+                minDate = subtaskDate;
+            }
+        }
+        return formatDateTimeISO(minDate);
+    }, [latestSubtask?.plannedEndDate]);
+
+    const safeMinDeadline = useMemo(() => {
+        if (!minimumDeadline) return undefined;
+        if (maximumDeadline && minimumDeadline > maximumDeadline) {
+            return undefined;
+        }
+        return minimumDeadline;
+    }, [minimumDeadline, maximumDeadline]);
     const workloadDate = useMemo(() => {
         const date = plannedEndDate ? new Date(plannedEndDate) : new Date();
         const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
@@ -337,13 +376,29 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
             return;
         }
 
-        const startDay = new Date();
-        const deadlineDay = new Date(parsedDeadline);
-        startDay.setHours(0, 0, 0, 0);
-        deadlineDay.setHours(0, 0, 0, 0);
-        if (deadlineDay <= startDay) {
-            toast.error('Deadline phải sau ngày dự kiến bắt đầu ít nhất 1 ngày');
+        const now = new Date();
+        now.setSeconds(0, 0);
+        if (parsedDeadline.getTime() < now.getTime() - 60 * 1000) {
+            toast.error('Deadline không được ở trong quá khứ');
             return;
+        }
+
+        // Ràng buộc 1: Task con không được có deadline sau task cha
+        if (parentTask?.plannedEndDate) {
+            const parentDeadline = new Date(parentTask.plannedEndDate);
+            if (parsedDeadline > parentDeadline) {
+                toast.error(`Deadline của công việc con không được sau deadline của công việc cha (Hạn chót cha: ${formatDate(parentTask.plannedEndDate)})`);
+                return;
+            }
+        }
+
+        // Ràng buộc 2: Task cha không được có deadline trước task con
+        if (latestSubtask?.plannedEndDate) {
+            const subtaskDeadline = new Date(latestSubtask.plannedEndDate);
+            if (parsedDeadline < subtaskDeadline) {
+                toast.error(`Deadline của công việc cha không được trước deadline của công việc con '${latestSubtask.name}' (Hạn chót con: ${formatDate(latestSubtask.plannedEndDate)})`);
+                return;
+            }
         }
 
         try {
@@ -419,7 +474,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi phân công');
         }
-    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedEndDate, requestSupport]);
+    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedEndDate, requestSupport, parentTask, latestSubtask]);
 
     return (
         <AnimatePresence>
@@ -816,12 +871,23 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                     <input
                                         type="datetime-local"
                                         required
-                                        min={minimumDeadline}
+                                        min={safeMinDeadline}
+                                        max={maximumDeadline || undefined}
                                         className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all text-slate-700 font-medium"
                                         value={plannedEndDate}
                                         onChange={(e) => setPlannedEndDate(e.target.value)}
                                     />
                                 </div>
+                                {parentTask?.plannedEndDate && (
+                                    <p className="text-[11px] font-semibold text-amber-600 ml-1">
+                                        ⚠️ Công việc con: Hạn chót tối đa theo task cha là {formatDate(parentTask.plannedEndDate)}
+                                    </p>
+                                )}
+                                {latestSubtask?.plannedEndDate && (
+                                    <p className="text-[11px] font-semibold text-amber-600 ml-1">
+                                        ⚠️ Công việc cha: Không được sớm hơn hạn chót công việc con &apos;{latestSubtask.name}&apos; ({formatDate(latestSubtask.plannedEndDate)})
+                                    </p>
+                                )}
                             </div>
 
                             {/* Description */}

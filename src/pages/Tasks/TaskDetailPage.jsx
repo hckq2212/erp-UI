@@ -1298,6 +1298,7 @@ export const TaskDetailPage = () => {
                 isOpen={isReworkModalOpen}
                 onClose={() => setIsReworkModalOpen(false)}
                 taskName={getTaskDisplayName(task)}
+                parentTaskDeadline={task?.parentTask?.plannedEndDate}
                 isLoading={isRequestingRework}
                 onSubmit={async data => {
                     try {
