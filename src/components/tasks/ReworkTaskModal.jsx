@@ -5,8 +5,9 @@ import { Upload, X, FileText, Calendar, Link as LinkIcon, AlertCircle } from 'lu
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import { toast } from 'react-toastify';
 import { cn } from '../../utils/cn';
+import { formatDate, formatDateTimeISO } from '../../utils/format';
 
-export const ReworkTaskModal = ({ isOpen, onClose, onSubmit, isLoading, taskName }) => {
+export const ReworkTaskModal = ({ isOpen, onClose, onSubmit, isLoading, taskName, parentTaskDeadline }) => {
     const [feedback, setFeedback] = useState('');
     const [deadlineAt, setDeadlineAt] = useState('');
     const [attachments, setAttachments] = useState([]);
@@ -68,6 +69,11 @@ export const ReworkTaskModal = ({ isOpen, onClose, onSubmit, isLoading, taskName
             return;
         }
 
+        if (parentTaskDeadline && new Date(deadlineAt) > new Date(parentTaskDeadline)) {
+            toast.error(`Deadline làm lại của công việc con không được sau deadline của công việc cha (${formatDate(parentTaskDeadline)})`);
+            return;
+        }
+
         onSubmit({
             feedback,
             deadlineAt,
@@ -111,8 +117,14 @@ export const ReworkTaskModal = ({ isOpen, onClose, onSubmit, isLoading, taskName
                                 const offset = now.getTimezoneOffset() * 60000;
                                 return new Date(now - offset).toISOString().slice(0, 16);
                             })()}
+                            max={parentTaskDeadline ? formatDateTimeISO(parentTaskDeadline) : undefined}
                         />
                     </div>
+                    {parentTaskDeadline && (
+                        <p className="text-[11px] font-semibold text-amber-600 ml-1">
+                            ⚠️ Hạn chót làm lại tối đa theo task cha là {formatDate(parentTaskDeadline)}
+                        </p>
+                    )}
                 </div>
 
                 <div className="space-y-3">
