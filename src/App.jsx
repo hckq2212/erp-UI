@@ -668,7 +668,7 @@ function AppContent() {
             Chat
         ========================== */}
 
-        <Route
+        {/* <Route
           path="/chat"
           element={
             <ProtectedRoute>
@@ -677,7 +677,7 @@ function AppContent() {
               </Layout>
             </ProtectedRoute>
           }
-        />
+        /> */}
 
 
         {/* =========================
