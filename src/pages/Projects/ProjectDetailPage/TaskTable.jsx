@@ -5,7 +5,7 @@ import { AddProjectServiceModal } from './AddProjectServiceModal';
 import { useNavigate } from 'react-router-dom';
 import { useGetTeamMembersQuery } from '../../../api/teams';
 import { useRequestProjectStaffingMutation } from '../../../api/projects';
-import { useApproveByCustomerMutation, useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useRequestTaskStaffingMutation, useStartTaskMutation } from '../../../api/tasks';
+import { useApproveByCustomerMutation, useBulkStartTasksMutation, useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useRequestTaskStaffingMutation, useStartTaskMutation } from '../../../api/tasks';
 import { cn } from '../../../utils/cn';
 import { PROJECT_MANAGEMENT_ROLES, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../../utils/enums';
 import { toast } from 'react-toastify';
@@ -18,8 +18,9 @@ import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
 import { hasTeamMemberRole } from '../../../utils/teamMember';
+import { getTaskDisplayName } from '../../../utils/taskName';
 
-export const TaskTable = ({ tasks = [], project }) => {
+export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMessage = 'Không tìm thấy công việc nào' }) => {
     const navigate = useNavigate();
     const { data: user } = useGetMeQuery();
     const teamId = project?.team?.id;
@@ -29,6 +30,7 @@ export const TaskTable = ({ tasks = [], project }) => {
     const [returnSupport] = useReturnSupportMutation();
     const [requestReturnSupport] = useRequestReturnSupportMutation();
     const [bulkUnassignTasks, { isLoading: isUnassigning }] = useBulkUnassignTasksMutation();
+    const [bulkStartTasks, { isLoading: isBulkStarting }] = useBulkStartTasksMutation();
     const [approveByCustomer, { isLoading: isApprovingByCustomer }] = useApproveByCustomerMutation();
     const [requestTaskStaffing, { isLoading: isRequestingStaffing }] = useRequestTaskStaffingMutation();
     const [requestProjectStaffing, { isLoading: isRequestingProjectStaffing }] = useRequestProjectStaffingMutation();
@@ -97,6 +99,31 @@ export const TaskTable = ({ tasks = [], project }) => {
             toast.error(error?.data?.message || 'Không thể bắt đầu công việc');
         } finally {
             setStartingTaskId(null);
+        }
+    };
+
+    const handleBulkStart = async () => {
+        if (selectedTasks.length === 0) return;
+        if (!window.confirm(`Bắt đầu ${selectedTasks.length} công việc đã chọn?`)) return;
+
+        try {
+            const result = await bulkStartTasks({
+                projectId: project.id,
+                taskIds: selectedTasks
+            }).unwrap();
+            const successCount = result?.started?.length || 0;
+            const skipped = result?.skipped || [];
+
+            if (successCount > 0) {
+                toast.success(`Đã bắt đầu ${successCount} công việc`);
+            }
+            if (skipped.length > 0) {
+                const firstReason = skipped[0]?.reason ? `: ${skipped[0].reason}` : '';
+                toast.warning(`Đã bỏ qua ${skipped.length} công việc${firstReason}`);
+            }
+            setSelectedTasks([]);
+        } catch (error) {
+            toast.error(error?.data?.message || 'Không thể bắt đầu các công việc đã chọn');
         }
     };
 
@@ -180,7 +207,20 @@ export const TaskTable = ({ tasks = [], project }) => {
         );
     };
 
-    const isTaskSelectable = selectionMode === 'unassign' ? isTaskUnassignable : isTaskBatchAssignable;
+    const isSubtaskPlanStartable = (task) => !task.parentTaskId ||
+        !task.parentTask?.subtaskPlanStatus ||
+        task.parentTask.subtaskPlanStatus === 'APPROVED';
+
+    const isTaskStartable = (task) => isProjectInProgress &&
+        task.status === 'NOT_STARTED' &&
+        isSameUser(task.assigneeId || task.assignee?.id, currentUserId) &&
+        isSubtaskPlanStartable(task);
+
+    const isTaskSelectable = bulkAction === 'start'
+        ? isTaskStartable
+        : selectionMode === 'unassign'
+            ? isTaskUnassignable
+            : isTaskBatchAssignable;
 
     // Tự động loại bỏ các task đã phân công hoặc không còn thoả mãn điều kiện chọn khỏi selectedTasks
     useEffect(() => {
@@ -281,7 +321,10 @@ export const TaskTable = ({ tasks = [], project }) => {
             const search = filter.search.toLowerCase();
             const matchesSearch = task.name?.toLowerCase().includes(search) ||
                 task.nickname?.toLowerCase().includes(search) ||
-                task.code?.toLowerCase().includes(search);
+                task.code?.toLowerCase().includes(search) ||
+                task.parentTask?.name?.toLowerCase().includes(search) ||
+                task.parentTask?.nickname?.toLowerCase().includes(search) ||
+                task.parentTask?.code?.toLowerCase().includes(search);
             const matchesStatus = filter.status === 'ALL' || task.status === filter.status;
             const matchesAssignee = filter.assigneeId === 'ALL' || task.assigneeId?.toString() === filter.assigneeId;
             return matchesSearch && matchesStatus && matchesAssignee;
@@ -383,7 +426,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                             <span>Yêu cầu thêm người</span>
                         </button>
                     )}
-                    {(isAdmin || isProjectLead) && isProjectInProgress && (
+                    {bulkAction !== 'start' && (isAdmin || isProjectLead) && isProjectInProgress && (
                         <button
                             type="button"
                             onClick={handleToggleUnassignMode}
@@ -543,6 +586,15 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                         projectId={project.id}
                                                         canEdit={isProjectInProgress && task.status !== 'ON_HOLD' && (isAdminOrBOD || isProjectLead)}
                                                     />
+                                                    {task.parentTaskId && task.parentTask && (
+                                                        <p
+                                                            className="mt-1 truncate text-xs text-gray-500"
+                                                            title={`${task.parentTask.code || '---'} - ${getTaskDisplayName(task.parentTask)}`}
+                                                        >
+                                                            Công việc cha: <span className="font-mono">{task.parentTask.code || '---'}</span>
+                                                            {' - '}{getTaskDisplayName(task.parentTask)}
+                                                        </p>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className={cn("text-xs uppercase", getRemainingTime(task.plannedEndDate, task.status).color)}>
@@ -561,7 +613,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                                                 <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                                                     <div className="flex flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
                                                         {task.status === 'NOT_STARTED' &&
-                                                            (!task.parentTaskId || task.subtaskPlanStatus === 'APPROVED') &&
+                                                            isSubtaskPlanStartable(task) &&
                                                             (isSameUser(currentUserId, task.assigneeId) ||
                                                                 isSameUser(currentUserId, task.assignee?.id) ||
                                                                 isSameUser(currentUserId, task.helperId) ||
@@ -745,7 +797,7 @@ export const TaskTable = ({ tasks = [], project }) => {
                         ) : (
                             <tr>
                                 <td colSpan={8} className="px-6 py-10 text-center text-gray-400 italic">
-                                    Không tìm thấy công việc nào
+                                    {emptyMessage}
                                 </td>
                             </tr>
                         )}
@@ -865,7 +917,16 @@ export const TaskTable = ({ tasks = [], project }) => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {selectionMode === 'unassign' ? (
+                        {bulkAction === 'start' ? (
+                            <button
+                                onClick={handleBulkStart}
+                                disabled={isBulkStarting}
+                                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                            >
+                                <Play className="w-3.5 h-3.5" />
+                                {isBulkStarting ? 'Đang bắt đầu...' : 'Bắt đầu công việc'}
+                            </button>
+                        ) : selectionMode === 'unassign' ? (
                             <button
                                 onClick={handleBulkUnassign}
                                 disabled={isUnassigning}
