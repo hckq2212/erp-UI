@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import {
   Upload, Search, Download, Trash2, FileText, Pencil, History, RefreshCcw,
-  FileSpreadsheet, FileImage, File as FileIcon
+  FileSpreadsheet, FileImage, File as FileIcon, Eye
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { TagFilterDropdown } from '../../components/ui/TagFilterDropdown';
+import { DocumentPreviewModal } from '../../components/common/DocumentPreviewModal';
 import { useGetMeQuery } from '../../api/auth';
 import {
   useGetDocumentsQuery,
@@ -75,6 +76,7 @@ export const DocumentLibraryPage = () => {
   const [editingDocument, setEditingDocument] = useState(null);
   const [versioningDocument, setVersioningDocument] = useState(null);
   const [historyDocument, setHistoryDocument] = useState(null);
+  const [previewTarget, setPreviewTarget] = useState(null);
 
   const { data: documents = [], isLoading } = useGetDocumentsQuery({
     search: searchTerm || undefined,
@@ -247,14 +249,26 @@ export const DocumentLibraryPage = () => {
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
+                        type="button"
+                        onClick={() => setPreviewTarget({ url: doc.fileUrl, fileName: doc.originalFileName || doc.displayName })}
+                        className="p-2 rounded-lg hover:bg-orange-50 text-gray-400 hover:text-[#ea580c] transition-colors"
+                        title="Xem trước"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => handleDownload(doc)}
                         className="p-2 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Tải về"
                       >
                         <Download className="w-4 h-4" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => setHistoryDocument(doc)}
                         className="p-2 rounded-lg hover:bg-purple-50 text-gray-400 hover:text-purple-600 transition-colors"
+                        title="Lịch sử phiên bản"
                       >
                         <History className="w-4 h-4" />
                       </button>
@@ -307,6 +321,12 @@ export const DocumentLibraryPage = () => {
         isOpen={!!historyDocument}
         onClose={() => setHistoryDocument(null)}
         document={historyDocument}
+      />
+      <DocumentPreviewModal
+        isOpen={Boolean(previewTarget)}
+        onClose={() => setPreviewTarget(null)}
+        fileUrl={previewTarget?.url}
+        fileName={previewTarget?.fileName}
       />
     </div>
   );

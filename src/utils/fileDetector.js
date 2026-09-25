@@ -172,7 +172,7 @@ export const getFileExtension = (url = '', fileName = '') => {
  * - url là route nội bộ của app (không có đuôi file nhận diện được)
  * - url không phải absolute http(s) URL
  */
-export const isValidFileUrl = (url) => {
+export const isValidFileUrl = (url, fileName = '') => {
   if (!url || typeof url !== 'string') return false;
 
   // Phải là absolute URL (http/https), không chấp nhận route tương đối kiểu /contracts/...
@@ -191,7 +191,7 @@ export const isValidFileUrl = (url) => {
   if (isPdfUrl(url)) return true;
 
   // Phải có đuôi file nằm trong danh sách hỗ trợ
-  const ext = extractExt(url);
+  const ext = extractExt(url) || extractExt(fileName);
   if (!ext || !SUPPORTED_EXTENSIONS.includes(ext)) return false;
 
   return true;

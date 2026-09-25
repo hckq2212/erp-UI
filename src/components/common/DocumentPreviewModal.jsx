@@ -116,7 +116,7 @@ export const DocumentPreviewModal = ({
     setImageRotation(0);
 
     // Chặn các link không phải file thật (route nội bộ, link rỗng, thiếu đuôi hợp lệ...)
-    if (!isValidFileUrl(url)) {
+    if (!isValidFileUrl(url, cleanFileName)) {
       setError('Đường dẫn tài liệu không hợp lệ hoặc không được hỗ trợ xem trước. Vui lòng kiểm tra lại liên kết tệp đính kèm.');
       return; // dừng luôn, không gọi render/fetch nào cả
     }
