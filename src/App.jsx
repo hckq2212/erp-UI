@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import { useGetMeQuery } from './api/auth';
@@ -8,74 +9,66 @@ import { SessionExpiredModal } from './components/auth/SessionExpiredModal';
 
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
 
-import { CustomersPage } from './pages/Customers/CustomersPage';
-import { CustomerDetailPage } from './pages/Customers/CustomerDetailPage';
-
-import { OpportunitiesPage } from './pages/Opportunities/OpportunitiesPage';
-import { OpportunityDetailPage } from './pages/Opportunities/OpportunityDetailPage/OpportunityDetailPage';
-
-import { ServicesPage } from './pages/Services/ServicesPage';
-import { ServiceDetailPage } from './pages/Services/ServiceDetailPage';
-
-import { JobsPage } from './pages/Jobs/JobsPage';
-import { JobDetailPage } from './pages/Jobs/JobDetailPage';
-
-import { ContractsPage } from './pages/Contracts/ContractsPage';
-import { ProjectsPage } from './pages/Projects/ProjectsPage';
-import { ProjectDetailPage } from './pages/Projects/ProjectDetailPage/ProjectDetailPage';
-
-import { TasksPage } from './pages/Tasks/TasksPage';
-import { TaskDetailPage } from './pages/Tasks/TaskDetailPage';
-import { TaskReviewPage } from './pages/Tasks/TaskReviewPage';
-
-import { FinancePage } from './pages/Finance/FinancePage';
-import { PaymentRequestsPage } from './pages/PaymentRequests/PaymentRequestsPage';
-import { PaymentOverviewPage } from './pages/Finance/PaymentOverviewPage';
-import { AcceptanceMinutesPage } from './pages/Finance/AcceptanceMinutesPage';
-import { VatInvoicesPage } from './pages/Finance/VatInvoicesPage';
-
-import { VendorsPage } from './pages/Vendors/VendorsPage';
-import { VendorDetailPage } from './pages/Vendors/VendorDetailPage';
-
-import { LoginPage } from './pages/Auth/LoginPage';
-
-import ContractDetailPage from './pages/Contracts/ContractDetailPage/ContractDetailPage';
-
-import { NotificationsPage } from './pages/Notifications/NotificationsPage';
-
-import { AnnouncementsPage } from './pages/Announcements/AnnouncementsPage';
-import { AnnouncementDetailPage } from './pages/Announcements/AnnouncementDetailPage';
-
-import { ReferralPartnersPage } from './pages/ReferralPartners/ReferralPartnersPage';
-import { PartnerDetailPage } from './pages/ReferralPartners/PartnerDetailPage';
-
-import { DocumentLibraryPage } from './pages/DocumentLibrary/DocumentLibraryPage';
-
-import { TeamsPage } from './pages/Teams/TeamsPage';
-import { TeamDetailPage } from './pages/Teams/TeamDetailPage';
-
-import { UserListPage } from './pages/Users/UserListPage';
-import { UserDetailPage } from './pages/Users/UserDetailPage';
-
-import { AcceptanceInboxPage } from './pages/Acceptance/AcceptanceInboxPage';
-
-import { ServicePackageListPage } from './pages/ServicePackages/ServicePackageListPage';
-import { ServicePackageDetailPage } from './pages/ServicePackages/ServicePackageDetailPage';
-
-import { MePage } from './pages/Me/MePage';
-
-import { CreateVideoAIPage } from './pages/CreateVideoAI/CreateVideoAIPage';
-import { CreateVideoMotionControlPage } from './pages/CreateVideoAI/CreateVideoMotionControlPage';
-
-import { LibraryVideoAiPage } from './pages/LibraryVideoAi/LibraryVideoAiPage';
-
-import { DashboardAIPage } from './pages/DashboardAI/DashboardAIPage';
-
-import { SettingsPage } from './pages/Settings/SettingsPage';
-
-import { ChatPage } from './pages/Chat/ChatPage';
 import { ChatBubbleWidget } from './components/chat/ChatBubbleWidget';
 
+const lazyNamed = (loader, exportName) => lazy(() =>
+  loader().then((module) => ({ default: module[exportName] }))
+);
+
+const CustomersPage = lazyNamed(() => import('./pages/Customers/CustomersPage'), 'CustomersPage');
+const CustomerDetailPage = lazyNamed(() => import('./pages/Customers/CustomerDetailPage'), 'CustomerDetailPage');
+const OpportunitiesPage = lazyNamed(() => import('./pages/Opportunities/OpportunitiesPage'), 'OpportunitiesPage');
+const OpportunityDetailPage = lazyNamed(() => import('./pages/Opportunities/OpportunityDetailPage/OpportunityDetailPage'), 'OpportunityDetailPage');
+const ServicesPage = lazyNamed(() => import('./pages/Services/ServicesPage'), 'ServicesPage');
+const ServiceDetailPage = lazyNamed(() => import('./pages/Services/ServiceDetailPage'), 'ServiceDetailPage');
+const JobsPage = lazyNamed(() => import('./pages/Jobs/JobsPage'), 'JobsPage');
+const JobDetailPage = lazyNamed(() => import('./pages/Jobs/JobDetailPage'), 'JobDetailPage');
+const ContractsPage = lazyNamed(() => import('./pages/Contracts/ContractsPage'), 'ContractsPage');
+const ContractDetailPage = lazyNamed(() => import('./pages/Contracts/ContractDetailPage/ContractDetailPage'), 'ContractDetailPage');
+const ProjectsPage = lazyNamed(() => import('./pages/Projects/ProjectsPage'), 'ProjectsPage');
+const ProjectDetailPage = lazyNamed(() => import('./pages/Projects/ProjectDetailPage/ProjectDetailPage'), 'ProjectDetailPage');
+const TasksPage = lazyNamed(() => import('./pages/Tasks/TasksPage'), 'TasksPage');
+const TaskDetailPage = lazyNamed(() => import('./pages/Tasks/TaskDetailPage'), 'TaskDetailPage');
+const TaskReviewPage = lazyNamed(() => import('./pages/Tasks/TaskReviewPage'), 'TaskReviewPage');
+const FinancePage = lazyNamed(() => import('./pages/Finance/FinancePage'), 'FinancePage');
+const PaymentRequestsPage = lazyNamed(() => import('./pages/PaymentRequests/PaymentRequestsPage'), 'PaymentRequestsPage');
+const PaymentOverviewPage = lazyNamed(() => import('./pages/Finance/PaymentOverviewPage'), 'PaymentOverviewPage');
+const AcceptanceMinutesPage = lazyNamed(() => import('./pages/Finance/AcceptanceMinutesPage'), 'AcceptanceMinutesPage');
+const VatInvoicesPage = lazyNamed(() => import('./pages/Finance/VatInvoicesPage'), 'VatInvoicesPage');
+const VendorsPage = lazyNamed(() => import('./pages/Vendors/VendorsPage'), 'VendorsPage');
+const VendorDetailPage = lazyNamed(() => import('./pages/Vendors/VendorDetailPage'), 'VendorDetailPage');
+const LoginPage = lazyNamed(() => import('./pages/Auth/LoginPage'), 'LoginPage');
+const NotificationsPage = lazyNamed(() => import('./pages/Notifications/NotificationsPage'), 'NotificationsPage');
+const AnnouncementsPage = lazyNamed(() => import('./pages/Announcements/AnnouncementsPage'), 'AnnouncementsPage');
+const AnnouncementDetailPage = lazyNamed(() => import('./pages/Announcements/AnnouncementDetailPage'), 'AnnouncementDetailPage');
+const ReferralPartnersPage = lazyNamed(() => import('./pages/ReferralPartners/ReferralPartnersPage'), 'ReferralPartnersPage');
+const PartnerDetailPage = lazyNamed(() => import('./pages/ReferralPartners/PartnerDetailPage'), 'PartnerDetailPage');
+const DocumentLibraryPage = lazyNamed(() => import('./pages/DocumentLibrary/DocumentLibraryPage'), 'DocumentLibraryPage');
+const TeamsPage = lazyNamed(() => import('./pages/Teams/TeamsPage'), 'TeamsPage');
+const TeamDetailPage = lazyNamed(() => import('./pages/Teams/TeamDetailPage'), 'TeamDetailPage');
+const UserListPage = lazyNamed(() => import('./pages/Users/UserListPage'), 'UserListPage');
+const UserDetailPage = lazyNamed(() => import('./pages/Users/UserDetailPage'), 'UserDetailPage');
+const AcceptanceInboxPage = lazyNamed(() => import('./pages/Acceptance/AcceptanceInboxPage'), 'AcceptanceInboxPage');
+const ServicePackageListPage = lazyNamed(() => import('./pages/ServicePackages/ServicePackageListPage'), 'ServicePackageListPage');
+const ServicePackageDetailPage = lazyNamed(() => import('./pages/ServicePackages/ServicePackageDetailPage'), 'ServicePackageDetailPage');
+const MePage = lazyNamed(() => import('./pages/Me/MePage'), 'MePage');
+const CreateVideoAIPage = lazyNamed(() => import('./pages/CreateVideoAI/CreateVideoAIPage'), 'CreateVideoAIPage');
+const CreateVideoMotionControlPage = lazyNamed(() => import('./pages/CreateVideoAI/CreateVideoMotionControlPage'), 'CreateVideoMotionControlPage');
+const LibraryVideoAiPage = lazyNamed(() => import('./pages/LibraryVideoAi/LibraryVideoAiPage'), 'LibraryVideoAiPage');
+const DashboardAIPage = lazyNamed(() => import('./pages/DashboardAI/DashboardAIPage'), 'DashboardAIPage');
+const SettingsPage = lazyNamed(() => import('./pages/Settings/SettingsPage'), 'SettingsPage');
+const ChatPage = lazyNamed(() => import('./pages/Chat/ChatPage'), 'ChatPage');
+
+const RouteLoadingFallback = () => (
+  <div className="flex min-h-[50vh] items-center justify-center bg-gray-50">
+    <div className="flex flex-col items-center gap-4">
+      <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-indigo-600" />
+      <p className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">
+        Đang tải trang...
+      </p>
+    </div>
+  </div>
+);
 
 function AppContent() {
   // Use the query to check if the user is logged in via cookies on startup
@@ -97,6 +90,7 @@ function AppContent() {
 
   return (
     <>
+      <Suspense fallback={<RouteLoadingFallback />}>
       <Routes>
 
         {/* =========================
@@ -712,6 +706,7 @@ function AppContent() {
         />
 
       </Routes>
+      </Suspense>
 
       <SessionExpiredModal />
       <ChatBubbleWidget />
