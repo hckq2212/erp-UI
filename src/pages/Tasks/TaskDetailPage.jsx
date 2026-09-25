@@ -831,6 +831,18 @@ export const TaskDetailPage = () => {
                                                     Người làm: {task.lastSubmittedBy.fullName}
                                                 </p>
                                             )}
+
+                                            {task.result.sheetNames?.length > 0 && (
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Sheet đã nộp: {task.result.sheetNames.join(', ')}
+                                                </p>
+                                            )}
+
+                                            {task.result.scenarioLabels?.length > 0 && (
+                                                <p className="text-xs text-gray-500 mt-0.5">
+                                                    Kịch bản đã nộp: {task.result.scenarioLabels.join(', ')}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
 

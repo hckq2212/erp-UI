@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     AlertTriangle,
     Briefcase,
@@ -206,45 +206,15 @@ const toEditableProduct = (item) => ({
 
 const ProductSpecsView = ({ item }) => {
     const documents = Array.isArray(item?.documents) ? item.documents : [];
-    const [isTextExpanded, setIsTextExpanded] = useState(false);
-    const [isTextOverflowing, setIsTextOverflowing] = useState(false);
-    const textRef = useRef(null);
-
-    useLayoutEffect(() => {
-        const el = textRef.current;
-        if (!el) {
-            setIsTextOverflowing(false);
-            return;
-        }
-        setIsTextOverflowing(el.scrollHeight > el.clientHeight + 1);
-    }, [item?.extractedText]);
 
     return (
         <div className="min-w-0 space-y-2">
             {item?.extractedText && (
                 <div className="rounded-lg border border-slate-300 bg-slate-50">
                     <div
-                        ref={textRef}
-                        className={`rich-content px-3 py-2 text-sm font-medium text-slate-900 ${isTextExpanded ? 'max-h-96 overflow-y-auto' : 'line-clamp-6'}`}
+                        className="rich-content px-3 py-2 text-sm font-medium text-slate-900 max-h-96 overflow-y-auto"
                         dangerouslySetInnerHTML={{ __html: item.extractedText }}
                     />
-                    {isTextOverflowing && (
-                        <button
-                            type="button"
-                            onClick={() => setIsTextExpanded((prev) => !prev)}
-                            className="flex w-full items-center justify-center gap-1 border-t border-slate-200 py-1 text-[11px] font-bold text-blue-600 hover:bg-slate-100"
-                        >
-                            {isTextExpanded ? (
-                                <>
-                                    Thu gọn <ChevronUp className="w-3 h-3" />
-                                </>
-                            ) : (
-                                <>
-                                    Xem đầy đủ <ChevronDown className="w-3 h-3" />
-                                </>
-                            )}
-                        </button>
-                    )}
                 </div>
             )}
             {item?.note && (

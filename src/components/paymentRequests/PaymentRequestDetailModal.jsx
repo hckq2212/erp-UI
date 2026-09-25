@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import {
     Upload, Image as ImageIcon, File as FileIcon, Loader2, Trash2, History, AlertCircle,
-    Wallet, Store, Check, Paperclip, ExternalLink, Ban, Landmark, Banknote, Info,
+    Wallet, Store, Check, Paperclip, ExternalLink, Ban, Landmark, Info,
 } from 'lucide-react';
 import {
     useReviewPaymentRequestMutation,
@@ -369,15 +369,59 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
     const [note, setNote] = useState('');
     const [bodReason, setBodReason] = useState('');
     const [confirmedDueDate, setConfirmedDueDate] = useState(request.confirmedDueDate || request.dueDate || '');
-    const [paymentMethod, setPaymentMethod] = useState('BANK_TRANSFER');
-    const [paymentRef, setPaymentRef] = useState('');
+    const [paymentProofFiles, setPaymentProofFiles] = useState([]);
     const [cancelReason, setCancelReason] = useState('');
     const [error, setError] = useState('');
+    const paymentProofInputRef = useRef(null);
 
     const [review, { isLoading: isReviewing }] = useReviewPaymentRequestMutation();
     const [bodDecide, { isLoading: isDeciding }] = useBodDecidePaymentRequestMutation();
     const [pay, { isLoading: isPaying }] = usePayPaymentRequestMutation();
     const [cancelRequest, { isLoading: isCancelling }] = useCancelPaymentRequestMutation();
+    const [uploadPaymentProofFile] = useUploadPaymentRequestInvoiceFileMutation();
+
+    const isUploadingPaymentProofs = paymentProofFiles.some((f) => f.uploading);
+
+    const handlePaymentProofFilesSelected = async (fileList) => {
+        const files = Array.from(fileList || []);
+        for (const file of files) {
+            const isAccepted = ACCEPTED_TYPES.some((t) => file.type.startsWith(t));
+            if (!isAccepted) {
+                setError(`File "${file.name}" không phải ảnh hoặc PDF`);
+                continue;
+            }
+            if (file.size > MAX_FILE_MB * 1024 * 1024) {
+                setError(`File "${file.name}" vượt quá ${MAX_FILE_MB}MB`);
+                continue;
+            }
+            const tempId = `${file.name}-${Date.now()}`;
+            setPaymentProofFiles((prev) => [...prev, { name: file.name, size: file.size, uploading: true, tempId }]);
+            try {
+                const uploaded = await uploadPaymentProofFile(file).unwrap();
+                setPaymentProofFiles((prev) => prev.map((f) => (f.tempId === tempId ? { ...uploaded, uploading: false } : f)));
+            } catch (err) {
+                setPaymentProofFiles((prev) => prev.filter((f) => f.tempId !== tempId));
+                setError(err?.data?.message || `Tải file "${file.name}" thất bại`);
+            }
+        }
+    };
+
+    const handleRemovePaymentProofFile = (target) => {
+        setPaymentProofFiles((prev) => prev.filter((f) => (f.publicId || f.url) !== (target.publicId || target.url)));
+    };
+
+    const handlePay = () => {
+        if (isUploadingPaymentProofs) {
+            setError('Vui lòng đợi file minh chứng tải lên xong');
+            return;
+        }
+        const readyProofs = paymentProofFiles.filter((f) => !f.uploading);
+        if (readyProofs.length === 0) {
+            setError('Vui lòng tải lên ảnh/PDF minh chứng đã chi tiền');
+            return;
+        }
+        run(() => pay({ id: request.id, paymentProofs: readyProofs }).unwrap());
+    };
 
     // Sau khi thao tác thành công thì đóng modal (đồng nhất với Gửi duyệt / Bổ sung),
     // để người dùng không bị "kẹt" trong modal và danh sách phía sau được làm mới.
@@ -389,6 +433,14 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
         } catch (err) {
             setError(err?.data?.message || 'Có lỗi xảy ra');
         }
+    };
+
+    const handleReview = (action) => {
+        if ((action === 'REJECT' || action === 'REQUEST_MORE_DOCS') && !note.trim()) {
+            setError('Vui lòng nhập lý do');
+            return;
+        }
+        run(() => review({ id: request.id, action, note: note.trim() || undefined }).unwrap());
     };
 
     const isVendor = isVendorRequest(request);
@@ -538,19 +590,16 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
 
                 {/* Thông tin đã chi */}
                 {isPaid && (
-                    <Section title='Thông tin thanh toán' icon={request.paymentMethod === 'CASH' ? Banknote : Landmark}>
+                    <Section title='Thông tin thanh toán' icon={Landmark}>
                         <dl className='grid grid-cols-2 gap-x-4 gap-y-3'>
-                            <InfoItem label='Hình thức'>{request.paymentMethod === 'CASH' ? 'Tiền mặt (phiếu chi)' : 'Chuyển khoản (ủy nhiệm chi)'}</InfoItem>
                             {request.paidAt && <InfoItem label='Ngày chi'>{fmtDate(request.paidAt)}</InfoItem>}
-                            {request.cashVoucherNumber && <InfoItem label='Số phiếu chi'>{request.cashVoucherNumber}</InfoItem>}
-                            {request.bankPaymentOrderUrl && (
-                                <InfoItem label='Ủy nhiệm chi'>
-                                    <a href={request.bankPaymentOrderUrl} target='_blank' rel='noreferrer' className='inline-flex items-center gap-1 text-orange-600 hover:underline'>
-                                        Mở liên kết <ExternalLink size={12} />
-                                    </a>
-                                </InfoItem>
-                            )}
                         </dl>
+                        {(request.paymentProofs || []).length > 0 && (
+                            <div className='mt-3 space-y-2'>
+                                <p className='text-xs font-medium text-stone-500'>Minh chứng đã chi</p>
+                                <FileLinks files={request.paymentProofs || []} icon={ImageIcon} tone='bg-orange-100 text-orange-600' />
+                            </div>
+                        )}
                     </Section>
                 )}
 
@@ -569,14 +618,14 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                             <textarea
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
-                                placeholder='Ghi chú (nếu có)'
+                                placeholder='Ghi chú (bắt buộc nếu từ chối/yêu cầu bổ sung)'
                                 rows={2}
                                 className={inputCls}
                             />
                             <div className='flex flex-wrap gap-2'>
                                 <button
                                     disabled={isReviewing}
-                                    onClick={() => run(() => review({ id: request.id, action: 'APPROVE', note }).unwrap())}
+                                    onClick={() => handleReview('APPROVE')}
                                     className={btnPrimary}
                                 >
                                     {isReviewing && <Loader2 size={15} className='animate-spin' />}
@@ -584,14 +633,14 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                                 </button>
                                 <button
                                     disabled={isReviewing}
-                                    onClick={() => run(() => review({ id: request.id, action: 'REQUEST_MORE_DOCS', note }).unwrap())}
+                                    onClick={() => handleReview('REQUEST_MORE_DOCS')}
                                     className={btnWarnOutline}
                                 >
                                     Yêu cầu bổ sung
                                 </button>
                                 <button
                                     disabled={isReviewing}
-                                    onClick={() => run(() => review({ id: request.id, action: 'REJECT', note }).unwrap())}
+                                    onClick={() => handleReview('REJECT')}
                                     className={btnDangerOutline}
                                 >
                                     Từ chối
@@ -639,45 +688,47 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                 {request.approvalStatus === 'APPROVED' && !isPaid && canPay(currentUserRole) && (
                     <Section title='Chi tiền' icon={Landmark} tone='action'>
                         <div className='space-y-3'>
-                            <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
-                                {[
-                                    ['BANK_TRANSFER', 'Chuyển khoản (ủy nhiệm chi)'],
-                                    ['CASH', 'Tiền mặt (phiếu chi)'],
-                                ].map(([value, label]) => (
-                                    <label
-                                        key={value}
-                                        className={cn(
-                                            'flex cursor-pointer items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm transition',
-                                            paymentMethod === value ? 'border-orange-400 ring-2 ring-orange-100' : 'border-stone-200 hover:border-orange-200'
-                                        )}
-                                    >
-                                        <input
-                                            type='radio'
-                                            checked={paymentMethod === value}
-                                            onChange={() => setPaymentMethod(value)}
-                                            className='accent-orange-500'
-                                        />
-                                        {label}
-                                    </label>
-                                ))}
+                            <div>
+                                <label className={labelCls}>Minh chứng đã chi (ảnh/PDF, bắt buộc)</label>
+                                <div
+                                    onClick={() => paymentProofInputRef.current?.click()}
+                                    className='flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-orange-200 bg-white px-4 py-4 text-center hover:border-orange-400 hover:bg-orange-50'
+                                >
+                                    <Upload size={18} className='text-orange-400' />
+                                    <p className='text-xs text-stone-500'><span className='font-semibold text-orange-600'>Chọn file</span> minh chứng thanh toán</p>
+                                    <input
+                                        ref={paymentProofInputRef}
+                                        type='file'
+                                        accept='image/*,application/pdf'
+                                        multiple
+                                        onChange={(e) => { handlePaymentProofFilesSelected(e.target.files); e.target.value = ''; }}
+                                        className='hidden'
+                                    />
+                                </div>
+                                {paymentProofFiles.length > 0 && (
+                                    <div className='mt-2 space-y-2'>
+                                        {paymentProofFiles.map((f) => (
+                                            <div key={f.publicId || f.url || f.tempId} className='flex items-center gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2'>
+                                                <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-md', f.fileType === 'PDF' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600')}>
+                                                    {f.fileType === 'PDF' ? <FileIcon size={14} /> : <ImageIcon size={14} />}
+                                                </div>
+                                                <p className='min-w-0 flex-1 truncate text-xs font-medium text-stone-700'>{f.name}</p>
+                                                {f.uploading ? <Loader2 size={14} className='animate-spin text-stone-400' /> : (
+                                                    <button type='button' onClick={() => handleRemovePaymentProofFile(f)} className='text-stone-400 hover:text-red-600'>
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <input
-                                value={paymentRef}
-                                onChange={(e) => setPaymentRef(e.target.value)}
-                                placeholder={paymentMethod === 'BANK_TRANSFER' ? 'Link ủy nhiệm chi' : 'Số phiếu chi'}
-                                className={inputCls}
-                            />
                             <button
-                                disabled={isPaying}
-                                onClick={() => run(() => pay({
-                                    id: request.id,
-                                    paymentMethod,
-                                    bankPaymentOrderUrl: paymentMethod === 'BANK_TRANSFER' ? paymentRef : undefined,
-                                    cashVoucherNumber: paymentMethod === 'CASH' ? paymentRef : undefined,
-                                }).unwrap())}
+                                disabled={isPaying || isUploadingPaymentProofs}
+                                onClick={handlePay}
                                 className={btnPrimary}
                             >
-                                {isPaying && <Loader2 size={15} className='animate-spin' />}
+                                {(isPaying || isUploadingPaymentProofs) && <Loader2 size={15} className='animate-spin' />}
                                 Xác nhận đã chi
                             </button>
                         </div>
