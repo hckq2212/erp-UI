@@ -10,6 +10,8 @@ import { formatNumber, parseNumber } from '../../utils/format';
 
 const toDateOnly = (value) => (typeof value === 'string' ? value.split('T')[0] : '');
 
+const generateTempId = () => `temp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
 export const MilestoneModal = ({
     isOpen,
     onClose,
@@ -28,22 +30,33 @@ export const MilestoneModal = ({
     const [localMilestones, setLocalMilestones] = useState([]);
     const focusRowRef = useRef(null);
     const focusInputRef = useRef(null);
+    const hasInitialFocusedRef = useRef(false);
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {
+            hasInitialFocusedRef.current = false;
+            return;
+        }
         const source = Array.isArray(providedMilestones) ? providedMilestones : fetchedMilestones;
-        setLocalMilestones((source || []).map((m) => ({ ...m })));
+        setLocalMilestones((source || []).map((m, index) => ({
+            ...m,
+            _tempId: m._tempId || m.id || `init_${index}_${Date.now()}`
+        })));
     }, [isOpen, providedMilestones, fetchedMilestones]);
 
     useEffect(() => {
         if (!isOpen) return;
-        if (!initialFocusMilestoneId) return;
+        if (!initialFocusMilestoneId || hasInitialFocusedRef.current) return;
+        const hasMatchingRow = localMilestones.some((m) => String(m?.id) === String(initialFocusMilestoneId));
+        if (!hasMatchingRow) return;
+
         const timer = setTimeout(() => {
             if (focusRowRef.current) focusRowRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' });
             if (focusInputRef.current) focusInputRef.current.focus();
-        }, 0);
+            hasInitialFocusedRef.current = true;
+        }, 50);
         return () => clearTimeout(timer);
-    }, [isOpen, initialFocusMilestoneId, localMilestones.length]);
+    }, [isOpen, initialFocusMilestoneId, localMilestones]);
 
     const calculateAmount = (percentage) => {
         const price = Number(sellingPrice || 0);
@@ -72,6 +85,7 @@ export const MilestoneModal = ({
         setLocalMilestones((prev) => [
             ...prev,
             {
+                _tempId: generateTempId(),
                 name: `Đợt ${prev.length + 1}`,
                 percentage: nextPercent,
                 amount: nextAmount,
@@ -139,7 +153,8 @@ export const MilestoneModal = ({
         }
 
         try {
-            await bulkSave({ contractId, milestones: localMilestones }).unwrap();
+            const cleanMilestones = localMilestones.map(({ _tempId, ...rest }) => rest);
+            await bulkSave({ contractId, milestones: cleanMilestones }).unwrap();
             toast.success('Cập nhật kế hoạch thanh toán thành công');
             onClose();
         } catch (err) {
@@ -148,7 +163,7 @@ export const MilestoneModal = ({
     };
 
     const isValidTotals = Number(currentTotalPercent) === 100 && Number(currentTotalAmount) === Number(sellingPrice || 0);
-
+    
     return (
         <Modal
             isOpen={isOpen}
@@ -198,7 +213,7 @@ export const MilestoneModal = ({
                                 const rowLocked = isRowUnmodifiable(m);
                                 return (
                                     <div
-                                        key={m.id || `${idx}-${m.name}`}
+                                        key={m.id || m._tempId || idx}
                                         ref={isFocus ? focusRowRef : null}
                                         className={cn(
                                             "p-4 rounded-2xl border bg-white flex flex-col gap-3",
