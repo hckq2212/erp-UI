@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ProjectTable } from '../../components/projects/ProjectTable';
 import { TableFilters } from '../../components/ui/TableFilters';
 import { PROJECT_STATUS_LABELS } from '../../utils/enums';
@@ -48,10 +48,10 @@ export const ProjectsPage = () => {
         });
     };
 
-    const statusOptions = Object.entries(PROJECT_STATUS_LABELS).map(([value, label]) => ({
+    const statusOptions = useMemo(() => Object.entries(PROJECT_STATUS_LABELS).map(([value, label]) => ({
         value,
         label
-    }));
+    })), []);
 
     if (isLoading) return (
         <div className="flex flex-col items-center justify-center py-20 gap-4">

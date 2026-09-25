@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import Select from 'react-select';
 import { Search, RotateCcw, Filter, User, Calendar, X, AlertCircle, Clock, CalendarDays, ChevronDown } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
