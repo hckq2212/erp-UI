@@ -1,5 +1,6 @@
 import { api } from '../store/api';
 
+
 export const acceptancesApi = api.injectEndpoints({
     endpoints: (builder) => ({
         getAcceptanceRequests: builder.query({
