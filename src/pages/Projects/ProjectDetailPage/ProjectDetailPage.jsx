@@ -563,13 +563,7 @@ export const ProjectDetailPage = () => {
 
       {activeTab === 'MY_TASKS' && (
         <div className="space-y-8">
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <TaskStatistics tasks={myTasks} />
-            <ServiceExecutionSummary
-              services={project.contract?.services || []}
-              title="Thống kê dịch vụ toàn dự án"
-            />
-          </div>
+          <TaskStatistics tasks={myTasks} personalView />
           <TaskTable
             tasks={myTasks}
             project={project}
