@@ -26,6 +26,13 @@ export const ContractsPage = () => {
     // const canCreate = currentUser?.role === 'ADMIN' || currentUser?.role === 'BOD';
 
     const handleFilterChange = (key, value) => {
+        if (key === 'status') {
+            const formattedValue = Array.isArray(value)
+                ? (value.length > 0 ? value.join(',') : 'ALL')
+                : (value || 'ALL');
+            setFilters(prev => ({ ...prev, status: formattedValue, page: 1 }));
+            return;
+        }
         setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
     };
 
@@ -48,12 +55,15 @@ export const ContractsPage = () => {
         });
     };
 
-    const statusOptions = [
-        { value: 'Pending', label: 'Chờ xử lý' },
-        { value: 'Active', label: 'Đang hiệu lực' },
-        { value: 'Expired', label: 'Hết hạn' },
-        { value: 'Terminated', label: 'Đã thanh lý' },
-    ];
+    const statusOptions = useMemo(() => [
+        { value: 'DRAFT', label: 'Mới' },
+        { value: 'PROPOSAL_UPLOADED', label: 'Đã tải lên hợp đồng' },
+        { value: 'PROPOSAL_APPROVED', label: 'Đã duyệt hợp đồng' },
+        { value: 'PROPOSAL_REJECTED', label: 'Bị từ chối hợp đồng' },
+        { value: 'SIGNED', label: 'Đã ký' },
+        { value: 'COMPLETED', label: 'Hoàn thành' },
+        { value: 'CANCELLED', label: 'Đã hủy' },
+    ], []);
 
     if (isLoadingContracts) return (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -82,10 +92,13 @@ export const ContractsPage = () => {
             <TableFilters
                 searchTerm={filters.search}
                 onSearchChange={(val) => handleFilterChange('search', val)}
-                filterValue={filters.status}
+                filterValue={filters.status === 'ALL' ? [] : filters.status.split(',')}
                 onFilterChange={(val) => handleFilterChange('status', val)}
                 filterOptions={statusOptions}
+                filterPlaceholder="Tất cả trạng thái"
                 searchPlaceholder="Tìm mã hợp đồng, tên khách hàng..."
+                isMulti={true}
+                isSearchable={true}
                 onReset={handleReset}
             />
 

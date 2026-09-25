@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { CustomerFilters } from '../../components/customers/CustomerFilters';
@@ -67,18 +67,44 @@ export const CustomersPage = () => {
   };
 
   const handleFilterSource = (source) => {
-    setFilters(prev => ({ ...prev, source }));
+    const formatted = Array.isArray(source)
+      ? (source.length > 0 ? source.join(',') : '')
+      : (source || '');
+    setFilters(prev => ({ ...prev, source: formatted }));
   };
 
   const handleReset = () => {
     setFilters({ search: '', source: '' });
   };
 
+  const filteredCustomers = useMemo(() => {
+    if (!customers || customers.length === 0) return [];
+    return customers.filter(customer => {
+      const term = (filters.search || '').trim().toLowerCase();
+      const matchesSearch = !term ||
+        customer.name?.toLowerCase().includes(term) ||
+        customer.phone?.toLowerCase().includes(term) ||
+        customer.email?.toLowerCase().includes(term) ||
+        customer.taxId?.toLowerCase().includes(term) ||
+        customer.address?.toLowerCase().includes(term) ||
+        customer.referralPartner?.name?.toLowerCase().includes(term);
+
+      const sources = filters.source
+        ? (typeof filters.source === 'string' ? filters.source.split(',').filter(Boolean) : filters.source)
+        : [];
+      const matchesSource = sources.length === 0 || sources.includes(customer.source);
+
+      return matchesSearch && matchesSource;
+    });
+  }, [customers, filters.search, filters.source]);
+
   return (
     <div className="animate-in fade-in duration-500 space-y-6 mt-6">
 
       <CustomerFilters
+        searchTerm={filters.search}
         onSearch={handleSearch}
+        sourceValue={filters.source}
         onFilterSource={handleFilterSource}
         onReset={handleReset}
       />
@@ -91,7 +117,7 @@ export const CustomersPage = () => {
           </div>
         ) : (
           <CustomerTable
-            customers={customers}
+            customers={filteredCustomers}
           />
         )}
       </div>

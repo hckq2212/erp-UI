@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, Fragment } from 'react';
-import { Calendar, Users, FileText, Search, UserPlus, UserMinus, Plus, AlertCircle, ChevronRight, ChevronDown, Play } from 'lucide-react';
+import Select from 'react-select';
+import { Calendar, Users, FileText, Search, UserPlus, UserMinus, Plus, AlertCircle, ChevronRight, ChevronDown, Play, X } from 'lucide-react';
 import { TaskAssignModal } from './TaskAssignModal';
 import { AddProjectServiceModal } from './AddProjectServiceModal';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +20,126 @@ import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
 import { hasTeamMemberRole } from '../../../utils/teamMember';
 import { getTaskDisplayName } from '../../../utils/taskName';
+
+const filterSelectStyles = {
+    control: (base, state) => ({
+        ...base,
+        minHeight: '38px',
+        borderRadius: '0.5rem',
+        borderColor: state.isFocused ? '#3B82F6' : '#E5E7EB',
+        backgroundColor: state.isFocused ? '#FFFFFF' : '#F9FAFB',
+        boxShadow: state.isFocused ? '0 0 0 1px #3B82F6' : 'none',
+        cursor: 'pointer',
+        fontSize: '0.875rem',
+        transition: 'all 0.15s ease',
+        '&:hover': {
+            borderColor: state.isFocused ? '#3B82F6' : '#D1D5DB',
+            backgroundColor: state.isFocused ? '#FFFFFF' : '#F3F4F6'
+        }
+    }),
+    valueContainer: (base) => ({
+        ...base,
+        minHeight: '36px',
+        padding: '2px 6px',
+        gap: '2px',
+        display: 'flex',
+        alignItems: 'center',
+        flexWrap: 'wrap'
+    }),
+    input: (base) => ({
+        ...base,
+        margin: 0,
+        padding: 0,
+        color: '#1F2937'
+    }),
+    indicatorSeparator: () => ({ display: 'none' }),
+    indicatorsContainer: (base) => ({
+        ...base,
+        height: '36px',
+        display: 'flex',
+        alignItems: 'center'
+    }),
+    dropdownIndicator: (base) => ({
+        ...base,
+        color: '#9CA3AF',
+        padding: '0 6px'
+    }),
+    clearIndicator: (base) => ({
+        ...base,
+        color: '#9CA3AF',
+        padding: '0 4px',
+        cursor: 'pointer',
+        '&:hover': {
+            color: '#EF4444'
+        }
+    }),
+    multiValue: (base) => ({
+        ...base,
+        backgroundColor: '#EFF6FF',
+        borderRadius: '0.375rem',
+        border: '1px solid #BFDBFE',
+        margin: '1px'
+    }),
+    multiValueLabel: (base) => ({
+        ...base,
+        color: '#1D4ED8',
+        fontSize: '0.75rem',
+        fontWeight: 600,
+        padding: '1px 5px'
+    }),
+    multiValueRemove: (base) => ({
+        ...base,
+        color: '#3B82F6',
+        cursor: 'pointer',
+        padding: '0 3px',
+        borderRadius: '0 0.375rem 0.375rem 0',
+        '&:hover': {
+            backgroundColor: '#DBEAFE',
+            color: '#DC2626'
+        }
+    }),
+    singleValue: (base) => ({
+        ...base,
+        color: '#4B5563',
+        fontSize: '0.875rem',
+        fontWeight: 500
+    }),
+    placeholder: (base) => ({
+        ...base,
+        color: '#6B7280',
+        fontSize: '0.875rem',
+        fontWeight: 500,
+        whiteSpace: 'nowrap'
+    }),
+    menuPortal: (base) => ({
+        ...base,
+        zIndex: 9999
+    }),
+    menu: (base) => ({
+        ...base,
+        zIndex: 9999,
+        borderRadius: '0.75rem',
+        overflow: 'hidden',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        border: '1px solid #E5E7EB'
+    }),
+    menuList: (base) => ({
+        ...base,
+        maxHeight: '240px',
+        padding: '4px'
+    }),
+    option: (base, state) => ({
+        ...base,
+        fontSize: '0.875rem',
+        borderRadius: '0.375rem',
+        padding: '7px 10px',
+        margin: '1px 0',
+        cursor: 'pointer',
+        backgroundColor: state.isSelected ? '#EFF6FF' : state.isFocused ? '#F3F4F6' : 'transparent',
+        color: state.isSelected ? '#2563EB' : '#374151',
+        fontWeight: state.isSelected ? 600 : 400
+    })
+};
 
 export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMessage = 'Không tìm thấy công việc nào' }) => {
     const navigate = useNavigate();
@@ -72,9 +193,9 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     };
 
     const [filter, setFilter] = useState({
-        status: 'ALL',
+        statuses: [],
         search: '',
-        assigneeId: 'ALL'
+        assigneeIds: []
     });
     const [assigningTask, setAssigningTask] = useState(null);
     const [staffingTask, setStaffingTask] = useState(null);
@@ -316,6 +437,41 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     };
 
 
+    const statusOptions = useMemo(() => [
+        ...Object.entries(TASK_STATUS_LABELS).map(([value, label]) => ({
+            value,
+            label
+        }))
+    ], []);
+
+    const assigneeOptions = useMemo(() => {
+        const map = new Map();
+        members.forEach(member => {
+            if (member.user?.id) {
+                map.set(member.user.id.toString(), member.user.fullName || member.user.name || 'Chưa có tên');
+            }
+        });
+        tasks.forEach(task => {
+            const u = task.assignee;
+            if (u?.id && !map.has(u.id.toString())) {
+                map.set(u.id.toString(), u.fullName || u.name || 'Chưa có tên');
+            }
+        });
+        return Array.from(map.entries())
+            .map(([value, label]) => ({ value, label }))
+            .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+    }, [members, tasks]);
+
+    const selectedStatuses = useMemo(() => {
+        if (!filter.statuses || filter.statuses.length === 0) return [];
+        return statusOptions.filter(opt => filter.statuses.includes(opt.value));
+    }, [statusOptions, filter.statuses]);
+
+    const selectedAssignees = useMemo(() => {
+        if (!filter.assigneeIds || filter.assigneeIds.length === 0) return [];
+        return assigneeOptions.filter(opt => filter.assigneeIds.includes(opt.value));
+    }, [assigneeOptions, filter.assigneeIds]);
+
     const filteredTasks = useMemo(() => {
         const filtered = tasks.filter(task => {
             const search = filter.search.toLowerCase();
@@ -325,8 +481,11 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                 task.parentTask?.name?.toLowerCase().includes(search) ||
                 task.parentTask?.nickname?.toLowerCase().includes(search) ||
                 task.parentTask?.code?.toLowerCase().includes(search);
-            const matchesStatus = filter.status === 'ALL' || task.status === filter.status;
-            const matchesAssignee = filter.assigneeId === 'ALL' || task.assigneeId?.toString() === filter.assigneeId;
+            const matchesStatus = (!filter.statuses || filter.statuses.length === 0) ||
+                filter.statuses.includes(task.status);
+            const matchesAssignee = (!filter.assigneeIds || filter.assigneeIds.length === 0) ||
+                (task.assigneeId && filter.assigneeIds.includes(task.assigneeId.toString())) ||
+                (task.assignee?.id && filter.assigneeIds.includes(task.assignee?.id.toString()));
             return matchesSearch && matchesStatus && matchesAssignee;
         });
 
@@ -388,33 +547,53 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                     <input
                         type="text"
                         placeholder="Tìm tên công việc"
-                        className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                        className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all h-[38px]"
                         value={filter.search}
                         onChange={(e) => setFilter({ ...filter, search: e.target.value })}
                     />
+                    {filter.search && (
+                        <button
+                            type="button"
+                            onClick={() => setFilter({ ...filter, search: '' })}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-200 transition-colors"
+                            title="Xóa tìm kiếm"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                        </button>
+                    )}
                 </div>
-                <select
-                    className="px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 outline-none hover:bg-gray-100 shrink-0"
-                    value={filter.status}
-                    onChange={(e) => setFilter({ ...filter, status: e.target.value })}
-                >
-                    <option value="ALL">Tất cả trạng thái</option>
-                    {Object.entries(TASK_STATUS_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>{label}</option>
-                    ))}
-                </select>
-                <select
-                    className="px-2.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600 outline-none hover:bg-gray-100 shrink-0 max-w-[160px] truncate"
-                    value={filter.assigneeId}
-                    onChange={(e) => setFilter({ ...filter, assigneeId: e.target.value })}
-                >
-                    <option value="ALL">Tất cả nhân sự</option>
-                    {members.map((member) => (
-                        <option key={member.user.id} value={member.user.id}>
-                            {member.user.fullName}
-                        </option>
-                    ))}
-                </select>
+                <div className="min-w-[180px] max-w-[280px] shrink-0">
+                    <Select
+                        aria-label="Lọc theo trạng thái"
+                        options={statusOptions}
+                        value={selectedStatuses}
+                        onChange={(opts) => setFilter(prev => ({ ...prev, statuses: opts ? opts.map(o => o.value) : [] }))}
+                        isMulti
+                        isSearchable
+                        isClearable
+                        closeMenuOnSelect={false}
+                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                        noOptionsMessage={() => 'Không tìm thấy trạng thái'}
+                        placeholder="Tất cả trạng thái"
+                        styles={filterSelectStyles}
+                    />
+                </div>
+                <div className="min-w-[190px] max-w-[300px] shrink-0">
+                    <Select
+                        aria-label="Lọc theo nhân sự"
+                        options={assigneeOptions}
+                        value={selectedAssignees}
+                        onChange={(opts) => setFilter(prev => ({ ...prev, assigneeIds: opts ? opts.map(o => o.value) : [] }))}
+                        isMulti
+                        isSearchable
+                        isClearable
+                        closeMenuOnSelect={false}
+                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                        noOptionsMessage={() => 'Không tìm thấy nhân sự'}
+                        placeholder="Tất cả nhân sự"
+                        styles={filterSelectStyles}
+                    />
+                </div>
                 <div className="flex items-center gap-2 shrink-0 whitespace-nowrap ml-auto">
                     {isProjectLead && isProjectInProgress && (
                         <button

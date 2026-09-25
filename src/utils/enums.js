@@ -62,7 +62,6 @@ export const ACCEPTANCE_STATUS_COLORS = {
 // Project Status
 export const PROJECT_STATUS_LABELS = {
   PENDING_CONFIRMATION: 'Chờ xác nhận',
-  PLANNING: 'Lập kế hoạch',
   CONFIRMED: 'Đã xác nhận',
   IN_PROGRESS: 'Đang thực hiện',
   PENDING_PAUSE_APPROVAL: 'Chờ duyệt tạm dừng',
@@ -149,7 +148,6 @@ export const TASK_STATUS_LABELS = {
   [TASK_STATUS.PENDING]: 'Chờ phân công',
   [TASK_STATUS.NOT_STARTED]: 'Chưa thực hiện',
   [TASK_STATUS.DOING]: 'Đang thực hiện',
-  [TASK_STATUS.DONE]: 'Hoàn thành',
   [TASK_STATUS.CANCELLED]: 'Đã hủy',
   [TASK_STATUS.AWAITING_PRICING]: 'Chờ định giá',
   [TASK_STATUS.REJECTED]: 'Yêu cầu làm lại',
