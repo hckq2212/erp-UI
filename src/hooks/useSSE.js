@@ -95,7 +95,11 @@ export const useSSE = () => {
         console.log('[SSE] New notification received:', payload);
 
         const title = payload.title || 'Thông báo mới';
-        const content = payload.content || '';
+        const rawContent = (payload.content || '').split('\n')[0];
+        const MAX_CONTENT_LENGTH = 100;
+        const content = rawContent.length > MAX_CONTENT_LENGTH
+          ? `${rawContent.slice(0, MAX_CONTENT_LENGTH)}...`
+          : rawContent;
         const message = content ? `${title}: ${content}` : title;
 
         toast.info(message, {
