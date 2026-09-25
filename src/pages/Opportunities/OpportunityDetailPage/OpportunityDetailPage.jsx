@@ -9,6 +9,7 @@ import {
   XCircle,
   FileText,
   Copy,
+  ExternalLink,
 } from 'lucide-react';
 import { selectCurrentUser } from '../../../store/authSlice';
 import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation, useApproveOpportunityMutation, useRejectOpportunityMutation } from '../../../api/opportunities';
@@ -57,6 +58,9 @@ export const OpportunityDetailPage = () => {
   console.log(opportunity?.status);
 
   const showBadge = (opportunity?.status === 'PENDING_QUOTE_APPROVAL' || opportunity?.status === 'QUOTATION_DRAFTING') && draftCount > 0;
+  const createdContracts = useMemo(() => (
+    Array.isArray(opportunity?.contracts) ? opportunity.contracts.filter(contract => contract?.id) : []
+  ), [opportunity?.contracts]);
   const incompleteAiJobs = useMemo(() => (opportunity?.services || []).flatMap(service => {
     if (!service.service?.isAI) return [];
 
@@ -355,6 +359,33 @@ export const OpportunityDetailPage = () => {
           </div>
         </div>
       </div>
+
+      {createdContracts.length > 0 && (
+        <div className="mb-6 border-b border-gray-200">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex h-11 items-center gap-2 border-b-2 border-blue-600 px-3 text-sm font-semibold text-blue-700"
+            >
+              <FileText className="h-4 w-4" />
+              Thông tin cơ hội
+            </button>
+            {createdContracts.map((contract, index) => (
+              <button
+                key={contract.id}
+                type="button"
+                onClick={() => navigate(`/contracts/${contract.id}`)}
+                className="inline-flex h-11 items-center gap-2 border-b-2 border-transparent px-3 text-sm font-semibold text-gray-600 transition hover:border-gray-300 hover:text-gray-900"
+                title={contract.contractCode || contract.name || 'Xem hợp đồng'}
+              >
+                <FileText className="h-4 w-4" />
+                {createdContracts.length === 1 ? 'Hợp đồng đã tạo' : `Hợp đồng ${index + 1}`}
+                <ExternalLink className="h-3.5 w-3.5" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}

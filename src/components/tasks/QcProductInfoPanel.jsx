@@ -1,45 +1,14 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Info, Loader2, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { useGetQcProductInfoQuery } from '../../api/qc';
 
 const ExtractedTextBlock = ({ html }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isOverflowing, setIsOverflowing] = useState(false);
-  const textRef = useRef(null);
-
-  useLayoutEffect(() => {
-    const el = textRef.current;
-    if (!el) {
-      setIsOverflowing(false);
-      return;
-    }
-    setIsOverflowing(el.scrollHeight > el.clientHeight + 1);
-  }, [html]);
-
   return (
     <div className="rounded-lg border border-slate-300 bg-slate-50">
       <div
-        ref={textRef}
-        className={`rich-content px-2 py-1.5 font-medium text-slate-900 ${isExpanded ? 'max-h-80 overflow-y-auto' : 'line-clamp-6'}`}
+        className="rich-content px-2 py-1.5 font-medium text-slate-900 max-h-80 overflow-y-auto"
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      {isOverflowing && (
-        <button
-          type="button"
-          onClick={() => setIsExpanded((prev) => !prev)}
-          className="flex w-full items-center justify-center gap-1 border-t border-slate-200 py-1 text-[11px] font-bold text-blue-600 hover:bg-slate-100"
-        >
-          {isExpanded ? (
-            <>
-              Thu gọn <ChevronUp className="w-3 h-3" />
-            </>
-          ) : (
-            <>
-              Xem đầy đủ <ChevronDown className="w-3 h-3" />
-            </>
-          )}
-        </button>
-      )}
     </div>
   );
 };

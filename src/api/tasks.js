@@ -398,6 +398,20 @@ export const tasksApi = api.injectEndpoints({
         { type: 'Dashboard' },
       ],
     }),
+    bulkStartTasks: builder.mutation({
+      query: ({ projectId, taskIds }) => ({
+        url: '/tasks/bulk-start',
+        method: 'PATCH',
+        body: { projectId, taskIds },
+      }),
+      invalidatesTags: (result, error, { projectId, taskIds = [] }) => [
+        ...taskIds.map((id) => ({ type: 'Tasks', id })),
+        { type: 'Tasks', id: 'LIST' },
+        { type: 'Projects', id: projectId },
+        { type: 'Projects', id: 'LIST' },
+        { type: 'Dashboard' },
+      ],
+    }),
     sendTaskReminder: builder.mutation({
       query: (id) => ({
         url: `/tasks/${id}/remind`,
@@ -442,5 +456,6 @@ export const {
   useMarkCustomerNotPurchasedMutation,
   useBulkAssignTasksMutation,
   useBulkUnassignTasksMutation,
+  useBulkStartTasksMutation,
   useSendTaskReminderMutation,
 } = tasksApi;

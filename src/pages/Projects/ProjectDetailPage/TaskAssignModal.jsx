@@ -191,12 +191,10 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
     const teamId = project?.team?.id;
     const isVideoDemoTask = Boolean(representativeTask?.opportunityServiceJob?.isBriefVideo);
     const fileInputRef = useRef(null);
-    const [plannedStartDate, setPlannedStartDate] = useState(formatDateTimeISO(representativeTask?.plannedStartDate) || '');
     const [plannedEndDate, setPlannedEndDate] = useState(formatDateTimeISO(representativeTask?.plannedEndDate) || '');
 
     useEffect(() => {
         if (isOpen && representativeTask) {
-            setPlannedStartDate(formatDateTimeISO(representativeTask?.plannedStartDate) || '');
             setPlannedEndDate(formatDateTimeISO(representativeTask?.plannedEndDate) || '');
         }
     }, [isOpen, representativeTask]);
@@ -208,8 +206,8 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
 
     const minimumDeadline = useMemo(() => {
         let minDate = null;
-        if (plannedStartDate) {
-            const startDate = new Date(plannedStartDate);
+        if (representativeTask?.plannedStartDate) {
+            const startDate = new Date(representativeTask.plannedStartDate);
             if (!Number.isNaN(startDate.getTime())) {
                 minDate = startDate;
             }
@@ -221,7 +219,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
             }
         }
         return minDate ? formatDateTimeISO(minDate) : '';
-    }, [plannedStartDate, latestSubtask]);
+    }, [representativeTask?.plannedStartDate, latestSubtask]);
 
     const safeMinDeadline = useMemo(() => {
         if (!minimumDeadline) return undefined;
@@ -373,17 +371,6 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
             return;
         }
 
-        if (!plannedStartDate) {
-            toast.error('Vui lòng nhập ngày dự kiến bắt đầu');
-            return;
-        }
-
-        const parsedStartDate = new Date(plannedStartDate);
-        if (Number.isNaN(parsedStartDate.getTime())) {
-            toast.error('Ngày dự kiến bắt đầu không hợp lệ');
-            return;
-        }
-
         if (!plannedEndDate) {
             toast.error('Vui lòng nhập deadline');
             return;
@@ -395,9 +382,12 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
             return;
         }
 
-        if (parsedDeadline.getTime() < parsedStartDate.getTime()) {
-            toast.error('Deadline không được trước ngày dự kiến bắt đầu');
-            return;
+        if (representativeTask?.plannedStartDate) {
+            const taskStartDate = new Date(representativeTask.plannedStartDate);
+            if (!Number.isNaN(taskStartDate.getTime()) && parsedDeadline.getTime() < taskStartDate.getTime()) {
+                toast.error('Deadline không được trước ngày dự kiến bắt đầu');
+                return;
+            }
         }
 
         // Ràng buộc 1: Task con không được có deadline sau task cha
@@ -468,7 +458,6 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                         assigneeId: formData.assigneeId,
                         performerType: formData.performerType,
                         plannedEndDate: parsedDeadline.toISOString(),
-                        plannedStartDate: parsedStartDate.toISOString(),
                         description: formData.description || undefined,
                         attachments,
                         projectId
@@ -479,7 +468,6 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                         assigneeId: formData.assigneeId,
                         performerType: formData.performerType,
                         plannedEndDate: parsedDeadline.toISOString(),
-                        plannedStartDate: parsedStartDate.toISOString(),
                         description: formData.description || undefined,
                         attachments,
                         projectId
@@ -493,7 +481,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi phân công');
         }
-    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedStartDate, plannedEndDate, requestSupport, parentTask, latestSubtask]);
+    }, [formData, files, isBulk, tasks, task, representativeTask?.plannedStartDate, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedEndDate, requestSupport, parentTask, latestSubtask]);
 
     return (
         <AnimatePresence>
@@ -884,18 +872,6 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
 
                             {/* Dates Grid */}
                             <div className="space-y-3">
-                                <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">Ngày dự kiến bắt đầu</label>
-                                <div className="relative group">
-                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                                    <input
-                                        type="datetime-local"
-                                        required
-                                        className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all text-slate-700 font-medium"
-                                        value={plannedStartDate}
-                                        onChange={(e) => setPlannedStartDate(e.target.value)}
-                                    />
-                                </div>
-
                                 <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">Deadline</label>
                                 <div className="relative group">
                                     <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
