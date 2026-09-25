@@ -573,6 +573,7 @@ export const ProjectDetailPage = () => {
           <TaskTable
             tasks={myTasks}
             project={project}
+            bulkAction="start"
             emptyMessage="Bạn chưa được phân công công việc nào trong dự án này"
           />
         </div>
