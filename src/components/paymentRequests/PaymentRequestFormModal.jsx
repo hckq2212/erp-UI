@@ -137,6 +137,7 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
     const [dueDate, setDueDate] = useState('');
     const [invoiceFiles, setInvoiceFiles] = useState([]); // { name, url, size, fileType, publicId, uploading? }
     const [error, setError] = useState('');
+    const [hasSubmitted, setHasSubmitted] = useState(false);
     const fileInputRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -180,6 +181,7 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
             try {
                 const uploaded = await uploadInvoiceFile(file).unwrap();
                 setInvoiceFiles((prev) => prev.map((f) => (f.tempId === tempId ? { ...uploaded, uploading: false } : f)));
+                setError('');
             } catch (err) {
                 setInvoiceFiles((prev) => prev.filter((f) => f.tempId !== tempId));
                 setError(err?.data?.message || `Tải file "${file.name}" thất bại`);
@@ -200,21 +202,45 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setHasSubmitted(true);
 
-        if (!content.trim() || !amount || !dueDate) {
-            setError('Vui lòng nhập đầy đủ nội dung, số tiền và thời hạn thanh toán');
+        if (type === 'PROJECT') {
+            if (!projectId) {
+                setError('Vui lòng chọn dự án');
+                return;
+            }
+            if (!taskId) {
+                setError('Vui lòng chọn công việc của bạn trong dự án');
+                return;
+            }
+        }
+
+        if (!content.trim()) {
+            setError('Vui lòng nhập nội dung yêu cầu thanh toán');
             return;
         }
-        if (type === 'PROJECT' && (!projectId || !taskId)) {
-            setError('Vui lòng chọn dự án và công việc của bạn trong dự án đó');
+
+        if (!amount || Number(amount) <= 0) {
+            setError('Vui lòng nhập số tiền thanh toán hợp lệ (lớn hơn 0 VNĐ)');
             return;
         }
+
+        if (!dueDate) {
+            setError('Vui lòng chọn hoặc nhập thời hạn thanh toán');
+            return;
+        }
+
         if (isUploadingFiles) {
             setError('Vui lòng đợi file hóa đơn tải lên xong');
             return;
         }
 
         const readyFiles = invoiceFiles.filter((f) => !f.uploading);
+        if (readyFiles.length === 0) {
+            setError('Vui lòng tải lên ít nhất một file hóa đơn hoặc chứng từ (ảnh hoặc PDF)');
+            return;
+        }
+
         const invoiceImages = readyFiles.filter((f) => f.fileType === 'IMAGE');
         const invoicePdfs = readyFiles.filter((f) => f.fileType === 'PDF');
 
@@ -233,6 +259,13 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
             setError(err?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại');
         }
     };
+
+    const isProjectMissing = hasSubmitted && type === 'PROJECT' && !projectId;
+    const isTaskMissing = hasSubmitted && type === 'PROJECT' && !taskId;
+    const isContentMissing = hasSubmitted && !content.trim();
+    const isAmountMissing = hasSubmitted && (!amount || Number(amount) <= 0);
+    const isDueDateMissing = hasSubmitted && !dueDate;
+    const isInvoiceMissing = hasSubmitted && invoiceFiles.filter((f) => !f.uploading).length === 0;
 
     const typeBtn = (value, Icon, label, onPick) => (
         <button
@@ -258,7 +291,9 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
 
             <form id='payment-request-form' onSubmit={handleSubmit} className='flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6'>
                 <div>
-                    <label className={labelCls}>Loại yêu cầu</label>
+                    <label className={labelCls}>
+                        Loại yêu cầu <span className='text-red-500'>*</span>
+                    </label>
                     <div className='grid grid-cols-2 gap-1 rounded-lg bg-orange-50 p-1'>
                         {typeBtn('PROJECT', Briefcase, 'Theo dự án', () => setType('PROJECT'))}
                         {typeBtn('OTHER_WORK', ClipboardList, 'Công việc khác', () => { setType('OTHER_WORK'); setProjectId(''); setTaskId(''); })}
@@ -272,23 +307,27 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                 {type === 'PROJECT' && (
                     <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
                         <div>
-                            <label className={labelCls}>Dự án</label>
+                            <label className={labelCls}>
+                                Dự án <span className='text-red-500'>*</span>
+                            </label>
                             <select
                                 value={projectId}
-                                onChange={(e) => { setProjectId(e.target.value); setTaskId(''); }}
-                                className={inputCls}
+                                onChange={(e) => { setProjectId(e.target.value); setTaskId(''); setError(''); }}
+                                className={cn(inputCls, isProjectMissing && 'border-red-400 focus:border-red-500 bg-red-50/20')}
                             >
                                 <option value=''>-- Chọn dự án --</option>
                                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className={labelCls}>Công việc của bạn</label>
+                            <label className={labelCls}>
+                                Công việc của bạn <span className='text-red-500'>*</span>
+                            </label>
                             <select
                                 value={taskId}
-                                onChange={(e) => setTaskId(e.target.value)}
+                                onChange={(e) => { setTaskId(e.target.value); setError(''); }}
                                 disabled={!projectId || isLoadingTasks}
-                                className={inputCls}
+                                className={cn(inputCls, isTaskMissing && 'border-red-400 focus:border-red-500 bg-red-50/20')}
                             >
                                 <option value=''>
                                     {isLoadingTasks ? 'Đang tải công việc...' : '-- Chọn công việc --'}
@@ -308,29 +347,45 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                 )}
 
                 <div>
-                    <label className={labelCls}>Nội dung</label>
+                    <label className={labelCls}>
+                        Nội dung <span className='text-red-500'>*</span>
+                    </label>
                     <textarea
                         value={content}
-                        onChange={(e) => setContent(e.target.value)}
+                        onChange={(e) => { setContent(e.target.value); setError(''); }}
                         rows={3}
                         placeholder='Mô tả nội dung yêu cầu thanh toán...'
-                        className={inputCls}
+                        className={cn(inputCls, isContentMissing && 'border-red-400 focus:border-red-500 bg-red-50/20')}
                     />
                 </div>
 
                 <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
                     <div>
-                        <label className={labelCls}>Số tiền</label>
-                        <AmountInput value={amount} onChange={setAmount} />
+                        <label className={labelCls}>
+                            Số tiền <span className='text-red-500'>*</span>
+                        </label>
+                        <AmountInput
+                            value={amount}
+                            onChange={(val) => { setAmount(val); setError(''); }}
+                            className={isAmountMissing ? 'border-red-400 focus:border-red-500 bg-red-50/20' : ''}
+                        />
                     </div>
                     <div>
-                        <label className={labelCls}>Thời hạn thanh toán</label>
-                        <DueDateField value={dueDate} onChange={setDueDate} />
+                        <label className={labelCls}>
+                            Thời hạn thanh toán <span className='text-red-500'>*</span>
+                        </label>
+                        <DueDateField
+                            value={dueDate}
+                            onChange={(val) => { setDueDate(val); setError(''); }}
+                            hasError={isDueDateMissing}
+                        />
                     </div>
                 </div>
 
                 <div>
-                    <label className={labelCls}>Hóa đơn (ảnh hoặc PDF)</label>
+                    <label className={labelCls}>
+                        Hóa đơn (ảnh hoặc PDF) <span className='text-red-500'>*</span>
+                    </label>
                     <div
                         onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                         onDragLeave={() => setIsDragging(false)}
@@ -338,12 +393,16 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                         onClick={() => fileInputRef.current?.click()}
                         className={cn(
                             'flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed px-4 py-6 text-center transition',
-                            isDragging ? 'border-orange-400 bg-orange-50' : 'border-stone-200 hover:border-orange-300 hover:bg-orange-50/50'
+                            isDragging
+                                ? 'border-orange-400 bg-orange-50'
+                                : isInvoiceMissing
+                                    ? 'border-red-400 bg-red-50/30 hover:border-red-500 hover:bg-red-50/50'
+                                    : 'border-stone-200 hover:border-orange-300 hover:bg-orange-50/50'
                         )}
                     >
-                        <Upload size={20} className='text-orange-400' />
+                        <Upload size={20} className={cn(isInvoiceMissing ? 'text-red-400' : 'text-orange-400')} />
                         <p className='text-sm text-stone-500'>
-                            <span className='font-semibold text-orange-600'>Chọn file</span> hoặc kéo thả vào đây
+                            <span className={cn('font-semibold', isInvoiceMissing ? 'text-red-600' : 'text-orange-600')}>Chọn file</span> hoặc kéo thả vào đây
                         </p>
                         <p className='text-xs text-stone-400'>Ảnh (jpg, png...) hoặc PDF, tối đa {MAX_FILE_MB}MB</p>
                         <input
@@ -355,6 +414,9 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                             className='hidden'
                         />
                     </div>
+                    {isInvoiceMissing && (
+                        <p className='mt-1 text-xs text-red-600'>Vui lòng tải lên ít nhất 1 file hóa đơn hoặc chứng từ</p>
+                    )}
                     <InvoiceFileList files={invoiceFiles} onRemove={handleRemoveFile} />
                 </div>
 

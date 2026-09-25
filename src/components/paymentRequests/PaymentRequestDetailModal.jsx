@@ -169,16 +169,22 @@ const RequestHistory = ({ history }) => {
 const RequestFields = ({ content, setContent, amount, setAmount, dueDate, setDueDate }) => (
     <>
         <div>
-            <label className={labelCls}>Nội dung</label>
+            <label className={labelCls}>
+                Nội dung <span className='text-red-500'>*</span>
+            </label>
             <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={2} className={inputCls} />
         </div>
         <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
             <div>
-                <label className={labelCls}>Số tiền</label>
+                <label className={labelCls}>
+                    Số tiền <span className='text-red-500'>*</span>
+                </label>
                 <AmountInput value={amount} onChange={setAmount} />
             </div>
             <div>
-                <label className={labelCls}>Thời hạn thanh toán</label>
+                <label className={labelCls}>
+                    Thời hạn thanh toán <span className='text-red-500'>*</span>
+                </label>
                 <input type='date' value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={inputCls} />
             </div>
         </div>
