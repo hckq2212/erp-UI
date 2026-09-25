@@ -22,6 +22,7 @@ import { getCurrentUserId, isSameUser } from '../../utils/authUser';
 import { TaskDelegationPanel } from '../../components/tasks/TaskDelegationPanel';
 import { TaskReminderButton } from '../../components/tasks/TaskReminderButton';
 import { hasTeamMemberRole } from '../../utils/teamMember';
+import { canDecideTaskOutcome } from '../../utils/taskOutcomeAuthorization';
 
 const COMPLETED_SUBTASK_STATUSES = new Set(['INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED']);
 
@@ -65,6 +66,7 @@ export const TaskDetailPage = () => {
         task?.status === 'NOT_STARTED' &&
         isAssigneeOrHelper;
     const isAssigner = isSameUser(currentUserId, task?.assignerId) || isSameUser(currentUserId, task?.assigner?.id);
+    const canDecideOutcome = !isProjectOnHold && canDecideTaskOutcome(task, currentUserId);
     const canSubmitResult = !isProjectOnHold && (isAssigneeOrHelper || isAssigner || canManageProjectTask || ['ADMIN', 'BOD'].includes(user?.role));
     const isReviewerForThisTask = !isProjectOnHold && canManageProjectTask && !isAssigneeOrHelper;
     const isTaskLocked = ['INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED', 'DONE', 'CANCELLED', 'ON_HOLD'].includes(task?.status);
@@ -476,7 +478,7 @@ export const TaskDetailPage = () => {
                             <span>Bắt đầu công việc</span>
                         </Button>
                     )}
-                    {task.status === 'AWAITING_REVIEW' && isReviewerForThisTask && (
+                    {task.status === 'AWAITING_REVIEW' && isReviewerForThisTask && canDecideOutcome && (
                         <>
                             <Button
                                 variant="outline"
@@ -499,7 +501,7 @@ export const TaskDetailPage = () => {
                         </>
                     )}
 
-                    {task.status === 'INTERNAL_COMPLETED' && canManageProjectTask && !isVideoDemoTask && (
+                    {task.status === 'INTERNAL_COMPLETED' && canDecideOutcome && !isVideoDemoTask && (
                         <Button
                             onClick={handleCustomerApprove}
                             isLoading={isApprovingByCustomer}
@@ -512,7 +514,7 @@ export const TaskDetailPage = () => {
                         </Button>
                     )}
 
-                    {(task.status === 'DONE' || task.status === 'COMPLETED' || task.status === 'INTERNAL_COMPLETED') && canManageProjectTask && !isVideoDemoTask && (
+                    {(task.status === 'DONE' || task.status === 'COMPLETED' || task.status === 'INTERNAL_COMPLETED') && canDecideOutcome && !isVideoDemoTask && (
                         <Button
                             variant="outline"
                             onClick={() => setIsReworkModalOpen(true)}

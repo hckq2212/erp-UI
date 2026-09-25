@@ -19,6 +19,7 @@ import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
 import { hasTeamMemberRole } from '../../../utils/teamMember';
 import { getTaskDisplayName } from '../../../utils/taskName';
+import { canDecideTaskOutcome } from '../../../utils/taskOutcomeAuthorization';
 
 export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMessage = 'Không tìm thấy công việc nào' }) => {
     const navigate = useNavigate();
@@ -687,7 +688,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                                             )}
                                                         */}
 
-                                                        {isProjectInProgress && (isProjectLead || isAdminOrBOD) && task.status === 'INTERNAL_COMPLETED' && (
+                                                        {isProjectInProgress && canDecideTaskOutcome(task, currentUserId, project) && task.status === 'INTERNAL_COMPLETED' && (
                                                             <button
                                                                 onClick={() => handleCustomerApprove(task.id)}
                                                                 disabled={isApprovingByCustomer && approvingTaskId === task.id}
