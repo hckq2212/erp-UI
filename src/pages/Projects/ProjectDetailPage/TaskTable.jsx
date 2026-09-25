@@ -5,8 +5,9 @@ import { TaskAssignModal } from './TaskAssignModal';
 import { AddProjectServiceModal } from './AddProjectServiceModal';
 import { useNavigate } from 'react-router-dom';
 import { useGetTeamMembersQuery } from '../../../api/teams';
+import { useGetMyNotificationsQuery, useMarkAsReadMutation } from '../../../api/notifications';
 import { useRequestProjectStaffingMutation } from '../../../api/projects';
-import { useApproveByCustomerMutation, useBulkStartTasksMutation, useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useRequestTaskStaffingMutation, useStartTaskMutation } from '../../../api/tasks';
+import { useApproveByCustomerMutation, useBulkStartTasksMutation, useBulkUnassignTasksMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useRequestTaskStaffingMutation, useRespondTaskStaffingMutation, useStartTaskMutation } from '../../../api/tasks';
 import { cn } from '../../../utils/cn';
 import { PROJECT_MANAGEMENT_ROLES, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../../utils/enums';
 import { toast } from 'react-toastify';
@@ -155,7 +156,117 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     const [bulkStartTasks, { isLoading: isBulkStarting }] = useBulkStartTasksMutation();
     const [approveByCustomer, { isLoading: isApprovingByCustomer }] = useApproveByCustomerMutation();
     const [requestTaskStaffing, { isLoading: isRequestingStaffing }] = useRequestTaskStaffingMutation();
+    const [respondTaskStaffing, { isLoading: isRespondingTaskStaffing }] = useRespondTaskStaffingMutation();
     const [requestProjectStaffing, { isLoading: isRequestingProjectStaffing }] = useRequestProjectStaffingMutation();
+    const { data: notifications = [] } = useGetMyNotificationsQuery();
+    const [markAsRead] = useMarkAsReadMutation();
+    const [isProjectStaffingResolutionOpen, setIsProjectStaffingResolutionOpen] = useState(false);
+    const [activeStaffingRequest, setActiveStaffingRequest] = useState(null);
+    const [localStaffingRequests, setLocalStaffingRequests] = useState(() => {
+        try {
+            const key = `project_staffing_requests_${project?.id}`;
+            const stored = JSON.parse(localStorage.getItem(key) || '[]');
+            if (Array.isArray(stored) && stored.length > 0) return stored;
+            const single = localStorage.getItem(`project_staffing_req_${project?.id}`);
+            if (single) return [{ id: 'legacy_1', note: single, createdAt: new Date().toISOString() }];
+            return [];
+        } catch {
+            return [];
+        }
+    });
+
+    useEffect(() => {
+        try {
+            const key = `project_staffing_requests_${project?.id}`;
+            const stored = JSON.parse(localStorage.getItem(key) || '[]');
+            if (Array.isArray(stored) && stored.length > 0) {
+                setLocalStaffingRequests(stored);
+            } else {
+                const single = localStorage.getItem(`project_staffing_req_${project?.id}`);
+                setLocalStaffingRequests(single ? [{ id: 'legacy_1', note: single, createdAt: new Date().toISOString() }] : []);
+            }
+        } catch {
+            setLocalStaffingRequests([]);
+        }
+    }, [project?.id]);
+
+    const allStaffingRequests = useMemo(() => {
+        const list = [];
+        const seenKeys = new Set();
+
+        // 1. Task-level staffing requests from tasks prop
+        tasks.forEach(t => {
+            if (t.supportRequestType === 'STAFFING' && t.isSupportRequested && !t.isSupportAccepted) {
+                const key = `task_${t.id}`;
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    list.push({
+                        uniqueKey: key,
+                        type: 'TASK',
+                        taskId: t.id,
+                        task: t,
+                        targetName: `${t.code ? `[${t.code}] ` : ''}${t.nickname || t.name || 'Công việc'}`,
+                        note: t.supportRequestNote || '',
+                        createdAt: t.updatedAt || t.createdAt,
+                    });
+                }
+            }
+        });
+
+        // 2. Project-level staffing requests from unread notifications
+        notifications.forEach(n => {
+            if (n.type === 'TASK_STAFFING_REQUEST' && !n.isRead) {
+                const isProjectLevel = String(n.relatedEntityId) === String(project?.id) ||
+                    n.link === `/projects/${project?.id}` ||
+                    n.link?.endsWith(`/projects/${project?.id}`);
+                if (isProjectLevel) {
+                    const key = `notif_${n.id}`;
+                    if (!seenKeys.has(key)) {
+                        seenKeys.add(key);
+                        const note = n.content ? n.content.replace(/^.*?Ghi chú:\s*/, '') : '';
+                        list.push({
+                            uniqueKey: key,
+                            type: 'PROJECT',
+                            notifId: n.id,
+                            targetName: 'Yêu cầu cho toàn dự án',
+                            note: note || project?.staffingRequestNote || '',
+                            createdAt: n.createdAt,
+                        });
+                    }
+                }
+            }
+        });
+
+        // 3. Local requests from localStorage
+        localStaffingRequests.forEach(req => {
+            if (req.note && !list.some(item => item.note === req.note)) {
+                const key = `local_${req.id}`;
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    list.push({
+                        uniqueKey: key,
+                        type: 'PROJECT',
+                        localId: req.id,
+                        targetName: 'Yêu cầu cho toàn dự án',
+                        note: req.note,
+                        createdAt: req.createdAt,
+                    });
+                }
+            }
+        });
+
+        // 4. Fallback legacy project.isStaffingRequested
+        if (project?.isStaffingRequested && !list.some(item => item.type === 'PROJECT')) {
+            list.push({
+                uniqueKey: `project_${project.id}`,
+                type: 'PROJECT',
+                targetName: 'Yêu cầu cho toàn dự án',
+                note: project.staffingRequestNote || '',
+            });
+        }
+
+        return list;
+    }, [tasks, notifications, project, localStaffingRequests]);
     const [startTask, { isLoading: isStartingTask }] = useStartTaskMutation();
 
     const currentUserId = getCurrentUserId(user);
@@ -268,6 +379,52 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
         setIsStaffingModalOpen(true);
     };
 
+    const handleOpenResolveStaffing = (req) => {
+        setActiveStaffingRequest(req);
+        if (req.type === 'TASK' && req.task) {
+            setStaffingTask(req.task);
+            setIsStaffingResolutionOpen(true);
+        } else {
+            setIsProjectStaffingResolutionOpen(true);
+        }
+    };
+
+    const handleRejectRequest = async (req) => {
+        const isLeadOnly = isProjectLead && !isProjectManager && !hasStaffingAdminOverride;
+        const confirmMsg = isLeadOnly
+            ? `Bạn có chắc chắn muốn hủy yêu cầu bổ sung nhân sự cho "${req.targetName}"?`
+            : `Bạn có chắc chắn muốn từ chối yêu cầu bổ sung nhân sự cho "${req.targetName}"?`;
+        if (!window.confirm(confirmMsg)) return;
+
+        try {
+            if (req.type === 'TASK' && req.taskId) {
+                await respondTaskStaffing({
+                    id: req.taskId,
+                    projectId: project?.id,
+                    action: 'REJECT'
+                }).unwrap();
+            }
+            if (req.notifId) {
+                try {
+                    await markAsRead(req.notifId).unwrap();
+                } catch {}
+            }
+            if (req.localId || req.type === 'PROJECT') {
+                try {
+                    const key = `project_staffing_requests_${project?.id}`;
+                    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+                    const filtered = existing.filter(item => item.id !== req.localId && item.note !== req.note);
+                    localStorage.setItem(key, JSON.stringify(filtered));
+                    setLocalStaffingRequests(filtered);
+                    localStorage.removeItem(`project_staffing_req_${project?.id}`);
+                } catch {}
+            }
+            toast.success(isLeadOnly ? 'Đã hủy yêu cầu bổ sung nhân sự' : 'Đã từ chối yêu cầu bổ sung nhân sự');
+        } catch (error) {
+            toast.error(error?.data?.message || 'Có lỗi xảy ra khi xử lý yêu cầu');
+        }
+    };
+
     const handleSendStaffingRequest = async () => {
         if (!staffingNote.trim()) {
             toast.error('Vui lòng nhập lý do hoặc vị trí nhân sự cần bổ sung');
@@ -285,6 +442,19 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                     id: project?.id,
                     note: staffingNote.trim()
                 }).unwrap();
+                try {
+                    const key = `project_staffing_requests_${project?.id}`;
+                    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+                    const newReq = {
+                        id: 'req_' + Date.now(),
+                        note: staffingNote.trim(),
+                        createdAt: new Date().toISOString()
+                    };
+                    existing.push(newReq);
+                    localStorage.setItem(key, JSON.stringify(existing));
+                    setLocalStaffingRequests(existing);
+                    localStorage.setItem(`project_staffing_req_${project?.id}`, staffingNote.trim());
+                } catch {}
             }
             toast.success('Đã gửi yêu cầu bổ sung nhân sự cho PM');
             setIsStaffingModalOpen(false);
@@ -541,7 +711,90 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     const selectableFilteredTasks = filteredTasks.filter(isTaskSelectable);
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ">
+        <div className="space-y-4">
+            {/* Khối hiển thị yêu cầu bổ sung nhân sự */}
+            {!isPersonalView && (isProjectManager || hasStaffingAdminOverride || isProjectLead) && allStaffingRequests.length > 0 && (
+                <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-orange-50/50 to-amber-50 p-4 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between border-b border-amber-200/60 pb-2">
+                        <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                                <UserPlus className="h-4 w-4" />
+                            </div>
+                            <span className="font-bold text-amber-950 text-sm">
+                                Yêu cầu bổ sung nhân sự ({allStaffingRequests.length})
+                            </span>
+                        </div>
+                        <span className="inline-flex items-center rounded-full bg-amber-200/80 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
+                            {(isProjectManager || hasStaffingAdminOverride) ? 'Chờ PM xử lý' : 'Đang chờ PM xử lý'}
+                        </span>
+                    </div>
+
+                    <div className="space-y-2">
+                        {allStaffingRequests.map((req) => (
+                            <div
+                                key={req.uniqueKey}
+                                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-amber-200/80 bg-white/90 p-3 shadow-xs transition-all hover:border-amber-300"
+                            >
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-bold text-gray-900 text-sm">
+                                            {req.targetName}
+                                        </span>
+                                        <span className={cn(
+                                            "text-[10px] font-bold px-2 py-0.5 rounded-full border",
+                                            req.type === 'TASK'
+                                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                                : "bg-purple-50 text-purple-700 border-purple-200"
+                                        )}>
+                                            {req.type === 'TASK' ? 'Công việc' : 'Toàn dự án'}
+                                        </span>
+                                    </div>
+                                    <p className="mt-1 text-xs text-amber-900">
+                                        <span className="font-semibold text-gray-600">Nội dung cần bổ sung: </span>
+                                        {req.note ? `"${req.note}"` : 'Không có ghi chú cụ thể'}
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                                    {(isProjectManager || hasStaffingAdminOverride) && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleOpenResolveStaffing(req)}
+                                                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-95 transition-all"
+                                            >
+                                                <UserPlus className="h-3.5 w-3.5" />
+                                                <span>Bổ sung nhân sự</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRejectRequest(req)}
+                                                disabled={isRespondingTaskStaffing}
+                                                className="inline-flex items-center rounded-xl border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 active:scale-95 transition-all disabled:opacity-50"
+                                            >
+                                                Từ chối
+                                            </button>
+                                        </>
+                                    )}
+                                    {isProjectLead && !isProjectManager && !hasStaffingAdminOverride && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRejectRequest(req)}
+                                            disabled={isRespondingTaskStaffing}
+                                            className="inline-flex items-center rounded-xl border border-red-300 bg-white px-3.5 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 active:scale-95 transition-all shadow-sm disabled:opacity-50"
+                                            title="Hủy yêu cầu bổ sung nhân sự này"
+                                        >
+                                            Hủy yêu cầu
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ">
             {/* Filters & Actions */}
             <div className="p-4 border-b border-gray-100 flex items-center gap-2.5 min-w-0">
                 <div className="relative flex-1 min-w-[140px]">
@@ -991,6 +1244,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                     </tbody>
                 </table>
             </div>
+        </div>
 
             {assigningTask && (
                 <TaskAssignModal
@@ -1022,6 +1276,31 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                 task={staffingTask}
                 team={project?.team ? { ...project.team, members } : null}
                 projectId={project?.id}
+            />
+
+            <ResolveStaffingRequestModal
+                isOpen={isProjectStaffingResolutionOpen}
+                onClose={() => {
+                    setIsProjectStaffingResolutionOpen(false);
+                    setActiveStaffingRequest(null);
+                }}
+                project={{ ...project, staffingRequestNote: activeStaffingRequest?.note }}
+                team={project?.team ? { ...project.team, members } : null}
+                projectId={project?.id}
+                onSuccess={() => {
+                    if (activeStaffingRequest?.notifId) {
+                        markAsRead(activeStaffingRequest.notifId).catch(() => {});
+                    }
+                    try {
+                        const key = `project_staffing_requests_${project?.id}`;
+                        const existing = JSON.parse(localStorage.getItem(key) || '[]');
+                        const filtered = existing.filter(item => item.id !== activeStaffingRequest?.localId && item.note !== activeStaffingRequest?.note);
+                        localStorage.setItem(key, JSON.stringify(filtered));
+                        setLocalStaffingRequests(filtered);
+                        localStorage.removeItem(`project_staffing_req_${project?.id}`);
+                    } catch {}
+                    setActiveStaffingRequest(null);
+                }}
             />
 
             <Modal

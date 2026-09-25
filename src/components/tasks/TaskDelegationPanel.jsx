@@ -467,6 +467,7 @@ export const TaskDelegationPanel = ({
                 onClose={() => setIsAddStaffingMemberModalOpen(false)}
                 task={task}
                 team={team}
+                projectId={task?.project?.id || task?.projectId}
             />
 
             <Modal

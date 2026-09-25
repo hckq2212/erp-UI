@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react';
-import { Plus, Trash2, Users } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { Check, Plus, Trash2, Users, UserPlus, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useGetMeQuery } from '../../../api/auth';
 import { useGetUsersQuery } from '../../../api/users';
+import { useGetMyNotificationsQuery, useMarkAsReadMutation } from '../../../api/notifications';
+import { useRespondTaskStaffingMutation } from '../../../api/tasks';
 import {
     useAddTeamMemberMutation,
     useGetTeamMembersQuery,
@@ -63,6 +65,8 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
         { skip: !team?.id }
     );
     const [addMember, { isLoading: isAdding }] = useAddTeamMemberMutation();
+    const { data: notifications = [] } = useGetMyNotificationsQuery();
+    const [markAsRead] = useMarkAsReadMutation();
     const [updateMemberRoles, { isLoading: isUpdatingRoles }] = useUpdateTeamMemberRolesMutation();
     const [removeMember] = useRemoveTeamMemberMutation();
     const [selectedUserId, setSelectedUserId] = useState('');
@@ -74,6 +78,11 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
     const isCurrentProjectManager = currentUser?.role === 'PM' && members.some(member =>
         isSameUser(member.user?.id, currentUserId) && hasTeamMemberRole(member, TEAM_MEMBER_ROLE.PROJECT_MANAGER)
     );
+    const isProjectLead = isSameUser(currentUserId, team?.teamLead?.id) ||
+        isSameUser(currentUserId, team?.teamLeadId) ||
+        members.some(member =>
+            hasTeamMemberRole(member, TEAM_MEMBER_ROLE.ACCOUNT) && isSameUser(member.user?.id, currentUserId)
+        );
     const isProjectClosed = isClosed || ['COMPLETED', 'CANCELLED'].includes(project?.status);
     const isProjectOnHold = isOnHold || project?.status === 'ON_HOLD' || Boolean(project?.isOnHold);
     const canManageTeam = !isProjectClosed && !isProjectOnHold && (currentUser?.role === 'ADMIN' || isCurrentProjectManager);
@@ -124,6 +133,173 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
             return (a.user?.fullName || '').localeCompare(b.user?.fullName || '', 'vi');
         });
     }, [members, team?.teamLead?.id]);
+
+    const [respondTaskStaffing, { isLoading: isRespondingTaskStaffing }] = useRespondTaskStaffingMutation();
+
+    const [localStaffingRequests, setLocalStaffingRequests] = useState(() => {
+        try {
+            const stored = JSON.parse(localStorage.getItem(`project_staffing_requests_${project?.id}`) || '[]');
+            if (Array.isArray(stored) && stored.length > 0) return stored;
+            const single = localStorage.getItem(`project_staffing_req_${project?.id}`);
+            return single ? [{ id: 'legacy_1', note: single, createdAt: new Date().toISOString() }] : [];
+        } catch {
+            return [];
+        }
+    });
+
+    useEffect(() => {
+        try {
+            const stored = JSON.parse(localStorage.getItem(`project_staffing_requests_${project?.id}`) || '[]');
+            if (Array.isArray(stored) && stored.length > 0) {
+                setLocalStaffingRequests(stored);
+            } else {
+                const single = localStorage.getItem(`project_staffing_req_${project?.id}`);
+                setLocalStaffingRequests(single ? [{ id: 'legacy_1', note: single, createdAt: new Date().toISOString() }] : []);
+            }
+        } catch {
+            setLocalStaffingRequests([]);
+        }
+    }, [project?.id]);
+
+    const allStaffingRequests = useMemo(() => {
+        const list = [];
+        const seenKeys = new Set();
+        const projectTasks = project?.tasks || [];
+
+        // 1. Task-level staffing requests from project.tasks
+        projectTasks.forEach(t => {
+            if (t.supportRequestType === 'STAFFING' && t.isSupportRequested && !t.isSupportAccepted) {
+                const key = `task_${t.id}`;
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    list.push({
+                        uniqueKey: key,
+                        type: 'TASK',
+                        taskId: t.id,
+                        task: t,
+                        targetName: `${t.code ? `[${t.code}] ` : ''}${t.nickname || t.name || 'Công việc'}`,
+                        note: t.supportRequestNote || '',
+                        createdAt: t.updatedAt || t.createdAt,
+                    });
+                }
+            }
+        });
+
+        // 2. Project-level staffing requests from unread notifications
+        notifications.forEach(n => {
+            if (n.type === 'TASK_STAFFING_REQUEST' && !n.isRead) {
+                const isProjectLevel = String(n.relatedEntityId) === String(project?.id) ||
+                    n.link === `/projects/${project?.id}` ||
+                    n.link?.endsWith(`/projects/${project?.id}`);
+                if (isProjectLevel) {
+                    const key = `notif_${n.id}`;
+                    if (!seenKeys.has(key)) {
+                        seenKeys.add(key);
+                        const note = n.content ? n.content.replace(/^.*?Ghi chú:\s*/, '') : '';
+                        list.push({
+                            uniqueKey: key,
+                            type: 'PROJECT',
+                            notifId: n.id,
+                            targetName: 'Yêu cầu cho toàn dự án',
+                            note: note || project?.staffingRequestNote || '',
+                            createdAt: n.createdAt,
+                        });
+                    }
+                }
+            }
+        });
+
+        // 3. Local requests from localStorage
+        localStaffingRequests.forEach(req => {
+            if (req.note && !list.some(item => item.note === req.note)) {
+                const key = `local_${req.id}`;
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    list.push({
+                        uniqueKey: key,
+                        type: 'PROJECT',
+                        localId: req.id,
+                        targetName: 'Yêu cầu cho toàn dự án',
+                        note: req.note,
+                        createdAt: req.createdAt,
+                    });
+                }
+            }
+        });
+
+        // 4. Fallback legacy project.isStaffingRequested
+        if (project?.isStaffingRequested && !list.some(item => item.type === 'PROJECT')) {
+            list.push({
+                uniqueKey: `project_${project.id}`,
+                type: 'PROJECT',
+                targetName: 'Yêu cầu cho toàn dự án',
+                note: project.staffingRequestNote || '',
+            });
+        }
+
+        return list;
+    }, [project?.tasks, notifications, project, localStaffingRequests]);
+
+    const handleResolveStaffingRequest = async (req) => {
+        try {
+            if (req.type === 'TASK' && req.taskId) {
+                await respondTaskStaffing({
+                    id: req.taskId,
+                    projectId: project?.id,
+                    action: 'RESOLVE'
+                }).unwrap();
+            }
+            if (req.notifId) {
+                try {
+                    await markAsRead(req.notifId).unwrap();
+                } catch {}
+            }
+            if (req.localId || req.type === 'PROJECT') {
+                try {
+                    const key = `project_staffing_requests_${project?.id}`;
+                    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+                    const filtered = existing.filter(item => item.id !== req.localId && item.note !== req.note);
+                    localStorage.setItem(key, JSON.stringify(filtered));
+                    setLocalStaffingRequests(filtered);
+                    localStorage.removeItem(`project_staffing_req_${project?.id}`);
+                } catch {}
+            }
+            toast.success('Đã xác nhận xử lý yêu cầu bổ sung nhân sự');
+        } catch (error) {
+            toast.error(error?.data?.message || 'Có lỗi xảy ra khi xác nhận yêu cầu');
+        }
+    };
+
+    const handleRejectStaffingRequest = async (req) => {
+        if (!window.confirm(`Bạn có chắc chắn muốn từ chối yêu cầu bổ sung nhân sự cho "${req.targetName}"?`)) return;
+        try {
+            if (req.type === 'TASK' && req.taskId) {
+                await respondTaskStaffing({
+                    id: req.taskId,
+                    projectId: project?.id,
+                    action: 'REJECT'
+                }).unwrap();
+            }
+            if (req.notifId) {
+                try {
+                    await markAsRead(req.notifId).unwrap();
+                } catch {}
+            }
+            if (req.localId || req.type === 'PROJECT') {
+                try {
+                    const key = `project_staffing_requests_${project?.id}`;
+                    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+                    const filtered = existing.filter(item => item.id !== req.localId && item.note !== req.note);
+                    localStorage.setItem(key, JSON.stringify(filtered));
+                    setLocalStaffingRequests(filtered);
+                    localStorage.removeItem(`project_staffing_req_${project?.id}`);
+                } catch {}
+            }
+            toast.success('Đã từ chối yêu cầu bổ sung nhân sự');
+        } catch (error) {
+            toast.error(error?.data?.message || 'Có lỗi xảy ra khi từ chối yêu cầu');
+        }
+    };
 
     if (!team) return null;
 
@@ -222,10 +398,77 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
 
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-fit">
-            <div className="flex items-center gap-2 mb-5">
+            <div className="flex items-center gap-2 mb-4">
                 <Users className="w-5 h-5 text-purple-600" />
                 <h2 className="font-semibold text-gray-900">Đội thực hiện</h2>
             </div>
+
+            {canManageTeam && allStaffingRequests.length > 0 && (
+                <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/90 p-3.5 text-xs text-amber-900 shadow-sm">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-900 mb-2.5 pb-2 border-b border-amber-200/60">
+                        <UserPlus className="h-4 w-4 text-amber-600 shrink-0" />
+                        <span>Yêu cầu bổ sung nhân sự ({allStaffingRequests.length})</span>
+                    </div>
+
+                    <div className="space-y-2.5">
+                        {allStaffingRequests.map(req => (
+                            <div
+                                key={req.uniqueKey}
+                                className="bg-white rounded-lg p-2.5 border border-amber-200/80 shadow-xs flex flex-col gap-2"
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                                req.type === 'TASK'
+                                                    ? 'bg-blue-100 text-blue-800'
+                                                    : 'bg-orange-100 text-orange-800'
+                                            }`}>
+                                                {req.type === 'TASK' ? 'Công việc' : 'Toàn dự án'}
+                                            </span>
+                                            <span className="font-bold text-gray-800 text-xs truncate">
+                                                {req.targetName}
+                                            </span>
+                                        </div>
+                                        {req.note ? (
+                                            <p className="mt-1 text-gray-600 font-medium italic text-[11px] leading-relaxed">
+                                                "{req.note}"
+                                            </p>
+                                        ) : (
+                                            <p className="mt-1 text-gray-400 italic text-[11px]">
+                                                (Không có ghi chú chi tiết)
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-end gap-1.5 pt-1.5 border-t border-gray-100">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleResolveStaffingRequest(req)}
+                                        disabled={isRespondingTaskStaffing}
+                                        className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all border border-emerald-300 shadow-2xs cursor-pointer disabled:opacity-50"
+                                        title="Xác nhận đã giải quyết yêu cầu này (không cần thêm nhân sự mới)"
+                                    >
+                                        <Check className="h-3 w-3 shrink-0" />
+                                        <span>Đã xử lý</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRejectStaffingRequest(req)}
+                                        disabled={isRespondingTaskStaffing}
+                                        className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 active:scale-95 transition-all border border-red-200 shadow-2xs cursor-pointer disabled:opacity-50"
+                                        title="Từ chối yêu cầu bổ sung nhân sự này"
+                                    >
+                                        <X className="h-3 w-3 shrink-0" />
+                                        <span>Từ chối</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="space-y-4">
                 <div>
