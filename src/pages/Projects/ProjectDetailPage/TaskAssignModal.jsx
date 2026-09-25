@@ -205,21 +205,15 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
     }, [parentTask?.plannedEndDate]);
 
     const minimumDeadline = useMemo(() => {
-        let minDate = null;
-        if (representativeTask?.plannedStartDate) {
-            const startDate = new Date(representativeTask.plannedStartDate);
-            if (!Number.isNaN(startDate.getTime())) {
-                minDate = startDate;
-            }
-        }
+        let minDate = new Date();
         if (latestSubtask?.plannedEndDate) {
             const subtaskDate = new Date(latestSubtask.plannedEndDate);
-            if (!minDate || subtaskDate > minDate) {
+            if (!Number.isNaN(subtaskDate.getTime()) && subtaskDate > minDate) {
                 minDate = subtaskDate;
             }
         }
-        return minDate ? formatDateTimeISO(minDate) : '';
-    }, [representativeTask?.plannedStartDate, latestSubtask]);
+        return formatDateTimeISO(minDate);
+    }, [latestSubtask?.plannedEndDate]);
 
     const safeMinDeadline = useMemo(() => {
         if (!minimumDeadline) return undefined;
@@ -382,12 +376,11 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
             return;
         }
 
-        if (representativeTask?.plannedStartDate) {
-            const taskStartDate = new Date(representativeTask.plannedStartDate);
-            if (!Number.isNaN(taskStartDate.getTime()) && parsedDeadline.getTime() < taskStartDate.getTime()) {
-                toast.error('Deadline không được trước ngày dự kiến bắt đầu');
-                return;
-            }
+        const now = new Date();
+        now.setSeconds(0, 0);
+        if (parsedDeadline.getTime() < now.getTime() - 60 * 1000) {
+            toast.error('Deadline không được ở trong quá khứ');
+            return;
         }
 
         // Ràng buộc 1: Task con không được có deadline sau task cha
@@ -481,7 +474,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi phân công');
         }
-    }, [formData, files, isBulk, tasks, task, representativeTask?.plannedStartDate, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedEndDate, requestSupport, parentTask, latestSubtask]);
+    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedEndDate, requestSupport, parentTask, latestSubtask]);
 
     return (
         <AnimatePresence>
