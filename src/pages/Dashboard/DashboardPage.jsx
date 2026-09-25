@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, UserCheck } from 'lucide-react';
@@ -17,7 +17,100 @@ import { TeamLeadView } from '../../components/dashboard/TeamLeadView';
 import { BDView } from '../../components/dashboard/BDView';
 import { MemberView } from '../../components/dashboard/MemberView';
 import { getCurrentUserId } from '../../utils/authUser';
-import { PaymentOverviewPage } from '../Finance/PaymentOverviewPage';
+
+const PaymentOverviewPage = lazy(() =>
+    import('../Finance/PaymentOverviewPage').then((module) => ({ default: module.PaymentOverviewPage }))
+);
+
+const DashboardRouteFallback = () => (
+    <div className="flex min-h-[400px] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+    </div>
+);
+
+const SkeletonBlock = ({ className = "" }) => (
+    <div className={`animate-pulse rounded-lg bg-slate-200/80 ${className}`} />
+);
+
+const DashboardSkeleton = ({ user }) => (
+    <div className="relative min-h-screen pb-20">
+        <div className="space-y-6 max-w-[1600px] mx-auto px-4 md:px-0">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-2 mb-2">
+                <div>
+                    <div className="flex items-center gap-3 mb-3">
+                        <SkeletonBlock className="h-7 w-56" />
+                    </div>
+                    <p className="text-sm text-gray-500 font-medium">
+                        Chào mừng trở lại, <span className="text-orange-600 font-bold">{user?.fullName || user?.username || "..."}</span>
+                    </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                    <SkeletonBlock className="h-10 w-44 rounded-2xl" />
+                    <SkeletonBlock className="h-10 w-36 rounded-2xl" />
+                    <SkeletonBlock className="h-10 w-40 rounded-2xl" />
+                </div>
+            </div>
+
+            <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                        <div key={index} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                            <SkeletonBlock className="mb-4 h-4 w-28" />
+                            <SkeletonBlock className="mb-3 h-8 w-20" />
+                            <SkeletonBlock className="h-3 w-36" />
+                        </div>
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm xl:col-span-2">
+                        <div className="mb-5 flex items-center justify-between">
+                            <SkeletonBlock className="h-5 w-40" />
+                            <SkeletonBlock className="h-8 w-28 rounded-full" />
+                        </div>
+                        <div className="space-y-3">
+                            {Array.from({ length: 6 }).map((_, index) => (
+                                <div key={index} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3">
+                                    <SkeletonBlock className="h-10 w-10 rounded-xl" />
+                                    <div className="flex-1 space-y-2">
+                                        <SkeletonBlock className="h-4 w-2/3" />
+                                        <SkeletonBlock className="h-3 w-1/3" />
+                                    </div>
+                                    <SkeletonBlock className="h-7 w-20 rounded-full" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                        <SkeletonBlock className="mb-5 h-5 w-36" />
+                        <div className="space-y-4">
+                            {Array.from({ length: 5 }).map((_, index) => (
+                                <div key={index} className="flex items-center gap-3">
+                                    <SkeletonBlock className="h-9 w-9 rounded-full" />
+                                    <div className="flex-1 space-y-2">
+                                        <SkeletonBlock className="h-4 w-3/4" />
+                                        <SkeletonBlock className="h-3 w-1/2" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                    <SkeletonBlock className="mb-5 h-5 w-44" />
+                    <div className="grid grid-cols-7 gap-2">
+                        {Array.from({ length: 28 }).map((_, index) => (
+                            <SkeletonBlock key={index} className="h-16 rounded-xl" />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
 
 export const DashboardPage = () => {
     const navigate = useNavigate();
@@ -50,7 +143,11 @@ export const DashboardPage = () => {
     );
 
     if (isAdminSale) {
-        return <PaymentOverviewPage />;
+        return (
+            <Suspense fallback={<DashboardRouteFallback />}>
+                <PaymentOverviewPage />
+            </Suspense>
+        );
     }
 
     const dashboardScope = dashboard?.scope;
@@ -75,11 +172,7 @@ export const DashboardPage = () => {
     const isLoading = isDashboardLoading || isTasksLoading;
 
     if (isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-            </div>
-        );
+        return <DashboardSkeleton user={user} />;
     }
 
     return (

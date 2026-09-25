@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, Calendar, User, Percent, CheckCircle2, Clock } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
-import { formatNumber, parseNumber, formatCurrency, formatDateISO } from '../../utils/format';
+import { formatNumber, parseNumber, formatCurrency, formatDateISO, formatDate } from '../../utils/format';
+import { toast } from 'react-toastify';
 
 /**
  * Component hiển thị và quản lý Danh sách công việc con theo phong cách Lộ trình thanh toán (Payment Schedule style)
@@ -126,6 +127,15 @@ export const SubtaskRoadmapModal = ({
 
     const handleSubmit = e => {
         e?.preventDefault();
+        const parentDeadlineKey = task?.plannedEndDate ? formatDateISO(task.plannedEndDate) : null;
+        if (parentDeadlineKey) {
+            for (const st of subtasks) {
+                if (st.deadline && st.deadline > parentDeadlineKey) {
+                    toast.error(`Hạn của '${st.name}' không được vượt quá deadline task cha (${formatDate(task.plannedEndDate)})`);
+                    return;
+                }
+            }
+        }
         if (onSave) {
             onSave(subtasks);
         }
@@ -266,6 +276,7 @@ export const SubtaskRoadmapModal = ({
                                             <input
                                                 type="date"
                                                 value={row.deadline}
+                                                max={task?.plannedEndDate ? formatDateISO(task.plannedEndDate) : undefined}
                                                 onChange={e => handleRowChange(row.id, 'deadline', e.target.value)}
                                                 className="w-full rounded-xl border border-slate-200 px-2.5 py-2 text-xs font-semibold text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                                             />

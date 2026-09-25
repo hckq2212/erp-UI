@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import Select from 'react-select';
 import { Search, RotateCcw, Filter, User, Calendar, X, AlertCircle, Clock, CalendarDays, ChevronDown } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
@@ -22,13 +22,72 @@ const assigneeSelectStyles = {
     dropdownIndicator: (base) => ({ ...base, color: '#9CA3AF', paddingRight: '0.875rem' }),
     placeholder: (base) => ({ ...base, color: '#6B7280', fontSize: '0.875rem' }),
     singleValue: (base) => ({ ...base, color: '#4B5563', fontSize: '0.875rem' }),
-    menu: (base) => ({ ...base, zIndex: 30, borderRadius: '0.75rem', overflow: 'hidden' }),
+    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+    menu: (base) => ({ ...base, zIndex: 9999, borderRadius: '0.75rem', overflow: 'hidden' }),
     option: (base, state) => ({
         ...base,
         fontSize: '0.875rem',
         cursor: 'pointer',
         backgroundColor: state.isSelected ? '#2563EB' : state.isFocused ? '#EFF6FF' : '#FFFFFF',
         color: state.isSelected ? '#FFFFFF' : '#374151'
+    })
+};
+
+const statusSelectStyles = {
+    control: (base, state) => ({
+        ...base,
+        minHeight: '44px',
+        borderRadius: '0.75rem',
+        borderColor: state.isFocused ? '#3B82F6' : '#E5E7EB',
+        backgroundColor: state.isFocused ? '#FFFFFF' : '#F9FAFB',
+        boxShadow: state.isFocused ? '0 0 0 1px #3B82F6' : 'none',
+        cursor: 'pointer',
+        '&:hover': { borderColor: state.isFocused ? '#3B82F6' : '#D1D5DB' }
+    }),
+    valueContainer: (base) => ({ ...base, paddingLeft: '0.75rem', paddingRight: '0.5rem' }),
+    input: (base) => ({ ...base, margin: 0, padding: 0, color: '#1F2937', fontSize: '0.875rem' }),
+    indicatorSeparator: () => ({ display: 'none' }),
+    dropdownIndicator: (base) => ({ ...base, color: '#9CA3AF', paddingRight: '0.75rem' }),
+    clearIndicator: (base) => ({
+        ...base,
+        color: '#9CA3AF',
+        padding: '0 4px',
+        cursor: 'pointer',
+        '&:hover': { color: '#EF4444' }
+    }),
+    placeholder: (base) => ({ ...base, color: '#6B7280', fontSize: '0.875rem', fontWeight: 500 }),
+    singleValue: (base) => ({ ...base, color: '#4B5563', fontSize: '0.875rem', fontWeight: 500 }),
+    multiValue: (base) => ({
+        ...base,
+        backgroundColor: '#EFF6FF',
+        borderRadius: '0.375rem',
+        border: '1px solid #BFDBFE',
+        margin: '1px'
+    }),
+    multiValueLabel: (base) => ({
+        ...base,
+        color: '#1D4ED8',
+        fontSize: '0.75rem',
+        fontWeight: 600,
+        padding: '1px 5px'
+    }),
+    multiValueRemove: (base) => ({
+        ...base,
+        color: '#3B82F6',
+        cursor: 'pointer',
+        padding: '0 3px',
+        borderRadius: '0 0.375rem 0.375rem 0',
+        '&:hover': { backgroundColor: '#DBEAFE', color: '#DC2626' }
+    }),
+    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+    menu: (base) => ({ ...base, zIndex: 9999, borderRadius: '0.75rem', overflow: 'hidden' }),
+    option: (base, state) => ({
+        ...base,
+        fontSize: '0.875rem',
+        cursor: 'pointer',
+        backgroundColor: state.isSelected ? '#EFF6FF' : state.isFocused ? '#F3F4F6' : '#FFFFFF',
+        color: state.isSelected ? '#2563EB' : '#374151',
+        fontWeight: state.isSelected ? 600 : 400
     })
 };
 
@@ -120,6 +179,26 @@ export const TaskFilters = ({
     ];
     const selectedAssignee = assigneeOptions.find(option => option.value === filters.assigneeId) || assigneeOptions[0];
 
+    const statusOptions = useMemo(() => [
+        ...Object.entries(TASK_STATUS_LABELS).map(([value, label]) => ({
+            value,
+            label
+        }))
+    ], []);
+
+    const selectedStatuses = useMemo(() => {
+        if (!filters.status || filters.status === 'ALL') return [];
+        const values = Array.isArray(filters.status)
+            ? filters.status
+            : (typeof filters.status === 'string' ? filters.status.split(',').map(s => s.trim()).filter(Boolean) : []);
+        return statusOptions.filter(opt => values.includes(opt.value));
+    }, [statusOptions, filters.status]);
+
+    const handleStatusChange = (selected) => {
+        const values = selected ? selected.map(s => s.value) : [];
+        onFilterChange('status', values.length > 0 ? values.join(',') : 'ALL');
+    };
+
     const hasActiveFilters = Boolean(
         filters.search ||
         (filters.status && filters.status !== 'ALL') ||
@@ -140,28 +219,39 @@ export const TaskFilters = ({
                     </div>
                     <input
                         type="text"
-                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none h-[44px]"
+                        className="w-full pl-10 pr-9 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none h-[44px]"
                         placeholder="Tìm theo tên task, mã task hoặc dự án..."
                         value={filters.search || ''}
                         onChange={(e) => onFilterChange('search', e.target.value)}
                     />
+                    {filters.search && (
+                        <button
+                            type="button"
+                            onClick={() => onFilterChange('search', '')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-200 transition-colors"
+                            title="Xóa tìm kiếm"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                        </button>
+                    )}
                 </div>
 
                 {/* Status */}
                 <div className="relative">
-                    <select
-                        className="w-full pl-3.5 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 outline-none hover:bg-white focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer h-[44px]"
-                        value={filters.status || 'ALL'}
-                        onChange={(e) => onFilterChange('status', e.target.value)}
-                    >
-                        <option value="ALL">Tất cả trạng thái</option>
-                        {Object.entries(TASK_STATUS_LABELS).map(([value, label]) => (
-                            <option key={value} value={value}>{label}</option>
-                        ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                        <Filter className="h-4 w-4 text-gray-400" />
-                    </div>
+                    <Select
+                        aria-label="Lọc theo trạng thái"
+                        options={statusOptions}
+                        value={selectedStatuses}
+                        onChange={handleStatusChange}
+                        isMulti={true}
+                        isSearchable={true}
+                        isClearable={true}
+                        closeMenuOnSelect={false}
+                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                        noOptionsMessage={() => 'Không tìm thấy trạng thái'}
+                        placeholder="Tất cả trạng thái"
+                        styles={statusSelectStyles}
+                    />
                 </div>
 
                 {/* Unified Date Range Trigger Field with Popover */}
@@ -351,6 +441,7 @@ export const TaskFilters = ({
                             noOptionsMessage={() => 'Không tìm thấy nhân sự'}
                             loadingMessage={() => 'Đang tải nhân sự...'}
                             styles={assigneeSelectStyles}
+                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                         />
                     </div>
                 )}

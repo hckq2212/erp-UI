@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ProjectTable } from '../../components/projects/ProjectTable';
 import { TableFilters } from '../../components/ui/TableFilters';
 import { PROJECT_STATUS_LABELS } from '../../utils/enums';
@@ -19,6 +19,13 @@ export const ProjectsPage = () => {
     const meta = data?.meta || { total: 0, page: 1, limit: 10, totalPages: 0 };
 
     const handleFilterChange = (key, value) => {
+        if (key === 'status') {
+            const formattedValue = Array.isArray(value)
+                ? (value.length > 0 ? value.join(',') : 'ALL')
+                : (value || 'ALL');
+            setFilters(prev => ({ ...prev, status: formattedValue, page: 1 }));
+            return;
+        }
         setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
     };
 
@@ -41,10 +48,10 @@ export const ProjectsPage = () => {
         });
     };
 
-    const statusOptions = Object.entries(PROJECT_STATUS_LABELS).map(([value, label]) => ({
+    const statusOptions = useMemo(() => Object.entries(PROJECT_STATUS_LABELS).map(([value, label]) => ({
         value,
         label
-    }));
+    })), []);
 
     if (isLoading) return (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -65,10 +72,13 @@ export const ProjectsPage = () => {
             <TableFilters
                 searchTerm={filters.search}
                 onSearchChange={(val) => handleFilterChange('search', val)}
-                filterValue={filters.status}
+                filterValue={filters.status === 'ALL' ? [] : filters.status.split(',')}
                 onFilterChange={(val) => handleFilterChange('status', val)}
                 filterOptions={statusOptions}
+                filterPlaceholder="Tất cả trạng thái"
                 searchPlaceholder="Tìm tên dự án, mã hợp đồng..."
+                isMulti={true}
+                isSearchable={true}
                 onReset={handleReset}
             />
 
