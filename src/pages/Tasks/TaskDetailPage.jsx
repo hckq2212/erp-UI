@@ -18,7 +18,7 @@ import { PanelErrorBoundary } from '../../components/shared/PanelErrorBoundary';
 import { ReworkTaskModal } from '../../components/tasks/ReworkTaskModal';
 import { TaskAssignModal } from '../Projects/ProjectDetailPage/TaskAssignModal';
 import { getTaskDisplayName } from '../../utils/taskName';
-import { getCurrentUserId, isSameUser } from '../../utils/authUser';
+import { getCurrentUserId, getUserAccountRole, isSameUser } from '../../utils/authUser';
 import { TaskDelegationPanel } from '../../components/tasks/TaskDelegationPanel';
 import { TaskReminderButton } from '../../components/tasks/TaskReminderButton';
 import { hasTeamMemberRole } from '../../utils/teamMember';
@@ -48,6 +48,7 @@ export const TaskDetailPage = () => {
 
     const isLoading = isTaskLoading || !user;
     const currentUserId = getCurrentUserId(user);
+    const currentUserRole = getUserAccountRole(user);
     const isProjectOnHold = task?.project?.status === 'ON_HOLD' || task?.status === 'ON_HOLD';
     const team = task?.project?.team;
     const currentMembership = team?.members?.find(member => isSameUser(member.user?.id, currentUserId));
@@ -114,7 +115,9 @@ export const TaskDetailPage = () => {
     const canEditResultDraft = resultDraftStatuses.includes(task?.status) &&
         canSubmitResult &&
         !isParentBlockedBySubtasks;
-    const canSubmitResultDraft = canEditResultDraft && Boolean(task?.result);
+    const canSubmitResultDraft = canEditResultDraft &&
+        Boolean(task?.result) &&
+        (currentUserRole === 'ADMIN' || isSameUser(currentUserId, task?.lastSubmittedById || task?.lastSubmittedBy?.id));
 
     const canDelegate = !isProjectOnHold && (isAccount || isPM || isAdminOverride);
     const canAddSubtask = canDelegate &&
