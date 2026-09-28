@@ -352,6 +352,15 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
     };
 
     const toggleDraftRole = (role) => {
+        if (role === TEAM_MEMBER_ROLE.ACCOUNT && draftRoles.includes(role)) {
+            const otherAccountsCount = groupedMembers.filter(g =>
+                g.userId !== editingUserId && g.roles.includes(TEAM_MEMBER_ROLE.ACCOUNT)
+            ).length;
+            if (otherAccountsCount === 0) {
+                toast.warning('Đội dự án phải có ít nhất 1 nhân sự giữ vai trò Account. Không thể gỡ bỏ vai trò này.');
+                return;
+            }
+        }
         setDraftRoles(current => current.includes(role)
             ? current.filter(item => item !== role)
             : sortRoles([...current, role]));
@@ -367,6 +376,19 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
             return;
         }
         if (draftRoles.length === 0) return;
+
+        const currentEditingGroup = groupedMembers.find(g => g.userId === userId);
+        const hadAccount = currentEditingGroup?.roles?.includes(TEAM_MEMBER_ROLE.ACCOUNT);
+        if (hadAccount && !draftRoles.includes(TEAM_MEMBER_ROLE.ACCOUNT)) {
+            const otherAccountsCount = groupedMembers.filter(g =>
+                g.userId !== userId && g.roles.includes(TEAM_MEMBER_ROLE.ACCOUNT)
+            ).length;
+            if (otherAccountsCount === 0) {
+                toast.warning('Đội dự án phải có ít nhất 1 nhân sự giữ vai trò Account. Không thể gỡ bỏ vai trò này.');
+                return;
+            }
+        }
+
         try {
             await updateMemberRoles({ teamId: team.id, userId, roles: draftRoles }).unwrap();
             toast.success('Đã cập nhật các vai trò');
@@ -386,6 +408,18 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
             toast.warning('Dự án đang tạm dừng, không thể xóa nhân sự.');
             return;
         }
+
+        const hasAccount = group.roles.includes(TEAM_MEMBER_ROLE.ACCOUNT) || isSameUser(group.userId, team?.teamLead?.id);
+        if (hasAccount) {
+            const otherAccountsCount = groupedMembers.filter(g =>
+                !isSameUser(g.userId, group.userId) && (g.roles.includes(TEAM_MEMBER_ROLE.ACCOUNT) || isSameUser(g.userId, team?.teamLead?.id))
+            ).length;
+            if (otherAccountsCount === 0) {
+                toast.warning('Không thể xóa nhân sự này vì đây là người duy nhất giữ vai trò Account trong dự án.');
+                return;
+            }
+        }
+
         try {
             for (const membership of group.memberships) {
                 await removeMember({ memberId: membership.id, teamId: team.id }).unwrap();
