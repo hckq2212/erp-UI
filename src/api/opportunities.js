@@ -41,6 +41,17 @@ export const opportunitiesApi = api.injectEndpoints({
         { type: 'Opportunities', id: 'LIST' },
       ],
     }),
+    addCustomerToOpportunity: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/opportunities/${id}/addcustomer`,
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Opportunities', id },
+        { type: 'Opportunities', id: 'LIST' },
+      ],
+    }),
     deleteOpportunity: builder.mutation({
       query: (id) => ({
         url: `/opportunities/${id}`,
@@ -89,6 +100,7 @@ export const {
   useLazyGetOpportunityQuery,
   useCreateOpportunityMutation,
   useUpdateOpportunityMutation,
+  useAddCustomerToOpportunityMutation,
   useDeleteOpportunityMutation,
   useUpdateOpportunityStageMutation,
   useApproveOpportunityMutation,
