@@ -63,6 +63,27 @@ export const useSSE = () => {
             'project_created': ['Projects', 'Contracts'],
             'project_updated': ['Projects', 'Tasks', 'PauseHistory', 'Debts'],
             'project_deleted': ['Projects'],
+            'customer_created': ['Customers'],
+            'customer_updated': ['Customers', 'Opportunities'],
+            'customer_deleted': ['Customers'],
+            'user_created': ['Users'],
+            'user_updated': ['Users', 'Teams', 'Projects', 'Tasks'],
+            'user_deleted': ['Users', 'Teams', 'Projects', 'Tasks'],
+            'team_created': ['Teams'],
+            'team_updated': ['Teams', 'Projects', 'Tasks'],
+            'team_deleted': ['Teams', 'Projects', 'Tasks'],
+            'team_member_added': ['Teams', 'Projects', 'Tasks'],
+            'team_member_updated': ['Teams', 'Projects', 'Tasks'],
+            'team_member_removed': ['Teams', 'Projects', 'Tasks'],
+            'acceptance_created': ['Acceptance', 'Services', 'Projects', 'Tasks', 'Contracts'],
+            'acceptance_approved': ['Acceptance', 'Services', 'Projects', 'Tasks', 'Contracts'],
+            'acceptance_rejected': ['Acceptance', 'Services', 'Projects', 'Tasks', 'Contracts'],
+            'acceptance_processed': ['Acceptance', 'Services', 'Projects', 'Tasks', 'Contracts'],
+            'contract_addendum_created': ['ContractAddendums', 'Contracts', 'Projects', 'Tasks'],
+            'contract_addendum_updated': ['ContractAddendums', 'Contracts', 'Projects', 'Tasks'],
+            'contract_addendum_signed': ['ContractAddendums', 'Contracts', 'Projects', 'Tasks'],
+            'contract_addendum_rejected': ['ContractAddendums', 'Contracts', 'Projects', 'Tasks'],
+            'contract_addendum_approved': ['ContractAddendums', 'Contracts', 'Projects', 'Tasks'],
             'task_review_updated': ['TaskReviews', 'Tasks'],
             'task_result_check_updated': ['TaskResultChecks'],
           };
@@ -79,9 +100,24 @@ export const useSSE = () => {
               );
             } else if (payload.event?.startsWith('task_')) {
               tagsToInvalidate.push({ type: 'Tasks', id: payload.data.id });
+            } else if (payload.event?.startsWith('contract_addendum_')) {
+              tagsToInvalidate.push({ type: 'ContractAddendums', id: payload.data.id });
             } else if (payload.event?.startsWith('contract_')) {
               tagsToInvalidate.push({ type: 'Contracts', id: payload.data.id });
+            } else if (payload.event?.startsWith('customer_')) {
+              tagsToInvalidate.push({ type: 'Customers', id: payload.data.id });
+            } else if (payload.event?.startsWith('user_')) {
+              tagsToInvalidate.push({ type: 'Users', id: payload.data.id });
+            } else if (payload.event?.startsWith('team_') && !payload.event?.startsWith('team_member_')) {
+              tagsToInvalidate.push({ type: 'Teams', id: payload.data.id });
+            } else if (payload.event?.startsWith('acceptance_')) {
+              tagsToInvalidate.push({ type: 'Acceptance', id: payload.data.id });
             }
+          }
+
+          const teamId = payload.data?.teamId || payload.data?.team?.id;
+          if (payload.event?.startsWith('team_member_') && teamId) {
+            tagsToInvalidate.push({ type: 'Teams', id: teamId });
           }
 
           if (tagsToInvalidate.length > 0) {
