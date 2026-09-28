@@ -48,7 +48,7 @@ export const TaskStatistics = ({ tasks = [], personalView = false }) => {
     };
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-slate-50/50 border border-slate-100 p-5 rounded-[1.5rem] flex items-center gap-4 transition-all hover:bg-white hover:shadow-sm">
                 <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-100">
                     <ClipboardList className="w-6 h-6" />
