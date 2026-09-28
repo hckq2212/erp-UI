@@ -1213,7 +1213,7 @@ export const ProjectInfo = ({ project }) => {
                                 <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Tiến trình dự án</p>
                                 <div className="flex flex-col gap-3 sm:flex-row sm:gap-12 pl-4">
                                     <div className="flex flex-col">
-                                        <p className="font-medium text-gray-700">Ngày dự kiến bắt đầu</p>
+                                        <p className="font-medium text-gray-700 text-sm">Ngày dự kiến bắt đầu</p>
                                         {canEditTimeline ? (
                                             <input
                                                 type="date"
@@ -1243,7 +1243,7 @@ export const ProjectInfo = ({ project }) => {
                                 </div>
                             </div>
                             <div className="flex flex-col items-start gap-2 lg:items-end">
-                                <p className="font-medium text-sm text-blue-700">{timeline.remainingText}</p>
+                                <p className="font-medium text-xs text-blue-700">{timeline.remainingText}</p>
                                 {canEditTimeline && (
                                     <button
                                         type="button"
