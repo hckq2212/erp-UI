@@ -761,13 +761,13 @@ export const TaskDetailPage = () => {
                             </div>
 
                             {canEditResultDraft && (
-                                    <button
-                                        onClick={() => setIsResultModalOpen(true)}
-                                        className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors cursor-pointer"
-                                    >
-                                        {task.result ? 'Cập nhật kết quả' : 'Thêm kết quả'}
-                                    </button>
-                                )}
+                                <button
+                                    onClick={() => setIsResultModalOpen(true)}
+                                    className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors cursor-pointer"
+                                >
+                                    {task.result ? 'Cập nhật kết quả' : 'Thêm kết quả'}
+                                </button>
+                            )}
                         </div>
 
                         {task.result ? (
@@ -894,7 +894,7 @@ export const TaskDetailPage = () => {
                                             <div className="space-y-2">
                                                 <div className="flex items-center gap-2 text-gray-400">
                                                     <MessageSquare className="w-3.5 h-3.5" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">Phản hồi của Lead</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Phản hồi</span>
                                                 </div>
 
                                                 <p className="text-sm text-gray-700 font-medium italic border-l-2 border-purple-200 pl-3 py-1">
