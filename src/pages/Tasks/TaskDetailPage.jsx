@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip, Plus, Play } from 'lucide-react';
-import { useGetTaskQuery, useSubmitTaskResultMutation, useSubmitTaskResultFileMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation, useStartTaskMutation } from '../../api/tasks';
+import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip, Plus, Play, Send } from 'lucide-react';
+import { useGetTaskQuery, useSubmitTaskResultMutation, useSubmitTaskResultFileMutation, useSubmitTaskResultForReviewMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation, useStartTaskMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetTaskResultCheckQuery } from '../../api/taskResultChecks';
 import { ConfirmedCheckErrors } from '../../components/tasks/ConfirmedCheckErrors';
@@ -35,6 +35,7 @@ export const TaskDetailPage = () => {
     const { data: resultCheck } = useGetTaskResultCheckQuery(id, { skip: !id });
     const [submitResult, { isLoading: isSubmittingResult }] = useSubmitTaskResultMutation();
     const [submitResultFile, { isLoading: isSubmittingResultFile }] = useSubmitTaskResultFileMutation();
+    const [submitResultForReview, { isLoading: isSubmittingResultForReview }] = useSubmitTaskResultForReviewMutation();
     const [requestRework, { isLoading: isRequestingRework }] = useRequestReworkMutation();
     const [approveByCustomer, { isLoading: isApprovingByCustomer }] = useApproveByCustomerMutation();
     const [sendReminder, { isLoading: isSendingReminder }] = useSendTaskReminderMutation();
@@ -109,6 +110,11 @@ export const TaskDetailPage = () => {
     const isResultReady = submissionType === 'file'
         ? Boolean(resultFile)
         : Boolean(resultLink.trim());
+    const resultDraftStatuses = ['DOING', 'REJECTED', 'REWORKING', 'OVERDUE'];
+    const canEditResultDraft = resultDraftStatuses.includes(task?.status) &&
+        canSubmitResult &&
+        !isParentBlockedBySubtasks;
+    const canSubmitResultDraft = canEditResultDraft && Boolean(task?.result);
 
     const canDelegate = !isProjectOnHold && (isAccount || isPM || isAdminOverride);
     const canAddSubtask = canDelegate &&
@@ -257,10 +263,10 @@ export const TaskDetailPage = () => {
             if (submissionType === 'file' && resultFile) {
                 setIsUploading(true);
 
-                await submitResultFile({ id, file: resultFile, projectId: task.project?.id, sheetNames: selectedSheets, whitelist, scenarioIds: selectedScenarios, scenarioLabels: selectedScenarioLabels }).unwrap();
+                await submitResultFile({ id, file: resultFile, projectId: task.project?.id, sheetNames: selectedSheets, whitelist, scenarioIds: selectedScenarios, scenarioLabels: selectedScenarioLabels, draft: true }).unwrap();
 
                 setIsUploading(false);
-                toast.success('Gửi kết quả thành công!');
+                toast.success('Đã lưu kết quả. Bạn có thể chỉnh sửa hoặc gửi duyệt.');
                 setIsResultModalOpen(false);
                 setIsSpellCheckStage(false);
                 setSpellCheckFile(null);
@@ -291,10 +297,11 @@ export const TaskDetailPage = () => {
                 scenarioIds: selectedScenarios,
                 scenarioLabels: selectedScenarioLabels,
                 checkFileUrl: submissionType === 'link' ? spellCheckUrl : undefined,
-                checkFileName: submissionType === 'link' ? spellCheckFileName : undefined
+                checkFileName: submissionType === 'link' ? spellCheckFileName : undefined,
+                draft: true
             }).unwrap();
 
-            toast.success('Gửi kết quả thành công!');
+            toast.success('Đã lưu kết quả. Bạn có thể chỉnh sửa hoặc gửi duyệt.');
             setIsResultModalOpen(false);
             setIsSpellCheckStage(false);
             setSpellCheckFile(null);
@@ -313,6 +320,15 @@ export const TaskDetailPage = () => {
         } catch (err) {
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi gửi kết quả');
+        }
+    };
+
+    const handleSubmitResultForReview = async () => {
+        try {
+            await submitResultForReview({ id, projectId: task.project?.id }).unwrap();
+            toast.success('Đã gửi kết quả cho PM duyệt');
+        } catch (err) {
+            toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi gửi duyệt kết quả');
         }
     };
 
@@ -741,9 +757,7 @@ export const TaskDetailPage = () => {
                                 <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kết quả</h2>
                             </div>
 
-                            {(task.status === 'DOING' || task.status === 'REJECTED' || task.status === 'REWORKING' || task.status === 'OVERDUE') &&
-                                canSubmitResult &&
-                                !isParentBlockedBySubtasks && (
+                            {canEditResultDraft && (
                                     <button
                                         onClick={() => setIsResultModalOpen(true)}
                                         className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors cursor-pointer"
@@ -791,14 +805,28 @@ export const TaskDetailPage = () => {
                                     </div>
 
                                     {task.result.url && (
-                                        <a
-                                            href={getFilePreviewUrl(task.result.url, task.result.type)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all shrink-0"
-                                        >
-                                            Xem ngay
-                                        </a>
+                                        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                                            <a
+                                                href={getFilePreviewUrl(task.result.url, task.result.type)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all"
+                                            >
+                                                Xem ngay
+                                            </a>
+
+                                            {canSubmitResultDraft && (
+                                                <Button
+                                                    onClick={handleSubmitResultForReview}
+                                                    isLoading={isSubmittingResultForReview}
+                                                    disabled={isSubmittingResultForReview}
+                                                    className="rounded-xl px-4 py-2 text-xs font-bold uppercase bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-100 flex items-center gap-2"
+                                                >
+                                                    <Send className="w-3.5 h-3.5" />
+                                                    <span>Gửi duyệt</span>
+                                                </Button>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
 
@@ -1057,7 +1085,7 @@ export const TaskDetailPage = () => {
             <Modal
                 isOpen={isResultModalOpen}
                 onClose={() => setIsResultModalOpen(false)}
-                title={isSpellCheckStage ? 'Chọn sheet kiểm tra' : 'Gửi kết quả công việc'}
+                title={isSpellCheckStage ? 'Chọn sheet kiểm tra' : 'Lưu kết quả công việc'}
                 className={isSpellCheckStage ? "max-w-4xl" : "max-w-md"}
             >
                 {!isSpellCheckStage ? (
@@ -1113,7 +1141,7 @@ export const TaskDetailPage = () => {
 
                                     {resultFile && (
                                         <p className="text-[10px] text-blue-500 font-bold mt-3">
-                                            File sẽ được kiểm tra chính tả trước khi nộp
+                                            File sẽ được kiểm tra chính tả sau khi gửi duyệt
                                         </p>
                                     )}
 
@@ -1186,7 +1214,7 @@ export const TaskDetailPage = () => {
                     <div className="space-y-6">
                         <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
                             <p className="text-sm font-bold text-blue-800">Chọn sheet để kiểm tra chính tả &amp; QC</p>
-                            <p className="text-xs text-blue-600 mt-1">Kết quả kiểm tra sẽ được xử lý sau khi nộp và hiển thị cho người duyệt.</p>
+                            <p className="text-xs text-blue-600 mt-1">Kết quả kiểm tra sẽ được xử lý sau khi bạn bấm Gửi duyệt.</p>
                         </div>
 
                         <PanelErrorBoundary resetKey={spellCheckFile || spellCheckUrl} fallbackMessage="Không thể chuẩn bị kiểm tra lúc này">
@@ -1231,7 +1259,7 @@ export const TaskDetailPage = () => {
                                 isLoading={isSubmittingResult || isSubmittingResultFile || isUploading}
                                 disabled={isSubmittingResult || isSubmittingResultFile || isUploading || isLoadingResultSheets}
                             >
-                                {isUploading ? 'Đang tải lên...' : isLoadingResultSheets ? 'Đang đọc danh sách sheet...' : 'Nộp kết quả'}
+                                {isUploading ? 'Đang tải lên...' : isLoadingResultSheets ? 'Đang đọc danh sách sheet...' : 'Lưu kết quả'}
                             </Button>
                         </div>
                     </div>

@@ -45,7 +45,9 @@ export const ContractDetailPage = () => {
 
   const [approveProposal, { isLoading: isApprovingProposal }] = useApproveProposalMutation();
   const [rejectProposal, { isLoading: isRejectingProposal }] = useRejectProposalMutation();
-  const [uploadSigned, { isLoading: isUploadingSigned }] = useUploadSignedMutation();
+  const [isCloudinarySignedUploading, setIsCloudinarySignedUploading] = useState(false);
+  const [uploadSigned, { isLoading: isSignedMutationUploading }] = useUploadSignedMutation();
+  const isUploadingSigned = isSignedMutationUploading || isCloudinarySignedUploading;
   const [addMilestone] = useAddMilestoneMutation();
   const [updateMilestone] = useUpdateMilestoneMutation();
   const [deleteMilestone] = useDeleteMilestoneMutation();
@@ -119,33 +121,37 @@ export const ContractDetailPage = () => {
     }
   };
 
-  const handleUploadSigned = async () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.pdf';
-    input.onchange = async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+  const handleUploadSigned = async (file) => {
+    if (contract.signed_contract) {
+      toast.error('Hợp đồng đã có bản ký, không thể upload lại');
+      return false;
+    }
 
-      if (!file.name.toLowerCase().endsWith('.pdf')) {
-        toast.error('Chỉ chấp nhận file .pdf cho hợp đồng đã ký');
-        return;
-      }
+    if (!file) {
+      toast.error('Vui lòng chọn file hợp đồng đã ký');
+      return false;
+    }
 
-      try {
-        setUploadProgress(0);
-        // Direct upload to Cloudinary
-        const uploadedFile = await uploadToCloudinary(file, "GETVINI/ERP/signed", setUploadProgress);
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error('Chỉ chấp nhận file .pdf cho hợp đồng đã ký');
+      return false;
+    }
 
-        await uploadSigned({ id: contract.id, file: uploadedFile }).unwrap();
-        toast.success('Upload hợp đồng đã ký thành công');
-      } catch (err) {
-        toast.error(err?.data?.message || err?.message || 'Upload thất bại');
-      } finally {
-        setUploadProgress(0);
-      }
-    };
-    input.click();
+    try {
+      setIsCloudinarySignedUploading(true);
+      setUploadProgress(0);
+      const uploadedFile = await uploadToCloudinary(file, "GETVINI/ERP/signed", setUploadProgress);
+
+      await uploadSigned({ id: contract.id, file: uploadedFile }).unwrap();
+      toast.success('Upload hợp đồng đã ký thành công');
+      return true;
+    } catch (err) {
+      toast.error(err?.data?.message || err?.message || 'Upload thất bại');
+      return false;
+    } finally {
+      setIsCloudinarySignedUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   const isContractOrProjectClosed = ['COMPLETED', 'CANCELLED'].includes(contract?.status) || ['COMPLETED', 'CANCELLED'].includes(project?.status);
@@ -168,36 +174,36 @@ export const ContractDetailPage = () => {
     }
   };
 
-  const handleEditMilestone = async (milestone) => {
-    if (isContractOrProjectClosed) {
-      toast.error('Dự án hoặc hợp đồng đã hoàn tất/đã đóng, không thể sửa mốc thanh toán');
-      return;
-    }
-    const title = window.prompt('Tiêu đề mốc thanh toán:', milestone.title) || milestone.title;
-    const dueDate = window.prompt('Ngày đến hạn (YYYY-MM-DD):', milestone.dueDate) || milestone.dueDate;
-    const amountStr = window.prompt('Số tiền (VNĐ):', milestone.amount) || String(milestone.amount || '0');
-    const amount = Number(amountStr.replace(/[^0-9.-]+/g, ''));
-    try {
-      await updateMilestone({ id: milestone.id, title, dueDate, amount }).unwrap();
-      toast.success('Cập nhật mốc thanh toán thành công');
-    } catch (err) {
-      toast.error(err?.data?.message || 'Cập nhật thất bại');
-    }
-  };
+  // const handleEditMilestone = async (milestone) => {
+  //   if (isContractOrProjectClosed) {
+  //     toast.error('Dự án hoặc hợp đồng đã hoàn tất/đã đóng, không thể sửa mốc thanh toán');
+  //     return;
+  //   }
+  //   const title = window.prompt('Tiêu đề mốc thanh toán:', milestone.title) || milestone.title;
+  //   const dueDate = window.prompt('Ngày đến hạn (YYYY-MM-DD):', milestone.dueDate) || milestone.dueDate;
+  //   const amountStr = window.prompt('Số tiền (VNĐ):', milestone.amount) || String(milestone.amount || '0');
+  //   const amount = Number(amountStr.replace(/[^0-9.-]+/g, ''));
+  //   try {
+  //     await updateMilestone({ id: milestone.id, title, dueDate, amount }).unwrap();
+  //     toast.success('Cập nhật mốc thanh toán thành công');
+  //   } catch (err) {
+  //     toast.error(err?.data?.message || 'Cập nhật thất bại');
+  //   }
+  // };
 
-  const handleDeleteMilestone = async (milestone) => {
-    if (isContractOrProjectClosed) {
-      toast.error('Dự án hoặc hợp đồng đã hoàn tất/đã đóng, không thể xóa mốc thanh toán');
-      return;
-    }
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa mốc "${milestone.title}"?`)) return;
-    try {
-      await deleteMilestone(milestone.id).unwrap();
-      toast.success('Xóa mốc thanh toán thành công');
-    } catch (err) {
-      toast.error(err?.data?.message || 'Xóa thất bại');
-    }
-  };
+  // const handleDeleteMilestone = async (milestone) => {
+  //   if (isContractOrProjectClosed) {
+  //     toast.error('Dự án hoặc hợp đồng đã hoàn tất/đã đóng, không thể xóa mốc thanh toán');
+  //     return;
+  //   }
+  //   if (!window.confirm(`Bạn có chắc chắn muốn xóa mốc "${milestone.title}"?`)) return;
+  //   try {
+  //     await deleteMilestone(milestone.id).unwrap();
+  //     toast.success('Xóa mốc thanh toán thành công');
+  //   } catch (err) {
+  //     toast.error(err?.data?.message || 'Xóa thất bại');
+  //   }
+  // };
 
   if (isLoading) {
     return (
