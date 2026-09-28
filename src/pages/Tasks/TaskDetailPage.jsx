@@ -115,7 +115,7 @@ export const TaskDetailPage = () => {
         !task?.parentTaskId &&
         (!task?.subtasks || task?.subtasks?.length === 0) &&
         task?.performerType === 'INTERNAL' &&
-        ['PENDING','NOT_STARTED', 'DOING', 'REWORKING', 'OVERDUE', 'AWAITING_SUPPORT', 'REJECTED'].includes(task?.status) &&
+        ['PENDING', 'NOT_STARTED', 'DOING', 'REWORKING', 'OVERDUE', 'AWAITING_SUPPORT', 'REJECTED'].includes(task?.status) &&
         !['ON_HOLD', 'COMPLETED', 'CANCELLED'].includes(task?.project?.status);
 
     useEffect(() => {
@@ -538,64 +538,6 @@ export const TaskDetailPage = () => {
                             </Button>
                         )}
 
-                    {/* Deprecated cross-team support buttons */}
-                    {/*
-                    {task.status === 'SUPPORT_PENDING' && isSameUser(task.supportLeadId, currentUserId) && (
-                        <div className="flex gap-3">
-                            <Button
-                                onClick={() => handleRespondSupport('ACCEPT')}
-                                className="rounded-2xl py-3 px-6 shadow-lg shadow-green-100 bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
-                            >
-                                <CheckCircle2 className="w-5 h-5" />
-                                Đồng ý hỗ trợ
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                onClick={() => handleRespondSupport('REJECT')}
-                                className="rounded-2xl py-3 px-6 shadow-sm border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-2"
-                            >
-                                <X className="w-5 h-5" />
-                                Từ chối
-                            </Button>
-                        </div>
-                    )}
-
-                    {(task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && isSameUser(currentUserId, task.helperId) && (
-                        <Button
-                            variant="outline"
-                            onClick={handleRequestReturnSupport}
-                            className="rounded-2xl py-3 px-6 border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-2"
-                        >
-                            <AlertCircle className="w-5 h-5" />
-                            Hỗ trợ
-                        </Button>
-                    )}
-
-                    {task.isSupportAccepted &&
-                        isSameUser(task.supportLeadId, currentUserId) &&
-                        task.isSupportReturnRequested &&
-                        (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'SUPPORT_AWAITING_RETURN') && (
-                            <div className="flex gap-3">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setIsAssignModalOpen(true)}
-                                    className="rounded-2xl py-3 px-6 border-amber-200 text-amber-600 hover:bg-amber-50 flex items-center gap-2"
-                                >
-                                    <Users className="w-5 h-5" />
-                                    Phân công lại
-                                </Button>
-
-                                <Button
-                                    onClick={handleReturnSupport}
-                                    className="rounded-2xl py-3 px-6 shadow-lg shadow-red-100 bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
-                                >
-                                    <ArrowLeft className="w-5 h-5" />
-                                    Trả lại
-                                </Button>
-                            </div>
-                        )}
-                    */}
 
                     <TaskReminderButton
                         task={task}

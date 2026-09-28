@@ -56,13 +56,13 @@ const parseDateKey = (dateKey) => {
     return new Date(year, month - 1, day);
 };
 
-const getDailyWorkloadClassName = (taskCount = 0, isSelected = false, hasData = true) => {
-    const selectedClass = isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : '';
-    if (!hasData) return `border-slate-100 bg-white text-slate-300 ${selectedClass}`;
-    if (taskCount >= 5) return `border-red-200 bg-red-50 text-red-700 ${selectedClass}`;
-    if (taskCount >= 3) return `border-amber-200 bg-amber-50 text-amber-700 ${selectedClass}`;
-    if (taskCount > 0) return `border-blue-200 bg-blue-50 text-blue-700 ${selectedClass}`;
-    return `border-emerald-100 bg-emerald-50 text-emerald-700 ${selectedClass}`;
+const getDailyWorkloadClassName = (workloadPercent = 0, taskCount = 0, isSelected = false, hasData = true) => {
+    const selectedClass = isSelected ? 'ring-2 ring-blue-500 ring-offset-1' : '';
+    if (!hasData) return `bg-transparent text-slate-300 ${selectedClass}`;
+    if (workloadPercent >= 100) return `bg-red-50 text-red-700 ${selectedClass}`;
+    if (workloadPercent >= 70) return `bg-amber-50 text-amber-700 ${selectedClass}`;
+    if (workloadPercent > 0 || taskCount > 0) return `bg-blue-50 text-blue-700 ${selectedClass}`;
+    return `bg-slate-50 text-slate-500 ${selectedClass}`;
 };
 
 const buildMonthCells = (dateKey) => {
@@ -92,7 +92,10 @@ const getMonthRange = (date) => {
 
 const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSelectDate }) => {
     const days = data?.days || [];
-    const maxDailyTasks = days.reduce((max, day) => Math.max(max, Number(day.taskCount || 0)), 0);
+    const maxDailyWorkloadPercent = days.reduce(
+        (max, day) => Math.max(max, Number(day.workloadPercent ?? 0)),
+        0
+    );
     const daysByDate = new Map(days.map(day => [day.date, day]));
     const monthCells = buildMonthCells(selectedDateKey || data?.endDate);
     const monthLabelDate = parseDateKey(selectedDateKey || data?.endDate) || new Date();
@@ -100,7 +103,7 @@ const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSe
 
     return (
         <div className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
-            <div className="mb-2 flex items-center justify-between gap-3">
+            <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                     <p className="text-xs font-black text-slate-700">
                         Lịch task tháng {monthLabelDate.getMonth() + 1}/{monthLabelDate.getFullYear()}
@@ -111,7 +114,7 @@ const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSe
                 </div>
                 {!isLoading && !isError && (
                     <span className="shrink-0 rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-black text-slate-500">
-                        Max {maxDailyTasks}/ngày
+                        Max {maxDailyWorkloadPercent}% tải/ngày
                     </span>
                 )}
             </div>
@@ -140,20 +143,26 @@ const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSe
 
                             const day = daysByDate.get(dateKey);
                             const taskCount = Number(day?.taskCount || 0);
+                            const workloadPercent = Number(day?.workloadPercent ?? 0);
                             const hasData = daysByDate.has(dateKey);
                             const isSelected = dateKey === selectedDateKey;
+                            const title = hasData
+                                ? `${formatDate(dateKey)}: ${taskCount} task - ${workloadPercent}% tải ngày`
+                                : `${formatDate(dateKey)}: ngoài khoảng đang xem`;
 
                             return (
                                 <button
                                     key={dateKey}
                                     type="button"
-                                    className={`flex aspect-square min-h-10 flex-col items-center justify-center rounded-lg border text-center transition hover:border-blue-300 hover:bg-blue-50 ${getDailyWorkloadClassName(taskCount, isSelected, hasData)}`}
-                                    title={hasData ? `${formatDate(dateKey)}: ${taskCount} task` : `${formatDate(dateKey)}: ngoài khoảng đang xem`}
+                                    className={`flex aspect-square min-h-10 flex-col items-center justify-center rounded-lg px-1.5 py-1.5 text-center transition hover:bg-blue-50 ${getDailyWorkloadClassName(workloadPercent, taskCount, isSelected, hasData)}`}
+                                    title={title}
                                     onClick={() => onSelectDate(dateKey)}
                                 >
-                                    <span className="text-xs font-black">{Number(dateKey.slice(8, 10))}</span>
-                                    <span className="mt-0.5 rounded-full bg-white/70 px-1 text-[8px] font-black leading-tight">
-                                        {hasData ? taskCount : '-'}
+                                    <span className="text-[10px] font-black leading-none opacity-70">
+                                        {Number(dateKey.slice(8, 10))}
+                                    </span>
+                                    <span className="mt-1 text-[11px] font-black leading-none">
+                                        {hasData ? `${workloadPercent}%` : '-'}
                                     </span>
                                 </button>
                             );
