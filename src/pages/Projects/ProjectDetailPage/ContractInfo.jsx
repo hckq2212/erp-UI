@@ -353,7 +353,9 @@ export const ContractInfo = ({ contract, projectId, project }) => {
     const isOnHold = project?.status === 'ON_HOLD' || Boolean(project?.isOnHold);
     const isAdminOrBOD = ['ADMIN', 'BOD'].includes(user?.role);
     const canSeeAllTasks = isAdminOrBOD || isProjectLead || isProjectManager;
-    const canSendAcceptance = canSeeAllTasks || user?.role === 'ADMIN_SALE';
+    // Team Lead/ACCOUNT can inspect all project tasks, but acceptance submission
+    // is reserved for project managers and management roles.
+    const canSendAcceptance = isAdminOrBOD || isProjectManager || user?.role === 'ADMIN_SALE';
     const canEditServiceNickname = canSeeAllTasks;
 
     const projectTasksMap = useMemo(() => {

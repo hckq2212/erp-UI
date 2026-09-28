@@ -12,7 +12,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { selectCurrentUser } from '../../../store/authSlice';
-import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation, useApproveOpportunityMutation, useRejectOpportunityMutation } from '../../../api/opportunities';
+import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation, useAddCustomerToOpportunityMutation, useApproveOpportunityMutation, useRejectOpportunityMutation } from '../../../api/opportunities';
 import { useGetCustomersQuery } from '../../../api/customers';
 import { useGetQuotationsByOpportunityQuery, useCreateQuotationMutation, useUpdateQuotationMutation } from '../../../api/quotations';
 import { useGetReferralPartnersQuery, useGetReferralPartnerQuery } from '../../../api/referralPartners';
@@ -43,6 +43,7 @@ export const OpportunityDetailPage = () => {
   const { data: opportunity, isLoading, error } = useGetOpportunityQuery(id);
   const [deleteOpportunity, { isLoading: isDeleting }] = useDeleteOpportunityMutation();
   const [updateOpportunity, { isLoading: isUpdating }] = useUpdateOpportunityMutation();
+  const [addCustomerToOpportunity, { isLoading: isAddingCustomer }] = useAddCustomerToOpportunityMutation();
   const { data: quotations = [], isLoading: isLoadingQuotations } = useGetQuotationsByOpportunityQuery(id);
   const { data: currentUser = [] } = useGetMeQuery();
   const [createQuotation, { isLoading: isCreatingQuotation }] = useCreateQuotationMutation();
@@ -134,6 +135,7 @@ export const OpportunityDetailPage = () => {
 
       if (customerStatus === 'EXISTING') {
         updateData.customerId = selectedCustomerId;
+        updateData.customerType = customerType;
         updateData.leadName = '';
         updateData.leadPhone = '';
         updateData.leadEmail = '';
@@ -149,6 +151,7 @@ export const OpportunityDetailPage = () => {
         }
       } else if (customerStatus === 'POTENTIAL') {
         updateData.customerId = '';
+        updateData.customerType = customerType;
 
         // Map frontend type to backend source enum
         const backendSource = customerType === 'REFERRAL' ? 'REFERRAL_PARTNER' : 'INTERNAL';
@@ -165,7 +168,11 @@ export const OpportunityDetailPage = () => {
         }
       }
 
-      await updateOpportunity({ id, ...updateData }).unwrap();
+      if (customerStatus === 'EXISTING') {
+        await addCustomerToOpportunity({ id, ...updateData }).unwrap();
+      } else {
+        await updateOpportunity({ id, ...updateData }).unwrap();
+      }
       setShowContactModal(false);
     } catch (err) {
       alert(err?.data?.message || 'Có lỗi xảy ra khi cập nhật');
@@ -504,7 +511,7 @@ export const OpportunityDetailPage = () => {
         referralPartners={referralPartners}
         customers={displayCustomers}
         onSave={handleSaveContact}
-        isUpdating={isUpdating || isLoadingPartnerDetails}
+        isUpdating={isUpdating || isAddingCustomer || isLoadingPartnerDetails}
       />
 
       <OpportunityModal
