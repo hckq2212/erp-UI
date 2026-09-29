@@ -1,10 +1,53 @@
 import { useState, useEffect, useMemo, Fragment } from 'react';
-import { X, FileText, Plus, Trash2, Briefcase, Search } from 'lucide-react';
+import { X, FileText, Plus, Trash2, Briefcase } from 'lucide-react';
+import Select from 'react-select';
 import { formatNumber, parseNumber } from '../../../utils/format';
 import { useGetOpportunityServicesByOpportunityQuery } from '../../../api/opportunityService';
 import { useGetServicesQuery } from '../../../api/services';
 import { useGetServicePackagesQuery } from '../../../api/servicePackages';
 import { toast } from 'react-toastify';
+
+const selectStyles = (focusColor = '#fb923c') => ({
+  control: (base, state) => ({
+    ...base,
+    minHeight: 42,
+    borderRadius: 12,
+    borderColor: state.isFocused ? focusColor : '#d1d5db',
+    boxShadow: state.isFocused ? `0 0 0 1px ${focusColor}` : 'none',
+    '&:hover': { borderColor: focusColor },
+    backgroundColor: '#fff',
+    cursor: 'text',
+  }),
+  valueContainer: (base) => ({ ...base, padding: '2px 12px' }),
+  indicatorSeparator: () => ({ display: 'none' }),
+  dropdownIndicator: (base) => ({ ...base, color: '#9ca3af' }),
+  menu: (base) => ({
+    ...base,
+    borderRadius: 12,
+    padding: 4,
+    overflow: 'hidden',
+    boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+    border: '1px solid #f3f4f6',
+  }),
+  menuList: (base) => ({ ...base, maxHeight: 280, padding: 0 }),
+  option: (base, state) => ({
+    ...base,
+    borderRadius: 8,
+    padding: '10px 14px',
+    fontSize: 14,
+    cursor: 'pointer',
+    color: '#111827',
+    backgroundColor: state.isSelected
+      ? '#e5e7eb'
+      : state.isFocused
+        ? '#f3f4f6'
+        : 'transparent',
+    ':active': { backgroundColor: '#e5e7eb' },
+  }),
+  placeholder: (base) => ({ ...base, color: '#9ca3af', fontSize: 14 }),
+  noOptionsMessage: (base) => ({ ...base, fontSize: 13 }),
+  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+});
 
 export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuotation = null, isSubmitting = false }) => {
   const [items, setItems] = useState([]);
@@ -12,10 +55,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
   const [notes, setNotes] = useState('');
   const [showAddService, setShowAddService] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState('');
-  const [serviceSearchTerm, setServiceSearchTerm] = useState('');
   const [showAddPackage, setShowAddPackage] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState('');
-  const [packageSearchTerm, setPackageSearchTerm] = useState('');
   const isEditMode = !!editQuotation;
 
   // Fetch opportunity services using RTK Query (only for create mode)
@@ -49,10 +90,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     if (!isOpen) {
       setShowAddService(false);
       setSelectedServiceId('');
-      setServiceSearchTerm('');
       setShowAddPackage(false);
       setSelectedPackageId('');
-      setPackageSearchTerm('');
     }
   }, [isOpen]);
 
@@ -254,7 +293,6 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
 
     setItems([...items, { ...newItem, packageName: 'STANDALONE' }]);
     setSelectedServiceId('');
-    setServiceSearchTerm('');
     setShowAddService(false);
   };
 
@@ -298,30 +336,30 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
 
     setItems([...items, ...packageItems]);
     setSelectedPackageId('');
-    setPackageSearchTerm('');
     setShowAddPackage(false);
   };
 
-  // Get available services that are not already in the list
-  const availableServices = allServices.filter(
-    service => !items.find(item => item.packageName === 'STANDALONE' && String(item.serviceId) === String(service.id))
+  // Options for react-select (services not already in the list)
+  const serviceOptions = useMemo(
+    () => allServices
+      .filter(s => !items.find(i => i.packageName === 'STANDALONE' && String(i.serviceId) === String(s.id)))
+      .map(s => ({
+        value: s.id,
+        label: `${s.code ? `${s.code} - ` : ''}${s.name} - ${formatNumber(s.costPrice)} VNĐ`,
+      })),
+    [allServices, items]
   );
 
-  const filteredAvailableServices = availableServices.filter(service => {
-    const keyword = serviceSearchTerm.trim().toLowerCase();
-    if (!keyword) return true;
-    return service.name?.toLowerCase().includes(keyword);
-  });
-
-  const availablePackageTemplates = packageTemplates.filter(
-    template => !items.some(item => item.packageName === template.name)
+  // Options for react-select (packages not already in the list)
+  const packageOptions = useMemo(
+    () => packageTemplates
+      .filter(t => !items.some(i => i.packageName === t.name))
+      .map(t => ({
+        value: t.id,
+        label: `${t.code ? `${t.code} - ` : ''}${t.name} (${t.items?.length || 0} dịch vụ)`,
+      })),
+    [packageTemplates, items]
   );
-
-  const filteredPackageTemplates = availablePackageTemplates.filter(template => {
-    const keyword = packageSearchTerm.trim().toLowerCase();
-    if (!keyword) return true;
-    return template.name?.toLowerCase().includes(keyword);
-  });
 
   const totals = items.reduce((acc, item) => {
     const revenue = (item.selectedPrice || 0) * (item.quantity || 0);
@@ -669,34 +707,17 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Chọn dịch vụ lẻ
                     </label>
-                    <div className="relative mb-2">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <input
-                        type="text"
-                        value={serviceSearchTerm}
-                        onChange={(e) => {
-                          setServiceSearchTerm(e.target.value);
-                          setSelectedServiceId('');
-                        }}
-                        placeholder="Tìm theo tên dịch vụ..."
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                      />
-                    </div>
-                    <select
-                      value={selectedServiceId}
-                      onChange={(e) => setSelectedServiceId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                    >
-                      <option value="">-- Chọn dịch vụ --</option>
-                      {filteredAvailableServices.map(service => (
-                        <option key={service.id} value={service.id}>
-                          {service.code ? `${service.code} - ` : ''}{service.name} - {formatNumber(service.costPrice)} VNĐ
-                        </option>
-                      ))}
-                    </select>
-                    {filteredAvailableServices.length === 0 && (
-                      <p className="mt-2 text-xs text-gray-500">Không tìm thấy dịch vụ phù hợp</p>
-                    )}
+                    <Select
+                      options={serviceOptions}
+                      value={serviceOptions.find(o => String(o.value) === String(selectedServiceId)) || null}
+                      onChange={(opt) => setSelectedServiceId(opt ? String(opt.value) : '')}
+                      placeholder="Tìm theo tên dịch vụ..."
+                      noOptionsMessage={() => 'Không tìm thấy dịch vụ phù hợp'}
+                      isClearable
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                      styles={selectStyles('#fb923c')}
+                    />
                   </div>
 
                   <button
@@ -710,7 +731,6 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                     onClick={() => {
                       setShowAddService(false);
                       setSelectedServiceId('');
-                      setServiceSearchTerm('');
                     }}
                     className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                   >
@@ -734,34 +754,17 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                     <label className="block text-sm font-medium text-indigo-900 mb-2">
                       Chọn gói dịch vụ mẫu
                     </label>
-                    <div className="relative mb-2">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-300" />
-                      <input
-                        type="text"
-                        value={packageSearchTerm}
-                        onChange={(e) => {
-                          setPackageSearchTerm(e.target.value);
-                          setSelectedPackageId('');
-                        }}
-                        placeholder="Tìm theo tên gói..."
-                        className="w-full pl-10 pr-3 py-2 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
-                      />
-                    </div>
-                    <select
-                      value={selectedPackageId}
-                      onChange={(e) => setSelectedPackageId(e.target.value)}
-                      className="w-full px-3 py-2 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shrink-0"
-                    >
-                      <option value="">-- Chọn gói mẫu --</option>
-                      {filteredPackageTemplates.map(template => (
-                        <option key={template.id} value={template.id}>
-                          {template.code ? `${template.code} - ` : ''}{template.name} ({template.items?.length || 0} dịch vụ)
-                        </option>
-                      ))}
-                    </select>
-                    {filteredPackageTemplates.length === 0 && (
-                      <p className="mt-2 text-xs text-indigo-700">Không tìm thấy gói dịch vụ phù hợp</p>
-                    )}
+                    <Select
+                      options={packageOptions}
+                      value={packageOptions.find(o => String(o.value) === String(selectedPackageId)) || null}
+                      onChange={(opt) => setSelectedPackageId(opt ? String(opt.value) : '')}
+                      placeholder="Tìm theo tên gói..."
+                      noOptionsMessage={() => 'Không tìm thấy gói dịch vụ phù hợp'}
+                      isClearable
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                      styles={selectStyles('#6366f1')}
+                    />
                   </div>
                   <button
                     onClick={handleAddPackage}
@@ -774,7 +777,6 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                     onClick={() => {
                       setShowAddPackage(false);
                       setSelectedPackageId('');
-                      setPackageSearchTerm('');
                     }}
                     className="px-4 py-2 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors font-medium"
                   >
