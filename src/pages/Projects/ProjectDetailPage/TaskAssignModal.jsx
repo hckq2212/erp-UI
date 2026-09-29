@@ -4,13 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGetTeamMembersQuery, useGetTeamsQuery, useLazyGetTeamsQuery, useLazyGetTeamMembersQuery } from '../../../api/teams';
 import { useAssignTaskMutation, useAssignSupportTeamMutation, useRequestSupportMutation, useBulkAssignTasksMutation, useGetAssigneeDailyWorkloadQuery, useGetTaskQuery } from '../../../api/tasks';
 import { formatDate, formatDateTimeISO } from '../../../utils/format';
-import { useGetVendorsByJobQuery } from '../../../api/vendors';
+import { useGetVendorsByJobQuery, useLazyGetVendorsByJobQuery } from '../../../api/vendors';
 import { uploadToCloudinary } from '../../../utils/cloudinary';
 import { toast } from 'react-toastify';
 import { getTaskDisplayName } from '../../../utils/taskName';
 import { formatWorkloadLabel, getWorkloadColor, getWorkloadDisplayPercent } from '../../../utils/workload';
 import { getTeamMemberRoles } from '../../../utils/teamMember';
 import { TEAM_MEMBER_ROLE_LABELS } from '../../../utils/enums';
+import { getEligibleVendorsForJobs, getTaskJobId } from '../../../utils/vendorEligibility';
 
 const WorkloadPill = ({ workload }) => {
     const percent = getWorkloadDisplayPercent(workload);
@@ -172,7 +173,7 @@ import { useGetUsersQuery } from '../../../api/users';
 
 export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) => {
     const isBulk = Array.isArray(task);
-    const tasks = isBulk ? task : [task];
+    const tasks = useMemo(() => (isBulk ? task : [task]), [isBulk, task]);
     const representativeTask = tasks[0];
 
     const parentTaskId = representativeTask?.parentTaskId;
@@ -269,10 +270,81 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
     const [isAssigneeOpen, setIsAssigneeOpen] = useState(false);
 
     const jobId = representativeTask?.jobId || representativeTask?.job?.id;
-    const { data: vendorsResult, isLoading: isLoadingVendors } = useGetVendorsByJobQuery(jobId, {
-        skip: formData.performerType !== 'VENDOR' || !jobId || isBulk // Simplify bulk vendor assignment logic if needed, but for now allow if all tasks share same jobId?
+    const selectedTaskJobIds = useMemo(() => (
+        [...new Set(tasks
+            .map(getTaskJobId)
+            .filter(Boolean))]
+    ), [tasks]);
+    const hasTaskWithoutJob = useMemo(() => tasks.some(selectedTask => !getTaskJobId(selectedTask)), [tasks]);
+    const { data: vendorsResult, isLoading: isLoadingSingleJobVendors } = useGetVendorsByJobQuery(jobId, {
+        skip: formData.performerType !== 'VENDOR' || !jobId || isBulk
     });
-    const vendors = Array.isArray(vendorsResult) ? vendorsResult : (vendorsResult?.data || []);
+    const [fetchVendorsByJob] = useLazyGetVendorsByJobQuery();
+    const [bulkVendors, setBulkVendors] = useState([]);
+    const [isLoadingBulkVendors, setIsLoadingBulkVendors] = useState(false);
+    const [bulkVendorError, setBulkVendorError] = useState('');
+    const [resolvedBulkVendorRequestKey, setResolvedBulkVendorRequestKey] = useState('');
+    const bulkVendorRequestKey = (
+        isBulk &&
+        formData.performerType === 'VENDOR' &&
+        !hasTaskWithoutJob &&
+        selectedTaskJobIds.length > 0
+    ) ? selectedTaskJobIds.join('|') : '';
+
+    useEffect(() => {
+        if (!isBulk || formData.performerType !== 'VENDOR') {
+            setBulkVendors([]);
+            setBulkVendorError('');
+            setIsLoadingBulkVendors(false);
+            setResolvedBulkVendorRequestKey('');
+            return undefined;
+        }
+
+        if (hasTaskWithoutJob || selectedTaskJobIds.length === 0) {
+            setBulkVendors([]);
+            setBulkVendorError('Có công việc chưa xác định hạng mục nên chưa thể chọn vendor.');
+            setIsLoadingBulkVendors(false);
+            setResolvedBulkVendorRequestKey('');
+            return undefined;
+        }
+
+        let isActive = true;
+        setIsLoadingBulkVendors(true);
+        setBulkVendorError('');
+
+        Promise.all(selectedTaskJobIds.map(selectedJobId => fetchVendorsByJob(selectedJobId).unwrap()))
+            .then(results => {
+                if (!isActive) return;
+
+                const vendorLists = results.map(result => (
+                    Array.isArray(result) ? result : (result?.data || [])
+                ));
+                setBulkVendors(getEligibleVendorsForJobs(vendorLists));
+            })
+            .catch(error => {
+                if (!isActive) return;
+                setBulkVendors([]);
+                setBulkVendorError(error?.data?.message || error?.message || 'Không thể tải danh sách vendor phù hợp.');
+            })
+            .finally(() => {
+                if (isActive) {
+                    setResolvedBulkVendorRequestKey(bulkVendorRequestKey);
+                    setIsLoadingBulkVendors(false);
+                }
+            });
+
+        return () => {
+            isActive = false;
+        };
+    }, [bulkVendorRequestKey, fetchVendorsByJob, formData.performerType, hasTaskWithoutJob, isBulk, selectedTaskJobIds]);
+
+    const singleJobVendors = Array.isArray(vendorsResult) ? vendorsResult : (vendorsResult?.data || []);
+    const vendors = isBulk ? bulkVendors : singleJobVendors;
+    const isLoadingVendors = isBulk
+        ? Boolean(bulkVendorRequestKey) && (
+            isLoadingBulkVendors || resolvedBulkVendorRequestKey !== bulkVendorRequestKey
+        )
+        : isLoadingSingleJobVendors;
     const [files, setFiles] = useState([]);
     const [uploadProgress, setUploadProgress] = useState({}); // { index: progress }
     const [isUploading, setIsUploading] = useState(false);
@@ -361,6 +433,15 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
 
         if (!formData.isTeamAssignment && !formData.assigneeId) {
             toast.error('Vui lòng chọn người thực hiện');
+            return;
+        }
+
+        if (
+            isBulk &&
+            formData.performerType === 'VENDOR' &&
+            !vendors.some(vendor => vendor.id === formData.assigneeId)
+        ) {
+            toast.error('Vendor được chọn không đáp ứng toàn bộ công việc. Vui lòng chọn lại.');
             return;
         }
 
@@ -478,7 +559,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi phân công');
         }
-    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedEndDate, requestSupport, parentTask, latestSubtask]);
+    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedEndDate, requestSupport, parentTask, latestSubtask, vendors]);
 
     return (
         <AnimatePresence>
@@ -849,9 +930,17 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                         </svg>
                                     </div>
                                 </div>
-                                {formData.performerType === 'VENDOR' && vendors.length === 0 && !isLoadingVendors && (
+                                {formData.performerType === 'VENDOR' && bulkVendorError && !isLoadingVendors && (
                                     <div className="flex items-center gap-2 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold ring-1 ring-red-100 animate-in fade-in slide-in-from-top-1">
-                                        <Info className="w-4 h-4" /> Chưa có vendor cung cấp dịch vụ này
+                                        <Info className="w-4 h-4" /> {bulkVendorError}
+                                    </div>
+                                )}
+                                {formData.performerType === 'VENDOR' && !bulkVendorError && vendors.length === 0 && !isLoadingVendors && (
+                                    <div className="flex items-center gap-2 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold ring-1 ring-red-100 animate-in fade-in slide-in-from-top-1">
+                                        <Info className="w-4 h-4" />
+                                        {isBulk
+                                            ? `Chưa có vendor đáp ứng toàn bộ ${selectedTaskJobIds.length} hạng mục đã chọn`
+                                            : 'Chưa có vendor cung cấp dịch vụ này'}
                                     </div>
                                 )}
                                 {shouldFetchDailyWorkload && (

@@ -330,6 +330,7 @@ export const USER_ROLE_OPTIONS = [
 
 export const STAFF_ROLES = ['STAFF_A', 'STAFF_B', 'STAFF_C', 'STAFF_D'];
 export const PROJECT_MANAGEMENT_ROLES = ['ADMIN', 'BOD', 'PM'];
+export const ACCEPTANCE_APPROVER_ROLES = ['ADMIN', 'BOD', 'ADMIN_SALE'];
 
 export const USER_ROLE_COLORS = {
   ADMIN: 'bg-rose-50 text-rose-700 border-rose-100',

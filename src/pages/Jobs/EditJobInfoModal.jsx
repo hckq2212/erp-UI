@@ -10,6 +10,7 @@ import { formatNumber, parseNumber } from '../../utils/format';
 import { useEffect, useState } from 'react';
 import { JOB_CATEGORY_OPTIONS } from '../../utils/enums';
 
+
 const jobInfoSchema = z.object({
     name: z.string().min(1, 'Tên hạng mục là bắt buộc'),
     nickname: z.string().max(120, 'Nickname không được vượt quá 120 ký tự').optional().default(''),
@@ -55,7 +56,7 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
                 name: job.name,
                 nickname: job.nickname || '',
                 code: job.code,
-                costPrice: String(job.costPrice || '0'),
+                costPrice: String(Number(job.costPrice ?? 0)),
                 vinicoin: String(job.vinicoin || '0'),
                 timeToComplete: String(job.timeToComplete || '0'),
                 isBriefVideo: Boolean(job.isBriefVideo),
