@@ -60,12 +60,9 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
                 name: job.name,
                 nickname: job.nickname || '',
                 code: job.code,
-                // PostgreSQL decimal columns are returned as strings (for example
-                // "20000.000"). Normalize them before putting them into currency
-                // inputs so the dots are not later parsed as thousand separators.
-                costPrice: normalizeApiNumber(job.costPrice),
-                vinicoin: normalizeApiNumber(job.vinicoin),
-                timeToComplete: String(job.timeToComplete ?? '0'),
+                costPrice: String(Number(job.costPrice ?? 0)),
+                vinicoin: String(job.vinicoin || '0'),
+                timeToComplete: String(job.timeToComplete || '0'),
                 isBriefVideo: Boolean(job.isBriefVideo),
                 isQuotationItem: job.isQuotationItem !== false,
                 categories: Array.isArray(job.categories) ? job.categories : [],

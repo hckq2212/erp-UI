@@ -31,7 +31,7 @@ export const CONTRACT_SERVICE_STATUS_LABELS = {
   AWAITING_ACCEPTANCE: 'Sẵn sàng nghiệm thu',
   ACCEPTANCE_REJECTED: 'Từ chối nghiệm thu',
   COMPLETED: 'Hoàn thành',
-  CANCELLED: 'Đã hủy',  
+  CANCELLED: 'Đã hủy',
 };
 
 export const CONTRACT_SERVICE_STATUS_COLORS = {
@@ -90,7 +90,7 @@ export const TASK_STATUS_LABELS_PAUSE = {
 export const OPPORTUNITY_STATUS_LABELS = {
   OPEN: 'Mới',
   PENDING_OPP_APPROVAL: 'Đang chờ duyệt',
-  OPP_REJECTED: 'Không duyệt - cần chỉnh sửa',
+  OPP_REJECTED: 'Không duyệt',
   OPP_APPROVED: 'Đã duyệt',
   QUOTATION: 'Báo giá',
   QUOTATION_DRAFTING: 'Đang làm báo giá',
@@ -330,6 +330,7 @@ export const USER_ROLE_OPTIONS = [
 
 export const STAFF_ROLES = ['STAFF_A', 'STAFF_B', 'STAFF_C', 'STAFF_D'];
 export const PROJECT_MANAGEMENT_ROLES = ['ADMIN', 'BOD', 'PM'];
+export const ACCEPTANCE_APPROVER_ROLES = ['ADMIN', 'BOD', 'ADMIN_SALE'];
 
 export const USER_ROLE_COLORS = {
   ADMIN: 'bg-rose-50 text-rose-700 border-rose-100',

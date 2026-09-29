@@ -197,7 +197,7 @@ export const VendorJobModal = ({ isOpen, onClose, onSubmit, vendorId, existingJo
                                 <Input
                                     label="Giá Vendor cung cấp"
                                     {...register('price')}
-                                    value={formatNumber(priceValue)}
+                                    value={formatCurrency(priceValue)}
                                     onChange={(e) => {
                                         const rawValue = e.target.value.replace(/\D/g, '');
                                         setValue('price', rawValue);
