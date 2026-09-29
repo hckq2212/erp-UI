@@ -56,13 +56,13 @@ const parseDateKey = (dateKey) => {
     return new Date(year, month - 1, day);
 };
 
-const getDailyWorkloadClassName = (taskCount = 0, isSelected = false, hasData = true) => {
-    const selectedClass = isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : '';
-    if (!hasData) return `border-slate-100 bg-white text-slate-300 ${selectedClass}`;
-    if (taskCount >= 5) return `border-red-200 bg-red-50 text-red-700 ${selectedClass}`;
-    if (taskCount >= 3) return `border-amber-200 bg-amber-50 text-amber-700 ${selectedClass}`;
-    if (taskCount > 0) return `border-blue-200 bg-blue-50 text-blue-700 ${selectedClass}`;
-    return `border-emerald-100 bg-emerald-50 text-emerald-700 ${selectedClass}`;
+const getDailyWorkloadClassName = (workloadPercent = 0, taskCount = 0, isSelected = false, hasData = true) => {
+    const selectedClass = isSelected ? 'ring-2 ring-blue-500 ring-offset-1' : '';
+    if (!hasData) return `bg-transparent text-slate-300 ${selectedClass}`;
+    if (workloadPercent >= 100) return `bg-red-50 text-red-700 ${selectedClass}`;
+    if (workloadPercent >= 70) return `bg-amber-50 text-amber-700 ${selectedClass}`;
+    if (workloadPercent > 0 || taskCount > 0) return `bg-blue-50 text-blue-700 ${selectedClass}`;
+    return `bg-slate-50 text-slate-500 ${selectedClass}`;
 };
 
 const buildMonthCells = (dateKey) => {
@@ -92,7 +92,10 @@ const getMonthRange = (date) => {
 
 const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSelectDate }) => {
     const days = data?.days || [];
-    const maxDailyTasks = days.reduce((max, day) => Math.max(max, Number(day.taskCount || 0)), 0);
+    const maxDailyWorkloadPercent = days.reduce(
+        (max, day) => Math.max(max, Number(day.workloadPercent ?? 0)),
+        0
+    );
     const daysByDate = new Map(days.map(day => [day.date, day]));
     const monthCells = buildMonthCells(selectedDateKey || data?.endDate);
     const monthLabelDate = parseDateKey(selectedDateKey || data?.endDate) || new Date();
@@ -100,7 +103,7 @@ const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSe
 
     return (
         <div className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
-            <div className="mb-2 flex items-center justify-between gap-3">
+            <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
                     <p className="text-xs font-black text-slate-700">
                         Lịch task tháng {monthLabelDate.getMonth() + 1}/{monthLabelDate.getFullYear()}
@@ -109,11 +112,6 @@ const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSe
                         Chọn ngày để đặt deadline
                     </p>
                 </div>
-                {!isLoading && !isError && (
-                    <span className="shrink-0 rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-black text-slate-500">
-                        Max {maxDailyTasks}/ngày
-                    </span>
-                )}
             </div>
 
             {isLoading ? (
@@ -140,20 +138,26 @@ const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSe
 
                             const day = daysByDate.get(dateKey);
                             const taskCount = Number(day?.taskCount || 0);
+                            const workloadPercent = Number(day?.workloadPercent ?? 0);
                             const hasData = daysByDate.has(dateKey);
                             const isSelected = dateKey === selectedDateKey;
+                            const title = hasData
+                                ? `${formatDate(dateKey)}: ${taskCount} task - ${workloadPercent}% tải ngày`
+                                : `${formatDate(dateKey)}: ngoài khoảng đang xem`;
 
                             return (
                                 <button
                                     key={dateKey}
                                     type="button"
-                                    className={`flex aspect-square min-h-10 flex-col items-center justify-center rounded-lg border text-center transition hover:border-blue-300 hover:bg-blue-50 ${getDailyWorkloadClassName(taskCount, isSelected, hasData)}`}
-                                    title={hasData ? `${formatDate(dateKey)}: ${taskCount} task` : `${formatDate(dateKey)}: ngoài khoảng đang xem`}
+                                    className={`flex aspect-square min-h-10 flex-col items-center justify-center rounded-lg px-1.5 py-1.5 text-center transition hover:bg-blue-50 ${getDailyWorkloadClassName(workloadPercent, taskCount, isSelected, hasData)}`}
+                                    title={title}
                                     onClick={() => onSelectDate(dateKey)}
                                 >
-                                    <span className="text-xs font-black">{Number(dateKey.slice(8, 10))}</span>
-                                    <span className="mt-0.5 rounded-full bg-white/70 px-1 text-[8px] font-black leading-tight">
-                                        {hasData ? taskCount : '-'}
+                                    <span className="text-[10px] font-black leading-none opacity-70">
+                                        {Number(dateKey.slice(8, 10))}
+                                    </span>
+                                    <span className="mt-1 text-[11px] font-black leading-none">
+                                        {hasData ? `${workloadPercent}%` : '-'}
                                     </span>
                                 </button>
                             );
@@ -611,191 +615,189 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                     <div className="absolute left-4 top-1/2 z-10 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
                                         {formData.isTeamAssignment ? <Users className="w-full h-full" /> : <User className="w-full h-full" />}
                                     </div>
-                                    
+
                                     {!isVideoDemoTask &&
                                         !formData.isTeamAssignment &&
                                         formData.performerType === 'INTERNAL' ? (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    className="flex w-full items-center gap-3 rounded-2xl border-2 border-slate-100 bg-white py-4 pl-12 pr-11 text-left font-medium text-slate-700 outline-none transition-all hover:border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50"
-                                                    onClick={() => setIsAssigneeOpen(prev => !prev)}
-                                                >
-                                                    {selectedMember ? (
-                                                        <>
-                                                            <span className="min-w-0 flex-1 truncate">
-                                                                {selectedMember.user.fullName}
-                                                            </span>
-                                                            <WorkloadPill workload={selectedMember.user.workload} />
-                                                        </>
-                                                    ) : (
-                                                        <span className="text-slate-400">
-                                                            Chọn người thực hiện
+                                        <>
+                                            <button
+                                                type="button"
+                                                className="flex w-full items-center gap-3 rounded-2xl border-2 border-slate-100 bg-white py-4 pl-12 pr-11 text-left font-medium text-slate-700 outline-none transition-all hover:border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50"
+                                                onClick={() => setIsAssigneeOpen(prev => !prev)}
+                                            >
+                                                {selectedMember ? (
+                                                    <>
+                                                        <span className="min-w-0 flex-1 truncate">
+                                                            {selectedMember.user.fullName}
                                                         </span>
-                                                    )}
-                                                </button>
+                                                        <WorkloadPill workload={selectedMember.user.workload} />
+                                                    </>
+                                                ) : (
+                                                    <span className="text-slate-400">
+                                                        Chọn người thực hiện
+                                                    </span>
+                                                )}
+                                            </button>
 
-                                                {isAssigneeOpen && (
-                                                    <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-72 overflow-y-auto rounded-2xl border border-slate-100 bg-white p-2 shadow-2xl shadow-slate-200/80">
-                                                        {internalMembers.length > 0 ? (
-                                                            internalMembers.map(member => {
-                                                                const workload = member.user?.workload;
-                                                                const roleLabels = getTeamMemberRoles(member)
-                                                                    .map(role => TEAM_MEMBER_ROLE_LABELS[role] || role)
-                                                                    .join(' · ');
+                                            {isAssigneeOpen && (
+                                                <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-72 overflow-y-auto rounded-2xl border border-slate-100 bg-white p-2 shadow-2xl shadow-slate-200/80">
+                                                    {internalMembers.length > 0 ? (
+                                                        internalMembers.map(member => {
+                                                            const workload = member.user?.workload;
+                                                            const roleLabels = getTeamMemberRoles(member)
+                                                                .map(role => TEAM_MEMBER_ROLE_LABELS[role] || role)
+                                                                .join(' · ');
 
-                                                                return (
-                                                                    <button
-                                                                        key={member.id || member.user.id}
-                                                                        type="button"
-                                                                        className={`w-full rounded-xl p-3 text-left transition hover:bg-blue-50 ${
-                                                                            formData.assigneeId === member.user.id
-                                                                                ? 'bg-blue-50 ring-1 ring-blue-100'
-                                                                                : ''
+                                                            return (
+                                                                <button
+                                                                    key={member.id || member.user.id}
+                                                                    type="button"
+                                                                    className={`w-full rounded-xl p-3 text-left transition hover:bg-blue-50 ${formData.assigneeId === member.user.id
+                                                                            ? 'bg-blue-50 ring-1 ring-blue-100'
+                                                                            : ''
                                                                         }`}
-                                                                        onClick={() => {
-                                                                            setFormData({
-                                                                                ...formData,
-                                                                                assigneeId: member.user.id
-                                                                            });
-                                                                            setIsAssigneeOpen(false);
-                                                                        }}
-                                                                    >
-                                                                        <div className="mb-2 flex items-center justify-between gap-3">
-                                                                            <div className="min-w-0">
-                                                                                <p className="truncate text-sm font-black text-slate-800">
-                                                                                    {member.user.fullName}
-                                                                                </p>
-                                                                                <p className="truncate text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                                                                    {roleLabels || 'Thành viên'}
-                                                                                </p>
-                                                                            </div>
-
-                                                                            <WorkloadPill workload={workload} />
+                                                                    onClick={() => {
+                                                                        setFormData({
+                                                                            ...formData,
+                                                                            assigneeId: member.user.id
+                                                                        });
+                                                                        setIsAssigneeOpen(false);
+                                                                    }}
+                                                                >
+                                                                    <div className="mb-2 flex items-center justify-between gap-3">
+                                                                        <div className="min-w-0">
+                                                                            <p className="truncate text-sm font-black text-slate-800">
+                                                                                {member.user.fullName}
+                                                                            </p>
+                                                                            <p className="truncate text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                                                                {roleLabels || 'Thành viên'}
+                                                                            </p>
                                                                         </div>
 
-                                                                        <WorkloadBar workload={workload} />
-                                                                    </button>
-                                                                );
-                                                            })
-                                                        ) : (
-                                                            <p className="px-3 py-8 text-center text-xs font-bold uppercase tracking-widest text-slate-300">
-                                                                Không có nhân sự
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <select
-                                                    className="w-full cursor-pointer appearance-none rounded-2xl border-2 border-slate-100 bg-white py-4 pl-12 pr-4 font-medium text-slate-700 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50"
-                                                    value={
-                                                        formData.isTeamAssignment
-                                                            ? formData.selectedTeamId
-                                                            : formData.assigneeId
+                                                                        <WorkloadPill workload={workload} />
+                                                                    </div>
+
+                                                                    <WorkloadBar workload={workload} />
+                                                                </button>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <p className="px-3 py-8 text-center text-xs font-bold uppercase tracking-widest text-slate-300">
+                                                            Không có nhân sự
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <select
+                                                className="w-full cursor-pointer appearance-none rounded-2xl border-2 border-slate-100 bg-white py-4 pl-12 pr-4 font-medium text-slate-700 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50"
+                                                value={
+                                                    formData.isTeamAssignment
+                                                        ? formData.selectedTeamId
+                                                        : formData.assigneeId
+                                                }
+                                                onChange={event => {
+                                                    const value = event.target.value;
+
+                                                    if (formData.isTeamAssignment) {
+                                                        setFormData({
+                                                            ...formData,
+                                                            selectedTeamId: value
+                                                        });
+
+                                                        if (value) {
+                                                            fetchSupportMembers({
+                                                                teamId: value,
+                                                                ...workloadDate
+                                                            });
+                                                        }
+                                                    } else {
+                                                        setFormData({
+                                                            ...formData,
+                                                            assigneeId: value
+                                                        });
                                                     }
-                                                    onChange={event => {
-                                                        const value = event.target.value;
-
-                                                        if (formData.isTeamAssignment) {
-                                                            setFormData({
-                                                                ...formData,
-                                                                selectedTeamId: value
-                                                            });
-
-                                                            if (value) {
-                                                                fetchSupportMembers({
-                                                                    teamId: value,
-                                                                    ...workloadDate
-                                                                });
-                                                            }
-                                                        } else {
-                                                            setFormData({
-                                                                ...formData,
-                                                                assigneeId: value
-                                                            });
-                                                        }
-                                                    }}
-                                                    onFocus={() => {
-                                                        if (
-                                                            formData.isTeamAssignment &&
-                                                            allTeams.length === 0
-                                                        ) {
-                                                            fetchTeams();
-                                                        }
-                                                    }}
-                                                >
-                                                    <option value="">
-                                                        {formData.isTeamAssignment
-                                                            ? isLoadingTeams
-                                                                ? 'Đang tải danh sách team...'
-                                                                : 'Chọn team hỗ trợ'
-                                                            : isVideoDemoTask && isLoadingEmployees
+                                                }}
+                                                onFocus={() => {
+                                                    if (
+                                                        formData.isTeamAssignment &&
+                                                        allTeams.length === 0
+                                                    ) {
+                                                        fetchTeams();
+                                                    }
+                                                }}
+                                            >
+                                                <option value="">
+                                                    {formData.isTeamAssignment
+                                                        ? isLoadingTeams
+                                                            ? 'Đang tải danh sách team...'
+                                                            : 'Chọn team hỗ trợ'
+                                                        : isVideoDemoTask && isLoadingEmployees
                                                             ? 'Đang tải danh sách nhân viên...'
                                                             : formData.performerType === 'VENDOR' &&
                                                                 isLoadingVendors
                                                                 ? 'Đang tải danh sách...'
-                                                                : `Chọn ${
-                                                                    formData.performerType === 'INTERNAL'
-                                                                        ? 'người thực hiện'
-                                                                        : 'vendor'
+                                                                : `Chọn ${formData.performerType === 'INTERNAL'
+                                                                    ? 'người thực hiện'
+                                                                    : 'vendor'
                                                                 }`}
-                                                    </option>
+                                                </option>
 
-                                                    {formData.isTeamAssignment
-                                                        ? allTeams.map(team => (
-                                                            <option key={team.id} value={team.id}>
-                                                                {team.name} (Lead: {team.teamLead?.fullName})
-                                                            </option>
-                                                        ))
-                                                        : formData.performerType === 'INTERNAL'
+                                                {formData.isTeamAssignment
+                                                    ? allTeams.map(team => (
+                                                        <option key={team.id} value={team.id}>
+                                                            {team.name} (Lead: {team.teamLead?.fullName})
+                                                        </option>
+                                                    ))
+                                                    : formData.performerType === 'INTERNAL'
                                                         ? isVideoDemoTask
                                                             ? activeEmployees.map(employee => (
-                                                                    <option
-                                                                        key={employee.id}
-                                                                        value={employee.id}
-                                                                    >
-                                                                        {employee.fullName}
-                                                                    </option>
-                                                                ))
-                                                            : (
-                                                                    isSupportMode &&
-                                                                    representativeTask.supportTeamId
-                                                                        ? supportMembers
-                                                                        : members
-                                                                ).map(member => (
-                                                                    <option
-                                                                        key={member.user.id}
-                                                                        value={member.user.id}
-                                                                    >
-                                                                        {member.user.fullName}
-                                                                    </option>
-                                                                ))
-                                                        : vendors.map(vendor => (
-                                                                <option key={vendor.id} value={vendor.id}>
-                                                                    {vendor.name}
+                                                                <option
+                                                                    key={employee.id}
+                                                                    value={employee.id}
+                                                                >
+                                                                    {employee.fullName}
                                                                 </option>
-                                                            ))}
-                                                </select>
+                                                            ))
+                                                            : (
+                                                                isSupportMode &&
+                                                                    representativeTask.supportTeamId
+                                                                    ? supportMembers
+                                                                    : members
+                                                            ).map(member => (
+                                                                <option
+                                                                    key={member.user.id}
+                                                                    value={member.user.id}
+                                                                >
+                                                                    {member.user.fullName}
+                                                                </option>
+                                                            ))
+                                                        : vendors.map(vendor => (
+                                                            <option key={vendor.id} value={vendor.id}>
+                                                                {vendor.name}
+                                                            </option>
+                                                        ))}
+                                            </select>
 
-                                                <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-                                                    <svg
-                                                        className="h-5 w-5 text-slate-400"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            strokeWidth={2}
-                                                            d="M19 9l-7 7-7-7"
-                                                        />
-                                                    </svg>
-                                                </div>
-                                            </>
-                                        )}
+                                            <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+                                                <svg
+                                                    className="h-5 w-5 text-slate-400"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M19 9l-7 7-7-7"
+                                                    />
+                                                </svg>
+                                            </div>
+                                        </>
+                                    )}
                                     {/* <select
                                         className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer text-slate-700 font-medium"
                                         value={formData.isTeamAssignment ? formData.selectedTeamId : formData.assigneeId}

@@ -86,9 +86,9 @@ export const QuotationsListModal = ({
 
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-500 mb-1">Tổng giá trị</p>
+                      <p className="text-gray-500 mb-1">Tổng giá trị có thuế</p>
                       <p className="font-semibold text-gray-900">
-                        {formatNumber(quotation.totalAmount || 0)} VNĐ
+                        {formatNumber(quotation.totalWithVat || 0)} VNĐ
                       </p>
                     </div>
                     <div>

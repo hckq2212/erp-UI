@@ -34,6 +34,37 @@ export const ServiceDetailPage = () => {
         }
     };
 
+    const handleAddJobsFromService = async (sourceService) => {
+        try {
+            const existingIds = new Set((service.serviceJobs || []).map(sj => String(sj.jobId)));
+            const jobsToAdd = (sourceService.serviceJobs || []).filter(sj => !existingIds.has(String(sj.jobId)));
+
+            if (jobsToAdd.length === 0) {
+                toast.info('Dịch vụ được chọn không có hạng mục mới để thêm');
+                return 0;
+            }
+
+            const currentConfigs = (service.serviceJobs || []).map(sj => ({
+                jobId: sj.jobId,
+                quantity: sj.quantity || 1,
+                isOutput: Boolean(sj.isOutput)
+            }));
+
+            const sourceConfigs = jobsToAdd.map(sj => ({
+                jobId: sj.jobId,
+                quantity: sj.quantity || 1,
+                isOutput: Boolean(sj.isOutput)
+            }));
+
+            await updateService({ id, jobConfigs: [...currentConfigs, ...sourceConfigs] }).unwrap();
+            toast.success(`Đã thêm ${jobsToAdd.length} hạng mục từ dịch vụ "${sourceService.name}"`);
+            return jobsToAdd.length;
+        } catch (err) {
+            toast.error(err?.data?.message || 'Có lỗi xảy ra khi thêm hạng mục từ dịch vụ');
+            return 0;
+        }
+    };
+
     const handleUpdateJobConfig = async (jobId, updates) => {
         try {
             const currentConfigs = service.serviceJobs.map(sj => ({
@@ -340,8 +371,9 @@ export const ServiceDetailPage = () => {
                 isOpen={isAddJobModalOpen}
                 onClose={() => setIsAddJobModalOpen(false)}
                 onAddJob={handleAddJob}
+                onAddJobsFromService={handleAddJobsFromService}
                 serviceId={id}
-                existingJobIds={service.serviceJobs?.map(sj => sj.jobId)}
+                existingJobIds={service.serviceJobs?.map(sj => sj.jobId) || []}
             />
         </div>
     );

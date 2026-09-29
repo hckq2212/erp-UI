@@ -133,7 +133,7 @@ export const ServicesPage = () => {
                     <p className="text-gray-500 text-sm mt-1">Danh sách các dịch vụ cung cấp</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    {['ADMIN', 'BOD'].includes(me?.role) && !isSelectionMode && (
+                    {['ADMIN', 'BOD', 'BD'].includes(me?.role) && !isSelectionMode && (
                         <>
                             <Button
                                 variant="outline"

@@ -411,7 +411,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
             if (req.notifId) {
                 try {
                     await markAsRead(req.notifId).unwrap();
-                } catch {}
+                } catch { }
             }
             if (req.localId || req.type === 'PROJECT') {
                 try {
@@ -421,7 +421,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                     localStorage.setItem(key, JSON.stringify(filtered));
                     setLocalStaffingRequests(filtered);
                     localStorage.removeItem(`project_staffing_req_${project?.id}`);
-                } catch {}
+                } catch { }
             }
             toast.success(isLeadOnly ? 'Đã hủy yêu cầu bổ sung nhân sự' : 'Đã từ chối yêu cầu bổ sung nhân sự');
         } catch (error) {
@@ -458,7 +458,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                     localStorage.setItem(key, JSON.stringify(existing));
                     setLocalStaffingRequests(existing);
                     localStorage.setItem(`project_staffing_req_${project?.id}`, staffingNote.trim());
-                } catch {}
+                } catch { }
             }
             toast.success('Đã gửi yêu cầu bổ sung nhân sự cho PM');
             setIsStaffingModalOpen(false);
@@ -799,300 +799,300 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
             )}
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ">
-            {/* Filters & Actions */}
-            <div className="p-4 border-b border-gray-100 flex items-center gap-2.5 min-w-0">
-                <div className="relative flex-1 min-w-[140px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Tìm tên công việc"
-                        className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all h-[38px]"
-                        value={filter.search}
-                        onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                    />
-                    {filter.search && (
-                        <button
-                            type="button"
-                            onClick={() => setFilter({ ...filter, search: '' })}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-200 transition-colors"
-                            title="Xóa tìm kiếm"
-                        >
-                            <X className="w-3.5 h-3.5" />
-                        </button>
-                    )}
+                {/* Filters & Actions */}
+                <div className="p-4 border-b border-gray-100 flex items-center gap-2.5 min-w-0">
+                    <div className="relative flex-1 min-w-[140px]">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Tìm tên công việc"
+                            className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all h-[38px]"
+                            value={filter.search}
+                            onChange={(e) => setFilter({ ...filter, search: e.target.value })}
+                        />
+                        {filter.search && (
+                            <button
+                                type="button"
+                                onClick={() => setFilter({ ...filter, search: '' })}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-200 transition-colors"
+                                title="Xóa tìm kiếm"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        )}
+                    </div>
+                    <div className="min-w-[180px] max-w-[280px] shrink-0">
+                        <Select
+                            aria-label="Lọc theo trạng thái"
+                            options={statusOptions}
+                            value={selectedStatuses}
+                            onChange={(opts) => setFilter(prev => ({ ...prev, statuses: opts ? opts.map(o => o.value) : [] }))}
+                            isMulti
+                            isSearchable
+                            isClearable
+                            closeMenuOnSelect={false}
+                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                            noOptionsMessage={() => 'Không tìm thấy trạng thái'}
+                            placeholder="Tất cả trạng thái"
+                            styles={filterSelectStyles}
+                        />
+                    </div>
+                    {!isPersonalView && <div className="min-w-[190px] max-w-[300px] shrink-0">
+                        <Select
+                            aria-label="Lọc theo nhân sự"
+                            options={assigneeOptions}
+                            value={selectedAssignees}
+                            onChange={(opts) => setFilter(prev => ({ ...prev, assigneeIds: opts ? opts.map(o => o.value) : [] }))}
+                            isMulti
+                            isSearchable
+                            isClearable
+                            closeMenuOnSelect={false}
+                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                            noOptionsMessage={() => 'Không tìm thấy nhân sự'}
+                            placeholder="Tất cả nhân sự"
+                            styles={filterSelectStyles}
+                        />
+                    </div>}
+                    <div className="flex items-center gap-2 shrink-0 whitespace-nowrap ml-auto">
+                        {!isPersonalView && isProjectLead && isProjectInProgress && (
+                            <button
+                                type="button"
+                                onClick={handleOpenStaffingModal}
+                                className="inline-flex items-center gap-1.5 px-3 py-2 bg-orange-50 text-[#F38820] border border-orange-200 hover:bg-orange-100 rounded-lg transition-all active:scale-95 shadow-sm font-medium text-xs sm:text-sm whitespace-nowrap"
+                            >
+                                <UserPlus className="w-4 h-4" />
+                                <span>Yêu cầu thêm người</span>
+                            </button>
+                        )}
+                        {bulkAction !== 'start' && (isAdmin || isProjectLead) && isProjectInProgress && (
+                            <button
+                                type="button"
+                                onClick={handleToggleUnassignMode}
+                                className={cn(
+                                    "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all active:scale-95 shadow-sm font-medium text-xs sm:text-sm whitespace-nowrap",
+                                    selectionMode === 'unassign'
+                                        ? "bg-red-600 text-white hover:bg-red-700"
+                                        : "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                                )}
+                            >
+                                <UserMinus className="w-4 h-4" />
+                                <span>{selectionMode === 'unassign' ? 'Huỷ xoá phân công' : 'Xoá phân công'}</span>
+                            </button>
+                        )}
+                        {!isPersonalView && canCreateProjectWork && isProjectInProgress && (
+                            <button
+                                type="button"
+                                onClick={() => setShowAddServiceModal(true)}
+                                className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm font-medium text-xs sm:text-sm whitespace-nowrap"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span>Thêm dịch vụ</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
-                <div className="min-w-[180px] max-w-[280px] shrink-0">
-                    <Select
-                        aria-label="Lọc theo trạng thái"
-                        options={statusOptions}
-                        value={selectedStatuses}
-                        onChange={(opts) => setFilter(prev => ({ ...prev, statuses: opts ? opts.map(o => o.value) : [] }))}
-                        isMulti
-                        isSearchable
-                        isClearable
-                        closeMenuOnSelect={false}
-                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-                        noOptionsMessage={() => 'Không tìm thấy trạng thái'}
-                        placeholder="Tất cả trạng thái"
-                        styles={filterSelectStyles}
-                    />
-                </div>
-                {!isPersonalView && <div className="min-w-[190px] max-w-[300px] shrink-0">
-                    <Select
-                        aria-label="Lọc theo nhân sự"
-                        options={assigneeOptions}
-                        value={selectedAssignees}
-                        onChange={(opts) => setFilter(prev => ({ ...prev, assigneeIds: opts ? opts.map(o => o.value) : [] }))}
-                        isMulti
-                        isSearchable
-                        isClearable
-                        closeMenuOnSelect={false}
-                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-                        noOptionsMessage={() => 'Không tìm thấy nhân sự'}
-                        placeholder="Tất cả nhân sự"
-                        styles={filterSelectStyles}
-                    />
-                </div>}
-                <div className="flex items-center gap-2 shrink-0 whitespace-nowrap ml-auto">
-                    {!isPersonalView && isProjectLead && isProjectInProgress && (
-                        <button
-                            type="button"
-                            onClick={handleOpenStaffingModal}
-                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-orange-50 text-[#F38820] border border-orange-200 hover:bg-orange-100 rounded-lg transition-all active:scale-95 shadow-sm font-medium text-xs sm:text-sm whitespace-nowrap"
-                        >
-                            <UserPlus className="w-4 h-4" />
-                            <span>Yêu cầu thêm người</span>
-                        </button>
-                    )}
-                    {bulkAction !== 'start' && (isAdmin || isProjectLead) && isProjectInProgress && (
-                        <button
-                            type="button"
-                            onClick={handleToggleUnassignMode}
-                            className={cn(
-                                "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all active:scale-95 shadow-sm font-medium text-xs sm:text-sm whitespace-nowrap",
-                                selectionMode === 'unassign'
-                                    ? "bg-red-600 text-white hover:bg-red-700"
-                                    : "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
-                            )}
-                        >
-                            <UserMinus className="w-4 h-4" />
-                            <span>{selectionMode === 'unassign' ? 'Huỷ xoá phân công' : 'Xoá phân công'}</span>
-                        </button>
-                    )}
-                    {!isPersonalView && canCreateProjectWork && isProjectInProgress && (
-                        <button
-                            type="button"
-                            onClick={() => setShowAddServiceModal(true)}
-                            className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm font-medium text-xs sm:text-sm whitespace-nowrap"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>Thêm dịch vụ</span>
-                        </button>
-                    )}
-                </div>
-            </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
-                <table className={cn("w-full text-sm text-left", isPersonalView ? "min-w-[900px]" : "min-w-[1450px]")}>
-                    <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100">
-                        <tr>
-                            <th className="px-6 py-4 text-center">
-                                <input
-                                    type="checkbox"
-                                    className={cn(
-                                        "w-4 h-4 border-gray-300 rounded cursor-pointer",
-                                        selectionMode === 'unassign' ? "text-red-600 focus:ring-red-500" : "text-blue-600 focus:ring-blue-500"
-                                    )}
-                                    checked={selectableFilteredTasks.length > 0 && selectableFilteredTasks.every(t => selectedTasks.includes(t.id))}
-                                    disabled={selectableFilteredTasks.length === 0}
-                                    onChange={(e) => {
-                                        if (e.target.checked) {
-                                            const assignableIds = filteredTasks
-                                                .filter(isTaskSelectable)
-                                                .map(t => t.id);
-                                            setSelectedTasks(prev => [...new Set([...prev, ...assignableIds])]);
-                                        } else {
-                                            const allIds = filteredTasks.map(t => t.id);
-                                            setSelectedTasks(prev => prev.filter(id => !allIds.includes(id)));
-                                        }
-                                    }}
-                                />
-                            </th>
-                            {/* <th className="px-6 py-4 font-medium">STT</th> */}
-                            {renderHeader('Mã')}
-                            {renderHeader('Tên công việc')}
-                            {renderHeader('Thời hạn')}
-                            {!isPersonalView && renderHeader('Bên thực hiện')}
-                            {!isPersonalView && renderHeader('Người thực hiện', 'center')}
-                            {renderHeader('Trạng thái', 'center')}
-                            <th className="px-6 py-4 font-medium text-center">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {groupedTasks.length > 0 ? (
-                            groupedTasks.map((group, groupIndex) => {
-                                const assignableTasksInGroup = group.tasks.filter(isTaskSelectable);
-                                const allAssignableSelected = assignableTasksInGroup.length > 0 && assignableTasksInGroup.every(t => selectedTasks.includes(t.id));
-                                const someAssignableSelected = assignableTasksInGroup.some(t => selectedTasks.includes(t.id));
+                {/* Table */}
+                <div className="overflow-x-auto">
+                    <table className={cn("w-full text-sm text-left", isPersonalView ? "min-w-[900px]" : "min-w-[1450px]")}>
+                        <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100">
+                            <tr>
+                                <th className="px-6 py-4 text-center">
+                                    <input
+                                        type="checkbox"
+                                        className={cn(
+                                            "w-4 h-4 border-gray-300 rounded cursor-pointer",
+                                            selectionMode === 'unassign' ? "text-red-600 focus:ring-red-500" : "text-blue-600 focus:ring-blue-500"
+                                        )}
+                                        checked={selectableFilteredTasks.length > 0 && selectableFilteredTasks.every(t => selectedTasks.includes(t.id))}
+                                        disabled={selectableFilteredTasks.length === 0}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                const assignableIds = filteredTasks
+                                                    .filter(isTaskSelectable)
+                                                    .map(t => t.id);
+                                                setSelectedTasks(prev => [...new Set([...prev, ...assignableIds])]);
+                                            } else {
+                                                const allIds = filteredTasks.map(t => t.id);
+                                                setSelectedTasks(prev => prev.filter(id => !allIds.includes(id)));
+                                            }
+                                        }}
+                                    />
+                                </th>
+                                {/* <th className="px-6 py-4 font-medium">STT</th> */}
+                                {renderHeader('Mã')}
+                                {renderHeader('Tên công việc')}
+                                {renderHeader('Thời hạn')}
+                                {!isPersonalView && renderHeader('Bên thực hiện')}
+                                {!isPersonalView && renderHeader('Người thực hiện', 'center')}
+                                {renderHeader('Trạng thái', 'center')}
+                                <th className="px-6 py-4 font-medium text-center">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {groupedTasks.length > 0 ? (
+                                groupedTasks.map((group, groupIndex) => {
+                                    const assignableTasksInGroup = group.tasks.filter(isTaskSelectable);
+                                    const allAssignableSelected = assignableTasksInGroup.length > 0 && assignableTasksInGroup.every(t => selectedTasks.includes(t.id));
+                                    const someAssignableSelected = assignableTasksInGroup.some(t => selectedTasks.includes(t.id));
 
-                                return (
-                                    <Fragment key={group.job.id}>
-                                        {/* Group Header Row */}
-                                        <tr className="bg-gray-50/80 border-y border-gray-200 hover:bg-gray-100/50 transition-colors">
-                                            <td className="px-6 py-3 text-center">
-                                                <input
-                                                    type="checkbox"
-                                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                                                    disabled={assignableTasksInGroup.length === 0}
-                                                    checked={allAssignableSelected}
-                                                    ref={input => {
-                                                        if (input) {
-                                                            input.indeterminate = someAssignableSelected && !allAssignableSelected;
-                                                        }
-                                                    }}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) {
-                                                            const newIds = assignableTasksInGroup.map(t => t.id).filter(id => !selectedTasks.includes(id));
-                                                            setSelectedTasks(prev => [...prev, ...newIds]);
-                                                        } else {
-                                                            const idsToRemove = assignableTasksInGroup.map(t => t.id);
-                                                            setSelectedTasks(prev => prev.filter(id => !idsToRemove.includes(id)));
-                                                        }
-                                                    }}
-                                                />
-                                            </td>
-                                            <td
-                                                colSpan={isPersonalView ? 5 : 7}
-                                                className="px-6 py-3 font-bold text-gray-800 cursor-pointer"
-                                                onClick={() => toggleGroup(group.job.id)}
-                                            >
-                                                <div className="flex items-center gap-2 select-none">
-                                                    {expandedGroups[group.job.id] ? (
-                                                        <ChevronDown className="w-4 h-4 text-gray-500" />
-                                                    ) : (
-                                                        <ChevronRight className="w-4 h-4 text-gray-500" />
-                                                    )}
-                                                    {group.job.name}
-                                                    <span className="ml-2 text-xs font-normal text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">
-                                                        {group.tasks.length} công việc
-                                                    </span>
-                                                </div>
-                                            </td>
-                                        </tr>
-
-                                        {/* Group Tasks */}
-                                        {expandedGroups[group.job.id] && group.tasks.map((task, index) => (
-                                            <tr
-                                                key={task.id}
-                                                onClick={() => navigate(`/tasks/${task.id}`)}
-                                                className={cn(
-                                                    "transition-colors cursor-pointer",
-                                                    task.isSupportRequested ? "bg-red-50/50 hover:bg-red-50 border-l-4 border-l-red-500" :
-                                                    Number(task.spentAmount || 0) > Number(task.cost || 0) ? "bg-red-50/40 hover:bg-red-50 border-l-4 border-l-red-400" :
-                                                    task.isExtra ? "bg-amber-50/50 hover:bg-amber-50 border-l-4 border-l-amber-400" :
-                                                    "hover:bg-blue-50/40"
-                                                )}
-                                            >
-                                                <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                                    return (
+                                        <Fragment key={group.job.id}>
+                                            {/* Group Header Row */}
+                                            <tr className="bg-gray-50/80 border-y border-gray-200 hover:bg-gray-100/50 transition-colors">
+                                                <td className="px-6 py-3 text-center">
                                                     <input
                                                         type="checkbox"
-                                                        className={cn(
-                                                            "w-4 h-4 border-gray-300 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed",
-                                                            selectionMode === 'unassign' ? "text-red-600 focus:ring-red-500" : "text-blue-600 focus:ring-blue-500"
-                                                        )}
-                                                        disabled={!isTaskSelectable(task)}
-                                                        checked={selectedTasks.includes(task.id)}
+                                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                                        disabled={assignableTasksInGroup.length === 0}
+                                                        checked={allAssignableSelected}
+                                                        ref={input => {
+                                                            if (input) {
+                                                                input.indeterminate = someAssignableSelected && !allAssignableSelected;
+                                                            }
+                                                        }}
                                                         onChange={(e) => {
                                                             if (e.target.checked) {
-                                                                setSelectedTasks(prev => [...prev, task.id]);
+                                                                const newIds = assignableTasksInGroup.map(t => t.id).filter(id => !selectedTasks.includes(id));
+                                                                setSelectedTasks(prev => [...prev, ...newIds]);
                                                             } else {
-                                                                setSelectedTasks(prev => prev.filter(id => id !== task.id));
+                                                                const idsToRemove = assignableTasksInGroup.map(t => t.id);
+                                                                setSelectedTasks(prev => prev.filter(id => !idsToRemove.includes(id)));
                                                             }
                                                         }}
                                                     />
                                                 </td>
-                                                {/* <td className="px-6 py-4 text-gray-500 pl-8">{index + 1}</td> */}
-                                                <td className="px-6 py-4">
-                                                    <span className="inline-flex whitespace-nowrap font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                                        {task.code}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <InlineTaskNickname
-                                                        task={task}
-                                                        projectId={project.id}
-                                                        canEdit={isProjectInProgress && task.status !== 'ON_HOLD' && (isAdminOrBOD || isProjectLead)}
-                                                    />
-                                                    {task.parentTaskId && task.parentTask && (
-                                                        <p
-                                                            className="mt-1 truncate text-xs text-gray-500"
-                                                            title={`${task.parentTask.code || '---'} - ${getTaskDisplayName(task.parentTask)}`}
-                                                        >
-                                                            Công việc cha: <span className="font-mono">{task.parentTask.code || '---'}</span>
-                                                            {' - '}{getTaskDisplayName(task.parentTask)}
-                                                        </p>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className={cn("text-xs uppercase", getRemainingTime(task.plannedEndDate, task.status).color)}>
-                                                        {getRemainingTime(task.plannedEndDate, task.status).text}
+                                                <td
+                                                    colSpan={isPersonalView ? 5 : 7}
+                                                    className="px-6 py-3 font-bold text-gray-800 cursor-pointer"
+                                                    onClick={() => toggleGroup(group.job.id)}
+                                                >
+                                                    <div className="flex items-center gap-2 select-none">
+                                                        {expandedGroups[group.job.id] ? (
+                                                            <ChevronDown className="w-4 h-4 text-gray-500" />
+                                                        ) : (
+                                                            <ChevronRight className="w-4 h-4 text-gray-500" />
+                                                        )}
+                                                        {group.job.name}
+                                                        <span className="ml-2 text-xs font-normal text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">
+                                                            {group.tasks.length} công việc
+                                                        </span>
                                                     </div>
                                                 </td>
-                                                {!isPersonalView && (
-                                                    <td className="px-6 py-4 uppercase text-xs font-semibold text-gray-500">
-                                                        {task.performerType || '---'}
+                                            </tr>
+
+                                            {/* Group Tasks */}
+                                            {expandedGroups[group.job.id] && group.tasks.map((task, index) => (
+                                                <tr
+                                                    key={task.id}
+                                                    onClick={() => navigate(`/tasks/${task.id}`)}
+                                                    className={cn(
+                                                        "transition-colors cursor-pointer",
+                                                        task.isSupportRequested ? "bg-red-50/50 hover:bg-red-50 border-l-4 border-l-red-500" :
+                                                            Number(task.spentAmount || 0) > Number(task.cost || 0) ? "bg-red-50/40 hover:bg-red-50 border-l-4 border-l-red-400" :
+                                                                task.isExtra ? "bg-amber-50/50 hover:bg-amber-50 border-l-4 border-l-amber-400" :
+                                                                    "hover:bg-blue-50/40"
+                                                    )}
+                                                >
+                                                    <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                                                        <input
+                                                            type="checkbox"
+                                                            className={cn(
+                                                                "w-4 h-4 border-gray-300 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed",
+                                                                selectionMode === 'unassign' ? "text-red-600 focus:ring-red-500" : "text-blue-600 focus:ring-blue-500"
+                                                            )}
+                                                            disabled={!isTaskSelectable(task)}
+                                                            checked={selectedTasks.includes(task.id)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setSelectedTasks(prev => [...prev, task.id]);
+                                                                } else {
+                                                                    setSelectedTasks(prev => prev.filter(id => id !== task.id));
+                                                                }
+                                                            }}
+                                                        />
                                                     </td>
-                                                )}
-                                                {!isPersonalView && (
-                                                    <td className="px-6 py-4 text-center">
-                                                        <span className="font-medium text-gray-700">{task.assignee?.fullName || task.vendorId || '---'}</span>
+                                                    {/* <td className="px-6 py-4 text-gray-500 pl-8">{index + 1}</td> */}
+                                                    <td className="px-6 py-4">
+                                                        <span className="inline-flex whitespace-nowrap font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                                            {task.code}
+                                                        </span>
                                                     </td>
-                                                )}
-                                                <td className="px-3 py-2 text-center w-fit">
-                                                    {getStatusBadge(task.status)}
-                                                </td>
-                                                <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                                                    <div className="flex flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
-                                                        {task.status === 'NOT_STARTED' &&
-                                                            isSubtaskPlanStartable(task) &&
-                                                            (isSameUser(currentUserId, task.assigneeId) ||
-                                                                isSameUser(currentUserId, task.assignee?.id) ||
-                                                                isSameUser(currentUserId, task.helperId) ||
-                                                                isSameUser(currentUserId, task.helper?.id)) && (
+                                                    <td className="px-6 py-4">
+                                                        <InlineTaskNickname
+                                                            task={task}
+                                                            projectId={project.id}
+                                                            canEdit={isProjectInProgress && task.status !== 'ON_HOLD' && (isAdminOrBOD || isProjectLead)}
+                                                        />
+                                                        {task.parentTaskId && task.parentTask && (
+                                                            <p
+                                                                className="mt-1 truncate text-xs text-gray-500"
+                                                                title={`${task.parentTask.code || '---'} - ${getTaskDisplayName(task.parentTask)}`}
+                                                            >
+                                                                Công việc cha: <span className="font-mono">{task.parentTask.code || '---'}</span>
+                                                                {' - '}{getTaskDisplayName(task.parentTask)}
+                                                            </p>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className={cn("text-xs uppercase", getRemainingTime(task.plannedEndDate, task.status).color)}>
+                                                            {getRemainingTime(task.plannedEndDate, task.status).text}
+                                                        </div>
+                                                    </td>
+                                                    {!isPersonalView && (
+                                                        <td className="px-6 py-4 uppercase text-xs font-semibold text-gray-500">
+                                                            {task.performerType || '---'}
+                                                        </td>
+                                                    )}
+                                                    {!isPersonalView && (
+                                                        <td className="px-6 py-4 text-center">
+                                                            <span className="font-medium text-gray-700">{task.assignee?.fullName || task.vendorId || '---'}</span>
+                                                        </td>
+                                                    )}
+                                                    <td className="px-3 py-2 text-center w-fit">
+                                                        {getStatusBadge(task.status)}
+                                                    </td>
+                                                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                                                        <div className="flex flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
+                                                            {task.status === 'NOT_STARTED' &&
+                                                                isSubtaskPlanStartable(task) &&
+                                                                (isSameUser(currentUserId, task.assigneeId) ||
+                                                                    isSameUser(currentUserId, task.assignee?.id) ||
+                                                                    isSameUser(currentUserId, task.helperId) ||
+                                                                    isSameUser(currentUserId, task.helper?.id)) && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleStartTask(task)}
+                                                                        disabled={isStartingTask && startingTaskId === task.id}
+                                                                        className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all active:scale-95 text-xs font-bold uppercase disabled:opacity-60"
+                                                                    >
+                                                                        <Play className="h-3.5 w-3.5" />
+                                                                        {isStartingTask && startingTaskId === task.id ? 'Đang bắt đầu...' : 'Bắt đầu công việc'}
+                                                                    </button>
+                                                                )}
+
+                                                            {!isPersonalView && isProjectInProgress && canManageTaskAssignment(task) &&
+                                                                (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
+                                                                    <button
+                                                                        onClick={() => setAssigningTask(task)}
+                                                                        className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all active:scale-95 text-xs font-bold uppercase"
+                                                                    >
+                                                                        Phân công
+                                                                    </button>
+                                                                )}
+
+                                                            {/* Original Team Lead Actions */}
+                                                            {!isPersonalView && isProjectInProgress && canManageTaskAssignment(task) && ['NOT_STARTED', 'DOING', 'REWORKING', 'OVERDUE', 'REJECTED'].includes(task.status) && (
                                                                 <button
-                                                                    type="button"
-                                                                    onClick={() => handleStartTask(task)}
-                                                                    disabled={isStartingTask && startingTaskId === task.id}
-                                                                    className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all active:scale-95 text-xs font-bold uppercase disabled:opacity-60"
+                                                                    onClick={() => setAssigningTask(task)}
+                                                                    className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
                                                                 >
-                                                                    <Play className="h-3.5 w-3.5" />
-                                                                    {isStartingTask && startingTaskId === task.id ? 'Đang bắt đầu...' : 'Bắt đầu công việc'}
+                                                                    Đổi người
                                                                 </button>
                                                             )}
 
-                                                        {!isPersonalView && isProjectInProgress && canManageTaskAssignment(task) &&
-                                                            (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
-                                                            <button
-                                                                onClick={() => setAssigningTask(task)}
-                                                                className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all active:scale-95 text-xs font-bold uppercase"
-                                                            >
-                                                                Phân công
-                                                            </button>
-                                                        )}
-
-                                                        {/* Original Team Lead Actions */}
-                                                        {!isPersonalView && isProjectInProgress && canManageTaskAssignment(task) && ['NOT_STARTED', 'DOING', 'REWORKING', 'OVERDUE', 'REJECTED'].includes(task.status) && (
-                                                            <button
-                                                                onClick={() => setAssigningTask(task)}
-                                                                className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase"
-                                                            >
-                                                                Đổi người
-                                                            </button>
-                                                        )}
-
-                                                        {/* Deprecated cross-team support buttons */}
-                                                        {/*
+                                                            {/* Deprecated cross-team support buttons */}
+                                                            {/*
                                                         {task.status === 'SUPPORT_PENDING' && isSameUser(task.supportLeadId, currentUserId) && (
                                                             <div className="flex items-center gap-2">
                                                                 <button
@@ -1129,37 +1129,37 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                                             )}
                                                         */}
 
-                                                        {!isPersonalView && isProjectInProgress && canDecideTaskOutcome(task, currentUserId, project) && task.status === 'INTERNAL_COMPLETED' && (
-                                                            <button
-                                                                onClick={() => handleCustomerApprove(task.id)}
-                                                                disabled={isApprovingByCustomer && approvingTaskId === task.id}
-                                                                className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase disabled:opacity-60"
-                                                            >
-                                                                {isApprovingByCustomer && approvingTaskId === task.id ? 'Đang duyệt...' : 'Khách hàng duyệt'}
-                                                            </button>
-                                                        )}
-
-                                                        {!isPersonalView && isProjectInProgress &&
-                                                            task.status !== 'ON_HOLD' &&
-                                                            task.supportRequestType === 'STAFFING' &&
-                                                            task.isSupportRequested &&
-                                                            !task.isSupportAccepted &&
-                                                            (isSameUser(task.supportLeadId, currentUserId) || isProjectManager || hasStaffingAdminOverride) && (
+                                                            {!isPersonalView && isProjectInProgress && canDecideTaskOutcome(task, currentUserId, project) && task.status === 'INTERNAL_COMPLETED' && (
                                                                 <button
-                                                                    onClick={(event) => {
-                                                                        event.stopPropagation();
-                                                                        setStaffingTask(task);
-                                                                        setIsStaffingResolutionOpen(true);
-                                                                    }}
-                                                                    className="inline-flex whitespace-nowrap items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-bold uppercase text-emerald-600 transition-all hover:bg-emerald-600 hover:text-white active:scale-95"
+                                                                    onClick={() => handleCustomerApprove(task.id)}
+                                                                    disabled={isApprovingByCustomer && approvingTaskId === task.id}
+                                                                    className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all active:scale-95 text-xs font-bold uppercase disabled:opacity-60"
                                                                 >
-                                                                    <UserPlus className="h-3.5 w-3.5" />
-                                                                    Bổ sung nhân sự
+                                                                    {isApprovingByCustomer && approvingTaskId === task.id ? 'Đang duyệt...' : 'Khách hàng duyệt'}
                                                                 </button>
                                                             )}
 
-                                                        {/* Original Team Member Request Support */}
-                                                        {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && isSameUser(currentUserId, task.assigneeId) && !task.isSupportRequested && (
+                                                            {!isPersonalView && isProjectInProgress &&
+                                                                task.status !== 'ON_HOLD' &&
+                                                                task.supportRequestType === 'STAFFING' &&
+                                                                task.isSupportRequested &&
+                                                                !task.isSupportAccepted &&
+                                                                (isSameUser(task.supportLeadId, currentUserId) || isProjectManager || hasStaffingAdminOverride) && (
+                                                                    <button
+                                                                        onClick={(event) => {
+                                                                            event.stopPropagation();
+                                                                            setStaffingTask(task);
+                                                                            setIsStaffingResolutionOpen(true);
+                                                                        }}
+                                                                        className="inline-flex whitespace-nowrap items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-bold uppercase text-emerald-600 transition-all hover:bg-emerald-600 hover:text-white active:scale-95"
+                                                                    >
+                                                                        <UserPlus className="h-3.5 w-3.5" />
+                                                                        Bổ sung nhân sự
+                                                                    </button>
+                                                                )}
+
+                                                            {/* Original Team Member Request Support */}
+                                                            {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && isSameUser(currentUserId, task.assigneeId) && !task.isSupportRequested && (
                                                             <button
                                                                 onClick={async (e) => {
                                                                     e.stopPropagation();
@@ -1176,8 +1176,8 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                                             </button>
                                                         )} */}
 
-                                                        {/* Helper Request Return Support */}
-                                                        {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING') && isSameUser(currentUserId, task.helperId) && (
+                                                            {/* Helper Request Return Support */}
+                                                            {/* {isProjectInProgress && (task.status === 'DOING' || task.status === 'REWORKING') && isSameUser(currentUserId, task.helperId) && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -1189,66 +1189,66 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                                 </button>
                                             )} */}
 
-                                                        {!isPersonalView && isProjectInProgress && isProjectLead && !['COMPLETED', 'CANCELLED'].includes(task.status) && (
-                                                            task.supportRequestType === 'STAFFING' && task.isSupportRequested && !task.isSupportAccepted ? (
-                                                                <span className="inline-flex whitespace-nowrap items-center gap-1 px-2.5 py-1.5 bg-amber-50 text-amber-600 rounded-xl text-xs font-medium border border-amber-200">
-                                                                    <UserPlus className="w-3.5 h-3.5" />
-                                                                    Chờ duyệt thêm người
-                                                                </span>
-                                                            ) : (
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setStaffingTaskId(task.id);
-                                                                        setIsRowSpecificStaffing(true);
-                                                                        setStaffingNote('');
-                                                                        setIsStaffingModalOpen(true);
-                                                                    }}
-                                                                    title="Yêu cầu PM bổ sung nhân sự cho công việc này"
-                                                                    className="inline-flex whitespace-nowrap items-center gap-1 px-2.5 py-1.5 bg-orange-50 text-[#F38820] rounded-xl hover:bg-[#F38820] hover:text-white transition-all active:scale-95 text-xs font-bold"
-                                                                >
-                                                                    <UserPlus className="w-3.5 h-3.5" />
-                                                                    Yêu cầu thêm người
-                                                                </button>
-                                                            )
-                                                        )}
+                                                            {!isPersonalView && isProjectInProgress && isProjectLead && !['COMPLETED', 'CANCELLED'].includes(task.status) && (
+                                                                task.supportRequestType === 'STAFFING' && task.isSupportRequested && !task.isSupportAccepted ? (
+                                                                    <span className="inline-flex whitespace-nowrap items-center gap-1 px-2.5 py-1.5 bg-amber-50 text-amber-600 rounded-xl text-xs font-medium border border-amber-200">
+                                                                        <UserPlus className="w-3.5 h-3.5" />
+                                                                        Chờ duyệt thêm người
+                                                                    </span>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setStaffingTaskId(task.id);
+                                                                            setIsRowSpecificStaffing(true);
+                                                                            setStaffingNote('');
+                                                                            setIsStaffingModalOpen(true);
+                                                                        }}
+                                                                        title="Yêu cầu PM bổ sung nhân sự cho công việc này"
+                                                                        className="inline-flex whitespace-nowrap items-center gap-1 px-2.5 py-1.5 bg-orange-50 text-[#F38820] rounded-xl hover:bg-[#F38820] hover:text-white transition-all active:scale-95 text-xs font-bold"
+                                                                    >
+                                                                        <UserPlus className="w-3.5 h-3.5" />
+                                                                        Yêu cầu thêm người
+                                                                    </button>
+                                                                )
+                                                            )}
 
-                                                        {!isPersonalView && (
-                                                            <TaskReminderButton
-                                                                task={task}
-                                                                isProjectInProgress={isProjectInProgress}
-                                                                canManage={canManageAllTasks}
-                                                            />
-                                                        )}
+                                                            {!isPersonalView && (
+                                                                <TaskReminderButton
+                                                                    task={task}
+                                                                    isProjectInProgress={isProjectInProgress}
+                                                                    canManage={canManageAllTasks}
+                                                                />
+                                                            )}
 
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                navigate(`/tasks/${task.id}`);
-                                                            }}
-                                                            className="inline-flex whitespace-nowrap items-center px-3 py-1.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-200 transition-all active:scale-95 text-xs font-bold"
-                                                        >
-                                                            Xem chi tiết
-                                                        </button>
-                                                    </div>
-                                                </td>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    navigate(`/tasks/${task.id}`);
+                                                                }}
+                                                                className="inline-flex whitespace-nowrap items-center px-3 py-1.5 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-200 transition-all active:scale-95 text-xs font-bold"
+                                                            >
+                                                                Xem chi tiết
+                                                            </button>
+                                                        </div>
+                                                    </td>
 
-                                            </tr>
-                                        ))}
-                                    </Fragment>
-                                );
-                            })
-                        ) : (
-                            <tr>
-                                <td colSpan={isPersonalView ? 6 : 8} className="px-6 py-10 text-center text-gray-400 italic">
-                                    {emptyMessage}
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+                                                </tr>
+                                            ))}
+                                        </Fragment>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan={isPersonalView ? 6 : 8} className="px-6 py-10 text-center text-gray-400 italic">
+                                        {emptyMessage}
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
 
             {assigningTask && (
                 <TaskAssignModal
@@ -1293,7 +1293,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                 projectId={project?.id}
                 onSuccess={() => {
                     if (activeStaffingRequest?.notifId) {
-                        markAsRead(activeStaffingRequest.notifId).catch(() => {});
+                        markAsRead(activeStaffingRequest.notifId).catch(() => { });
                     }
                     try {
                         const key = `project_staffing_requests_${project?.id}`;
@@ -1302,7 +1302,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                         localStorage.setItem(key, JSON.stringify(filtered));
                         setLocalStaffingRequests(filtered);
                         localStorage.removeItem(`project_staffing_req_${project?.id}`);
-                    } catch {}
+                    } catch { }
                     setActiveStaffingRequest(null);
                 }}
             />

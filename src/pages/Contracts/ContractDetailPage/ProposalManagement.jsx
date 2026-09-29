@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { FileText, Upload, CheckCircle, FileCheck, Loader2, X, Send, Link2, FileSpreadsheet, Eye } from 'lucide-react';
-import { getFilePreviewUrl } from '../../../utils/cloudinary';
+import { useEffect, useState } from 'react';
+import { FileText, Upload, CheckCircle, Loader2, X, Send, Link2, FileSpreadsheet } from 'lucide-react';
 import { DocumentCard, DocumentPreviewModal } from '../../../components/common';
+import { toast } from 'react-toastify';
 
 export const ProposalManagement = ({
   contract,
@@ -26,6 +26,22 @@ export const ProposalManagement = ({
   const [quotationFile, setQuotationFile] = useState(null);
   const [quotationLink, setQuotationLink] = useState('');
   const [previewModalFile, setPreviewModalFile] = useState(null);
+  const [signedFile, setSignedFile] = useState(null);
+  const [signedPreviewUrl, setSignedPreviewUrl] = useState('');
+  const [isConfirmingSignedUpload, setIsConfirmingSignedUpload] = useState(false);
+  const [isSignedSubmitLocked, setIsSignedSubmitLocked] = useState(false);
+
+  useEffect(() => {
+    if (!signedFile) {
+      setSignedPreviewUrl('');
+      return undefined;
+    }
+
+    const objectUrl = URL.createObjectURL(signedFile);
+    setSignedPreviewUrl(objectUrl);
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [signedFile]);
 
   const openProposalEditor = () => {
     setUploadMethod('');
@@ -60,15 +76,46 @@ export const ProposalManagement = ({
     if (succeeded) setIsEditingProposal(false);
   };
 
-  const proposalViewUrl = contract.proposal_contract?.includes('res.cloudinary.com')
-    ? getFilePreviewUrl(contract.proposal_contract)
-    : contract.proposal_contract;
-
   const handleConfirmReject = () => {
     if (!rejectionReason.trim()) return;
     onRejectProposal(rejectionReason);
     setIsRejecting(false);
     setRejectionReason('');
+  };
+
+  const handleSignedFileChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    event.target.value = '';
+
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      setSignedFile(null);
+      toast.error('Chỉ chấp nhận file .pdf cho hợp đồng đã ký');
+      return;
+    }
+
+    setSignedFile(file);
+  };
+
+  const handleSendSigned = async () => {
+    if (isSignedSubmitLocked || isUploadingSigned) return;
+
+    setIsSignedSubmitLocked(true);
+    try {
+      const succeeded = await onUploadSigned(signedFile);
+      if (succeeded) {
+        setSignedFile(null);
+        setIsConfirmingSignedUpload(false);
+      }
+    } finally {
+      setIsSignedSubmitLocked(false);
+    }
+  };
+
+  const formatFileSize = (size = 0) => {
+    if (!size) return '';
+    if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const ProgressBar = ({ progress }) => (
@@ -365,36 +412,57 @@ export const ProposalManagement = ({
             </div>
             <div>
               {contract.signed_contract ? (
-                <button
-                  onClick={onUploadSigned}
-                  disabled={isUploadingSigned || isUploadingProposal}
-                  className={`flex items-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-all text-sm font-medium ${(isUploadingSigned || isUploadingProposal) ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                >
-                  {isUploadingSigned ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Upload className="w-4 h-4" />
-                  )}
-                  {isUploadingSigned ? 'Đang upload...' : 'Upload bản mới'}
-                </button>
+                <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+                  <CheckCircle className="h-4 w-4" />
+                  Đã gửi
+                </span>
               ) : (
-                <button
-                  onClick={onUploadSigned}
-                  disabled={isUploadingSigned || isUploadingProposal}
-                  className={`flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all text-sm font-medium ${(isUploadingSigned || isUploadingProposal) ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                >
-                  {isUploadingSigned ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Upload className="w-4 h-4" />
-                  )}
-                  {isUploadingSigned ? 'Đang upload...' : 'Upload'}
-                </button>
+                <label className={`flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all text-sm font-medium ${(isUploadingSigned || isUploadingProposal) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                  }`}>
+                  <Upload className="w-4 h-4" />
+                  Chọn file
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={handleSignedFileChange}
+                    disabled={isUploadingSigned || isUploadingProposal}
+                    className="hidden"
+                  />
+                </label>
               )}
             </div>
           </div>
+
+          {signedFile && !contract.signed_contract && (
+            <div className="mt-3.5 pt-3 border-t border-gray-100">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">File đã chọn, kiểm tra trước khi gửi:</p>
+              <DocumentCard
+                url={signedPreviewUrl}
+                fileName={signedFile.name}
+                fileSize={formatFileSize(signedFile.size)}
+                onPreview={(file) => setPreviewModalFile(file)}
+              />
+              <div className="mt-3 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSignedFile(null)}
+                  disabled={isUploadingSigned || isSignedSubmitLocked}
+                  className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmingSignedUpload(true)}
+                  disabled={isUploadingSigned || isUploadingProposal || isSignedSubmitLocked}
+                  className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {(isUploadingSigned || isSignedSubmitLocked) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {(isUploadingSigned || isSignedSubmitLocked) ? 'Đang gửi...' : 'Gửi đi'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Thẻ xem trước Hợp đồng đã ký */}
           {contract.signed_contract && (
@@ -419,6 +487,45 @@ export const ProposalManagement = ({
         url={previewModalFile?.url}
         fileName={previewModalFile?.fileName}
       />
+
+      {isConfirmingSignedUpload && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
+            <div className="border-b border-gray-100 p-5">
+              <h3 className="text-lg font-bold text-gray-900">Xác nhận gửi hợp đồng đã ký</h3>
+              <p className="mt-1 text-sm text-gray-500">Sau khi gửi, hệ thống sẽ upload file và không cho upload lại bản khác.</p>
+            </div>
+            <div className="p-5">
+              <DocumentCard
+                url={signedPreviewUrl}
+                fileName={signedFile?.name || 'Hợp đồng đã ký.pdf'}
+                fileSize={formatFileSize(signedFile?.size)}
+                onPreview={(file) => setPreviewModalFile(file)}
+              />
+              {(isUploadingSigned || isSignedSubmitLocked) && <ProgressBar progress={uploadProgress} />}
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-100 p-4">
+              <button
+                type="button"
+                onClick={() => setIsConfirmingSignedUpload(false)}
+                disabled={isUploadingSigned || isSignedSubmitLocked}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleSendSigned}
+                disabled={isUploadingSigned || isSignedSubmitLocked || !signedFile}
+                className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {(isUploadingSigned || isSignedSubmitLocked) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {(isUploadingSigned || isSignedSubmitLocked) ? 'Đang gửi...' : 'Xác nhận gửi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

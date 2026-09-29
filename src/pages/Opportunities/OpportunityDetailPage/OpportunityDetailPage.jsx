@@ -12,7 +12,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { selectCurrentUser } from '../../../store/authSlice';
-import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation, useApproveOpportunityMutation, useRejectOpportunityMutation } from '../../../api/opportunities';
+import { useGetOpportunityQuery, useDeleteOpportunityMutation, useUpdateOpportunityMutation, useAddCustomerToOpportunityMutation, useApproveOpportunityMutation, useRejectOpportunityMutation, useResubmitOpportunityMutation } from '../../../api/opportunities';
 import { useGetCustomersQuery } from '../../../api/customers';
 import { useGetQuotationsByOpportunityQuery, useCreateQuotationMutation, useUpdateQuotationMutation } from '../../../api/quotations';
 import { useGetReferralPartnersQuery, useGetReferralPartnerQuery } from '../../../api/referralPartners';
@@ -43,12 +43,14 @@ export const OpportunityDetailPage = () => {
   const { data: opportunity, isLoading, error } = useGetOpportunityQuery(id);
   const [deleteOpportunity, { isLoading: isDeleting }] = useDeleteOpportunityMutation();
   const [updateOpportunity, { isLoading: isUpdating }] = useUpdateOpportunityMutation();
+  const [addCustomerToOpportunity, { isLoading: isAddingCustomer }] = useAddCustomerToOpportunityMutation();
   const { data: quotations = [], isLoading: isLoadingQuotations } = useGetQuotationsByOpportunityQuery(id);
   const { data: currentUser = [] } = useGetMeQuery();
   const [createQuotation, { isLoading: isCreatingQuotation }] = useCreateQuotationMutation();
   const [updateQuotation, { isLoading: isUpdatingQuotation }] = useUpdateQuotationMutation();
   const [approveOpportunity, { isLoading: isApproving }] = useApproveOpportunityMutation();
   const [rejectOpportunity, { isLoading: isRejecting }] = useRejectOpportunityMutation();
+  const [resubmitOpportunity, { isLoading: isResubmitting }] = useResubmitOpportunityMutation();
 
   const draftCount = useMemo(() =>
     quotations.filter(q => q.status === 'DRAFT' || q.status === 'PENDING_APPROVAL').length,
@@ -58,6 +60,9 @@ export const OpportunityDetailPage = () => {
   console.log(opportunity?.status);
 
   const showBadge = (opportunity?.status === 'PENDING_QUOTE_APPROVAL' || opportunity?.status === 'QUOTATION_DRAFTING') && draftCount > 0;
+  const canEditRejected = !!opportunity && (
+    currentUser?.role === 'ADMIN' || (!!opportunity.createdBy && currentUser?.id === opportunity.createdBy.id)
+  );
   const createdContracts = useMemo(() => (
     Array.isArray(opportunity?.contracts) ? opportunity.contracts.filter(contract => contract?.id) : []
   ), [opportunity?.contracts]);
@@ -77,6 +82,7 @@ export const OpportunityDetailPage = () => {
   const [showQuotationsListModal, setShowQuotationsListModal] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showEditRejectedModal, setShowEditRejectedModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [editingQuotation, setEditingQuotation] = useState(null);
   const [customerType, setCustomerType] = useState('DIRECT');
@@ -134,6 +140,7 @@ export const OpportunityDetailPage = () => {
 
       if (customerStatus === 'EXISTING') {
         updateData.customerId = selectedCustomerId;
+        updateData.customerType = customerType;
         updateData.leadName = '';
         updateData.leadPhone = '';
         updateData.leadEmail = '';
@@ -149,6 +156,7 @@ export const OpportunityDetailPage = () => {
         }
       } else if (customerStatus === 'POTENTIAL') {
         updateData.customerId = '';
+        updateData.customerType = customerType;
 
         // Map frontend type to backend source enum
         const backendSource = customerType === 'REFERRAL' ? 'REFERRAL_PARTNER' : 'INTERNAL';
@@ -165,7 +173,11 @@ export const OpportunityDetailPage = () => {
         }
       }
 
-      await updateOpportunity({ id, ...updateData }).unwrap();
+      if (customerStatus === 'EXISTING') {
+        await addCustomerToOpportunity({ id, ...updateData }).unwrap();
+      } else {
+        await updateOpportunity({ id, ...updateData }).unwrap();
+      }
       setShowContactModal(false);
     } catch (err) {
       alert(err?.data?.message || 'Có lỗi xảy ra khi cập nhật');
@@ -227,6 +239,15 @@ export const OpportunityDetailPage = () => {
       toast.success('Đã không duyệt cơ hội');
     } catch (err) {
       toast.error(err?.data?.message || 'Có lỗi xảy ra khi không duyệt cơ hội');
+    }
+  };
+
+  const handleResubmitOpportunity = async () => {
+    try {
+      await resubmitOpportunity(id).unwrap();
+      toast.success('Đã gửi lại cơ hội để duyệt');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Có lỗi xảy ra khi gửi lại cơ hội');
     }
   };
 
@@ -359,6 +380,40 @@ export const OpportunityDetailPage = () => {
           </div>
         </div>
       </div>
+
+      {opportunity.status === 'OPP_REJECTED' && canEditRejected && (
+        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="font-semibold text-red-700">Cơ hội không được duyệt</p>
+              {opportunity.rejectionReason && (
+                <p className="mt-1 whitespace-pre-wrap text-sm text-red-600">{opportunity.rejectionReason}</p>
+              )}
+              <p className="mt-2 text-xs text-red-500">Chỉnh sửa và lưu nháp, sau đó bấm "Gửi lại duyệt" để BOD xem xét lại.</p>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <button
+                type="button"
+                onClick={() => setShowEditRejectedModal(true)}
+                disabled={isResubmitting}
+                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+              >
+                <Edit className="h-4 w-4" />
+                Chỉnh sửa
+              </button>
+              <button
+                type="button"
+                onClick={handleResubmitOpportunity}
+                disabled={isResubmitting}
+                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+              >
+                <CheckCircle className="h-4 w-4" />
+                {isResubmitting ? 'Đang gửi...' : 'Gửi lại duyệt'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {createdContracts.length > 0 && (
         <div className="mb-6 border-b border-gray-200">
@@ -504,7 +559,7 @@ export const OpportunityDetailPage = () => {
         referralPartners={referralPartners}
         customers={displayCustomers}
         onSave={handleSaveContact}
-        isUpdating={isUpdating || isLoadingPartnerDetails}
+        isUpdating={isUpdating || isAddingCustomer || isLoadingPartnerDetails}
       />
 
       <OpportunityModal
@@ -512,6 +567,15 @@ export const OpportunityDetailPage = () => {
         initialData={showDuplicateModal ? opportunity : null}
         onClose={() => setShowDuplicateModal(false)}
         onSuccess={() => setShowDuplicateModal(false)}
+      />
+
+      <OpportunityModal
+        isOpen={showEditRejectedModal}
+        mode="edit"
+        initialData={showEditRejectedModal ? opportunity : null}
+        rejectionReason={opportunity.rejectionReason}
+        onClose={() => setShowEditRejectedModal(false)}
+        onSuccess={() => toast.success('Đã lưu nháp cơ hội')}
       />
 
       <QuotationsListModal

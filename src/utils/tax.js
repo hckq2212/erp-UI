@@ -1,7 +1,7 @@
 /**
- * Fetch business information from xinvoice.vn based on Tax ID (Mã số thuế)
+ * Fetch business information based on Tax ID (Mã số thuế) via VietQR API (CORS enabled)
  * @param {string} taxId - The tax ID to fetch info for (10 or 13 digits)
- * @returns {Promise<{name: string, address: string} | null>}
+ * @returns {Promise<{name: string, address: string, status?: string, internationalName?: string, shortName?: string} | null>}
  */
 export const fetchTaxInfo = async (taxId) => {
   if (!taxId) return null;
@@ -15,18 +15,19 @@ export const fetchTaxInfo = async (taxId) => {
   }
 
   try {
-    const response = await fetch(`https://api.xinvoice.vn/gdt-api/tax-payer/${cleanTaxId}`);
+    const response = await fetch(`https://api.vietqr.io/v2/business/${cleanTaxId}`);
     if (!response.ok) {
       return null;
     }
 
-    const data = await response.json();
-    if (data && data.name) {
+    const res = await response.json();
+    if (res && res.code === '00' && res.data && res.data.name) {
       return {
-        name: data.name,
-        address: data.address || '',
-        status: data.status,
-        taxDepartment: data.taxDepartment
+        name: res.data.name,
+        address: res.data.address || '',
+        status: res.data.status,
+        internationalName: res.data.internationalName || '',
+        shortName: res.data.shortName || ''
       };
     }
     return null;
@@ -35,3 +36,4 @@ export const fetchTaxInfo = async (taxId) => {
     return null;
   }
 };
+

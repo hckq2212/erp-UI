@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ClipboardCheck } from 'lucide-react';
+import { ClipboardCheck, Gauge } from 'lucide-react';
 import { useGetMeQuery } from '../../api/auth';
 import { QcSettingsTab } from './QcSettingsTab';
+import { WorkloadNormSettingsTab } from './WorkloadNormSettingsTab';
 
 const TABS = [
   { id: 'qc', label: 'Cấu hình QC', icon: ClipboardCheck, component: QcSettingsTab },
+  { id: 'workload', label: 'Định mức workload', icon: Gauge, component: WorkloadNormSettingsTab },
 ];
 
 export const SettingsPage = () => {

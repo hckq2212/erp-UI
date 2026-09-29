@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip, Plus, Play } from 'lucide-react';
-import { useGetTaskQuery, useSubmitTaskResultMutation, useSubmitTaskResultFileMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation, useStartTaskMutation } from '../../api/tasks';
+import { ArrowLeft, Edit, Calendar, User, Users, UserPlus, FileText, CheckCircle2, Clock, AlertCircle, Upload, Link as LinkIcon, X, ListChecks, Bell, History, MessageSquare, Paperclip, Plus, Play, Send } from 'lucide-react';
+import { useGetTaskQuery, useSubmitTaskResultMutation, useSubmitTaskResultFileMutation, useSubmitTaskResultForReviewMutation, useRequestReworkMutation, useApproveByCustomerMutation, useRequestSupportMutation, useRespondToSupportMutation, useReturnSupportMutation, useRequestReturnSupportMutation, useSendTaskReminderMutation, useUpdateTaskMutation, useStartTaskMutation } from '../../api/tasks';
 import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetTaskResultCheckQuery } from '../../api/taskResultChecks';
 import { ConfirmedCheckErrors } from '../../components/tasks/ConfirmedCheckErrors';
@@ -18,7 +18,7 @@ import { PanelErrorBoundary } from '../../components/shared/PanelErrorBoundary';
 import { ReworkTaskModal } from '../../components/tasks/ReworkTaskModal';
 import { TaskAssignModal } from '../Projects/ProjectDetailPage/TaskAssignModal';
 import { getTaskDisplayName } from '../../utils/taskName';
-import { getCurrentUserId, isSameUser } from '../../utils/authUser';
+import { getCurrentUserId, getUserAccountRole, isSameUser } from '../../utils/authUser';
 import { TaskDelegationPanel } from '../../components/tasks/TaskDelegationPanel';
 import { TaskReminderButton } from '../../components/tasks/TaskReminderButton';
 import { hasTeamMemberRole } from '../../utils/teamMember';
@@ -35,6 +35,7 @@ export const TaskDetailPage = () => {
     const { data: resultCheck } = useGetTaskResultCheckQuery(id, { skip: !id });
     const [submitResult, { isLoading: isSubmittingResult }] = useSubmitTaskResultMutation();
     const [submitResultFile, { isLoading: isSubmittingResultFile }] = useSubmitTaskResultFileMutation();
+    const [submitResultForReview, { isLoading: isSubmittingResultForReview }] = useSubmitTaskResultForReviewMutation();
     const [requestRework, { isLoading: isRequestingRework }] = useRequestReworkMutation();
     const [approveByCustomer, { isLoading: isApprovingByCustomer }] = useApproveByCustomerMutation();
     const [sendReminder, { isLoading: isSendingReminder }] = useSendTaskReminderMutation();
@@ -47,6 +48,7 @@ export const TaskDetailPage = () => {
 
     const isLoading = isTaskLoading || !user;
     const currentUserId = getCurrentUserId(user);
+    const currentUserRole = getUserAccountRole(user);
     const isProjectOnHold = task?.project?.status === 'ON_HOLD' || task?.status === 'ON_HOLD';
     const team = task?.project?.team;
     const currentMembership = team?.members?.find(member => isSameUser(member.user?.id, currentUserId));
@@ -109,13 +111,20 @@ export const TaskDetailPage = () => {
     const isResultReady = submissionType === 'file'
         ? Boolean(resultFile)
         : Boolean(resultLink.trim());
+    const resultDraftStatuses = ['DOING', 'REJECTED', 'REWORKING', 'OVERDUE'];
+    const canEditResultDraft = resultDraftStatuses.includes(task?.status) &&
+        canSubmitResult &&
+        !isParentBlockedBySubtasks;
+    const canSubmitResultDraft = canEditResultDraft &&
+        Boolean(task?.result) &&
+        (currentUserRole === 'ADMIN' || isSameUser(currentUserId, task?.lastSubmittedById || task?.lastSubmittedBy?.id));
 
     const canDelegate = !isProjectOnHold && (isAccount || isPM || isAdminOverride);
     const canAddSubtask = canDelegate &&
         !task?.parentTaskId &&
         (!task?.subtasks || task?.subtasks?.length === 0) &&
         task?.performerType === 'INTERNAL' &&
-        ['PENDING','NOT_STARTED', 'DOING', 'REWORKING', 'OVERDUE', 'AWAITING_SUPPORT', 'REJECTED'].includes(task?.status) &&
+        ['PENDING', 'NOT_STARTED', 'DOING', 'REWORKING', 'OVERDUE', 'AWAITING_SUPPORT', 'REJECTED'].includes(task?.status) &&
         !['ON_HOLD', 'COMPLETED', 'CANCELLED'].includes(task?.project?.status);
 
     useEffect(() => {
@@ -257,10 +266,10 @@ export const TaskDetailPage = () => {
             if (submissionType === 'file' && resultFile) {
                 setIsUploading(true);
 
-                await submitResultFile({ id, file: resultFile, projectId: task.project?.id, sheetNames: selectedSheets, whitelist, scenarioIds: selectedScenarios, scenarioLabels: selectedScenarioLabels }).unwrap();
+                await submitResultFile({ id, file: resultFile, projectId: task.project?.id, sheetNames: selectedSheets, whitelist, scenarioIds: selectedScenarios, scenarioLabels: selectedScenarioLabels, draft: true }).unwrap();
 
                 setIsUploading(false);
-                toast.success('Gửi kết quả thành công!');
+                toast.success('Đã lưu kết quả. Bạn có thể chỉnh sửa hoặc gửi duyệt.');
                 setIsResultModalOpen(false);
                 setIsSpellCheckStage(false);
                 setSpellCheckFile(null);
@@ -291,10 +300,11 @@ export const TaskDetailPage = () => {
                 scenarioIds: selectedScenarios,
                 scenarioLabels: selectedScenarioLabels,
                 checkFileUrl: submissionType === 'link' ? spellCheckUrl : undefined,
-                checkFileName: submissionType === 'link' ? spellCheckFileName : undefined
+                checkFileName: submissionType === 'link' ? spellCheckFileName : undefined,
+                draft: true
             }).unwrap();
 
-            toast.success('Gửi kết quả thành công!');
+            toast.success('Đã lưu kết quả. Bạn có thể chỉnh sửa hoặc gửi duyệt.');
             setIsResultModalOpen(false);
             setIsSpellCheckStage(false);
             setSpellCheckFile(null);
@@ -313,6 +323,15 @@ export const TaskDetailPage = () => {
         } catch (err) {
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi gửi kết quả');
+        }
+    };
+
+    const handleSubmitResultForReview = async () => {
+        try {
+            await submitResultForReview({ id, projectId: task.project?.id }).unwrap();
+            toast.success('Đã gửi kết quả cho PM duyệt');
+        } catch (err) {
+            toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi gửi duyệt kết quả');
         }
     };
 
@@ -514,7 +533,7 @@ export const TaskDetailPage = () => {
                         </Button>
                     )}
 
-                    {(task.status === 'DONE' || task.status === 'COMPLETED' || task.status === 'INTERNAL_COMPLETED') && canDecideOutcome && !isVideoDemoTask && (
+                    {(task.status === 'COMPLETED' || task.status === 'INTERNAL_COMPLETED') && canDecideOutcome && !isVideoDemoTask && (
                         <Button
                             variant="outline"
                             onClick={() => setIsReworkModalOpen(true)}
@@ -538,64 +557,6 @@ export const TaskDetailPage = () => {
                             </Button>
                         )}
 
-                    {/* Deprecated cross-team support buttons */}
-                    {/*
-                    {task.status === 'SUPPORT_PENDING' && isSameUser(task.supportLeadId, currentUserId) && (
-                        <div className="flex gap-3">
-                            <Button
-                                onClick={() => handleRespondSupport('ACCEPT')}
-                                className="rounded-2xl py-3 px-6 shadow-lg shadow-green-100 bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
-                            >
-                                <CheckCircle2 className="w-5 h-5" />
-                                Đồng ý hỗ trợ
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                onClick={() => handleRespondSupport('REJECT')}
-                                className="rounded-2xl py-3 px-6 shadow-sm border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-2"
-                            >
-                                <X className="w-5 h-5" />
-                                Từ chối
-                            </Button>
-                        </div>
-                    )}
-
-                    {(task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'OVERDUE') && isSameUser(currentUserId, task.helperId) && (
-                        <Button
-                            variant="outline"
-                            onClick={handleRequestReturnSupport}
-                            className="rounded-2xl py-3 px-6 border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-2"
-                        >
-                            <AlertCircle className="w-5 h-5" />
-                            Hỗ trợ
-                        </Button>
-                    )}
-
-                    {task.isSupportAccepted &&
-                        isSameUser(task.supportLeadId, currentUserId) &&
-                        task.isSupportReturnRequested &&
-                        (task.status === 'DOING' || task.status === 'REWORKING' || task.status === 'SUPPORT_AWAITING_RETURN') && (
-                            <div className="flex gap-3">
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setIsAssignModalOpen(true)}
-                                    className="rounded-2xl py-3 px-6 border-amber-200 text-amber-600 hover:bg-amber-50 flex items-center gap-2"
-                                >
-                                    <Users className="w-5 h-5" />
-                                    Phân công lại
-                                </Button>
-
-                                <Button
-                                    onClick={handleReturnSupport}
-                                    className="rounded-2xl py-3 px-6 shadow-lg shadow-red-100 bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
-                                >
-                                    <ArrowLeft className="w-5 h-5" />
-                                    Trả lại
-                                </Button>
-                            </div>
-                        )}
-                    */}
 
                     <TaskReminderButton
                         task={task}
@@ -799,16 +760,14 @@ export const TaskDetailPage = () => {
                                 <h2 className="text-xl font-bold text-gray-900 tracking-tight">Kết quả</h2>
                             </div>
 
-                            {(task.status === 'DOING' || task.status === 'REJECTED' || task.status === 'REWORKING' || task.status === 'OVERDUE') &&
-                                canSubmitResult &&
-                                !isParentBlockedBySubtasks && (
-                                    <button
-                                        onClick={() => setIsResultModalOpen(true)}
-                                        className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors cursor-pointer"
-                                    >
-                                        {task.result ? 'Cập nhật kết quả' : 'Thêm kết quả'}
-                                    </button>
-                                )}
+                            {canEditResultDraft && (
+                                <button
+                                    onClick={() => setIsResultModalOpen(true)}
+                                    className="text-blue-600 hover:text-blue-700 text-sm font-bold uppercase transition-colors cursor-pointer"
+                                >
+                                    {task.result ? 'Cập nhật kết quả' : 'Thêm kết quả'}
+                                </button>
+                            )}
                         </div>
 
                         {task.result ? (
@@ -849,14 +808,28 @@ export const TaskDetailPage = () => {
                                     </div>
 
                                     {task.result.url && (
-                                        <a
-                                            href={getFilePreviewUrl(task.result.url, task.result.type)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all shrink-0"
-                                        >
-                                            Xem ngay
-                                        </a>
+                                        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                                            <a
+                                                href={getFilePreviewUrl(task.result.url, task.result.type)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all"
+                                            >
+                                                Xem ngay
+                                            </a>
+
+                                            {canSubmitResultDraft && (
+                                                <Button
+                                                    onClick={handleSubmitResultForReview}
+                                                    isLoading={isSubmittingResultForReview}
+                                                    disabled={isSubmittingResultForReview}
+                                                    className="rounded-xl px-4 py-2 text-xs font-bold uppercase bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-100 flex items-center gap-2"
+                                                >
+                                                    <Send className="w-3.5 h-3.5" />
+                                                    <span>Gửi duyệt</span>
+                                                </Button>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
 
@@ -921,7 +894,7 @@ export const TaskDetailPage = () => {
                                             <div className="space-y-2">
                                                 <div className="flex items-center gap-2 text-gray-400">
                                                     <MessageSquare className="w-3.5 h-3.5" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">Phản hồi của Lead</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Phản hồi</span>
                                                 </div>
 
                                                 <p className="text-sm text-gray-700 font-medium italic border-l-2 border-purple-200 pl-3 py-1">
@@ -1115,7 +1088,7 @@ export const TaskDetailPage = () => {
             <Modal
                 isOpen={isResultModalOpen}
                 onClose={() => setIsResultModalOpen(false)}
-                title={isSpellCheckStage ? 'Chọn sheet kiểm tra' : 'Gửi kết quả công việc'}
+                title={isSpellCheckStage ? 'Chọn sheet kiểm tra' : 'Lưu kết quả công việc'}
                 className={isSpellCheckStage ? "max-w-4xl" : "max-w-md"}
             >
                 {!isSpellCheckStage ? (
@@ -1171,7 +1144,7 @@ export const TaskDetailPage = () => {
 
                                     {resultFile && (
                                         <p className="text-[10px] text-blue-500 font-bold mt-3">
-                                            File sẽ được kiểm tra chính tả trước khi nộp
+                                            File sẽ được kiểm tra chính tả sau khi gửi duyệt
                                         </p>
                                     )}
 
@@ -1244,7 +1217,7 @@ export const TaskDetailPage = () => {
                     <div className="space-y-6">
                         <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
                             <p className="text-sm font-bold text-blue-800">Chọn sheet để kiểm tra chính tả &amp; QC</p>
-                            <p className="text-xs text-blue-600 mt-1">Kết quả kiểm tra sẽ được xử lý sau khi nộp và hiển thị cho người duyệt.</p>
+                            <p className="text-xs text-blue-600 mt-1">Kết quả kiểm tra sẽ được xử lý sau khi bạn bấm Gửi duyệt.</p>
                         </div>
 
                         <PanelErrorBoundary resetKey={spellCheckFile || spellCheckUrl} fallbackMessage="Không thể chuẩn bị kiểm tra lúc này">
@@ -1289,7 +1262,7 @@ export const TaskDetailPage = () => {
                                 isLoading={isSubmittingResult || isSubmittingResultFile || isUploading}
                                 disabled={isSubmittingResult || isSubmittingResultFile || isUploading || isLoadingResultSheets}
                             >
-                                {isUploading ? 'Đang tải lên...' : isLoadingResultSheets ? 'Đang đọc danh sách sheet...' : 'Nộp kết quả'}
+                                {isUploading ? 'Đang tải lên...' : isLoadingResultSheets ? 'Đang đọc danh sách sheet...' : 'Lưu kết quả'}
                             </Button>
                         </div>
                     </div>
