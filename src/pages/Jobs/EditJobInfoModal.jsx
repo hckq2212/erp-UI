@@ -10,10 +10,6 @@ import { formatNumber, parseNumber } from '../../utils/format';
 import { useEffect, useState } from 'react';
 import { JOB_CATEGORY_OPTIONS } from '../../utils/enums';
 
-const normalizeApiNumber = (value) => {
-    const numberValue = Number(value ?? 0);
-    return Number.isFinite(numberValue) ? String(numberValue) : '0';
-};
 
 const jobInfoSchema = z.object({
     name: z.string().min(1, 'Tên hạng mục là bắt buộc'),
