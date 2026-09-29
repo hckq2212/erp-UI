@@ -12,7 +12,10 @@ export const taskResultChecksApi = api.injectEndpoints({
         method: 'PATCH',
         body: { kind, itemId, confirmed },
       }),
-      invalidatesTags: (result, error, { taskId }) => [{ type: 'TaskResultChecks', id: taskId }],
+      invalidatesTags: (result, error, { taskId, kind }) => [
+        { type: 'TaskResultChecks', id: taskId },
+        ...(kind === 'SPELL' ? [{ type: 'ProjectSpellCheckWhitelist' }] : []),
+      ],
     }),
     toggleResultCheckItems: builder.mutation({
       query: ({ taskId, kind, itemIds, confirmed }) => ({
@@ -20,7 +23,10 @@ export const taskResultChecksApi = api.injectEndpoints({
         method: 'PATCH',
         body: { kind, itemIds, confirmed },
       }),
-      invalidatesTags: (result, error, { taskId }) => [{ type: 'TaskResultChecks', id: taskId }],
+      invalidatesTags: (result, error, { taskId, kind }) => [
+        { type: 'TaskResultChecks', id: taskId },
+        ...(kind === 'SPELL' ? [{ type: 'ProjectSpellCheckWhitelist' }] : []),
+      ],
     }),
     finalizeResultCheck: builder.mutation({
       query: (taskId) => ({
@@ -29,11 +35,18 @@ export const taskResultChecksApi = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, taskId) => [{ type: 'TaskResultChecks', id: taskId }],
     }),
+    getTaskResultCheckPreview: builder.query({
+      query: ({ taskId, sheet, rowStart, rowCount, colStart, colCount }) => ({
+        url: `/task-result-checks/task/${taskId}/preview`,
+        params: { sheet, rowStart, rowCount, colStart, colCount },
+      }),
+      keepUnusedDataFor: 120,
+    }),
     rerunResultCheck: builder.mutation({
-      query: ({ taskId, kind, whitelist }) => ({
+      query: ({ taskId, kind, whitelist, scope }) => ({
         url: `/task-result-checks/task/${taskId}/rerun`,
         method: 'PATCH',
-        body: { kind, whitelist },
+        body: { kind, whitelist, scope },
       }),
       invalidatesTags: (result, error, { taskId }) => [{ type: 'TaskResultChecks', id: taskId }],
     }),
@@ -46,4 +59,5 @@ export const {
   useToggleResultCheckItemsMutation,
   useFinalizeResultCheckMutation,
   useRerunResultCheckMutation,
+  useLazyGetTaskResultCheckPreviewQuery,
 } = taskResultChecksApi;

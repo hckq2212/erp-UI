@@ -150,13 +150,16 @@ export const tasksApi = api.injectEndpoints({
       ].filter(Boolean),
     }),
     submitTaskResultFile: builder.mutation({
-      query: ({ id, file, sheetNames, whitelist, scenarioIds, scenarioLabels, draft }) => {
+      query: ({ id, file, sheetNames, whitelist, scenarioIds, scenarioLabels, regions, draft }) => {
         const formData = new FormData();
         formData.append('file', file);
-        if (sheetNames?.length) formData.append('sheetNames', sheetNames.join(','));
+        if (sheetNames?.length) {
+          formData.append('sheetNames', sheetNames.join(','));
+          formData.append('scenarioIds', (scenarioIds || []).join(','));
+        }
         if (whitelist?.length) formData.append('whitelist', whitelist.join(','));
-        if (scenarioIds?.length) formData.append('scenarioIds', scenarioIds.join(','));
         if (scenarioLabels?.length) formData.append('scenarioLabels', JSON.stringify(scenarioLabels));
+        if (regions?.length) formData.append('regions', JSON.stringify(regions));
         if (draft !== undefined) formData.append('draft', String(draft));
         return {
           url: `/tasks/${id}/submit-result-file`,

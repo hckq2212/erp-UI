@@ -20,6 +20,13 @@ export const spellingCheckApi = api.injectEndpoints({
         body: { fileUrl, fileName },
       }),
     }),
+    previewSheetFromUrl: builder.mutation({
+      query: (body) => ({
+        url: '/spelling-check/preview-from-url',
+        method: 'POST',
+        body,
+      }),
+    }),
     startSpellCheck: builder.mutation({
       query: ({ file, lang, sheetNames, whitelist, scenarioIds }) => {
         const formData = new FormData();
@@ -64,6 +71,7 @@ export const spellingCheckApi = api.injectEndpoints({
 export const {
   useListSpellCheckSheetsMutation,
   useListSpellCheckSheetsFromUrlMutation,
+  usePreviewSheetFromUrlMutation,
   useStartSpellCheckMutation,
   useStartSpellCheckFromUrlMutation,
   useGetSpellCheckStatusQuery,

@@ -14,6 +14,7 @@ import { Button } from '../../components/ui/Button';
 import { cn } from '../../utils/cn';
 import { getFilePreviewUrl } from '../../utils/cloudinary';
 import { ResultSheetSelectorPanel } from '../../components/tasks/ResultSheetSelectorPanel';
+import { regionRef } from '../../utils/sheetScope';
 import { PanelErrorBoundary } from '../../components/shared/PanelErrorBoundary';
 import { ReworkTaskModal } from '../../components/tasks/ReworkTaskModal';
 import { TaskAssignModal } from '../Projects/ProjectDetailPage/TaskAssignModal';
@@ -99,6 +100,7 @@ export const TaskDetailPage = () => {
     const [selectedSheets, setSelectedSheets] = useState([]);
     const [selectedScenarios, setSelectedScenarios] = useState([]);
     const [selectedScenarioLabels, setSelectedScenarioLabels] = useState([]);
+    const [customRegions, setCustomRegions] = useState([]);
     const [whitelist, setWhitelist] = useState([]);
     const [isLoadingResultSheets, setIsLoadingResultSheets] = useState(false);
 
@@ -136,6 +138,7 @@ export const TaskDetailPage = () => {
             setSelectedSheets([]);
             setSelectedScenarios([]);
             setSelectedScenarioLabels([]);
+            setCustomRegions([]);
             setWhitelist([]);
             setIsLoadingResultSheets(false);
         }
@@ -197,6 +200,7 @@ export const TaskDetailPage = () => {
         setSelectedSheets([]);
         setSelectedScenarios([]);
         setSelectedScenarioLabels([]);
+        setCustomRegions([]);
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
@@ -266,7 +270,7 @@ export const TaskDetailPage = () => {
             if (submissionType === 'file' && resultFile) {
                 setIsUploading(true);
 
-                await submitResultFile({ id, file: resultFile, projectId: task.project?.id, sheetNames: selectedSheets, whitelist, scenarioIds: selectedScenarios, scenarioLabels: selectedScenarioLabels, draft: true }).unwrap();
+                await submitResultFile({ id, file: resultFile, projectId: task.project?.id, sheetNames: selectedSheets, whitelist, scenarioIds: selectedScenarios, scenarioLabels: selectedScenarioLabels, regions: customRegions, draft: true }).unwrap();
 
                 setIsUploading(false);
                 toast.success('Đã lưu kết quả. Bạn có thể chỉnh sửa hoặc gửi duyệt.');
@@ -278,6 +282,7 @@ export const TaskDetailPage = () => {
                 setSelectedSheets([]);
                 setSelectedScenarios([]);
                 setSelectedScenarioLabels([]);
+                setCustomRegions([]);
                 setWhitelist([]);
                 setResultFile(null);
                 setResultLink('');
@@ -299,6 +304,7 @@ export const TaskDetailPage = () => {
                 whitelist,
                 scenarioIds: selectedScenarios,
                 scenarioLabels: selectedScenarioLabels,
+                regions: customRegions,
                 checkFileUrl: submissionType === 'link' ? spellCheckUrl : undefined,
                 checkFileName: submissionType === 'link' ? spellCheckFileName : undefined,
                 draft: true
@@ -313,6 +319,7 @@ export const TaskDetailPage = () => {
             setSelectedSheets([]);
             setSelectedScenarios([]);
             setSelectedScenarioLabels([]);
+            setCustomRegions([]);
             setWhitelist([]);
             setResultFile(null);
             setResultLink('');
@@ -329,7 +336,7 @@ export const TaskDetailPage = () => {
     const handleSubmitResultForReview = async () => {
         try {
             await submitResultForReview({ id, projectId: task.project?.id }).unwrap();
-            toast.success('Đã gửi kết quả cho PM duyệt');
+            toast.success('Đã gửi duyệt kết quả');
         } catch (err) {
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi gửi duyệt kết quả');
         }
@@ -736,16 +743,6 @@ export const TaskDetailPage = () => {
                         );
                     })()}
 
-                    {resultCheck?.finalizedAt && (((resultCheck.reviewedSpellErrors || []).length > 0) || ((resultCheck.reviewedQcMismatches || []).length > 0)) && (
-                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
-                            <ConfirmedCheckErrors
-                                title="Lỗi đã chốt ở kết quả đã nộp"
-                                spellErrors={(resultCheck.reviewedSpellErrors || []).filter(e => e.confirmed !== false)}
-                                qcMismatches={(resultCheck.reviewedQcMismatches || []).filter(m => m.confirmed !== false)}
-                            />
-                        </div>
-                    )}
-
                     <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8 overflow-hidden">
                         {isParentBlockedBySubtasks && (
                             <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
@@ -804,6 +801,12 @@ export const TaskDetailPage = () => {
                                                     Kịch bản đã nộp: {task.result.scenarioLabels.join(', ')}
                                                 </p>
                                             )}
+
+                                            {task.result.scanScope?.regions?.length > 0 && (
+                                                <p className="text-xs text-gray-500 mt-0.5">
+                                                    Vùng tự chọn: {task.result.scanScope.regions.map(region => `${region.label || 'Vùng'} (${regionRef(region)})`).join(', ')}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
 
@@ -854,6 +857,17 @@ export const TaskDetailPage = () => {
                             </div>
                         )}
                     </div>
+
+                    {resultCheck?.finalizedAt && (((resultCheck.reviewedSpellErrors || []).length > 0) || ((resultCheck.reviewedQcMismatches || []).length > 0)) && (
+                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                            <ConfirmedCheckErrors
+                                title="Lỗi đã chốt ở kết quả đã nộp"
+                                collapsible
+                                spellErrors={(resultCheck.reviewedSpellErrors || []).filter(e => e.confirmed !== false)}
+                                qcMismatches={(resultCheck.reviewedQcMismatches || []).filter(m => m.confirmed !== false)}
+                            />
+                        </div>
+                    )}
 
                     {task.iterations && task.iterations.length > 0 && (
                         <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
@@ -1231,6 +1245,8 @@ export const TaskDetailPage = () => {
                                 selectedScenarios={selectedScenarios}
                                 onSelectedScenariosChange={setSelectedScenarios}
                                 onSelectedScenarioLabelsChange={setSelectedScenarioLabels}
+                                customRegions={customRegions}
+                                onCustomRegionsChange={setCustomRegions}
                                 whitelist={whitelist}
                                 onWhitelistChange={setWhitelist}
                                 onLoadingChange={setIsLoadingResultSheets}
@@ -1249,6 +1265,7 @@ export const TaskDetailPage = () => {
                                     setSelectedSheets([]);
                                     setSelectedScenarios([]);
                                     setSelectedScenarioLabels([]);
+                                    setCustomRegions([]);
                                     setWhitelist([]);
                                     setIsLoadingResultSheets(false);
                                 }}

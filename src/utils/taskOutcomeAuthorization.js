@@ -23,7 +23,6 @@ export const canDecideTaskOutcome = (task, currentUserId, project = task?.projec
   if (!isSelfAssigned) return isSameUser(assignerId, currentUserId);
 
   const team = project?.team;
-  if (isSameUser(team?.teamLead?.id || team?.teamLeadId, currentUserId)) return true;
 
   return Boolean(team?.members?.some(member =>
     isSameUser(member.user?.id, currentUserId) &&

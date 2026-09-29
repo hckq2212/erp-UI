@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, ListChecks, Loader2, Search } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, ListChecks, Loader2, Search, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { SpellCheckWhitelist } from './SpellCheckWhitelist';
 import { QcProductInfoPanel } from './QcProductInfoPanel';
+import { ScanScopePreviewModal } from './ScanScopePreviewModal';
 import {
   useListSpellCheckSheetsMutation,
   useListSpellCheckSheetsFromUrlMutation,
+  usePreviewSheetFromUrlMutation,
 } from '../../api/spellingCheck';
+import { createFileSource } from '../../utils/sheetPreviewSource';
+import { regionRef } from '../../utils/sheetScope';
 
 const SHEET_EXTENSIONS = ['xlsx', 'xlsm'];
 
@@ -23,6 +27,8 @@ export const ResultSheetSelectorPanel = ({
   selectedScenarios,
   onSelectedScenariosChange,
   onSelectedScenarioLabelsChange,
+  customRegions = [],
+  onCustomRegionsChange,
   whitelist,
   onWhitelistChange,
   onLoadingChange,
@@ -32,13 +38,24 @@ export const ResultSheetSelectorPanel = ({
   const [sheetSearch, setSheetSearch] = useState('');
   const [checkedKey, setCheckedKey] = useState(null);
   const [expandedSheet, setExpandedSheet] = useState(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
+  const [previewSheetFromUrl] = usePreviewSheetFromUrlMutation();
   const [listSheets, { isLoading: isLoadingSheetsFile }] = useListSpellCheckSheetsMutation();
   const [listSheetsFromUrl, { isLoading: isLoadingSheetsUrl }] = useListSpellCheckSheetsFromUrlMutation();
 
   const isLoadingSheets = isLoadingSheetsFile || isLoadingSheetsUrl;
   const displayName = file?.name || fileName || '';
   const currentKey = file ? `${file.name}:${file.size}` : fileUrl ? fileUrl : null;
+
+  const previewSource = useMemo(() => {
+    if (file) return createFileSource(file);
+    if (!fileUrl) return null;
+    return {
+      key: `url:${fileUrl}`,
+      load: (request) => previewSheetFromUrl({ fileUrl, fileName, ...request }).unwrap(),
+    };
+  }, [file, fileUrl, fileName, previewSheetFromUrl]);
 
   useEffect(() => {
     onLoadingChange?.(Boolean(currentKey) && hasSheets(displayName) && isLoadingSheets);
@@ -72,8 +89,10 @@ export const ResultSheetSelectorPanel = ({
       setScenarios({});
       setSheetSearch('');
       setExpandedSheet(null);
+      setIsPreviewOpen(false);
       onSelectedSheetsChange([]);
       onSelectedScenariosChange?.([]);
+      onCustomRegionsChange?.([]);
     }
   }, [currentKey, checkedKey]);
 
@@ -108,6 +127,7 @@ export const ResultSheetSelectorPanel = ({
     if (selectedSheets.includes(name)) {
       onSelectedSheetsChange(selectedSheets.filter((s) => s !== name));
       onSelectedScenariosChange?.((selectedScenarios || []).filter((id) => !ids.includes(id)));
+      onCustomRegionsChange?.(customRegions.filter((r) => r.sheet !== name));
     } else {
       onSelectedSheetsChange([...selectedSheets, name]);
       onSelectedScenariosChange?.([...new Set([...(selectedScenarios || []), ...ids])]);
@@ -118,6 +138,7 @@ export const ResultSheetSelectorPanel = ({
     if (selectedSheets.length === sheets.length) {
       onSelectedSheetsChange([]);
       onSelectedScenariosChange?.([]);
+      onCustomRegionsChange?.([]);
     } else {
       onSelectedSheetsChange([...sheets]);
       onSelectedScenariosChange?.(allScenarioIds(scenarios));
@@ -137,6 +158,14 @@ export const ResultSheetSelectorPanel = ({
         onSelectedSheetsChange([...selectedSheets, owningSheet]);
       }
     }
+  };
+
+  const ensureSheetSelected = (name) => {
+    if (!selectedSheets.includes(name)) onSelectedSheetsChange([...selectedSheets, name]);
+  };
+
+  const removeCustomRegion = (id) => {
+    onCustomRegionsChange?.(customRegions.filter((r) => r.id !== id));
   };
 
   const toggleExpandSheet = (name) => {
@@ -248,8 +277,66 @@ export const ResultSheetSelectorPanel = ({
         </div>
       )}
 
+      {sheets?.length > 0 && previewSource && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setIsPreviewOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            Xem trước và chọn vùng quét
+          </button>
+          {customRegions.length > 0 && (
+            <ul className="space-y-1">
+              {customRegions.map((region) => (
+                <li key={region.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-white border border-amber-200 rounded-lg text-xs">
+                  <span className="font-medium text-slate-700 truncate">{region.label || 'Vùng tự chọn'}</span>
+                  <span className="text-slate-400 shrink-0">{regionRef(region)}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeCustomRegion(region.id)}
+                    className="ml-auto p-0.5 text-slate-400 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 rounded"
+                    aria-label={`Bỏ vùng ${region.label || ''}`}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {sheets?.length === 0 && (
         <div className="text-xs text-slate-400">File này không có sheet nào</div>
+      )}
+
+      {sheets?.length > 0 && previewSource && (
+        <ScanScopePreviewModal
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          title={`Phạm vi quét: ${displayName}`}
+          source={previewSource}
+          sheets={sheets}
+          selectedSheets={selectedSheets}
+          scenariosBySheet={scenarios}
+          selectedScenarioIds={selectedScenarios || []}
+          onToggleScenario={toggleScenario}
+          draftRegions={customRegions}
+          onDraftRegionsChange={onCustomRegionsChange}
+          draftDefinesScope
+          onEnsureSheet={ensureSheetSelected}
+          footer={
+            <button
+              type="button"
+              onClick={() => setIsPreviewOpen(false)}
+              className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Xong
+            </button>
+          }
+        />
       )}
     </div>
   );

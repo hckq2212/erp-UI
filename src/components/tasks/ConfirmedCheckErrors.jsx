@@ -1,4 +1,5 @@
-import { AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { AlertCircle, ChevronDown } from 'lucide-react';
 
 const groupSpellErrors = (items) => {
     const map = new Map();
@@ -9,17 +10,33 @@ const groupSpellErrors = (items) => {
     return Array.from(map.values());
 };
 
-export const ConfirmedCheckErrors = ({ spellErrors, qcMismatches, title = 'Lỗi đã chốt ở bản nộp trước' }) => {
+export const ConfirmedCheckErrors = ({ spellErrors, qcMismatches, title = 'Lỗi đã chốt ở bản nộp trước', collapsible = false }) => {
+    const [isCollapsed, setIsCollapsed] = useState(false);
     const hasSpell = spellErrors && spellErrors.length > 0;
     const hasQc = qcMismatches && qcMismatches.length > 0;
     if (!hasSpell && !hasQc) return null;
 
     return (
         <div className="space-y-2">
-            <div className="flex items-center gap-2 text-gray-400">
-                <AlertCircle className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-black uppercase tracking-widest">{title}</span>
-            </div>
+            {collapsible ? (
+                <button
+                    type="button"
+                    onClick={() => setIsCollapsed(prev => !prev)}
+                    className="flex w-full items-center justify-between gap-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                    <span className="flex items-center gap-2">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">{title}</span>
+                    </span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                </button>
+            ) : (
+                <div className="flex items-center gap-2 text-gray-400">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">{title}</span>
+                </div>
+            )}
+            {!(collapsible && isCollapsed) && (
             <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
                 {groupSpellErrors(spellErrors).map((g, gIdx) => (
                     <div key={`spell-${gIdx}`} className="px-3 py-2 text-xs flex items-center justify-between gap-2">
@@ -39,6 +56,7 @@ export const ConfirmedCheckErrors = ({ spellErrors, qcMismatches, title = 'Lỗi
                     </div>
                 ))}
             </div>
+            )}
         </div>
     );
 };

@@ -17,21 +17,24 @@ export const QcSettingsTab = () => {
 
   const [provider, setProvider] = useState('');
   const [verifyModel, setVerifyModel] = useState('');
+  const [reasoningEffort, setReasoningEffort] = useState('medium');
   const [maxBatch, setMaxBatch] = useState('');
   const [maxContext, setMaxContext] = useState('');
 
   const config = data?.config;
   const providers = data?.options?.providers || [];
   const models = data?.options?.models?.[provider] || [];
+  const reasoningEfforts = data?.options?.reasoningEfforts || [];
 
   useEffect(() => {
     if (config) {
       setProvider(config.provider);
       setVerifyModel(config.verifyModel);
+      setReasoningEffort(config.reasoningEffort || 'medium');
       setMaxBatch(String(config.maxBatch));
       setMaxContext(String(config.maxContext));
     }
-  }, [config?.provider, config?.verifyModel, config?.maxBatch, config?.maxContext]);
+  }, [config?.provider, config?.verifyModel, config?.reasoningEffort, config?.maxBatch, config?.maxContext]);
 
   const handleProviderChange = (nextProvider) => {
     setProvider(nextProvider);
@@ -41,6 +44,7 @@ export const QcSettingsTab = () => {
   const isDirty = config && (
     provider !== config.provider
     || verifyModel !== config.verifyModel
+    || reasoningEffort !== (config.reasoningEffort || 'medium')
     || Number(maxBatch) !== config.maxBatch
     || Number(maxContext) !== config.maxContext
   );
@@ -49,6 +53,7 @@ export const QcSettingsTab = () => {
   const handleReset = () => {
     setProvider(config.provider);
     setVerifyModel(config.verifyModel);
+    setReasoningEffort(config.reasoningEffort || 'medium');
     setMaxBatch(String(config.maxBatch));
     setMaxContext(String(config.maxContext));
   };
@@ -58,6 +63,7 @@ export const QcSettingsTab = () => {
       await updateQcSettings({
         provider,
         verifyModel,
+        reasoningEffort,
         maxBatch: Number(maxBatch),
         maxContext: Number(maxContext),
       }).unwrap();
@@ -118,6 +124,21 @@ export const QcSettingsTab = () => {
             ))}
           </select>
         </label>
+        <label className="space-y-1.5 sm:col-span-2">
+          <span className="block text-sm font-medium text-slate-700">Mức suy luận (độ kỹ khi đối chiếu)</span>
+          <select
+            value={reasoningEffort}
+            onChange={(e) => setReasoningEffort(e.target.value)}
+            className={selectClass}
+          >
+            {reasoningEfforts.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <span className="block text-xs text-slate-500">
+            Chỉ áp dụng cho model có suy luận (GPT-5.x/GPT-OSS). Mức cao giúp bớt sót lỗi nhưng tốn token và chậm hơn.
+          </span>
+        </label>
         <label className="space-y-1.5">
           <span className="block text-sm font-medium text-slate-700">Số kịch bản tối đa / batch</span>
           <input
@@ -140,6 +161,9 @@ export const QcSettingsTab = () => {
             onChange={(e) => setMaxContext(e.target.value)}
             className={selectClass}
           />
+          <span className="block text-xs text-slate-500">
+            OpenAI: 16000 trở lên. Groq free (giới hạn ~8000 token/phút): dùng ≤ 6000 và batch 1–2.
+          </span>
         </label>
       </div>
 
