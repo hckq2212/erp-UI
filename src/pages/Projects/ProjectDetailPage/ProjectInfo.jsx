@@ -1209,7 +1209,6 @@ export const ProjectInfo = ({ project }) => {
                     </div>
                     <div className="border-t border-gray-100 pt-4">
                         <div className="mb-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                            <Briefcase className="w-5 h-5 text-blue-600" />
                             <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Mô tả dự án</p>
                         </div>
                         <div className="prose prose-sm max-w-none text-gray-600 whitespace-pre-wrap wrap-break-word" >

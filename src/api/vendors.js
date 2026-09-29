@@ -111,4 +111,5 @@ export const {
     useUpdateVendorJobMutation,
     useRemoveVendorJobMutation,
     useGetVendorsByJobQuery,
+    useLazyGetVendorsByJobQuery,
 } = vendorsApi;
