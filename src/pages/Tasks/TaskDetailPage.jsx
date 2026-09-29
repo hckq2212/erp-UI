@@ -533,7 +533,7 @@ export const TaskDetailPage = () => {
                         </Button>
                     )}
 
-                    {(task.status === 'DONE' || task.status === 'COMPLETED' || task.status === 'INTERNAL_COMPLETED') && canDecideOutcome && !isVideoDemoTask && (
+                    {(task.status === 'COMPLETED' || task.status === 'INTERNAL_COMPLETED') && canDecideOutcome && !isVideoDemoTask && (
                         <Button
                             variant="outline"
                             onClick={() => setIsReworkModalOpen(true)}

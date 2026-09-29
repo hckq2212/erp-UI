@@ -345,7 +345,7 @@ export const ContractDetailPage = () => {
                   <span>Brief</span>
                 </div>
                 <div className="space-y-3">
-                  <p className="text-gray-500 mt-1 italic text-sm max-w-[360px] whitespace-pre-wrap">{contract.description}</p>
+                  <p className="text-gray-500 mt-1 italic text-sm whitespace-pre-wrap wrap-break-word">{contract.description}</p>
                 </div>
               </div>
             )}
