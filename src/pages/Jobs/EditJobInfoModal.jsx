@@ -10,6 +10,11 @@ import { formatNumber, parseNumber } from '../../utils/format';
 import { useEffect, useState } from 'react';
 import { JOB_CATEGORY_OPTIONS } from '../../utils/enums';
 
+const normalizeApiNumber = (value) => {
+    const numberValue = Number(value ?? 0);
+    return Number.isFinite(numberValue) ? String(numberValue) : '0';
+};
+
 const jobInfoSchema = z.object({
     name: z.string().min(1, 'Tên hạng mục là bắt buộc'),
     nickname: z.string().max(120, 'Nickname không được vượt quá 120 ký tự').optional().default(''),
@@ -55,9 +60,12 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
                 name: job.name,
                 nickname: job.nickname || '',
                 code: job.code,
-                costPrice: String(job.costPrice || '0'),
-                vinicoin: String(job.vinicoin || '0'),
-                timeToComplete: String(job.timeToComplete || '0'),
+                // PostgreSQL decimal columns are returned as strings (for example
+                // "20000.000"). Normalize them before putting them into currency
+                // inputs so the dots are not later parsed as thousand separators.
+                costPrice: normalizeApiNumber(job.costPrice),
+                vinicoin: normalizeApiNumber(job.vinicoin),
+                timeToComplete: String(job.timeToComplete ?? '0'),
                 isBriefVideo: Boolean(job.isBriefVideo),
                 isQuotationItem: job.isQuotationItem !== false,
                 categories: Array.isArray(job.categories) ? job.categories : [],
