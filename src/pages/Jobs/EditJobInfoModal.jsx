@@ -55,7 +55,7 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
                 name: job.name,
                 nickname: job.nickname || '',
                 code: job.code,
-                costPrice: String(job.costPrice || '0'),
+                costPrice: String(Number(job.costPrice ?? 0)),
                 vinicoin: String(job.vinicoin || '0'),
                 timeToComplete: String(job.timeToComplete || '0'),
                 isBriefVideo: Boolean(job.isBriefVideo),
