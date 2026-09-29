@@ -103,7 +103,7 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
 
             const result = await createJob({
                 ...data,
-                nickname: data.nickname?.trim() || null,
+                // nickname: data.nickname?.trim() || null,
                 costPrice: parseNumber(data.costPrice),
                 vinicoin: parseNumber(data.vinicoin),
                 timeToComplete: parseFloat(data.timeToComplete || '0'),
@@ -134,12 +134,12 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                             placeholder="Ví dụ: Quay phim chính, Edit video..."
                         />
                     </div>
-                    <Input
+                    {/* <Input
                         label="Nickname mặc định"
                         {...register('nickname')}
                         error={errors.nickname?.message}
                         placeholder="Ví dụ: video"
-                    />
+                    /> */}
                     <Input
                         label="Mã hạng mục *"
                         {...register('code')}
@@ -213,7 +213,7 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                 </div>
 
                 <div className="space-y-3">
-                    <label className="text-sm font-bold text-gray-700 uppercase tracking-wider">Category</label>
+                    <label className="text-sm font-bold text-gray-700 uppercase tracking-wider">Danh mục</label>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                         {JOB_CATEGORY_OPTIONS.map((option) => (
                             <label

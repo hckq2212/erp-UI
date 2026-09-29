@@ -1286,7 +1286,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
                     value={formData.description}
                     onChange={handleChange}
                     placeholder="Mô tả chi tiết về cơ hội..."
-                    maxLength={200}
+                    maxLength={700}
                     rows={4}
                     className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all resize-none ${errors.description ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
                   />
