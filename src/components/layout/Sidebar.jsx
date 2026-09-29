@@ -37,8 +37,8 @@ const menuItems = [
   { path: '/jobs', icon: CheckSquare, label: 'Hạng mục công việc', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE', 'PM'] },
   { path: '/teams', icon: Users, label: 'Đội dự án', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE', 'PM'] },
   { path: '/users', icon: User, label: 'Nhân sự', roles: ['ADMIN', 'BOD'] },
-  { path: '/vendors', icon: Store, label: 'Vendor', roles: ['ADMIN', 'BOD'] },
-  { path: '/referral-partners', icon: Handshake, label: 'Đối tác', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
+  { path: '/vendors', icon: Store, label: 'Vendor', roles: ['ADMIN', 'BOD', 'PM'] },
+  { path: '/referral-partners', icon: Handshake, label: 'Đối tác', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE', 'PM'] },
   {
     id: 'ai',
     label: 'AI',
