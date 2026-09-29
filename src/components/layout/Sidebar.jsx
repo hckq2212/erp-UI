@@ -32,6 +32,7 @@ const menuItems = [
       { path: '/finance', icon: FileText, label: 'Lộ trình thanh toán' },
     ],
   },
+
   { path: '/service-packages', icon: Package, label: 'Gói dịch vụ', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE', 'PM'] },
   { path: '/services', icon: Briefcase, label: 'Dịch vụ', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE', 'PM'] },
   { path: '/jobs', icon: CheckSquare, label: 'Hạng mục công việc', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE', 'PM'] },
