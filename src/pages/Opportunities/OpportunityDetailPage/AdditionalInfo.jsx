@@ -34,6 +34,25 @@ export const AdditionalInfo = ({ opportunity, formatDate }) => {
             <p className="whitespace-pre-wrap font-medium text-red-600">{opportunity.rejectionReason}</p>
           </div>
         )}
+        {Array.isArray(opportunity.rejections) && opportunity.rejections.length > 0 && (
+          <div className="border-t border-gray-100 pt-4">
+            <p className="mb-3 text-gray-500">Lịch sử không duyệt ({opportunity.rejections.length})</p>
+            <div className="space-y-3">
+              {opportunity.rejections.map((item) => (
+                <div key={item.id} className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                  <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+                    <span>{item.rejectedBy?.fullName || 'Không rõ người duyệt'}</span>
+                    <span>{formatDate(item.rejectedAt)}</span>
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap text-sm font-medium text-gray-900">{item.reason}</p>
+                  <p className={`mt-2 text-xs font-medium ${item.resubmittedAt ? 'text-green-600' : 'text-orange-600'}`}>
+                    {item.resubmittedAt ? `Đã gửi lại ngày ${formatDate(item.resubmittedAt)}` : 'Chưa gửi lại'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

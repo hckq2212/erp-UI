@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
 import { X, Plus, Trash2, Upload, Link as LinkIcon, Building2, FileText, MapPin, Calendar, Target, TrendingUp, Clock, Briefcase, ChevronDown, RotateCcw } from 'lucide-react';
-import { useCreateOpportunityMutation } from '../../api/opportunities';
+import { useCreateOpportunityMutation, useSaveOpportunityDraftMutation } from '../../api/opportunities';
 import { useGetServicesQuery } from '../../api/services';
 import { useGetServicePackagesQuery } from '../../api/servicePackages';
 import { uploadToCloudinary } from '../../utils/cloudinary';
@@ -417,8 +417,11 @@ const PackageItem = memo(({
   );
 });
 
-export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = null }) => {
-  const [createOpportunity, { isLoading }] = useCreateOpportunityMutation();
+export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = null, mode = 'create', rejectionReason = '' }) => {
+  const [createOpportunity, { isLoading: isCreating }] = useCreateOpportunityMutation();
+  const [saveOpportunityDraft, { isLoading: isSavingDraft }] = useSaveOpportunityDraftMutation();
+  const isEditMode = mode === 'edit' && !!initialData?.id;
+  const isLoading = isCreating || isSavingDraft;
   const { data: servicesData } = useGetServicesQuery();
   const services = useMemo(() => Array.isArray(servicesData) ? servicesData : (servicesData?.data || []), [servicesData]);
 
@@ -1161,13 +1164,23 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
           }))
         }));
 
-      const result = await createOpportunity({
+      const payload = {
         ...formData,
         name: opportunityName,
         services: validServices,
         packages: validPackages,
         attachments
-      }).unwrap();
+      };
+
+      if (isEditMode) {
+        const saved = await saveOpportunityDraft({ id: initialData.id, ...payload }).unwrap();
+        onSuccess?.(saved);
+        setIsUploading(false);
+        onClose();
+        return;
+      }
+
+      const result = await createOpportunity(payload).unwrap();
 
       navigate(`/opportunities/${result.id}`);
       onSuccess?.();
@@ -1194,7 +1207,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
           <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 flex items-center justify-between z-10">
             <div className="flex items-center gap-3">
               <div>
-                <h2 className="text-xl font-bold text-white">{initialData ? 'Tạo Cơ Hội Tương Tự' : 'Tạo Cơ Hội Mới'}</h2>
+                <h2 className="text-xl font-bold text-white">{isEditMode ? 'Chỉnh Sửa Cơ Hội' : initialData ? 'Tạo Cơ Hội Tương Tự' : 'Tạo Cơ Hội Mới'}</h2>
                 <p className="text-blue-100 text-sm">Điền thông tin chi tiết của cơ hội </p>
               </div>
             </div>
@@ -1222,6 +1235,12 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
           {/* Form */}
           <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(90vh-88px)]">
             <div className="p-6 space-y-8">
+              {isEditMode && rejectionReason && (
+                <div className="bg-red-50 border border-red-200 px-4 py-3 rounded-xl text-sm">
+                  <p className="font-semibold text-red-700">Lý do không duyệt</p>
+                  <p className="mt-1 whitespace-pre-wrap text-red-600">{rejectionReason}</p>
+                </div>
+              )}
               {errors.submit && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full"></div>
@@ -1786,9 +1805,9 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    <span>{isUploading ? 'Đang tạo cơ hội...' : 'Đang tạo...'}</span>
+                    <span>{isEditMode ? 'Đang lưu nháp...' : isUploading ? 'Đang tạo cơ hội...' : 'Đang tạo...'}</span>
                   </>
-                ) : 'Tạo cơ hội'}
+                ) : isEditMode ? 'Lưu nháp' : 'Tạo cơ hội'}
               </button>
             </div>
           </form>
