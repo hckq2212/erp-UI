@@ -3,7 +3,7 @@ import { useGetAcceptanceRequestsQuery } from '../../api/acceptances';
 import { CheckCircle2, XCircle, Clock, Search, Filter, Eye, FileText, ChevronRight } from 'lucide-react';
 import { AcceptanceReviewModal } from './AcceptanceReviewModal';
 import { formatDate } from '../../utils/format';
-import { ACCEPTANCE_STATUS_LABELS, ACCEPTANCE_STATUS_COLORS } from '../../utils/enums';
+import { ACCEPTANCE_APPROVER_ROLES, ACCEPTANCE_STATUS_LABELS, ACCEPTANCE_STATUS_COLORS } from '../../utils/enums';
 import { useGetMeQuery } from '../../api/auth';
 
 export const AcceptanceInboxPage = () => {
@@ -12,6 +12,7 @@ export const AcceptanceInboxPage = () => {
     const { data: requestsResult = [], isLoading } = useGetAcceptanceRequestsQuery(filters);
     const requests = Array.isArray(requestsResult) ? requestsResult : (requestsResult?.data || []);
     const [selectedRequest, setSelectedRequest] = useState(null);
+    const canApproveAcceptance = ACCEPTANCE_APPROVER_ROLES.includes(currentUser?.role);
 
     const getStatusBadge = (status) => {
         const icons = {
@@ -32,7 +33,11 @@ export const AcceptanceInboxPage = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                     <h1 className="text-3xl font-black text-gray-900 tracking-tight uppercase">Yêu cầu nghiệm thu</h1>
-                    <p className="text-gray-500 mt-1 font-medium">Quản lý và phê duyệt các yêu cầu nghiệm thu dịch vụ từ Team Lead</p>
+                    <p className="text-gray-500 mt-1 font-medium">
+                        {canApproveAcceptance
+                            ? 'Quản lý và phê duyệt các yêu cầu nghiệm thu dịch vụ từ Team Lead'
+                            : 'Theo dõi các yêu cầu và kết quả nghiệm thu dịch vụ từ Team Lead'}
+                    </p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -142,6 +147,7 @@ export const AcceptanceInboxPage = () => {
                     isOpen={!!selectedRequest}
                     onClose={() => setSelectedRequest(null)}
                     request={selectedRequest}
+                    canApprove={canApproveAcceptance}
                 />
             )}
         </div>
