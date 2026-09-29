@@ -90,7 +90,7 @@ export const TASK_STATUS_LABELS_PAUSE = {
 export const OPPORTUNITY_STATUS_LABELS = {
   OPEN: 'Mới',
   PENDING_OPP_APPROVAL: 'Đang chờ duyệt',
-  OPP_REJECTED: 'Không duyệt',
+  OPP_REJECTED: 'Không duyệt - cần chỉnh sửa',
   OPP_APPROVED: 'Đã duyệt',
   QUOTATION: 'Báo giá',
   QUOTATION_DRAFTING: 'Đang làm báo giá',

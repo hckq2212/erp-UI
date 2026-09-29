@@ -46,6 +46,7 @@ export const useSSE = () => {
             'opportunity_updated': ['Opportunities'],
             'opportunity_approved': ['Opportunities'],
             'opportunity_rejected': ['Opportunities'],
+            'opportunity_resubmitted': ['Opportunities'],
             'opportunity_deleted': ['Opportunities'],
             'quotation_created': ['Quotations', 'Opportunities'],
             'quotation_updated': ['Quotations', 'Opportunities'],
@@ -149,8 +150,12 @@ export const useSSE = () => {
 
         // Invalidate RTK Query cache for notifications
         dispatch(notificationsApi.util.invalidateTags(['Notifications']));
-        if (payload.type === 'TASK_COMPLETED') {
-          dispatch(api.util.invalidateTags(['Opportunities']));
+        if (payload.type === 'TASK_COMPLETED' || payload.type?.startsWith('OPPORTUNITY_')) {
+          const opportunityTags = ['Opportunities'];
+          if (payload.relatedEntityId && payload.relatedEntityType === 'Opportunities') {
+            opportunityTags.push({ type: 'Opportunities', id: payload.relatedEntityId });
+          }
+          dispatch(api.util.invalidateTags(opportunityTags));
         }
 
         // Yêu cầu thanh toán: làm mới danh sách, tổng nợ và chính yêu cầu được nhắc tới
