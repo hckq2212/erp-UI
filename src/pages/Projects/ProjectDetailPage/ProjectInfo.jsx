@@ -1209,6 +1209,14 @@ export const ProjectInfo = ({ project }) => {
                     </div>
                     <div className="border-t border-gray-100 pt-4">
                         <div className="mb-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                            <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Mô tả</p>
+                        </div>
+                        <div className="prose prose-sm max-w-none text-gray-600" >
+                            {contract.description || 'Chưa có'}
+                        </div>
+                    </div>
+                    <div className="border-t border-gray-100 pt-4">
+                        <div className="mb-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                             <div>
                                 <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Tiến trình dự án</p>
                                 <div className="flex flex-col gap-3 sm:flex-row sm:gap-12 pl-4">
