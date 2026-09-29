@@ -339,13 +339,13 @@ export const ContractDetailPage = () => {
           <div className="space-y-6">
             <CustomerInfo contract={contract} />
             {contract.description && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 ">
                 <div className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <Briefcase className="w-5 h-5 text-blue-600" />
                   <span>Brief</span>
                 </div>
                 <div className="space-y-3">
-                  <p className="text-gray-500 mt-1 italic text-sm">{contract.description}</p>
+                  <p className="text-gray-500 mt-1 italic text-sm max-w-[360px] whitespace-pre-wrap">{contract.description}</p>
                 </div>
               </div>
             )}
