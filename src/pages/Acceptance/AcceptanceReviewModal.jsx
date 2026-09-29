@@ -4,7 +4,7 @@ import { useGetAcceptanceRequestQuery, useProcessAcceptanceRequestMutation } fro
 import { toast } from 'react-toastify';
 import { getFilePreviewUrl } from '../../utils/cloudinary';
 
-export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest }) => {
+export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest, canApprove = false }) => {
     const { data: requestDetail } = useGetAcceptanceRequestQuery(initialRequest?.id, {
         skip: !isOpen || !initialRequest?.id,
     });
@@ -12,7 +12,8 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
 
     const isProjectClosed = request?.project?.status && ['COMPLETED', 'CANCELLED'].includes(request.project.status);
     const isProjectOnHold = request?.project?.status === 'ON_HOLD' || Boolean(request?.project?.isOnHold);
-    const isReadOnly = request?.status !== 'PENDING' || isProjectClosed || isProjectOnHold;
+    const isStateLocked = request?.status !== 'PENDING' || isProjectClosed || isProjectOnHold;
+    const isReadOnly = isStateLocked || !canApprove;
 
     const [processAcceptance, { isLoading: isSubmitting }] = useProcessAcceptanceRequestMutation();
     const [decisions, setDecisions] = useState({});
@@ -36,8 +37,8 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
                 const approvedCount = uniqueResults.filter(res => res.status === 'APPROVED').length;
                 const rejectedCount = uniqueResults.filter(res => res.status === 'REJECTED').length;
                 
-                // When request is not PENDING, or service is already rejected/completed, there are no pending results
-                const isServiceClosed = isReadOnly || service.status === 'ACCEPTANCE_REJECTED' || service.status === 'COMPLETED';
+                // Quyền chỉ xem không làm thay đổi trạng thái nghiệp vụ của hạng mục.
+                const isServiceClosed = isStateLocked || service.status === 'ACCEPTANCE_REJECTED' || service.status === 'COMPLETED';
                 const pending = isServiceClosed 
                     ? [] 
                     : uniqueResults.filter(res => res.status !== 'APPROVED' && res.status !== 'REJECTED');
@@ -52,7 +53,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
             });
         }
         return data;
-    }, [request?.services, isReadOnly]);
+    }, [request?.services, isStateLocked]);
 
     // Total pending results across all services — used to guard submit button
     const totalPendingResults = useMemo(() => {
@@ -139,6 +140,10 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
     };
 
     const handleSubmit = async () => {
+        if (!canApprove) {
+            toast.warning('Bạn chỉ có quyền xem, không có quyền duyệt nghiệm thu.');
+            return;
+        }
         if (isProjectClosed) {
             toast.warning('Dự án đã hoàn tất hoặc đã đóng, không thể duyệt nghiệm thu.');
             return;
@@ -236,10 +241,16 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
 
                 <div className="p-6 space-y-6 overflow-y-auto">
                     {/* Read-only notice */}
-                    {isReadOnly && (
+                    {isStateLocked && (
                         <div className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600">
                             <ShieldCheck className="w-4 h-4 text-slate-500 shrink-0" />
-                            <span>Biên bản nghiệm thu này đã được xử lý ({requestStatusInfo?.label}). Dữ liệu đang được hiển thị ở chế độ xem lại.</span>
+                            <span>
+                                {isProjectClosed
+                                    ? 'Dự án đã hoàn tất hoặc đã đóng. Dữ liệu đang được hiển thị ở chế độ xem lại.'
+                                    : isProjectOnHold
+                                    ? 'Dự án đang tạm dừng. Dữ liệu đang được hiển thị ở chế độ xem lại.'
+                                    : 'Biên bản nghiệm thu này đã được xử lý.'}
+                            </span>
                         </div>
                     )}
 
@@ -280,7 +291,8 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
                         <div className="space-y-4">
                             {request.services?.map((service) => {
                                 const svcData = processedServicesData[service.id];
-                                const isClosed = isReadOnly || svcData?.isServiceClosed;
+                                const isServiceFinalized = Boolean(svcData?.isServiceClosed);
+                                const canDecideService = canApprove && !isServiceFinalized;
                                 const isRejected = service.status === 'ACCEPTANCE_REJECTED' || svcData?.rejectedCount > 0;
                                 const isCompleted = service.status === 'COMPLETED' || (svcData?.allResults?.length > 0 && svcData?.approvedCount === svcData?.allResults?.length);
                                 const isExpanded = expandedServices[service.id] !== undefined ? expandedServices[service.id] : true;
@@ -304,7 +316,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
                                                         {service.service?.name || service.name}
                                                     </p>
                                                     <div className="flex flex-col gap-0.5 mt-0.5">
-                                                        {isClosed ? (
+                                                        {isServiceFinalized ? (
                                                             <p className={`text-[10px] font-mono font-medium ${isRejected ? 'text-red-600' : 'text-emerald-600'}`}>
                                                                 {isRejected 
                                                                     ? `Từ chối nghiệm thu (${svcData?.rejectedCount || 0} kết quả bị từ chối)`
@@ -328,7 +340,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
                                             </div>
 
                                             {/* Action or Status Badge for Service */}
-                                            {isClosed ? (
+                                            {isServiceFinalized ? (
                                                 isRejected ? (
                                                     <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 rounded-lg border border-red-200">
                                                         <XCircle className="w-3.5 h-3.5 text-red-600" />
@@ -340,6 +352,11 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
                                                         <span className="text-[10px] font-bold text-emerald-700">Đã duyệt xong</span>
                                                     </div>
                                                 )
+                                            ) : !canApprove ? (
+                                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
+                                                    <Eye className="w-3.5 h-3.5 text-slate-500" />
+                                                    <span className="text-[10px] font-bold text-slate-600">Chỉ xem</span>
+                                                </div>
                                             ) : (svcData?.pending?.length || 0) > 0 ? (
                                                 <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-100">
                                                     <button
@@ -372,7 +389,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
                                         </div>
 
                                         {/* Service Rejection Feedback Input */}
-                                        {!isClosed && (svcData?.pending?.length || 0) > 0 && decisions[service.id]?.status === 'REJECTED' && (
+                                        {canDecideService && (svcData?.pending?.length || 0) > 0 && decisions[service.id]?.status === 'REJECTED' && (
                                             <div className="p-3 bg-red-50/70 border border-red-200 rounded-xl space-y-1.5">
                                                 <label className="flex items-center gap-1.5 text-xs font-bold text-red-700">
                                                     <MessageSquare className="w-3.5 h-3.5 text-red-500" />
@@ -473,7 +490,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
                                                                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                                                                         <span className="text-[10px] font-bold text-emerald-700">Đã duyệt trước đó</span>
                                                                     </div>
-                                                                ) : isClosed ? (
+                                                                ) : isServiceFinalized ? (
                                                                     <div className="flex items-center gap-1 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200">
                                                                         <span className="text-[10px] font-medium text-gray-500">Đã đóng</span>
                                                                     </div>
@@ -513,24 +530,7 @@ export const AcceptanceReviewModal = ({ isOpen, onClose, request: initialRequest
 
                 {/* Footer Actions */}
                 {isReadOnly ? (
-                    <div className="p-5 border-t border-gray-100 flex items-center justify-between bg-gray-50/50 rounded-b-xl">
-                        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                            <ShieldCheck className="w-4 h-4 text-slate-400" />
-                            <span>
-                                {isProjectClosed
-                                    ? 'Dự án đã hoàn tất hoặc đã đóng'
-                                    : isProjectOnHold
-                                    ? 'Dự án đang tạm dừng'
-                                    : 'Biên bản đã được xử lý xong'}
-                            </span>
-                        </div>
-                        <button
-                            onClick={onClose}
-                            className="px-6 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-colors"
-                        >
-                            Đóng
-                        </button>
-                    </div>
+                    <div className="p-5 border-t border-gray-100 bg-gray-50/50 rounded-b-xl" />
                 ) : (
                     <div className="p-5 border-t border-gray-100 flex gap-3 bg-gray-50/30 rounded-b-xl">
                         <button

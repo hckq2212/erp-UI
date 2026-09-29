@@ -10,6 +10,7 @@ import { formatNumber, parseNumber } from '../../utils/format';
 import { useEffect, useState } from 'react';
 import { JOB_CATEGORY_OPTIONS } from '../../utils/enums';
 
+
 const jobInfoSchema = z.object({
     name: z.string().min(1, 'Tên hạng mục là bắt buộc'),
     nickname: z.string().max(120, 'Nickname không được vượt quá 120 ký tự').optional().default(''),
