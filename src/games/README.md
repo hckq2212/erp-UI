@@ -7,7 +7,8 @@ games/
   registry.js        danh sách game (nơi duy nhất cần sửa khi thêm game)
   GameHubPage.jsx    /games — lưới thẻ game, bấm thẻ mới vào chơi
   GameShell.jsx      /games/:gameId — breadcrumb "Game Hub / <tên>" + tải game theo yêu cầu
-  xiangqi/           game mẫu: màn hình, store, luật, thành phần riêng
+  xiangqi/           game mẫu (2 người, realtime): màn hình, store, luật, thành phần riêng
+  tft/               Vini Tactics (PvE 1 người, auto-battler): luật + trận đấu chạy ở server, client chỉ phát lại log
 ```
 
 ## Thêm một game mới

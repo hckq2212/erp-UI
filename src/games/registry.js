@@ -24,6 +24,15 @@ export const GAMES = [
     Component: lazy(() => import('./xiangqi/XiangqiGame')),
     usePresence: useXiangqiPresence,
   },
+  {
+    id: 'tft',
+    name: 'Vini Tactics',
+    tagline: 'Mua đồng nghiệp, xếp đội hình rồi để họ tự đánh qua 12 vòng thử thách công sở.',
+    tags: ['1 người', 'PvE', 'Xếp đội hình'],
+    emblem: '⚔️',
+    accent: ['#60A5FA', '#1D4ED8'],
+    Component: lazy(() => import('./tft/TftGame')),
+  },
 ];
 
 export const getGame = (id) => GAMES.find((g) => g.id === id);
