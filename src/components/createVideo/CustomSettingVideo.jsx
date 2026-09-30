@@ -228,6 +228,7 @@ import { Hexagon, ChevronDown, ChevronUp, Minus, Plus, VolumeX, Volume2 } from '
 export default function CustomSettingVideo({
   modelCode,
   isByteplus = false,     // ← NEW: true khi model thuộc provider BytePlus
+  hasEndFrame = false,
   resolution,
   setResolution,
   ratio,                  // ← NEW: chỉ dùng khi isByteplus
@@ -241,9 +242,10 @@ export default function CustomSettingVideo({
   const settingRef = useRef(null)
 
   const pricing = VIDEO_PRICING[modelCode]
+  const isKlingV26 = modelCode === 'kling-v2-6'
 
   // ── Resolution options theo provider ──────────────────────────────
-  const availableResolutions = isByteplus
+  const modelResolutions = isByteplus
     ? BYTEPLUS_RESOLUTIONS
     : (!pricing
         ? KLING_RESOLUTIONS
@@ -251,11 +253,16 @@ export default function CustomSettingVideo({
             const mode = RESOLUTION_TO_MODE[r.toLowerCase()]
             return !!pricing.video?.[mode]
           }))
+  const availableResolutions = isKlingV26 && hasEndFrame
+    ? modelResolutions.filter((resolutionOption) => resolutionOption.toLowerCase() === '1080p')
+    : modelResolutions
 
   // ── Audio khả dụng ──────────────────────────────────────────────
   // BytePlus (Seedance 2.0 series & 1.5 Pro): generate_audio luôn hỗ trợ → cho phép toggle tự do
   // Kling: phụ thuộc bảng giá pricing (per mode)
-  const audioAllowed = isByteplus
+  const audioAllowed = isKlingV26 && hasEndFrame
+    ? false
+    : isByteplus
     ? true
     : (() => {
         const mode = RESOLUTION_TO_MODE[resolution?.toLowerCase()] ?? "pro"
@@ -263,15 +270,16 @@ export default function CustomSettingVideo({
       })()
 
   // ── Duration range theo provider ──────────────────────────────────
-  const durationMin = isByteplus ? 4 : 3
-  const durationMax = isByteplus ? 15 : 15
+  const durationMin = isKlingV26 ? 5 : (isByteplus ? 4 : 3)
+  const durationMax = isKlingV26 ? 10 : 15
+  const durationStep = isKlingV26 ? 5 : 1
 
   // ── auto-correct invalid combos khi đổi model ─────────────────────
   useEffect(() => {
     if (!availableResolutions.includes(resolution)) {
       setResolution(availableResolutions[0] ?? "1080p")
     }
-  }, [modelCode]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [modelCode, hasEndFrame]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!audioAllowed && nativeAudio) {
@@ -280,6 +288,10 @@ export default function CustomSettingVideo({
   }, [audioAllowed]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (isKlingV26 && ![5, 10].includes(length)) {
+      setLength(5)
+      return
+    }
     if (length < durationMin) setLength(durationMin)
     if (length > durationMax) setLength(durationMax)
   }, [modelCode]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -375,6 +387,7 @@ export default function CustomSettingVideo({
                 type="range"
                 min={durationMin}
                 max={durationMax}
+                step={durationStep}
                 value={length}
                 onChange={(e) => setLength(Number(e.target.value))}
                 className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-gray-200 accent-blue-600"

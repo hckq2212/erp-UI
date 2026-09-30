@@ -93,6 +93,8 @@ export default function FromCreateVideo({ createVideoHook }) {
   const selectedModelData = models.find((m) => String(m.id) === selectedModel)
   const selectedModelCode = selectedModelData?.code ?? ''
   const isByteplus = selectedModelData?.provider?.code === 'byteplus'
+  const isKlingV26 = selectedModelData?.provider?.code === 'kling' && selectedModelCode === 'kling-v2-6'
+  const supportsMultiShot = !isByteplus && !isKlingV26
 
   const prevModelRef = useRef(null)
   useEffect(() => {
@@ -102,8 +104,8 @@ export default function FromCreateVideo({ createVideoHook }) {
       setLength(5)
       // setNativeAudio(false)
       setNativeAudio(isByteplus)
-      // BytePlus chưa hỗ trợ multi-shot → auto tắt khi đổi sang model BytePlus
-      if (isByteplus) {
+      // Chỉ Kling v3 hỗ trợ multi-shot trong các model đang cấu hình.
+      if (!supportsMultiShot) {
         setMultiShotEnabled(false)
         setIsCustomMode(false)
       }
@@ -280,7 +282,7 @@ export default function FromCreateVideo({ createVideoHook }) {
   }, [status])
 
   const handleToggleMultiShot = () => {
-    if (isByteplus) return // Seedance chưa hỗ trợ multi-shot
+    if (!supportsMultiShot) return
     const next = !multiShotEnabled
     setMultiShotEnabled(next)
     if (!next) setIsCustomMode(false)
@@ -720,6 +722,7 @@ export default function FromCreateVideo({ createVideoHook }) {
             <CustomSettingVideo
               modelCode={selectedModelCode}
               isByteplus={isByteplus}
+              hasEndFrame={Boolean(endFrame || endAssetId)}
               resolution={resolution}
               setResolution={setResolution}
               ratio={ratio}
@@ -740,8 +743,8 @@ export default function FromCreateVideo({ createVideoHook }) {
               <RotateCcw className="h-[18px] w-[18px]" />
             </button>
 
-            {/* Multi-Shot toggle — ẩn hoàn toàn khi model là BytePlus */}
-            {!isByteplus && (
+            {/* Multi-Shot chỉ hiện với model có hỗ trợ. */}
+            {supportsMultiShot && (
               <div className="flex shrink-0 items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
                 <button
                   type="button"
