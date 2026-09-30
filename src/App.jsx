@@ -58,6 +58,8 @@ const LibraryVideoAiPage = lazyNamed(() => import('./pages/LibraryVideoAi/Librar
 const DashboardAIPage = lazyNamed(() => import('./pages/DashboardAI/DashboardAIPage'), 'DashboardAIPage');
 const SettingsPage = lazyNamed(() => import('./pages/Settings/SettingsPage'), 'SettingsPage');
 const ChatPage = lazyNamed(() => import('./pages/Chat/ChatPage'), 'ChatPage');
+const GameHubPage = lazyNamed(() => import('./games/GameHubPage'), 'GameHubPage');
+const GameRoute = lazyNamed(() => import('./games/GameShell'), 'GameRoute');
 
 const RouteLoadingFallback = () => (
   <div className="flex min-h-[50vh] items-center justify-center bg-gray-50">
@@ -694,6 +696,34 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+
+
+        {/* =========================
+            Game Hub (danh sách game: src/games/registry.js)
+        ========================== */}
+
+        <Route
+          path="/games"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <GameHubPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/games/:gameId"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <GameRoute />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        {/* Link cũ */}
+        <Route path="/xiangqi" element={<Navigate to="/games/xiangqi" replace />} />
 
 
         {/* =========================

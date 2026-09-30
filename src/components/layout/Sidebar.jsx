@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Briefcase, FileText,
   FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store,
   CheckCircle2, Package, User, Handshake, FolderOpenDotIcon, Video, BookText, Megaphone, Bell, Archive,
-  Sparkles, ChevronDown, ChartNoAxesCombined, MessageSquare, Wallet, FileCheck, Receipt
+  Sparkles, ChevronDown, ChartNoAxesCombined, MessageSquare, Wallet, FileCheck, Receipt, Gamepad2
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useGetMeQuery } from '../../api/auth';
@@ -51,6 +51,7 @@ const menuItems = [
     ],
   },
   { path: '/document-library', icon: Archive, label: 'Kho tài liệu' },
+  { path: '/games', icon: Gamepad2, label: 'Game Hub', matchPrefix: true },
   // { path: '/chat', icon: MessageSquare, label: 'Tin nhắn' },
   { path: '/settings', icon: Settings, label: 'Cài đặt', roles: ['ADMIN'] },
 ];
@@ -321,7 +322,7 @@ export const Sidebar = ({ isCollapsed }) => {
             );
           }
 
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path || (item.matchPrefix && location.pathname.startsWith(item.path + '/'));
           return (
             <Link
               key={item.path}

@@ -151,3 +151,27 @@ div[class*="__option"][class*="--is-selected"]:active {
   background-color: #FED7AA !important;
   color: #9A3412 !important;
 }
+/* ---------- Cờ tướng: hiệu ứng bàn cờ & thông báo ---------- */
+@keyframes xq-slide { from { transform: translate(var(--dx), var(--dy)); } to { transform: translate(0, 0); } }
+@keyframes xq-ghost { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.45); } }
+@keyframes xq-burst { from { opacity: .85; transform: scale(.6); } to { opacity: 0; transform: scale(2); } }
+@keyframes xq-check { 0%, 100% { opacity: .25; transform: scale(1); } 50% { opacity: .9; transform: scale(1.18); } }
+@keyframes xq-lift { from { transform: scale(1); } to { transform: scale(1.12); } }
+@keyframes xq-pop { from { opacity: 0; transform: scale(.3); } to { opacity: 1; transform: scale(1); } }
+@keyframes xq-enter { from { opacity: 0; transform: translateY(10px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes xq-dot { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+
+.xq-fx { transform-box: fill-box; transform-origin: center; }
+.xq-slide { animation: xq-slide .28s cubic-bezier(.22, .9, .3, 1) both; }
+.xq-ghost { animation: xq-ghost .45s ease-out forwards; pointer-events: none; }
+.xq-burst { animation: xq-burst .5s ease-out forwards; pointer-events: none; }
+.xq-check { animation: xq-check 1s ease-in-out infinite; pointer-events: none; }
+.xq-lift { animation: xq-lift .15s ease-out forwards; }
+.xq-target { animation: xq-pop .18s ease-out both; }
+.xq-enter { animation: xq-enter .22s ease-out both; }
+.xq-dot { animation: xq-dot 1.2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .xq-slide, .xq-ghost, .xq-burst, .xq-check, .xq-lift, .xq-target, .xq-enter, .xq-dot { animation: none !important; }
+  .xq-ghost, .xq-burst { display: none; }
+}
