@@ -88,7 +88,7 @@ export function useCreateVideoFlow({ onDone } = {}) {
       setIsDone(true)
       toast.success('Tạo video thành công!')
       onDoneRef.current?.(status)
-    } else if (status === 'failed') {
+    } else if (status === 'provider_failed' || status === 'failed') {
       setIsDone(true)
       toast.error(error || 'Tạo video thất bại')
       onDoneRef.current?.(status)

@@ -9,6 +9,11 @@ import { useCreateVideoFlow } from "../../hooks/useCreateVideoFlow"
 import { useGetVideoGenHistoryQuery } from "../../api/videoGenerations"
 import { useSubmitTaskResultMutation } from '../../api/tasks'
 
+const ACTIVE_GENERATION_STATUSES = [
+  'queued', 'processing', 'delayed', 'provider_succeeded', 'uploading', 'upload_failed',
+]
+const FAILED_GENERATION_STATUSES = ['provider_failed', 'failed']
+
 export function CreateVideoAIPage() {
   const [selectedVideo, setSelectedVideo] = useState(null)
   const [submittedTaskId, setSubmittedTaskId] = useState(null)
@@ -161,7 +166,7 @@ export function CreateVideoAIPage() {
               </div>
             )}
 
-            {!selectedVideo && (displayStatus === 'queued' || displayStatus === 'processing') && (
+            {!selectedVideo && ACTIVE_GENERATION_STATUSES.includes(displayStatus) && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                 <div className="relative h-16 w-16">
                   <div className="absolute inset-0 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
@@ -169,7 +174,15 @@ export function CreateVideoAIPage() {
                 </div>
                 <div className="space-y-2 text-center">
                   <p className="text-lg font-bold text-gray-900">
-                    {displayStatus === 'queued' ? 'Đang chờ xử lý...' : 'Đang tạo video...'}
+                    {displayStatus === 'queued'
+                      ? 'Đang chờ xử lý...'
+                      : displayStatus === 'delayed'
+                        ? 'Kling đang xử lý lâu hơn dự kiến...'
+                        : displayStatus === 'provider_succeeded' || displayStatus === 'uploading'
+                          ? 'Đang lưu video vào hệ thống...'
+                          : displayStatus === 'upload_failed'
+                            ? 'Đang tự thử lưu lại video...'
+                            : 'Đang tạo video...'}
                   </p>
                   <p className="text-sm text-gray-500">Thường mất 3 - 5 phút</p>
                 </div>
@@ -185,7 +198,7 @@ export function CreateVideoAIPage() {
               />
             )}
 
-            {!selectedVideo && displayStatus === 'failed' && (
+            {!selectedVideo && FAILED_GENERATION_STATUSES.includes(displayStatus) && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                 <AlertCircle className="h-16 w-16 text-red-500" />
                 <div className="space-y-2 text-center">

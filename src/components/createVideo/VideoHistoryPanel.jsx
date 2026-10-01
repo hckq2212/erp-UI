@@ -69,7 +69,12 @@ import { Video } from 'lucide-react'
 const STATUS_DOT = {
   succeeded: 'bg-emerald-500',
   processing: 'bg-blue-500 animate-pulse',
+  delayed: 'bg-amber-500 animate-pulse',
+  provider_succeeded: 'bg-blue-500 animate-pulse',
+  uploading: 'bg-blue-500 animate-pulse',
+  upload_failed: 'bg-amber-500 animate-pulse',
   queued: 'bg-yellow-500 animate-pulse',
+  provider_failed: 'bg-red-500',
   failed: 'bg-red-500',
 }
 

@@ -14,14 +14,24 @@ import GenerationBudgetCard from './GenerationBudgetCard'
 const STATUS_LABEL = {
   queued: 'Đang chờ xử lý...',
   processing: 'Đang tạo video...',
+  delayed: 'Kling đang xử lý lâu hơn dự kiến...',
+  provider_succeeded: 'Video đã tạo xong, đang chuẩn bị lưu...',
+  uploading: 'Đang lưu video vào hệ thống...',
+  upload_failed: 'Lưu video bị gián đoạn, hệ thống đang tự thử lại...',
   succeeded: 'Tạo video thành công!',
+  provider_failed: 'Nhà cung cấp không thể tạo video',
   failed: 'Tạo video thất bại',
 }
 
 const STATUS_COLOR = {
   queued: 'text-yellow-600',
   processing: 'text-blue-600',
+  delayed: 'text-amber-600',
+  provider_succeeded: 'text-blue-600',
+  uploading: 'text-blue-600',
+  upload_failed: 'text-amber-600',
   succeeded: 'text-emerald-600',
+  provider_failed: 'text-red-600',
   failed: 'text-red-600',
 }
 
@@ -433,7 +443,9 @@ export default function FromCreateVideo({ createVideoHook }) {
     })
   }
 
-  const isProcessing = isSubmitting || status === 'queued' || status === 'processing'
+  const isProcessing = isSubmitting || [
+    'queued', 'processing', 'delayed', 'provider_succeeded', 'uploading', 'upload_failed',
+  ].includes(status)
 
   const isSubmitDisabled = (() => {
     if (isProcessing) return true
@@ -695,14 +707,14 @@ export default function FromCreateVideo({ createVideoHook }) {
           {status && (
             <div className="shrink-0 rounded-xl border border-gray-200 bg-gray-50 p-4">
               <div className="flex items-center gap-2">
-                {(status === 'queued' || status === 'processing') && (
+                {isProcessing && !isSubmitting && (
                   <span className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
                 )}
                 <span className={`text-sm font-medium ${STATUS_COLOR[status]}`}>
                   {STATUS_LABEL[status]}
                 </span>
               </div>
-              {status === 'failed' && error && (
+              {(status === 'failed' || status === 'provider_failed' || status === 'upload_failed') && error && (
                 <p className="mt-2 text-xs text-red-600">{error}</p>
               )}
             </div>
