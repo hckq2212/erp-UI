@@ -328,6 +328,7 @@ export const USER_ROLE_OPTIONS = [
 ];
 
 export const STAFF_ROLES = ['STAFF_A', 'STAFF_B', 'STAFF_C', 'STAFF_D'];
+export const PROJECT_MEMBER_EXCLUDED_ACCOUNT_ROLES = ['ADMIN_SALE', 'BOD', 'BD'];
 export const PROJECT_MANAGEMENT_ROLES = ['ADMIN', 'BOD', 'PM'];
 export const ACCEPTANCE_APPROVER_ROLES = ['ADMIN', 'BOD', 'ADMIN_SALE'];
 
