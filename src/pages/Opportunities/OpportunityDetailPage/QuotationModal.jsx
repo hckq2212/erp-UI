@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, Fragment } from 'react';
-import { X, FileText, Plus, Trash2, Briefcase } from 'lucide-react';
+import { X, FileText, Plus, Trash2, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
 import Select from 'react-select';
 import { formatNumber, parseNumber } from '../../../utils/format';
 import { useGetOpportunityServicesByOpportunityQuery } from '../../../api/opportunityService';
@@ -49,6 +49,20 @@ const selectStyles = (focusColor = '#fb923c') => ({
   menuPortal: (base) => ({ ...base, zIndex: 9999 }),
 });
 
+const normalizeServiceJobs = (jobs = []) => jobs.map((serviceJob) => {
+  const job = serviceJob.job || serviceJob;
+
+  return {
+    id: serviceJob.id || job.id || serviceJob.jobId,
+    name: serviceJob.name || job.name || 'Hạng mục',
+    quantity: Number(serviceJob.quantity || 1),
+    unit: job.unit || serviceJob.unit || '',
+    costAtSale: Number(serviceJob.costAtSale ?? job.costPrice ?? 0),
+    isQuotationItem: serviceJob.isQuotationItem ?? job.isQuotationItem ?? true,
+    isBriefVideo: Boolean(serviceJob.isBriefVideo ?? job.isBriefVideo),
+  };
+});
+
 export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuotation = null, isSubmitting = false }) => {
   const [items, setItems] = useState([]);
   const [priceType, setPriceType] = useState('custom'); // minimum, recommended, custom
@@ -57,6 +71,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
   const [selectedServiceId, setSelectedServiceId] = useState('');
   const [showAddPackage, setShowAddPackage] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState('');
+  const [expandedRows, setExpandedRows] = useState({ packages: {}, services: {} });
   const isEditMode = !!editQuotation;
 
   // Fetch opportunity services using RTK Query (only for create mode)
@@ -80,6 +95,10 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     { skip: !isOpen }
   );
   const allServices = useMemo(() => Array.isArray(servicesResponse) ? servicesResponse : (servicesResponse?.data || []), [servicesResponse]);
+  const servicesById = useMemo(
+    () => new Map(allServices.map(service => [String(service.id), service])),
+    [allServices]
+  );
 
   const { data: packageTemplates = [] } = useGetServicePackagesQuery(
     {},
@@ -92,6 +111,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
       setSelectedServiceId('');
       setShowAddPackage(false);
       setSelectedPackageId('');
+      setExpandedRows({ packages: {}, services: {} });
     }
   }, [isOpen]);
 
@@ -104,9 +124,18 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
         const sellingPrice = parseFloat(detail.sellingPrice) || 0;
         const minPrice = roundToTenThousands(costPrice / 0.8);
         const recommendedPrice = roundToTenThousands(costPrice / 0.6);
+        const serviceId = detail.service?.id || detail.serviceId;
+        const opportunityService = detail.packageName
+          ? (opportunity?.packages || [])
+            .filter(pkg => !detail.servicePackageId || String(pkg.servicePackageId) === String(detail.servicePackageId))
+            .flatMap(pkg => pkg.services || [])
+            .find(service => String(service.service?.id || service.serviceId) === String(serviceId))
+          : (opportunity?.services || [])
+            .filter(service => !service.opportunityPackageId)
+            .find(service => String(service.service?.id || service.serviceId) === String(serviceId));
 
         return {
-          serviceId: detail.service?.id || detail.serviceId,
+          serviceId,
           serviceName: detail.service?.name || 'Unknown Service',
           quantity: detail.quantity || 1,
           costPrice: costPrice,
@@ -121,7 +150,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
           packageQuantity: detail.packageQuantity || 1,
           norm: detail.quantity / (detail.packageQuantity || 1),
           servicePackageId: detail.servicePackageId,
-          unit: detail.service?.unit || detail.unit || ''
+          unit: detail.service?.unit || detail.unit || '',
+          jobs: normalizeServiceJobs(opportunityService?.jobs || detail.service?.serviceJobs || [])
         };
       }) || [];
       setItems(loadedItems);
@@ -134,7 +164,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     if (isOpen && !isEditMode && servicesData) {
       // Standalone services (filter out services belonging to packages)
       const standaloneItems = servicesData
-        // .filter(service => !service.opportunityPackageId)
+        .filter(service => !service.opportunityPackageId)
         .map(service => {
           const costPrice = parseFloat(service.costAtSale) || 0;
           const configuredSellingPrice = parseFloat(service.sellingPrice) || 0;
@@ -152,7 +182,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             selectedPrice: configuredSellingPrice || recommendedPrice,
             profitMargin: calculateProfitMargin(configuredSellingPrice || recommendedPrice, costPrice),
             packageName: 'STANDALONE',
-            unit: service.service?.unit || service.unit || ''
+            unit: service.service?.unit || service.unit || '',
+            jobs: normalizeServiceJobs(service.jobs || service.service?.serviceJobs || [])
           };
         });
 
@@ -178,7 +209,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             packageQuantity: pkg.quantity || 1,
             norm: ps.quantity / (pkg.quantity || 1),
             servicePackageId: pkg.servicePackageId,
-            unit: ps.service?.unit || ps.unit || ''
+            unit: ps.service?.unit || ps.unit || '',
+            jobs: normalizeServiceJobs(ps.jobs || ps.service?.serviceJobs || [])
           };
         })
       );
@@ -253,6 +285,16 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     setItems(items.map((item, i) => i === index ? { ...item, quantity: numValue } : item));
   };
 
+  const toggleExpanded = (level, key) => {
+    setExpandedRows(previous => ({
+      ...previous,
+      [level]: {
+        ...previous[level],
+        [key]: !previous[level][key]
+      }
+    }));
+  };
+
   const handleRemovePackage = (packageName) => {
     setItems(items.filter(item => item.packageName !== packageName));
   };
@@ -288,7 +330,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
         priceType === 'minimum' ? minPrice : priceType === 'recommended' ? recommendedPrice : recommendedPrice,
         costPrice
       ),
-      unit: service.unit || ''
+      unit: service.unit || '',
+      jobs: normalizeServiceJobs(service.serviceJobs || [])
     };
 
     setItems([...items, { ...newItem, packageName: 'STANDALONE' }]);
@@ -309,13 +352,15 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     }
 
     const packageItems = (template.items || []).map(ps => {
-      const costPrice = parseFloat(ps.service?.costPrice || ps.sellingPrice) || 0;
+      const serviceId = ps.service?.id || ps.serviceId;
+      const fullService = servicesById.get(String(serviceId)) || ps.service;
+      const costPrice = parseFloat(fullService?.costPrice || ps.sellingPrice) || 0;
       const minPrice = roundToTenThousands(costPrice / 0.8);
       const recommendedPrice = roundToTenThousands(costPrice / 0.6);
 
       return {
-        serviceId: ps.service?.id || ps.serviceId,
-        serviceName: ps.service?.name || ps.name || 'Dịch vụ trong gói',
+        serviceId,
+        serviceName: fullService?.name || ps.name || 'Dịch vụ trong gói',
         quantity: ps.defaultQuantity || 1,
         costPrice: costPrice,
         minPrice: minPrice,
@@ -330,7 +375,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
         packageQuantity: 1,
         norm: ps.defaultQuantity || 1,
         servicePackageId: template.id,
-        unit: ps.service?.unit || ps.unit || ''
+        unit: fullService?.unit || ps.unit || '',
+        jobs: normalizeServiceJobs(fullService?.serviceJobs || ps.jobs || [])
       };
     });
 
@@ -384,12 +430,18 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
 
     items.forEach((item, index) => {
       const key = item.packageName || 'STANDALONE';
+      const jobs = item.jobs?.length
+        ? item.jobs
+        : normalizeServiceJobs(servicesById.get(String(item.serviceId))?.serviceJobs || []);
       if (key === 'STANDALONE') {
-        standalone.push({ ...item, originalIndex: index });
+        standalone.push({ ...item, jobs, originalIndex: index });
       } else {
-        if (!packages[key]) {
-          packages[key] = {
+        const packageKey = String(item.servicePackageId || key);
+        if (!packages[packageKey]) {
+          packages[packageKey] = {
+            key: packageKey,
             name: key,
+            servicePackageId: item.servicePackageId,
             quantity: item.packageQuantity || 1,
             costPrice: 0,
             minPrice: 0,
@@ -405,14 +457,14 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
         const itemVat = itemRevenue * 0.08;
         const itemTotalWithVat = itemRevenue + itemVat;
 
-        packages[key].costPrice += item.costPrice * (item.norm || 1);
-        packages[key].minPrice += item.minPrice * (item.norm || 1);
-        packages[key].recommendedPrice += item.recommendedPrice * (item.norm || 1);
-        packages[key].customPrice += item.customPrice * (item.norm || 1);
-        packages[key].selectedPrice += item.selectedPrice * (item.norm || 1);
-        packages[key].vat += itemVat;
-        packages[key].totalWithVat += itemTotalWithVat;
-        packages[key].items.push({ ...item, originalIndex: index });
+        packages[packageKey].costPrice += item.costPrice * (item.norm || 1);
+        packages[packageKey].minPrice += item.minPrice * (item.norm || 1);
+        packages[packageKey].recommendedPrice += item.recommendedPrice * (item.norm || 1);
+        packages[packageKey].customPrice += item.customPrice * (item.norm || 1);
+        packages[packageKey].selectedPrice += item.selectedPrice * (item.norm || 1);
+        packages[packageKey].vat += itemVat;
+        packages[packageKey].totalWithVat += itemTotalWithVat;
+        packages[packageKey].items.push({ ...item, jobs, originalIndex: index });
       }
     });
 
@@ -430,7 +482,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
       })),
       standalone: standalone
     };
-  }, [items]);
+  }, [items, servicesById]);
 
   const handleSubmit = () => {
     if (!isEditMode && incompleteAiJobs.length > 0) {
@@ -521,11 +573,25 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                 </thead>
                 <tbody>
                   {/* Render Packages */}
-                  {displayGroups.packages.map((pkg, pIdx) => (
-                    <Fragment key={`pkg-${pIdx}`}>
+                  {displayGroups.packages.map((pkg) => {
+                    const isPackageExpanded = Boolean(expandedRows.packages[pkg.key]);
+
+                    return (
+                    <Fragment key={`pkg-${pkg.key}`}>
                       <tr className="bg-blue-50/50 border-b border-blue-100 group">
                         <td className="px-4 py-2 text-sm font-bold text-blue-900 sticky left-0 bg-blue-50/50 group-hover:bg-blue-100 z-10 border-r border-blue-100 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                           <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleExpanded('packages', pkg.key)}
+                              className="rounded p-1 text-blue-600 transition-colors hover:bg-blue-100"
+                              aria-expanded={isPackageExpanded}
+                              title={isPackageExpanded ? 'Thu gọn dịch vụ' : 'Xem dịch vụ trong gói'}
+                            >
+                              {isPackageExpanded
+                                ? <ChevronUp className="h-4 w-4" />
+                                : <ChevronDown className="h-4 w-4" />}
+                            </button>
                             <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[10px] font-black rounded uppercase">Gói</span>
                             {pkg.name}
                           </div>
@@ -575,10 +641,31 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                         </td>
                       </tr>
                       {/* Sub-items in package */}
-                      {pkg.items.map((item, iIdx) => (
-                        <tr key={`pkg-${pIdx}-item-${iIdx}`} className="border-b border-gray-50 bg-blue-50/10 group hover:bg-blue-50/30 transition-colors">
-                          <td className="px-4 py-2 text-sm text-gray-600 pl-10 italic sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r border-blue-50">
-                            • {item.serviceName}
+                      {isPackageExpanded && pkg.items.map((item) => {
+                        const serviceKey = `package:${pkg.key}:${item.serviceId}:${item.originalIndex}`;
+                        const isServiceExpanded = Boolean(expandedRows.services[serviceKey]);
+                        const hasJobs = item.jobs?.length > 0;
+
+                        return (
+                        <Fragment key={serviceKey}>
+                        <tr className="border-b border-gray-50 bg-blue-50/10 group hover:bg-blue-50/30 transition-colors">
+                          <td className="px-4 py-2 text-sm text-gray-600 pl-10 sticky left-0 bg-white group-hover:bg-blue-50 z-10 border-r border-blue-50">
+                            <div className="flex items-center gap-2">
+                              {hasJobs ? (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleExpanded('services', serviceKey)}
+                                  className="rounded p-1 text-indigo-500 transition-colors hover:bg-indigo-50"
+                                  aria-expanded={isServiceExpanded}
+                                  title={isServiceExpanded ? 'Thu gọn hạng mục' : 'Xem hạng mục của dịch vụ'}
+                                >
+                                  {isServiceExpanded
+                                    ? <ChevronUp className="h-3.5 w-3.5" />
+                                    : <ChevronDown className="h-3.5 w-3.5" />}
+                                </button>
+                              ) : <span className="w-5 text-center text-gray-300">•</span>}
+                              <span className="italic">{item.serviceName}</span>
+                            </div>
                           </td>
                           <td className="px-2 py-2 text-center text-[11px] text-gray-500 font-medium whitespace-nowrap">
                             {Number(item.norm) % 1 === 0 ? item.norm : Number(item.norm).toFixed(0).replace(/\.?0+$/, '')} {item?.unit ? `${item.unit} / gói` : '/ gói'}
@@ -614,9 +701,45 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                           <td className="px-4 py-2 text-center text-xs text-gray-300">
                           </td>
                         </tr>
-                      ))}
+                        {isServiceExpanded && item.jobs.map((job, jobIndex) => (
+                          <tr key={`${serviceKey}:job:${job.id || jobIndex}`} className="border-b border-indigo-50 bg-indigo-50/20">
+                            <td className="sticky left-0 z-10 border-r border-indigo-50 bg-indigo-50/20 py-2 pl-16 pr-4 text-xs text-gray-600">
+                              <div className="flex items-center gap-2">
+                                <span className="text-indigo-300">└</span>
+                                <span>{job.name}</span>
+                                {(job.isBriefVideo || !job.isQuotationItem) && (
+                                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-700">
+                                    Không tính báo giá
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-2 py-2 text-center text-[11px] text-gray-500 whitespace-nowrap">
+                              {job.quantity} {job.unit}
+                            </td>
+                            <td
+                              className="px-4 py-2 text-right text-xs text-gray-500"
+                              title="Giá vốn hạng mục này đã được tính trong giá vốn dịch vụ"
+                            >
+                              {formatNumber(job.costAtSale)}
+                            </td>
+                            <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                            <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                            {priceType === 'custom' && (
+                              <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                            )}
+                            <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                            <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                            <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                            <td className="px-4 py-2"></td>
+                          </tr>
+                        ))}
+                        </Fragment>
+                        );
+                      })}
                     </Fragment>
-                  ))}
+                    );
+                  })}
 
                   {/* Render Standalone Services */}
                   {displayGroups.standalone.length > 0 && (
@@ -626,10 +749,31 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                           Dịch vụ lẻ
                         </td>
                       </tr>
-                      {displayGroups.standalone.map((item, idx) => (
-                        <tr key={`standalone-${idx}`} className="border-b border-gray-100 hover:bg-gray-50 group">
+                      {displayGroups.standalone.map((item) => {
+                        const serviceKey = `standalone:${item.serviceId}:${item.originalIndex}`;
+                        const isServiceExpanded = Boolean(expandedRows.services[serviceKey]);
+                        const hasJobs = item.jobs?.length > 0;
+
+                        return (
+                        <Fragment key={serviceKey}>
+                        <tr className="border-b border-gray-100 hover:bg-gray-50 group">
                           <td className="px-4 py-3 text-sm text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10 border-r border-gray-100 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
-                            {item.serviceName}
+                            <div className="flex items-center gap-2">
+                              {hasJobs ? (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleExpanded('services', serviceKey)}
+                                  className="rounded p-1 text-gray-500 transition-colors hover:bg-gray-100"
+                                  aria-expanded={isServiceExpanded}
+                                  title={isServiceExpanded ? 'Thu gọn hạng mục' : 'Xem hạng mục của dịch vụ'}
+                                >
+                                  {isServiceExpanded
+                                    ? <ChevronUp className="h-3.5 w-3.5" />
+                                    : <ChevronDown className="h-3.5 w-3.5" />}
+                                </button>
+                              ) : <span className="w-5 text-center text-gray-300">•</span>}
+                              <span>{item.serviceName}</span>
+                            </div>
                           </td>
                           <td className="px-2 py-2 align-middle">
                             <div className="flex items-center justify-center gap-1 leading-tight">
@@ -684,7 +828,42 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                             </button>
                           </td>
                         </tr>
-                      ))}
+                        {isServiceExpanded && item.jobs.map((job, jobIndex) => (
+                          <tr key={`${serviceKey}:job:${job.id || jobIndex}`} className="border-b border-gray-100 bg-gray-50/80">
+                            <td className="sticky left-0 z-10 border-r border-gray-100 bg-gray-50/80 py-2 pl-12 pr-4 text-xs text-gray-600">
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-300">└</span>
+                                <span>{job.name}</span>
+                                {(job.isBriefVideo || !job.isQuotationItem) && (
+                                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-700">
+                                    Không tính báo giá
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-2 py-2 text-center text-[11px] text-gray-500 whitespace-nowrap">
+                              {job.quantity} {job.unit}
+                            </td>
+                            <td
+                              className="px-4 py-2 text-right text-xs text-gray-500"
+                              title="Giá vốn hạng mục này đã được tính trong giá vốn dịch vụ"
+                            >
+                              {formatNumber(job.costAtSale)}
+                            </td>
+                            <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                            <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                            {priceType === 'custom' && (
+                              <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                            )}
+                            <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                            <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                            <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                            <td className="px-4 py-2"></td>
+                          </tr>
+                        ))}
+                        </Fragment>
+                        );
+                      })}
                     </>
                   )}
                 </tbody>
