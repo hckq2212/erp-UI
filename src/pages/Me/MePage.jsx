@@ -5,9 +5,14 @@ import { selectCurrentUser } from '../../store/authSlice';
 import { toast } from 'react-toastify';
 import {
     User, Mail, Phone, Lock, Save, Loader2,
-    Shield, Briefcase, Star, Info, Settings
+    Shield, Briefcase, Star, Info, Settings, Calendar
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+
+const toDateInputValue = (value) => {
+    if (!value) return '';
+    return String(value).slice(0, 10);
+};
 
 export const MePage = () => {
     const user = useSelector(selectCurrentUser);
@@ -17,6 +22,7 @@ export const MePage = () => {
     const [formData, setFormData] = useState({
         fullName: '',
         phoneNumber: '',
+        birthday: '',
         email: '',
         password: '',
         confirmPassword: ''
@@ -27,6 +33,7 @@ export const MePage = () => {
             setFormData({
                 fullName: user.fullName || '',
                 phoneNumber: user.phoneNumber || '',
+                birthday: toDateInputValue(user.birthday),
                 email: user.email || '',
                 password: '',
                 confirmPassword: ''
@@ -51,6 +58,7 @@ export const MePage = () => {
             const updateData = {
                 fullName: formData.fullName,
                 phoneNumber: formData.phoneNumber,
+                birthday: formData.birthday || null,
                 email: formData.email
             };
 
@@ -153,6 +161,21 @@ export const MePage = () => {
                                             className="w-full pl-11 pr-4 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-100 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-700 text-sm"
                                             placeholder="Nhập họ tên đầy đủ"
                                             required
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Ngày sinh</label>
+                                    <div className="relative group">
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                                            <Calendar className="w-4 h-4" />
+                                        </div>
+                                        <input
+                                            type="date"
+                                            name="birthday"
+                                            value={formData.birthday}
+                                            onChange={handleChange}
+                                            className="w-full pl-11 pr-4 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-100 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-700 text-sm"
                                         />
                                     </div>
                                 </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, Lock, Mail, Phone, Shield, Loader2 } from 'lucide-react';
+import { X, User, Lock, Mail, Phone, Shield, Loader2, Calendar } from 'lucide-react';
 import { useCreateUserMutation } from '../../api/users';
 import { toast } from 'react-toastify';
 import { USER_ROLE_OPTIONS } from '../../utils/enums';
@@ -14,6 +14,7 @@ export const AddUserModal = ({ isOpen, onClose }) => {
         fullName: '',
         email: '',
         phoneNumber: '',
+        birthday: '',
         role: DEFAULT_ROLE
     });
 
@@ -31,7 +32,10 @@ export const AddUserModal = ({ isOpen, onClose }) => {
         if (formData.email && !emailRegex.test(formData.email)) return toast.error('Email không hợp lệ');
 
         try {
-            await createUser(formData).unwrap();
+            await createUser({
+                ...formData,
+                birthday: formData.birthday || null
+            }).unwrap();
             toast.success('Thêm nhân sự thành công!');
             onClose();
             setFormData({
@@ -40,6 +44,7 @@ export const AddUserModal = ({ isOpen, onClose }) => {
                 fullName: '',
                 email: '',
                 phoneNumber: '',
+                birthday: '',
                 role: DEFAULT_ROLE
             });
         } catch (error) {
@@ -151,6 +156,22 @@ export const AddUserModal = ({ isOpen, onClose }) => {
                                     />
                                 </div>
                             </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Ngày sinh</label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="date"
+                                        name="birthday"
+                                        value={formData.birthday}
+                                        onChange={handleChange}
+                                        className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 transition-all font-medium text-gray-900"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Vai trò</label>
                                 <div className="relative">
