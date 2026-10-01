@@ -23,7 +23,6 @@ import {
     useAiFormatProjectProductDescriptionMutation,
     useApproveProjectProductDescriptionMutation,
     useCreateProjectProductDescriptionMutation,
-    useExtractProjectProductDescriptionFileMutation,
     useExtractProjectProductDescriptionUploadMutation,
     useGetProjectProductDescriptionsQuery,
     useRejectProjectProductDescriptionMutation,
@@ -499,7 +498,6 @@ const ProductDescriptionSection = ({ project }) => {
     const [submitSubmission, { isLoading: isSubmitting }] = useSubmitProjectProductDescriptionMutation();
     const [approveSubmission, { isLoading: isApproving }] = useApproveProjectProductDescriptionMutation();
     const [rejectSubmission, { isLoading: isRejecting }] = useRejectProjectProductDescriptionMutation();
-    const [extractFile] = useExtractProjectProductDescriptionFileMutation();
     const [extractUpload] = useExtractProjectProductDescriptionUploadMutation();
     const [aiFormat] = useAiFormatProjectProductDescriptionMutation();
 
