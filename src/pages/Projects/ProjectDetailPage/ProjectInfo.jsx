@@ -24,6 +24,7 @@ import {
     useApproveProjectProductDescriptionMutation,
     useCreateProjectProductDescriptionMutation,
     useExtractProjectProductDescriptionFileMutation,
+    useExtractProjectProductDescriptionUploadMutation,
     useGetProjectProductDescriptionsQuery,
     useRejectProjectProductDescriptionMutation,
     useSubmitProjectProductDescriptionMutation,
@@ -499,6 +500,7 @@ const ProductDescriptionSection = ({ project }) => {
     const [approveSubmission, { isLoading: isApproving }] = useApproveProjectProductDescriptionMutation();
     const [rejectSubmission, { isLoading: isRejecting }] = useRejectProjectProductDescriptionMutation();
     const [extractFile] = useExtractProjectProductDescriptionFileMutation();
+    const [extractUpload] = useExtractProjectProductDescriptionUploadMutation();
     const [aiFormat] = useAiFormatProjectProductDescriptionMutation();
 
     const currentUserId = getCurrentUserId(user);
@@ -555,8 +557,27 @@ const ProductDescriptionSection = ({ project }) => {
         setProducts((prev) => prev.length === 1 ? prev : prev.filter((_, idx) => idx !== index));
     };
 
+    // B1: trích xuất text trực tiếp từ file (không phụ thuộc Cloudinary)
+    // B2: upload file gốc lên Cloudinary để lưu trữ; nếu quá giới hạn thì vẫn giữ text đã trích xuất
     const handleDocFileChange = async (productIndex, file) => {
         if (!file) return;
+        updateProduct(productIndex, { fileName: file.name, extracting: true });
+        try {
+            const result = await extractUpload({ projectId, file }).unwrap();
+            updateProduct(productIndex, {
+                extractedText: result?.extractedText || '',
+                hasComplexLayout: Boolean(result?.hasComplexLayout),
+                extracting: false,
+            });
+            if (result?.hasComplexLayout) {
+                toast.warn('File có nhiều cột/bảng phức tạp, vui lòng kiểm tra kỹ nội dung trích xuất trước khi gửi duyệt');
+            }
+        } catch (extractErr) {
+            toast.error(extractErr?.data?.message || extractErr?.message || 'Trích xuất nội dung file thất bại');
+            updateProduct(productIndex, { extracting: false });
+            return;
+        }
+
         updateProduct(productIndex, { docUploading: true, docUploadProgress: 0 });
         try {
             const uploaded = await uploadToCloudinary(
@@ -564,29 +585,9 @@ const ProductDescriptionSection = ({ project }) => {
                 'GETVINI/ERP/product-description',
                 (progress) => updateProduct(productIndex, { docUploadProgress: progress })
             );
-            updateProduct(productIndex, {
-                fileUrl: uploaded.url,
-                fileName: file.name,
-                docUploading: false,
-                docUploadProgress: 0,
-                extracting: true,
-            });
-            try {
-                const result = await extractFile({ projectId, fileUrl: uploaded.url }).unwrap();
-                updateProduct(productIndex, {
-                    extractedText: result?.extractedText || '',
-                    hasComplexLayout: Boolean(result?.hasComplexLayout),
-                    extracting: false,
-                });
-                if (result?.hasComplexLayout) {
-                    toast.warn('File có nhiều cột/bảng phức tạp, vui lòng kiểm tra kỹ nội dung trích xuất trước khi gửi duyệt');
-                }
-            } catch (extractErr) {
-                toast.error(extractErr?.data?.message || extractErr?.message || 'Trích xuất nội dung file thất bại');
-                updateProduct(productIndex, { extracting: false });
-            }
+            updateProduct(productIndex, { fileUrl: uploaded.url, docUploading: false, docUploadProgress: 0 });
         } catch (err) {
-            toast.error(err?.message || 'Tải file lên thất bại');
+            toast.info('Đã trích xuất nội dung nhưng không lưu được file gốc (có thể quá dung lượng). Nội dung text vẫn được dùng.');
             updateProduct(productIndex, { docUploading: false, docUploadProgress: 0 });
         }
     };
@@ -685,7 +686,7 @@ const ProductDescriptionSection = ({ project }) => {
 
             const fileUrl = product.fileUrl.trim();
 
-            if (!fileUrl) {
+            if (!fileUrl && !(product.extractedText || '').trim()) {
                 throw new Error(`Vui lòng upload file thông tin chuẩn (doc/pdf) cho sản phẩm ${productName}`);
             }
 

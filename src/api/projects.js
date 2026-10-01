@@ -222,6 +222,17 @@ export const projectsApi = api.injectEndpoints({
         body: { fileUrl },
       }),
     }),
+    extractProjectProductDescriptionUpload: builder.mutation({
+      query: ({ projectId, file }) => {
+        const body = new FormData();
+        body.append('file', file);
+        return {
+          url: `/projects/${projectId}/product-descriptions/extract-upload`,
+          method: 'POST',
+          body,
+        };
+      },
+    }),
     aiFormatProjectProductDescription: builder.mutation({
       query: ({ projectId, text, productName }) => ({
         url: `/projects/${projectId}/product-descriptions/ai-format`,
@@ -409,6 +420,7 @@ export const {
   useApproveProjectProductDescriptionMutation,
   useRejectProjectProductDescriptionMutation,
   useExtractProjectProductDescriptionFileMutation,
+  useExtractProjectProductDescriptionUploadMutation,
   useAiFormatProjectProductDescriptionMutation,
   useGetMyProjectsQuery,
   useRequestProjectStaffingMutation,
