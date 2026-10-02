@@ -83,8 +83,9 @@ const searchableSelectStyles = {
 };
 
 const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJobBriefChange, onJobIncludedChange, onRemove, hasError }) => {
+  const [isJobsOpen, setIsJobsOpen] = useState(false);
   const isUnselected = !item.serviceId && hasError;
-  const briefJobs = (item.jobs || []).filter(job => job.isBriefVideo);
+  const jobs = item.jobs || [];
   const serviceOptions = availableServices.map(service => ({
     value: service.id,
     label: service.name,
@@ -116,31 +117,61 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJ
           <Trash2 className="w-5 h-5" />
         </button>
       </div>
-      {briefJobs.map(job => (
-        <div key={job.jobId} className="space-y-2">
-          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
-            <input
-              type="checkbox"
-              checked={Boolean(job.included)}
-              onChange={(e) => onJobIncludedChange(index, job.jobId, e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 accent-blue-600"
-            />
-            Thêm công việc: {job.name}
-          </label>
-          {job.included && (
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Brief cho {job.name} *</label>
-              <textarea
-                value={job.briefVideo || ''}
-                onChange={(e) => onJobBriefChange(index, job.jobId, e.target.value)}
-                rows={3}
-                className="w-full resize-y rounded-lg border-2 border-gray-200 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                placeholder="Nhập brief khách hàng để thực hiện video AI demo..."
-              />
+      {jobs.length > 0 && (
+        <div className="border-t border-gray-200 pt-2">
+          <button
+            type="button"
+            onClick={() => setIsJobsOpen(previous => !previous)}
+            className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 transition-colors hover:text-indigo-800"
+            aria-expanded={isJobsOpen}
+          >
+            <ChevronDown className={`h-4 w-4 transition-transform ${isJobsOpen ? 'rotate-180' : ''}`} />
+            Hạng mục ({jobs.length})
+          </button>
+
+          {isJobsOpen && (
+            <div className="mt-3 space-y-2">
+              {jobs.map(job => (
+                <div key={job.jobId} className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-medium text-gray-800">{job.name}</p>
+                    <div className="shrink-0 text-right text-xs text-gray-500">
+                      <p>{job.quantity || 1} {job.unit}</p>
+                      <p>{formatNumber(job.costPrice || 0)} VNĐ</p>
+                    </div>
+                  </div>
+
+                  {job.isBriefVideo && (
+                    <>
+                      <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(job.included)}
+                          onChange={(e) => onJobIncludedChange(index, job.jobId, e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 accent-blue-600"
+                        />
+                        Thêm hạng mục video demo này
+                      </label>
+                      {job.included && (
+                        <div>
+                          <label className="mb-1 block text-sm font-medium text-gray-700">Brief cho {job.name} *</label>
+                          <textarea
+                            value={job.briefVideo || ''}
+                            onChange={(e) => onJobBriefChange(index, job.jobId, e.target.value)}
+                            rows={3}
+                            className="w-full resize-y rounded-lg border-2 border-gray-200 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            placeholder="Nhập brief khách hàng để thực hiện video AI demo..."
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
-      ))}
+      )}
     </div>
   );
 });
@@ -219,6 +250,7 @@ const PackageItem = memo(({
   onQuantityChange
 }) => {
   const [isServicesOpen, setIsServicesOpen] = useState(false);
+  const [expandedServiceJobs, setExpandedServiceJobs] = useState({});
   const serviceCount = pkg.services?.length || 0;
 
   return (
@@ -300,9 +332,9 @@ const PackageItem = memo(({
             label: service.name,
           }));
 
-          const briefJobs = (serviceItem.jobs || []).filter(
-            job => job.isBriefVideo
-          );
+          const jobs = serviceItem.jobs || [];
+          const serviceJobsKey = `${serviceItem.serviceId || 'empty'}-${serviceIndex}`;
+          const isJobsOpen = Boolean(expandedServiceJobs[serviceJobsKey]);
 
           return (
             <div
@@ -355,54 +387,87 @@ const PackageItem = memo(({
                 </button>
               </div>
 
-              {briefJobs.map(job => (
-                <div key={job.jobId} className="space-y-2">
-                  <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-blue-900">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(job.included)}
-                      onChange={(e) =>
-                        onServiceChange(
-                          index,
-                          serviceIndex,
-                          'jobIncluded',
-                          {
-                            jobId: job.jobId,
-                            value: e.target.checked
-                          }
-                        )
-                      }
-                      className="h-4 w-4 rounded border-blue-200 accent-blue-600"
-                    />
-                    Thêm công việc: {job.name}
-                  </label>
+              {jobs.length > 0 && (
+                <div className="border-t border-blue-100 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedServiceJobs(previous => ({
+                      ...previous,
+                      [serviceJobsKey]: !previous[serviceJobsKey]
+                    }))}
+                    className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-blue-700 transition-colors hover:text-blue-900"
+                    aria-expanded={isJobsOpen}
+                  >
+                    <ChevronDown className={`h-4 w-4 transition-transform ${isJobsOpen ? 'rotate-180' : ''}`} />
+                    Hạng mục ({jobs.length})
+                  </button>
 
-                  {job.included && (
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-blue-900">
-                        Brief cho {job.name} *
-                      </label>
-                      <textarea
-                        value={job.briefVideo || ''}
-                        onChange={(e) =>
-                          onServiceChange(
-                            index,
-                            serviceIndex,
-                            'briefVideo',
-                            {
-                              jobId: job.jobId,
-                              value: e.target.value
-                            }
-                          )
-                        }
-                        rows={3}
-                        className="w-full resize-y rounded-lg border-2 border-blue-100 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none"
-                        placeholder="Nhập brief khách hàng để thực hiện video AI demo..."
-                      />
+                  {isJobsOpen && (
+                    <div className="mt-3 space-y-2">
+                      {jobs.map(job => (
+                        <div key={job.jobId} className="space-y-2 rounded-lg border border-blue-100 bg-blue-50/30 p-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="text-sm font-medium text-blue-950">{job.name}</p>
+                            <div className="shrink-0 text-right text-xs text-gray-500">
+                              <p>{job.quantity || 1} {job.unit}</p>
+                              <p>{formatNumber(job.costPrice || 0)} VNĐ</p>
+                            </div>
+                          </div>
+
+                          {job.isBriefVideo && (
+                            <>
+                              <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-blue-900">
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(job.included)}
+                                  onChange={(e) =>
+                                    onServiceChange(
+                                      index,
+                                      serviceIndex,
+                                      'jobIncluded',
+                                      {
+                                        jobId: job.jobId,
+                                        value: e.target.checked
+                                      }
+                                    )
+                                  }
+                                  className="h-4 w-4 rounded border-blue-200 accent-blue-600"
+                                />
+                                Thêm hạng mục video demo này
+                              </label>
+
+                              {job.included && (
+                                <div>
+                                  <label className="mb-1 block text-sm font-medium text-blue-900">
+                                    Brief cho {job.name} *
+                                  </label>
+                                  <textarea
+                                    value={job.briefVideo || ''}
+                                    onChange={(e) =>
+                                      onServiceChange(
+                                        index,
+                                        serviceIndex,
+                                        'briefVideo',
+                                        {
+                                          jobId: job.jobId,
+                                          value: e.target.value
+                                        }
+                                      )
+                                    }
+                                    rows={3}
+                                    className="w-full resize-y rounded-lg border-2 border-blue-100 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none"
+                                    placeholder="Nhập brief khách hàng để thực hiện video AI demo..."
+                                  />
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-              ))}
+              )}
             </div>
           );
         })}
@@ -582,6 +647,9 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
         jobs: (s.jobs || s.service?.serviceJobs || []).map(serviceJob => ({
           jobId: serviceJob.job?.id || serviceJob.jobId,
           name: serviceJob.job?.name || serviceJob.name || 'Hạng mục',
+          quantity: Number(serviceJob.quantity || 1),
+          unit: serviceJob.job?.unit || serviceJob.unit || '',
+          costPrice: Number(serviceJob.costAtSale ?? serviceJob.job?.costPrice ?? 0),
           isBriefVideo: Boolean(
             serviceJob.job?.isBriefVideo ?? serviceJob.isBriefVideo
           ),
@@ -624,6 +692,9 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
         jobs: (s.jobs || s.service?.serviceJobs || []).map(serviceJob => ({
           jobId: serviceJob.job?.id || serviceJob.jobId,
           name: serviceJob.job?.name || serviceJob.name || 'Hạng mục',
+          quantity: Number(serviceJob.quantity || 1),
+          unit: serviceJob.job?.unit || serviceJob.unit || '',
+          costPrice: Number(serviceJob.costAtSale ?? serviceJob.job?.costPrice ?? 0),
           isBriefVideo: Boolean(
             serviceJob.job?.isBriefVideo ?? serviceJob.isBriefVideo
           ),
@@ -717,24 +788,32 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
         name: template.name,
         description: template.description || '',
         quantity: 1,
-        services: (template.items || []).map(item => ({
-          serviceId: item.service?.id || item.serviceId,
-          quantity: item.defaultQuantity || 1,
-          sellingPrice: item.service?.costPrice || 0,
-          jobs: (item.service?.serviceJobs || []).map(serviceJob => ({
-            jobId: serviceJob.job?.id || serviceJob.jobId,
-            name: serviceJob.job?.name || 'Hạng mục',
-            isBriefVideo: Boolean(serviceJob.job?.isBriefVideo),
-            included: !Boolean(serviceJob.job?.isBriefVideo),
-            briefVideo: ''
-          }))
-        }))
+        services: (template.items || []).map(item => {
+          const serviceId = item.service?.id || item.serviceId;
+          const fullService = services.find(service => String(service.id) === String(serviceId)) || item.service;
+
+          return {
+            serviceId,
+            quantity: item.defaultQuantity || 1,
+            sellingPrice: fullService?.costPrice || 0,
+            jobs: (fullService?.serviceJobs || []).map(serviceJob => ({
+              jobId: serviceJob.job?.id || serviceJob.jobId,
+              name: serviceJob.job?.name || 'Hạng mục',
+              quantity: Number(serviceJob.quantity || 1),
+              unit: serviceJob.job?.unit || '',
+              costPrice: Number(serviceJob.job?.costPrice || 0),
+              isBriefVideo: Boolean(serviceJob.job?.isBriefVideo),
+              included: !Boolean(serviceJob.job?.isBriefVideo),
+              briefVideo: ''
+            }))
+          };
+        })
       };
       return updated;
     });
     // Clear services error
     setErrors(prev => prev.services ? { ...prev, services: null } : prev);
-  }, [packageTemplates]);
+  }, [packageTemplates, services]);
 
   const addPackage = useCallback(() => {
     setSelectedPackages(prev => [...prev, { servicePackageId: '', services: [], quantity: 1 }]);
@@ -791,6 +870,9 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
         pkgServices[sIndex].jobs = (service?.serviceJobs || []).map(serviceJob => ({
           jobId: serviceJob.job?.id || serviceJob.jobId,
           name: serviceJob.job?.name || 'Hạng mục',
+          quantity: Number(serviceJob.quantity || 1),
+          unit: serviceJob.job?.unit || '',
+          costPrice: Number(serviceJob.job?.costPrice || 0),
           isBriefVideo: Boolean(serviceJob.job?.isBriefVideo),
           included: !Boolean(serviceJob.job?.isBriefVideo),
           briefVideo: ''
@@ -885,6 +967,9 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
         updated[index].jobs = (service?.serviceJobs || []).map(serviceJob => ({
           jobId: serviceJob.job?.id || serviceJob.jobId,
           name: serviceJob.job?.name || 'Hạng mục',
+          quantity: Number(serviceJob.quantity || 1),
+          unit: serviceJob.job?.unit || '',
+          costPrice: Number(serviceJob.job?.costPrice || 0),
           isBriefVideo: Boolean(serviceJob.job?.isBriefVideo),
           included: !Boolean(serviceJob.job?.isBriefVideo),
           briefVideo: ''
