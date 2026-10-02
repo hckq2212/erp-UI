@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import {
     Upload, Image as ImageIcon, File as FileIcon, Loader2, Trash2, History, AlertCircle,
-    Wallet, Store, Check, Paperclip, ExternalLink, Ban, Landmark, Info,
+    Wallet, Store, Check, Paperclip, ExternalLink, Ban, Landmark, Info, Printer,
 } from 'lucide-react';
 import {
     useReviewPaymentRequestMutation,
@@ -16,6 +16,7 @@ import {
 import { formatCurrency } from '../../utils/format';
 import { cn } from '../../utils/cn';
 import { ModalShell, ModalHeader, StatusBadge, AmountInput } from './PaymentRequestParts';
+import { CashVoucherModal } from './CashVoucherModal';
 import {
     APPROVAL_LABELS, APPROVAL_TONE, PAYMENT_LABELS, PAYMENT_TONE,
     TYPE_LABELS, isVendorRequest, fmtDate, inputCls, labelCls,
@@ -376,6 +377,9 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
     const [bodReason, setBodReason] = useState('');
     const [confirmedDueDate, setConfirmedDueDate] = useState(request.confirmedDueDate || request.dueDate || '');
     const [paymentProofFiles, setPaymentProofFiles] = useState([]);
+    const [paymentMethod, setPaymentMethod] = useState(request.paymentMethod || 'BANK_TRANSFER');
+    const [cashVoucherInfo, setCashVoucherInfo] = useState(request.cashVoucherInfo || null);
+    const [isCashVoucherModalOpen, setIsCashVoucherModalOpen] = useState(false);
     const [cancelReason, setCancelReason] = useState('');
     const [error, setError] = useState('');
     const paymentProofInputRef = useRef(null);
@@ -384,11 +388,41 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
     const [bodDecide, { isLoading: isDeciding }] = useBodDecidePaymentRequestMutation();
     const [pay, { isLoading: isPaying }] = usePayPaymentRequestMutation();
     const [cancelRequest, { isLoading: isCancelling }] = useCancelPaymentRequestMutation();
+    const [updateRequest] = useUpdatePaymentRequestMutation();
     const [uploadPaymentProofFile] = useUploadPaymentRequestInvoiceFileMutation();
+
+    const handleSaveCashVoucher = async (info) => {
+        setError('');
+        setCashVoucherInfo(info);
+        setIsCashVoucherModalOpen(false);
+        try {
+            await updateRequest({
+                id: request.id,
+                cashVoucherInfo: info,
+                paymentMethod: 'CASH',
+            }).unwrap();
+        } catch (err) {
+            setError(err?.data?.message || 'Có lỗi xảy ra khi lưu thông tin phiếu chi');
+        }
+    };
 
     const isUploadingPaymentProofs = paymentProofFiles.some((f) => f.uploading);
 
+    const isUploadDisabled = paymentMethod === 'CASH' && !cashVoucherInfo;
+
+    const handleUploadBoxClick = () => {
+        if (isUploadDisabled) {
+            setError('Vui lòng lập Phiếu chi tiền mặt (Mẫu 02-TT) ở trên trước khi chọn file minh chứng');
+            return;
+        }
+        paymentProofInputRef.current?.click();
+    };
+
     const handlePaymentProofFilesSelected = async (fileList) => {
+        if (isUploadDisabled) {
+            setError('Vui lòng lập Phiếu chi tiền mặt (Mẫu 02-TT) ở trên trước khi chọn file minh chứng');
+            return;
+        }
         const files = Array.from(fileList || []);
         for (const file of files) {
             const isAccepted = ACCEPTED_TYPES.some((t) => file.type.startsWith(t));
@@ -417,6 +451,10 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
     };
 
     const handlePay = () => {
+        if (paymentMethod === 'CASH' && !cashVoucherInfo) {
+            setError('Vui lòng lập Phiếu chi tiền mặt (Mẫu 02-TT) trước khi xác nhận đã chi');
+            return;
+        }
         if (isUploadingPaymentProofs) {
             setError('Vui lòng đợi file minh chứng tải lên xong');
             return;
@@ -426,7 +464,7 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
             setError('Vui lòng tải lên ảnh/PDF minh chứng đã chi tiền');
             return;
         }
-        run(() => pay({ id: request.id, paymentProofs: readyProofs }).unwrap());
+        run(() => pay({ id: request.id, paymentMethod, cashVoucherInfo, paymentProofs: readyProofs }).unwrap());
     };
 
     // Sau khi thao tác thành công thì đóng modal (đồng nhất với Gửi duyệt / Bổ sung),
@@ -447,6 +485,14 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
             return;
         }
         run(() => review({ id: request.id, action, note: note.trim() || undefined }).unwrap());
+    };
+
+    const handleBodDecide = (action) => {
+        if ((action === 'REJECT' || action === 'REQUEST_MORE_DOCS') && !bodReason.trim()) {
+            setError('Vui lòng nhập lý do');
+            return;
+        }
+        run(() => bodDecide({ id: request.id, action, reason: bodReason.trim() || undefined, confirmedDueDate }).unwrap());
     };
 
     const isVendor = isVendorRequest(request);
@@ -599,7 +645,29 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                     <Section title='Thông tin thanh toán' icon={Landmark}>
                         <dl className='grid grid-cols-2 gap-x-4 gap-y-3'>
                             {request.paidAt && <InfoItem label='Ngày chi'>{fmtDate(request.paidAt)}</InfoItem>}
+                            <InfoItem label='Hình thức chi'>
+                                {request.paymentMethod === 'CASH' ? '💵 Tiền mặt (Phiếu chi)' : '💳 Chuyển khoản (Ủy nhiệm chi)'}
+                            </InfoItem>
                         </dl>
+                        {(request.cashVoucherInfo || cashVoucherInfo) && (
+                            <div className='mt-3 rounded-lg border border-orange-200 bg-orange-50/40 p-3'>
+                                <div className='flex items-center justify-between'>
+                                    <div>
+                                        <p className='text-xs font-semibold text-orange-900'>Phiếu chi tiền mặt #{request.cashVoucherInfo?.voucherNo || cashVoucherInfo?.voucherNo}</p>
+                                        <p className='text-xs text-stone-600 mt-0.5'>
+                                            Người nhận: <strong>{(request.cashVoucherInfo || cashVoucherInfo)?.receiverName}</strong> · Nợ <strong>{(request.cashVoucherInfo || cashVoucherInfo)?.debitAccount}</strong> / Có <strong>{(request.cashVoucherInfo || cashVoucherInfo)?.creditAccount}</strong>
+                                        </p>
+                                    </div>
+                                    <button
+                                        type='button'
+                                        onClick={() => setIsCashVoucherModalOpen(true)}
+                                        className='inline-flex items-center gap-1.5 rounded-md border border-orange-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-orange-700 hover:bg-orange-100'
+                                    >
+                                        <Printer size={13} /> Xem / In lại Phiếu Chi
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         {(request.paymentProofs || []).length > 0 && (
                             <div className='mt-3 space-y-2'>
                                 <p className='text-xs font-medium text-stone-500'>Minh chứng đã chi</p>
@@ -666,14 +734,14 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                             <textarea
                                 value={bodReason}
                                 onChange={(e) => setBodReason(e.target.value)}
-                                placeholder='Lý do (bắt buộc nếu từ chối)'
+                                placeholder='Lý do (bắt buộc nếu từ chối/yêu cầu bổ sung)'
                                 rows={2}
                                 className={inputCls}
                             />
                             <div className='flex flex-wrap gap-2'>
                                 <button
                                     disabled={isDeciding}
-                                    onClick={() => run(() => bodDecide({ id: request.id, action: 'APPROVE', reason: bodReason, confirmedDueDate }).unwrap())}
+                                    onClick={() => handleBodDecide('APPROVE')}
                                     className={btnPrimary}
                                 >
                                     {isDeciding && <Loader2 size={15} className='animate-spin' />}
@@ -681,7 +749,14 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                                 </button>
                                 <button
                                     disabled={isDeciding}
-                                    onClick={() => run(() => bodDecide({ id: request.id, action: 'REJECT', reason: bodReason }).unwrap())}
+                                    onClick={() => handleBodDecide('REQUEST_MORE_DOCS')}
+                                    className={btnWarnOutline}
+                                >
+                                    Yêu cầu bổ sung
+                                </button>
+                                <button
+                                    disabled={isDeciding}
+                                    onClick={() => handleBodDecide('REJECT')}
                                     className={btnDangerOutline}
                                 >
                                     Từ chối
@@ -693,19 +768,93 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
 
                 {request.approvalStatus === 'APPROVED' && !isPaid && canPay(currentUserRole) && (
                     <Section title='Chi tiền' icon={Landmark} tone='action'>
-                        <div className='space-y-3'>
+                        <div className='space-y-4'>
                             <div>
-                                <label className={labelCls}>Minh chứng đã chi (ảnh/PDF, bắt buộc)</label>
+                                <label className={labelCls}>Hình thức chi tiền <span className='text-red-500'>*</span></label>
+                                <div className='grid grid-cols-2 gap-3 mt-1'>
+                                    <label className={cn('flex cursor-pointer items-center justify-center gap-2 rounded-lg border p-3 text-xs font-semibold transition', paymentMethod === 'BANK_TRANSFER' ? 'border-orange-500 bg-orange-50 text-orange-700 ring-1 ring-orange-400' : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50')}>
+                                        <input
+                                            type='radio'
+                                            name='paymentMethod'
+                                            value='BANK_TRANSFER'
+                                            checked={paymentMethod === 'BANK_TRANSFER'}
+                                            onChange={() => setPaymentMethod('BANK_TRANSFER')}
+                                            className='hidden'
+                                        />
+                                        💳 Chuyển khoản (Ủy nhiệm chi)
+                                    </label>
+                                    <label className={cn('flex cursor-pointer items-center justify-center gap-2 rounded-lg border p-3 text-xs font-semibold transition', paymentMethod === 'CASH' ? 'border-orange-500 bg-orange-50 text-orange-700 ring-1 ring-orange-400' : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50')}>
+                                        <input
+                                            type='radio'
+                                            name='paymentMethod'
+                                            value='CASH'
+                                            checked={paymentMethod === 'CASH'}
+                                            onChange={() => setPaymentMethod('CASH')}
+                                            className='hidden'
+                                        />
+                                        💵 Tiền mặt (Phiếu chi)
+                                    </label>
+                                </div>
+                            </div>
+
+                            {paymentMethod === 'CASH' && (
+                                <div className='rounded-lg border border-orange-200 bg-orange-50/50 p-3.5 space-y-2'>
+                                    <div className='flex items-center justify-between'>
+                                        <div>
+                                            <p className='text-xs font-semibold text-orange-900'>Phiếu chi tiền mặt (Mẫu 02 - TT)</p>
+                                            {cashVoucherInfo ? (
+                                                <p className='text-xs text-stone-600 mt-0.5'>
+                                                    Số phiếu: <strong className='text-orange-700'>{cashVoucherInfo.voucherNo}</strong> · TK Nợ <strong>{cashVoucherInfo.debitAccount}</strong> / Có <strong>{cashVoucherInfo.creditAccount}</strong>
+                                                </p>
+                                            ) : (
+                                                <p className='text-xs text-stone-500 mt-0.5'>Chưa lập phiếu chi tiền mặt. Vui lòng lập phiếu chi và in ra lấy chữ ký.</p>
+                                            )}
+                                        </div>
+                                        <button
+                                            type='button'
+                                            onClick={() => setIsCashVoucherModalOpen(true)}
+                                            className='inline-flex items-center gap-1.5 rounded-md bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-orange-600'
+                                        >
+                                            <Printer size={13} />
+                                            {cashVoucherInfo ? 'Xem / Sửa / In lại Phiếu Chi' : 'Lập & In Phiếu Chi (02-TT)'}
+                                        </button>
+                                    </div>
+                                    {cashVoucherInfo && (
+                                        <p className='text-[11px] text-stone-600 bg-white/80 rounded p-2 border border-orange-100'>
+                                            Người nhận: <strong>{cashVoucherInfo.receiverName}</strong> — Số tiền bằng chữ: <em>"{cashVoucherInfo.amountInWords}"</em>
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            <div>
+                                <label className={labelCls}>
+                                    Minh chứng đã chi ({paymentMethod === 'CASH' ? 'ảnh/scan Phiếu chi đã ký + chứng từ gốc' : 'ảnh/PDF UNC'}, bắt buộc)
+                                </label>
                                 <div
-                                    onClick={() => paymentProofInputRef.current?.click()}
-                                    className='flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-orange-200 bg-white px-4 py-4 text-center hover:border-orange-400 hover:bg-orange-50'
+                                    onClick={handleUploadBoxClick}
+                                    className={cn(
+                                        'flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed px-4 py-4 text-center transition',
+                                        isUploadDisabled
+                                            ? 'cursor-not-allowed border-stone-300 bg-stone-100/70 text-stone-400 opacity-80'
+                                            : 'cursor-pointer border-orange-200 bg-white hover:border-orange-400 hover:bg-orange-50'
+                                    )}
                                 >
-                                    <Upload size={18} className='text-orange-400' />
-                                    <p className='text-xs text-stone-500'><span className='font-semibold text-orange-600'>Chọn file</span> minh chứng thanh toán</p>
+                                    <Upload size={18} className={isUploadDisabled ? 'text-stone-400' : 'text-orange-400'} />
+                                    {isUploadDisabled ? (
+                                        <p className='text-xs font-medium text-stone-500'>
+                                            🔒 Vui lòng bấm <span className='font-semibold text-orange-600'>'Lập & In Phiếu Chi (02-TT)'</span> ở trên trước khi chọn file minh chứng
+                                        </p>
+                                    ) : (
+                                        <p className='text-xs text-stone-500'>
+                                            <span className='font-semibold text-orange-600'>Chọn file</span> minh chứng thanh toán
+                                        </p>
+                                    )}
                                     <input
                                         ref={paymentProofInputRef}
                                         type='file'
                                         accept='image/*,application/pdf'
+                                        disabled={isUploadDisabled}
                                         multiple
                                         onChange={(e) => { handlePaymentProofFilesSelected(e.target.files); e.target.value = ''; }}
                                         className='hidden'
@@ -768,6 +917,15 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
             <div className='flex shrink-0 justify-end border-t border-stone-100 bg-white px-5 py-3 sm:px-6'>
                 <button type='button' onClick={onClose} className={btnSecondary}>Đóng</button>
             </div>
+
+            {isCashVoucherModalOpen && (
+                <CashVoucherModal
+                    request={request}
+                    initialVoucherInfo={cashVoucherInfo}
+                    onSave={handleSaveCashVoucher}
+                    onClose={() => setIsCashVoucherModalOpen(false)}
+                />
+            )}
         </ModalShell>
     );
 };
