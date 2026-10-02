@@ -1,30 +1,65 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useGetUserQuery, useUpdateUserMutation, useUpdateUserLaborContractsMutation } from '../../api/users';
+import { useGetUserQuery, useUpdateUserLaborContractsMutation } from '../../api/users';
 import { USER_ROLE_COLORS, USER_ROLE } from '../../utils/enums';
-import { uploadToCloudinary, getFilePreviewUrl } from '../../utils/cloudinary';
+import { uploadToCloudinary } from '../../utils/cloudinary';
 import { toast } from 'react-toastify';
-import { Modal } from '../../components/ui/Modal';
 import { UserTasksSection } from '../../components/users/UserTasksSection';
+import { DocumentPreviewModal } from '../../components/common/DocumentPreviewModal';
 import {
     X, Upload, FileText, Download, Eye, Loader2,
     ArrowLeft, CheckCircle, Mail, Phone, User
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
+const MAX_CONTRACT_FILES = 1;
+const MAX_CONTRACT_FILE_SIZE = 10 * 1024 * 1024;
+const LABOR_CONTRACT_FOLDER = 'GETVINI/ERP/user/labor_contract';
+const LABOR_CONTRACT_ACCEPT = '.docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const ALLOWED_LABOR_CONTRACT_MIME_TYPES = new Set([
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]);
+
+const getFileExtension = (name = '') => name.split('.').pop()?.toLowerCase() || '';
+const isAllowedLaborContractFile = (file) => {
+    const extension = getFileExtension(file.name);
+    const hasAllowedExtension = extension === 'pdf' || extension === 'docx';
+    const hasAllowedMimeType = !file.type || ALLOWED_LABOR_CONTRACT_MIME_TYPES.has(file.type);
+    return hasAllowedExtension && hasAllowedMimeType;
+};
+
+const stripLocalPreviewFields = (contract) => {
+    const { file, previewUrl, isLocal, ...savedContract } = contract;
+    return savedContract;
+};
+
 export const UserDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { data: user, isLoading, error } = useGetUserQuery(id);
-    const [updateUser, { isLoading: isUpdatingUser }] = useUpdateUserMutation();
     const [updateUserLaborContracts, { isLoading: isSavingContracts }] = useUpdateUserLaborContractsMutation();
 
     // File handling state
     const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
     const [previewFile, setPreviewFile] = useState(null);
     const [contracts, setContracts] = useState([]);
+    const localPreviewUrlsRef = useRef(new Set());
+
+    const revokeLocalPreviewUrl = (url) => {
+        if (!url || !localPreviewUrlsRef.current.has(url)) return;
+        URL.revokeObjectURL(url);
+        localPreviewUrlsRef.current.delete(url);
+    };
+
+    const revokeAllLocalPreviewUrls = () => {
+        localPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+        localPreviewUrlsRef.current.clear();
+    };
 
     useEffect(() => {
+        revokeAllLocalPreviewUrls();
         if (user && user.laborContract) {
             setContracts(user.laborContract);
         } else {
@@ -32,49 +67,118 @@ export const UserDetailPage = () => {
         }
     }, [user]);
 
-    const handleLocalFileChange = async (e) => {
+    useEffect(() => () => {
+        revokeAllLocalPreviewUrls();
+    }, []);
+
+    const handleLocalFileChange = (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
 
-        if (contracts.length + files.length > 5) {
-            toast.error('Tối đa 5 hợp đồng lao động');
+        if (files.length > MAX_CONTRACT_FILES) {
+            toast.error('Chỉ được chọn 1 file hợp đồng lao động');
+            e.target.value = null;
             return;
         }
 
-        try {
-            setIsUploading(true);
-            const uploadPromises = files.map(file =>
-                uploadToCloudinary(file, "GETVINI/ERP/user/labor_contract")
-            );
-            const uploadedFiles = await Promise.all(uploadPromises);
-
-            setContracts(prev => [...prev, ...uploadedFiles]);
-            toast.info('Tải tệp lên thành công. Nhấn "Lưu thay đổi" để cập nhật.');
-        } catch (err) {
-            toast.error(err.message || 'Lỗi khi tải tệp lên');
-        } finally {
-            setIsUploading(false);
-            e.target.value = null; // Reset input
+        const invalidFile = files.find((file) => !isAllowedLaborContractFile(file));
+        if (invalidFile) {
+            toast.error('Chỉ chấp nhận file .docx hoặc .pdf cho hợp đồng lao động');
+            e.target.value = null;
+            return;
         }
+
+        const oversizedFile = files.find((file) => file.size > MAX_CONTRACT_FILE_SIZE);
+        if (oversizedFile) {
+            toast.error('Mỗi file hợp đồng lao động tối đa 10MB');
+            e.target.value = null;
+            return;
+        }
+
+        revokeAllLocalPreviewUrls();
+
+        const localContracts = files.map((file) => {
+            const previewUrl = URL.createObjectURL(file);
+            localPreviewUrlsRef.current.add(previewUrl);
+            return {
+                type: 'FILE',
+                name: file.name,
+                size: file.size,
+                format: getFileExtension(file.name),
+                resource_type: 'raw',
+                file,
+                previewUrl,
+                isLocal: true,
+            };
+        });
+
+        setContracts(localContracts);
+        setPreviewFile(null);
+        e.target.value = null;
     };
 
     const handleRemoveLocalContract = (indexToRemove) => {
-        setContracts(prev => prev.filter((_, index) => index !== indexToRemove));
+        setContracts(prev => {
+            const contract = prev[indexToRemove];
+            if (contract?.isLocal) revokeLocalPreviewUrl(contract.previewUrl);
+            return prev.filter((_, index) => index !== indexToRemove);
+        });
+        setPreviewFile(null);
     };
 
     const handleSaveChanges = async () => {
         try {
-            await updateUserLaborContracts({
+            setIsUploading(true);
+            setUploadProgress(0);
+
+            const localContracts = contracts.filter((contract) => contract.isLocal);
+            if (localContracts.length === 0) setUploadProgress(100);
+            const savedContracts = [];
+            let uploadedLocalCount = 0;
+
+            for (const contract of contracts) {
+                if (!contract.isLocal) {
+                    savedContracts.push(stripLocalPreviewFields(contract));
+                    continue;
+                }
+
+                const uploadedContract = await uploadToCloudinary(
+                    contract.file,
+                    LABOR_CONTRACT_FOLDER,
+                    (fileProgress) => {
+                        const totalProgress = ((uploadedLocalCount + (fileProgress / 100)) / Math.max(localContracts.length, 1)) * 100;
+                        setUploadProgress(Math.round(totalProgress));
+                    },
+                );
+
+                uploadedLocalCount += 1;
+                setUploadProgress(Math.round((uploadedLocalCount / Math.max(localContracts.length, 1)) * 100));
+                savedContracts.push(uploadedContract);
+            }
+
+            const result = await updateUserLaborContracts({
                 id,
-                laborContract: contracts
+                laborContract: savedContracts
             }).unwrap();
+
+            revokeAllLocalPreviewUrls();
+            setContracts(result?.laborContract || savedContracts);
+            setUploadProgress(100);
             toast.success('Cập nhật hợp đồng lao động thành công');
         } catch (err) {
-            toast.error(err.message || 'Lỗi khi cập nhật');
+            toast.error(err.message || 'Lỗi khi cập nhật hợp đồng lao động');
+        } finally {
+            setIsUploading(false);
         }
     };
 
-    const hasChanges = JSON.stringify(contracts) !== JSON.stringify(user?.laborContract || []);
+    const isSaving = isUploading || isSavingContracts;
+    const persistedContracts = contracts.filter((contract) => !contract.isLocal).map(stripLocalPreviewFields);
+    const savedLaborContracts = user?.laborContract || [];
+    const hasSavedLaborContract = savedLaborContracts.length > 0;
+    const hasChanges = contracts.some((contract) => contract.isLocal) || JSON.stringify(persistedContracts) !== JSON.stringify(savedLaborContracts);
+    const saveButtonLabel = hasSavedLaborContract ? 'Cập nhật' : 'Tải lên';
+    const previewUrl = previewFile?.previewUrl || previewFile?.url || '';
 
     if (isLoading) {
         return (
@@ -150,10 +254,10 @@ export const UserDetailPage = () => {
                     </div>
 
                     {/* Labor Contract Card */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 space-y-6">
+                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                                <div className="w-8 h-8 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center">
                                     <FileText className="w-4 h-4" />
                                 </div>
                                 <h3 className="font-black text-gray-900 text-sm tracking-wide uppercase">Hợp đồng lao động</h3>
@@ -162,83 +266,98 @@ export const UserDetailPage = () => {
 
                         {/* File Upload Dropzone */}
                         <div className="relative group">
-                            <label className="flex flex-col items-center justify-center w-full min-h-[120px] px-4 py-6 border-2 border-dashed border-gray-200 hover:border-blue-400 bg-gray-50/50 hover:bg-blue-50/20 rounded-2xl cursor-pointer transition-all duration-300">
-                                <div className="flex flex-col items-center justify-center text-center space-y-2">
-                                    {isUploading ? (
-                                        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                            <label className={cn(
+                                "flex items-center justify-center w-full min-h-[82px] px-4 py-4 border-2 border-dashed border-gray-200 bg-gray-50/50 rounded-2xl transition-all duration-300",
+                                isSaving
+                                    ? "cursor-not-allowed opacity-70"
+                                    : "cursor-pointer hover:border-orange-300 hover:bg-orange-50/30"
+                            )}>
+                                <div className="flex items-center justify-center gap-3 text-left">
+                                    {isSaving ? (
+                                        <Loader2 className="h-6 w-6 shrink-0 text-orange-500 animate-spin" />
                                     ) : (
-                                        <Upload className="w-8 h-8 text-gray-400 group-hover:text-blue-500 transition-colors group-hover:scale-110 duration-300" />
+                                        <Upload className="h-6 w-6 shrink-0 text-gray-400 transition-colors duration-300 group-hover:text-orange-500" />
                                     )}
-                                    <div className="space-y-1">
+                                    <div className="space-y-0.5">
                                         <p className="text-xs font-bold text-gray-700">
-                                            {isUploading ? 'Đang tải...' : 'Tải tài liệu lên'}
+                                            {isSaving ? 'Đang lưu...' : 'Chọn tài liệu'}
                                         </p>
-                                        <p className="text-[10px] text-gray-400">PDF, JPG, PNG lên đến 10MB</p>
+                                        <p className="text-[10px] text-gray-400">Chỉ nhận DOCX hoặc PDF, tối đa 10MB</p>
                                     </div>
                                 </div>
                                 <input
                                     type="file"
-                                    multiple
-                                    accept=".pdf,.png,.jpg,.jpeg,.webp"
+                                    accept={LABOR_CONTRACT_ACCEPT}
                                     onChange={handleLocalFileChange}
-                                    disabled={isUploading}
+                                    disabled={isSaving}
                                     className="hidden"
                                 />
                             </label>
                         </div>
 
+                        {isSaving && (
+                            <div className="space-y-2">
+                                <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                                    <div
+                                        className="h-full rounded-full bg-orange-500 transition-all duration-300"
+                                        style={{ width: `${Math.min(uploadProgress, 100)}%` }}
+                                    />
+                                </div>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600">
+                                    Đang tải lên {Math.min(uploadProgress, 100)}%
+                                </p>
+                            </div>
+                        )}
+
                         {/* Contracts Preview List */}
                         {contracts.length > 0 && (
-                            <div className="grid grid-cols-2 gap-3 mt-4">
+                            <div className="space-y-3">
                                 {contracts.map((file, index) => {
-                                    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file.url);
+                                    const fileUrl = file.previewUrl || file.url;
+                                    const fileTypeLabel = getFileExtension(file.name || file.url).toUpperCase() || 'FILE';
                                     return (
                                         <div
-                                            key={index}
-                                            className="relative group border border-gray-100 rounded-2xl overflow-hidden aspect-[4/3] bg-gray-50 flex items-center justify-center p-2 shadow-sm hover:shadow-md transition-all duration-300"
+                                            key={`${file.name || file.url}-${index}`}
+                                            className="relative flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50/80 py-3 pl-3 pr-2 shadow-sm transition-all duration-300 hover:border-orange-100 hover:bg-white hover:shadow-md"
                                         >
-                                            {isImage ? (
-                                                <img
-                                                    src={file.url}
-                                                    alt={file.name}
-                                                    className="w-full h-full object-cover rounded-xl"
-                                                />
-                                            ) : (
-                                                <div className="flex flex-col items-center justify-center text-center p-2">
-                                                    <FileText className="w-10 h-10 text-blue-500 mb-1" />
-                                                    <span className="text-[10px] font-bold text-gray-700 line-clamp-2 px-1">
-                                                        {file.name}
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                            {/* Hover overlay actions */}
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded-2xl">
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
+                                                <FileText className="h-5 w-5" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-xs font-black text-gray-800" title={file.name}>
+                                                    {file.name}
+                                                </p>
+                                                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                                                    {fileTypeLabel}
+                                                </p>
+                                            </div>
+                                            <div className="ml-auto flex shrink-0 items-center gap-1.5 pr-2">
                                                 <button
                                                     onClick={() => setPreviewFile(file)}
-                                                    className="p-1.5 bg-white/95 text-gray-700 hover:text-blue-600 rounded-lg hover:scale-105 transition-all shadow-md"
+                                                    disabled={!fileUrl}
+                                                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-500 shadow-sm ring-1 ring-gray-100 transition-all hover:text-orange-600 hover:ring-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
                                                     title="Xem trước"
                                                 >
-                                                    <Eye className="w-4 h-4" />
+                                                    <Eye className="h-4 w-4" />
                                                 </button>
                                                 <a
-                                                    href={file.url}
+                                                    href={fileUrl}
                                                     target="_blank"
+                                                    download={file.isLocal ? file.name : undefined}
                                                     rel="noreferrer"
-                                                    className="p-1.5 bg-white/95 text-gray-700 hover:text-green-600 rounded-lg hover:scale-105 transition-all shadow-md"
+                                                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-500 shadow-sm ring-1 ring-gray-100 transition-all hover:text-green-600 hover:ring-green-100"
                                                     title="Tải xuống"
                                                 >
-                                                    <Download className="w-4 h-4" />
+                                                    <Download className="h-4 w-4" />
                                                 </a>
                                             </div>
-
-                                            {/* X Close button in top-right */}
                                             <button
                                                 onClick={() => handleRemoveLocalContract(index)}
-                                                className="absolute -top-1.5 -right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-md hover:scale-110 transition-all z-10"
+                                                disabled={isSaving}
+                                                className="absolute -right-2 -top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-900 shadow-md transition-all hover:scale-105 hover:border-red-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
                                                 title="Xóa tệp chọn"
                                             >
-                                                <X className="w-3.5 h-3.5" />
+                                                <X className="h-4 w-4" />
                                             </button>
                                         </div>
                                     );
@@ -250,18 +369,18 @@ export const UserDetailPage = () => {
                         {hasChanges && (
                             <button
                                 onClick={handleSaveChanges}
-                                disabled={isSavingContracts}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-2xl font-black text-sm transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-blue-100 disabled:opacity-50"
+                                disabled={isSaving}
+                                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-2xl font-black text-sm transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-orange-100 disabled:opacity-50"
                             >
-                                {isSavingContracts ? (
+                                {isSaving ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>Đang cập nhật...</span>
+                                        <span>Đang lưu...</span>
                                     </>
                                 ) : (
                                     <>
                                         <CheckCircle className="w-4 h-4" />
-                                        <span>Lưu thay đổi</span>
+                                        <span>{saveButtonLabel}</span>
                                     </>
                                 )}
                             </button>
@@ -275,33 +394,12 @@ export const UserDetailPage = () => {
                 </div>
             </div>
 
-            {/* Document Preview Modal */}
-            <Modal
+            <DocumentPreviewModal
                 isOpen={!!previewFile}
                 onClose={() => setPreviewFile(null)}
-                title={previewFile?.name || 'Xem tài liệu'}
-                className="max-w-2xl"
-            >
-                <div className="w-full aspect-[4/3] bg-gray-100 rounded-xl overflow-hidden relative">
-                    {previewFile && (
-                        <iframe
-                            src={getFilePreviewUrl(previewFile.url, 'FILE')}
-                            className="w-full h-full border-none"
-                            title="Tài liệu"
-                        />
-                    )}
-                </div>
-                <div className="flex justify-end pt-4">
-                    <a
-                        href={previewFile?.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-all text-sm shadow-lg shadow-blue-100"
-                    >
-                        <Download className="w-4 h-4" /> Tải về máy
-                    </a>
-                </div>
-            </Modal>
+                url={previewUrl}
+                fileName={previewFile?.name || 'Hợp đồng lao động'}
+            />
         </div>
     );
 };

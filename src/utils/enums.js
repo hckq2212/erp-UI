@@ -321,10 +321,6 @@ export const USER_ROLE = {
   DESIGNER_B: "Designer B",
   DESIGNER_C: "Designer C",
   DESIGNER_D: "Designer Intern",
-  STAFF_A: "Nhân sự Level A",
-  STAFF_B: "Nhân sự Level B",
-  STAFF_C: "Nhân sự Level C",
-  STAFF_D: "Nhân sự Level D",
 };
 
 export const SPECIALIZED_STAFF_ROLES = [
@@ -342,9 +338,8 @@ export const SPECIALIZED_STAFF_ROLES = [
   'DESIGNER_D',
 ];
 
-export const LEGACY_STAFF_ROLES = ['STAFF_A', 'STAFF_B', 'STAFF_C', 'STAFF_D'];
 
-export const STAFF_ROLES = [...SPECIALIZED_STAFF_ROLES, ...LEGACY_STAFF_ROLES];
+export const STAFF_ROLES = [...SPECIALIZED_STAFF_ROLES];
 
 export const USER_ROLE_OPTIONS = [
   { value: 'ADMIN', label: USER_ROLE.ADMIN },
@@ -377,10 +372,6 @@ export const USER_ROLE_COLORS = {
   DESIGNER_B: 'bg-teal-50 text-teal-700 border-teal-100',
   DESIGNER_C: 'bg-teal-50 text-teal-700 border-teal-100',
   DESIGNER_D: 'bg-teal-50 text-teal-700 border-teal-100',
-  STAFF_A: 'bg-cyan-50 text-cyan-700 border-cyan-100',
-  STAFF_B: 'bg-blue-50 text-blue-700 border-blue-100',
-  STAFF_C: 'bg-sky-50 text-sky-700 border-sky-100',
-  STAFF_D: 'bg-slate-50 text-slate-700 border-slate-100',
 };
 
 export const TEAM_MEMBER_ROLE_LABELS = {

@@ -51,11 +51,6 @@ const USER_ROLE_GROUP_ORDER = [
     'DESIGNER_C',
     'DESIGNER_B',
     'DESIGNER_A',
-    'STAFF_D',
-    'STAFF_C',
-    'STAFF_B',
-    'STAFF_A',
-    'OTHER',
 ];
 
 const getAccountRoleLevelRank = (role) => {
@@ -313,7 +308,7 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
             if (req.notifId) {
                 try {
                     await markAsRead(req.notifId).unwrap();
-                } catch {}
+                } catch { }
             }
             if (req.localId || req.type === 'PROJECT') {
                 try {
@@ -323,7 +318,7 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
                     localStorage.setItem(key, JSON.stringify(filtered));
                     setLocalStaffingRequests(filtered);
                     localStorage.removeItem(`project_staffing_req_${project?.id}`);
-                } catch {}
+                } catch { }
             }
             toast.success('Đã xác nhận xử lý yêu cầu bổ sung nhân sự');
         } catch (error) {
@@ -344,7 +339,7 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
             if (req.notifId) {
                 try {
                     await markAsRead(req.notifId).unwrap();
-                } catch {}
+                } catch { }
             }
             if (req.localId || req.type === 'PROJECT') {
                 try {
@@ -354,7 +349,7 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
                     localStorage.setItem(key, JSON.stringify(filtered));
                     setLocalStaffingRequests(filtered);
                     localStorage.removeItem(`project_staffing_req_${project?.id}`);
-                } catch {}
+                } catch { }
             }
             toast.success('Đã từ chối yêu cầu bổ sung nhân sự');
         } catch (error) {
@@ -514,11 +509,10 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-1.5 flex-wrap">
-                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                                req.type === 'TASK'
+                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${req.type === 'TASK'
                                                     ? 'bg-blue-100 text-blue-800'
                                                     : 'bg-orange-100 text-orange-800'
-                                            }`}>
+                                                }`}>
                                                 {req.type === 'TASK' ? 'Công việc' : 'Toàn dự án'}
                                             </span>
                                             <span className="font-bold text-gray-800 text-xs truncate">
