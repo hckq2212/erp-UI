@@ -175,7 +175,6 @@ export const AddUserModal = ({ isOpen, onClose }) => {
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider ml-1">Vai trò</label>
                                 <div className="relative">
-                                    <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <select
                                         name="role"
                                         value={formData.role}

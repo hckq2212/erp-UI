@@ -38,6 +38,31 @@ const ROLE_DISPLAY_ORDER = [
     TEAM_MEMBER_ROLE.SOCIAL_MEDIA_MANAGER,
 ];
 
+const USER_ROLE_GROUP_ORDER = [
+    'CONTENT_D',
+    'CONTENT_C',
+    'CONTENT_B',
+    'CONTENT_A',
+    'EDITOR_D',
+    'EDITOR_C',
+    'EDITOR_B',
+    'EDITOR_A',
+    'DESIGNER_D',
+    'DESIGNER_C',
+    'DESIGNER_B',
+    'DESIGNER_A',
+    'STAFF_D',
+    'STAFF_C',
+    'STAFF_B',
+    'STAFF_A',
+    'OTHER',
+];
+
+const getAccountRoleLevelRank = (role) => {
+    const rank = USER_ROLE_GROUP_ORDER.indexOf(role);
+    return rank === -1 ? USER_ROLE_GROUP_ORDER.indexOf('OTHER') : rank;
+};
+
 const sortRoles = (roles) => [...roles].sort(
     (a, b) => ROLE_DISPLAY_ORDER.indexOf(a) - ROLE_DISPLAY_ORDER.indexOf(b)
 );
@@ -109,10 +134,33 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
             && !assignedRoles.has(TEAM_MEMBER_ROLE.PROJECT_MANAGER)
             && assignableMemberRoles.some(role => !assignedRoles.has(role));
     });
-    const availableUserOptions = availableUsers.map(item => ({
-        value: item.id,
-        label: `${item.fullName} - ${USER_ROLE[getUserAccountRole(item)] || getUserAccountRole(item) || 'Nhân sự'} - ${formatWorkloadLabel(item.workload)}`,
-    }));
+    const availableUserOptions = useMemo(() => {
+        const groupMap = new Map(USER_ROLE_GROUP_ORDER.map(role => [role, []]));
+
+        availableUsers.forEach(item => {
+            const accountRole = getUserAccountRole(item);
+            const groupKey = USER_ROLE_GROUP_ORDER.includes(accountRole) ? accountRole : 'OTHER';
+            const option = {
+                value: item.id,
+                role: accountRole,
+                levelRank: getAccountRoleLevelRank(accountRole),
+                label: `${item.fullName} - ${USER_ROLE[accountRole] || accountRole || 'Nhân sự'} - ${formatWorkloadLabel(item.workload)}`,
+            };
+            groupMap.get(groupKey)?.push(option);
+        });
+
+        return USER_ROLE_GROUP_ORDER
+            .map(role => ({
+                label: USER_ROLE[role] || 'Khác',
+                options: groupMap.get(role)
+                    .sort((a, b) => a.label.localeCompare(b.label, 'vi'))
+            }))
+            .filter(group => group.options.length > 0);
+    }, [availableUsers]);
+    const flatAvailableUserOptions = useMemo(
+        () => availableUserOptions.flatMap(group => group.options),
+        [availableUserOptions]
+    );
     const selectedUserRoles = getRolesOfUser(selectedUserId);
     const availableRolesForSelectedUser = assignableMemberRoles.filter(role => !selectedUserRoles.has(role));
     const editableRoleOptions = useMemo(
@@ -614,7 +662,7 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
                             <Select
                                 aria-label="Tìm và chọn nhân sự"
                                 options={availableUserOptions}
-                                value={availableUserOptions.find(option => option.value === selectedUserId) || null}
+                                value={flatAvailableUserOptions.find(option => option.value === selectedUserId) || null}
                                 onChange={option => handleSelectUser(option?.value || '')}
                                 placeholder={availableUsers.length ? 'Tìm và chọn nhân sự' : 'Không còn nhân sự phù hợp'}
                                 noOptionsMessage={() => 'Không tìm thấy nhân sự'}
