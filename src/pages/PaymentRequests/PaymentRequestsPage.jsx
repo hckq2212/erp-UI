@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-    Search, Plus, Wallet, RefreshCw, ArrowUp, ArrowDown, ArrowUpDown, X,
+    Search, Plus, Wallet, RefreshCw, ArrowUp, ArrowDown, ArrowUpDown, X, Briefcase, ClipboardList, Calendar, DollarSign,
 } from 'lucide-react';
 import {
     useGetPaymentRequestsQuery,
@@ -65,6 +65,11 @@ export const PaymentRequestsPage = () => {
     const [approvalFilter, setApprovalFilter] = useState('ALL');
     const [paymentFilter, setPaymentFilter] = useState('ALL');
     const [projectFilter, setProjectFilter] = useState('ALL');
+    const [dateField, setDateField] = useState('dueDate');
+    const [fromDate, setFromDate] = useState('');
+    const [toDate, setToDate] = useState('');
+    const [minAmount, setMinAmount] = useState('');
+    const [maxAmount, setMaxAmount] = useState('');
     const [sortBy, setSortBy] = useState('createdAt');
     const [sortOrder, setSortOrder] = useState('DESC');
     const [showForm, setShowForm] = useState(false);
@@ -78,13 +83,18 @@ export const PaymentRequestsPage = () => {
         if (approvalFilter !== 'ALL') params.approvalStatus = approvalFilter;
         if (paymentFilter !== 'ALL') params.paymentStatus = paymentFilter;
         if (projectFilter !== 'ALL') params.projectId = projectFilter;
+        if (dateField) params.dateField = dateField;
+        if (fromDate) params.fromDate = fromDate;
+        if (toDate) params.toDate = toDate;
+        if (minAmount) params.minAmount = minAmount;
+        if (maxAmount) params.maxAmount = maxAmount;
         return params;
-    }, [search, typeFilter, approvalFilter, paymentFilter, projectFilter, sortBy, sortOrder]);
+    }, [search, typeFilter, approvalFilter, paymentFilter, projectFilter, dateField, fromDate, toDate, minAmount, maxAmount, sortBy, sortOrder]);
 
     const { data: requests = [], isLoading, isFetching, refetch } = useGetPaymentRequestsQuery(queryParams, { refetchOnMountOrArgChange: true });
     // Danh sách không phụ thuộc bộ lọc, dùng cho thẻ tổng hợp phía trên.
     const { data: allRequests = [], refetch: refetchAll } = useGetPaymentRequestsQuery({}, { refetchOnMountOrArgChange: true });
-    const { data: totalDebtData, refetch: refetchDebt } = useGetPaymentRequestsTotalDebtQuery({}, { refetchOnMountOrArgChange: true });
+    const { data: totalDebtData, refetch: refetchDebt } = useGetPaymentRequestsTotalDebtQuery(queryParams, { refetchOnMountOrArgChange: true });
     // Fetch riêng yêu cầu đang được chọn theo id trên URL: đảm bảo modal luôn hiển thị
     // đúng dữ liệu mới nhất kể cả khi request đó không nằm trong danh sách đã lọc hiện tại.
     const { data: fetchedSelected, isError: isSelectedError, refetch: refetchSelected } = useGetPaymentRequestQuery(selectedId, {
@@ -155,7 +165,7 @@ export const PaymentRequestsPage = () => {
     }, [selectedId, isSelectedError, selectedRequest, navigate]);
 
     const hasActiveFilter =
-        search.trim() || typeFilter !== 'ALL' || approvalFilter !== 'ALL' || paymentFilter !== 'ALL' || projectFilter !== 'ALL';
+        search.trim() || typeFilter !== 'ALL' || approvalFilter !== 'ALL' || paymentFilter !== 'ALL' || projectFilter !== 'ALL' || fromDate || toDate || minAmount || maxAmount;
 
     const resetFilters = () => {
         setSearch('');
@@ -163,6 +173,11 @@ export const PaymentRequestsPage = () => {
         setApprovalFilter('ALL');
         setPaymentFilter('ALL');
         setProjectFilter('ALL');
+        setDateField('dueDate');
+        setFromDate('');
+        setToDate('');
+        setMinAmount('');
+        setMaxAmount('');
     };
 
     return (
@@ -179,17 +194,73 @@ export const PaymentRequestsPage = () => {
                 </button>
             </div>
 
-            {/* Thẻ tổng hợp */}
-            <div className='grid grid-cols-1 gap-4'>
-                <div className='flex items-center gap-4 rounded-2xl border border-orange-100 bg-white p-5 shadow-sm lg:max-w-md'>
+            {/* 3 Thẻ chỉ số tổng nợ (Dynamic & Tương tác) */}
+            <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+                <button
+                    type='button'
+                    onClick={() => setTypeFilter('ALL')}
+                    className={cn(
+                        'flex items-center gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:shadow-md',
+                        typeFilter === 'ALL'
+                            ? 'border-orange-400 ring-2 ring-orange-200'
+                            : 'border-orange-100 hover:border-orange-300'
+                    )}
+                >
                     <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600'>
                         <Wallet size={22} />
                     </div>
-                    <div className='min-w-0'>
-                        <p className='text-sm text-stone-500'>Tổng nợ (đã duyệt, chưa thanh toán)</p>
-                        <p className='truncate text-2xl font-bold text-stone-800'>{formatCurrency(totalDebtData?.totalDebt || 0) || '0 VNĐ'}</p>
+                    <div className='min-w-0 flex-1'>
+                        <p className='text-xs font-semibold uppercase tracking-wider text-stone-500'>Tổng nợ (Tất cả)</p>
+                        <p className='truncate text-xl font-bold text-stone-800 sm:text-2xl'>
+                            {formatCurrency(totalDebtData?.totalDebt || 0) || '0 VNĐ'}
+                        </p>
+                        <p className='text-[11px] text-stone-400'>Đã duyệt, chưa thanh toán</p>
                     </div>
-                </div>
+                </button>
+
+                <button
+                    type='button'
+                    onClick={() => setTypeFilter('PROJECT')}
+                    className={cn(
+                        'flex items-center gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:shadow-md',
+                        typeFilter === 'PROJECT'
+                            ? 'border-blue-400 ring-2 ring-blue-200'
+                            : 'border-stone-100 hover:border-blue-300'
+                    )}
+                >
+                    <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600'>
+                        <Briefcase size={22} />
+                    </div>
+                    <div className='min-w-0 flex-1'>
+                        <p className='text-xs font-semibold uppercase tracking-wider text-stone-500'>Nợ theo dự án</p>
+                        <p className='truncate text-xl font-bold text-blue-700 sm:text-2xl'>
+                            {formatCurrency(totalDebtData?.projectDebt || 0) || '0 VNĐ'}
+                        </p>
+                        <p className='text-[11px] text-stone-400'>Thuộc loại dự án</p>
+                    </div>
+                </button>
+
+                <button
+                    type='button'
+                    onClick={() => setTypeFilter('OTHER_WORK')}
+                    className={cn(
+                        'flex items-center gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:shadow-md',
+                        typeFilter === 'OTHER_WORK'
+                            ? 'border-emerald-400 ring-2 ring-emerald-200'
+                            : 'border-stone-100 hover:border-emerald-300'
+                    )}
+                >
+                    <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600'>
+                        <ClipboardList size={22} />
+                    </div>
+                    <div className='min-w-0 flex-1'>
+                        <p className='text-xs font-semibold uppercase tracking-wider text-stone-500'>Nợ công việc khác</p>
+                        <p className='truncate text-xl font-bold text-emerald-700 sm:text-2xl'>
+                            {formatCurrency(totalDebtData?.otherWorkDebt || 0) || '0 VNĐ'}
+                        </p>
+                        <p className='text-[11px] text-stone-400'>Công việc độc lập</p>
+                    </div>
+                </button>
             </div>
 
             {/* Biểu đồ tổng quan: chỉ dành cho Admin Sale/BOD/Admin — các vai trò xem toàn bộ yêu cầu */}
@@ -261,6 +332,61 @@ export const PaymentRequestsPage = () => {
                             <X size={14} /> Xóa bộ lọc
                         </button>
                     )}
+                </div>
+
+                {/* Hàng filter bổ sung: Thời gian & Số tiền */}
+                <div className='flex flex-wrap items-center gap-3 border-t border-stone-100 pt-3 text-xs'>
+                    {/* Filter theo Thời gian */}
+                    <div className='flex flex-wrap items-center gap-1.5 rounded-lg border border-stone-200 bg-stone-50/50 p-1.5'>
+                        <div className='flex items-center gap-1 font-medium text-stone-600 px-1'>
+                            <Calendar size={13} className='text-orange-500' />
+                            <span>Thời gian:</span>
+                        </div>
+                        <select
+                            value={dateField}
+                            onChange={(e) => setDateField(e.target.value)}
+                            className='rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-orange-400'
+                        >
+                            <option value='dueDate'>Hạn thanh toán</option>
+                            <option value='createdAt'>Ngày tạo</option>
+                        </select>
+                        <input
+                            type='date'
+                            value={fromDate}
+                            onChange={(e) => setFromDate(e.target.value)}
+                            className='rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-orange-400'
+                        />
+                        <span className='text-stone-400'>-</span>
+                        <input
+                            type='date'
+                            value={toDate}
+                            onChange={(e) => setToDate(e.target.value)}
+                            className='rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-orange-400'
+                        />
+                    </div>
+
+                    {/* Filter theo Số tiền */}
+                    <div className='flex flex-wrap items-center gap-1.5 rounded-lg border border-stone-200 bg-stone-50/50 p-1.5'>
+                        <div className='flex items-center gap-1 font-medium text-stone-600 px-1'>
+                            <DollarSign size={13} className='text-orange-500' />
+                            <span>Số tiền (VNĐ):</span>
+                        </div>
+                        <input
+                            type='number'
+                            placeholder='Từ'
+                            value={minAmount}
+                            onChange={(e) => setMinAmount(e.target.value)}
+                            className='w-28 rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-orange-400'
+                        />
+                        <span className='text-stone-400'>-</span>
+                        <input
+                            type='number'
+                            placeholder='Đến'
+                            value={maxAmount}
+                            onChange={(e) => setMaxAmount(e.target.value)}
+                            className='w-28 rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-orange-400'
+                        />
+                    </div>
                 </div>
             </div>
 
