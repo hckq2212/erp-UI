@@ -190,10 +190,15 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
       // Package services
       const packageItems = (opportunity?.packages || []).flatMap(pkg =>
         (pkg.services || []).map(ps => {
-          const costPrice = parseFloat(ps.costAtSale) || 0;
-          const configuredSellingPrice = parseFloat(ps.sellingPrice) || 0;
-          const minPrice = roundToTenThousands(costPrice / 0.8);
-          const recommendedPrice = roundToTenThousands(costPrice / 0.6);
+          const rawCost = parseFloat(ps.costAtSale) || 0;
+          const rawSelling = parseFloat(ps.sellingPrice) || 0;
+          const norm = (ps.quantity || 1) / (pkg.quantity || 1);
+          
+          // If costAtSale is total for norm items, convert to unit cost
+          const costPrice = norm > 1 && rawCost > 100000 ? Math.round(rawCost / norm) : rawCost;
+          const configuredSellingPrice = norm > 1 && rawSelling > 100000 ? Math.round(rawSelling / norm) : rawSelling;
+          const minPrice = Math.round(costPrice / 0.8);
+          const recommendedPrice = Math.round(costPrice / 0.6);
 
           return {
             serviceId: ps.serviceId,
@@ -207,7 +212,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             profitMargin: calculateProfitMargin(configuredSellingPrice || recommendedPrice, costPrice),
             packageName: pkg.name,
             packageQuantity: pkg.quantity || 1,
-            norm: ps.quantity / (pkg.quantity || 1),
+            norm: norm,
             servicePackageId: pkg.servicePackageId,
             unit: ps.service?.unit || ps.unit || '',
             jobs: normalizeServiceJobs(ps.jobs || ps.service?.serviceJobs || [])
@@ -228,6 +233,63 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
   const calculateProfitMargin = (sellingPrice, costPrice) => {
     if (!sellingPrice || sellingPrice === 0) return 0;
     return ((sellingPrice - costPrice) / sellingPrice) * 100;
+  };
+
+  const handlePackageCustomPriceChange = (packageName, value) => {
+    const numValue = parseNumber(value);
+
+    // Find all item indexes belonging to this package
+    const pkgItemsIndexes = [];
+    items.forEach((item, index) => {
+      if (item.packageName === packageName) {
+        pkgItemsIndexes.push(index);
+      }
+    });
+
+    if (pkgItemsIndexes.length === 0) return;
+
+    // Fixed weights based on initial/recommended prices to maintain consistent ratio during repeated edits
+    const baseWeights = pkgItemsIndexes.map(index => {
+      const item = items[index];
+      const norm = item.norm || 1;
+      const baseUnit = item.recommendedPrice || item.costPrice || 1;
+      return baseUnit * norm;
+    });
+
+    const totalBaseWeight = baseWeights.reduce((sum, w) => sum + w, 0);
+
+    let allocatedSoFar = 0;
+    const updatedCustomPrices = {};
+
+    pkgItemsIndexes.forEach((itemIndex, idx) => {
+      const item = items[itemIndex];
+      const norm = item.norm || 1;
+
+      if (idx === pkgItemsIndexes.length - 1) {
+        // Last item gets the exact remaining amount so package sum matches numValue 100%
+        const remainingForLast = Math.max(0, numValue - allocatedSoFar);
+        updatedCustomPrices[itemIndex] = remainingForLast / norm;
+      } else {
+        const weight = baseWeights[idx];
+        const ratio = totalBaseWeight > 0 ? weight / totalBaseWeight : 1 / pkgItemsIndexes.length;
+        const itemTargetTotal = Math.round(numValue * ratio);
+        allocatedSoFar += itemTargetTotal;
+        updatedCustomPrices[itemIndex] = itemTargetTotal / norm;
+      }
+    });
+
+    setItems(prevItems => prevItems.map((item, index) => {
+      if (updatedCustomPrices[index] !== undefined) {
+        const newUnitCustomPrice = updatedCustomPrices[index];
+        return {
+          ...item,
+          customPrice: newUnitCustomPrice,
+          selectedPrice: priceType === 'custom' ? newUnitCustomPrice : item.selectedPrice,
+          profitMargin: calculateProfitMargin(newUnitCustomPrice, item.costPrice)
+        };
+      }
+      return item;
+    }));
   };
 
   const handlePriceTypeChange = (type) => {
@@ -251,13 +313,15 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
 
   const handleCustomPriceChange = (index, value) => {
     const numValue = parseNumber(value);
-    setItems(items.map((item, i) => {
+    setItems(prevItems => prevItems.map((item, i) => {
       if (i === index) {
+        const norm = item.packageName !== 'STANDALONE' ? (item.norm || 1) : 1;
+        const unitCustomPrice = numValue / norm;
         return {
           ...item,
-          customPrice: numValue,
-          selectedPrice: priceType === 'custom' ? numValue : item.selectedPrice,
-          profitMargin: priceType === 'custom' ? calculateProfitMargin(numValue, item.costPrice) : item.profitMargin
+          customPrice: unitCustomPrice,
+          selectedPrice: priceType === 'custom' ? unitCustomPrice : item.selectedPrice,
+          profitMargin: priceType === 'custom' ? calculateProfitMargin(unitCustomPrice, item.costPrice) : item.profitMargin
         };
       }
       return item;
@@ -453,33 +517,31 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
             items: []
           };
         }
-        const itemRevenue = item.selectedPrice * item.quantity;
-        const itemVat = itemRevenue * 0.08;
-        const itemTotalWithVat = itemRevenue + itemVat;
 
-        packages[packageKey].costPrice += item.costPrice * (item.norm || 1);
-        packages[packageKey].minPrice += item.minPrice * (item.norm || 1);
-        packages[packageKey].recommendedPrice += item.recommendedPrice * (item.norm || 1);
-        packages[packageKey].customPrice += item.customPrice * (item.norm || 1);
-        packages[packageKey].selectedPrice += item.selectedPrice * (item.norm || 1);
-        packages[packageKey].vat += itemVat;
-        packages[packageKey].totalWithVat += itemTotalWithVat;
+        const norm = item.norm || 1;
+        packages[packageKey].costPrice += item.costPrice * norm;
+        packages[packageKey].minPrice += item.minPrice * norm;
+        packages[packageKey].recommendedPrice += item.recommendedPrice * norm;
+        packages[packageKey].customPrice += item.customPrice * norm;
+        packages[packageKey].selectedPrice += item.selectedPrice * norm;
         packages[packageKey].items.push({ ...item, jobs, originalIndex: index });
       }
     });
 
-    const packageServiceIds = new Set();
-    Object.values(packages).forEach(pkg => {
-      pkg.items.forEach(item => {
-        if (item.serviceId) packageServiceIds.add(String(item.serviceId));
-      });
-    });
-
     return {
-      packages: Object.values(packages).map(pkg => ({
-        ...pkg,
-        profitMargin: calculateProfitMargin(pkg.selectedPrice, pkg.costPrice)
-      })),
+      packages: Object.values(packages).map(pkg => {
+        const pkgQuantity = pkg.quantity || 1;
+        const totalRevenue = pkg.selectedPrice * pkgQuantity;
+        const vat = totalRevenue * 0.08;
+        const totalWithVat = totalRevenue + vat;
+
+        return {
+          ...pkg,
+          vat,
+          totalWithVat,
+          profitMargin: calculateProfitMargin(pkg.selectedPrice, pkg.costPrice)
+        };
+      }),
       standalone: standalone
     };
   }, [items, servicesById]);
@@ -551,6 +613,13 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
           </div>
         ) : (
           <div className="p-6 overflow-y-auto">
+            {/* Package Pricing Tip Banner */}
+            <div className="mb-4 p-3 bg-blue-50/70 border border-blue-200/60 rounded-xl flex items-center justify-between text-xs text-blue-800 font-medium shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 bg-blue-600 text-white rounded text-[10px] font-black uppercase">Mẹo</span>
+                <span>Nhập trực tiếp **Giá bán tùy chỉnh** tại dòng Tiêu đề Gói dịch vụ để tự động phân bổ giá trọn gói về các dịch vụ con trong gói đó.</span>
+              </div>
+            </div>
 
             {/* Items Table */}
             <div className="overflow-x-auto mb-6 border border-gray-100 rounded-xl shadow-sm">
@@ -563,7 +632,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-[150px]">Giá bán tối thiểu</th>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-[150px]">Giá bán đề xuất</th>
                     {priceType === 'custom' && (
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-[150px]">Giá bán tùy chỉnh</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-[180px]">Giá bán tùy chỉnh</th>
                     )}
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-[150px]">Tỉ suất lợi nhuận</th>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 w-[120px]">VAT (8%)</th>
@@ -618,8 +687,17 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                           {formatNumber(pkg.recommendedPrice)}
                         </td>
                         {priceType === 'custom' && (
-                          <td className="px-4 py-2 text-right text-sm font-bold text-blue-900">
-                            {formatNumber(pkg.customPrice)}
+                          <td className="px-3 py-1.5 text-right font-bold text-blue-900">
+                            <div className="flex items-center justify-end gap-1">
+                              <input
+                                type="text"
+                                value={formatNumber(pkg.customPrice)}
+                                onChange={(e) => handlePackageCustomPriceChange(pkg.name, e.target.value)}
+                                placeholder="Giá gói tùy chỉnh"
+                                className="w-36 px-2 py-1 text-right font-bold text-blue-900 bg-white border-2 border-blue-300 rounded-lg focus:border-blue-600 outline-none text-sm transition-all shadow-sm"
+                                title="Nhập giá trọn gói tùy chỉnh để tự động phân bổ vào các dịch vụ con trong gói này"
+                              />
+                            </div>
                           </td>
                         )}
                         <td className={`px-4 py-2 text-right text-sm font-black ${pkg.profitMargin < 0 ? 'text-red-600' : 'text-blue-600'}`}>
@@ -642,6 +720,11 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                       </tr>
                       {/* Sub-items in package */}
                       {isPackageExpanded && pkg.items.map((item) => {
+                        const norm = item.norm || 1;
+                        const subItemCost = item.costPrice * norm;
+                        const subItemMin = item.minPrice * norm;
+                        const subItemRec = item.recommendedPrice * norm;
+                        const subItemCustom = item.customPrice * norm;
                         const serviceKey = `package:${pkg.key}:${item.serviceId}:${item.originalIndex}`;
                         const isServiceExpanded = Boolean(expandedRows.services[serviceKey]);
                         const hasJobs = item.jobs?.length > 0;
@@ -671,21 +754,21 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                             {Number(item.norm) % 1 === 0 ? item.norm : Number(item.norm).toFixed(0).replace(/\.?0+$/, '')} {item?.unit ? `${item.unit} / gói` : '/ gói'}
                           </td>
                           <td className="px-4 py-2 text-right text-sm text-gray-600">
-                            {formatNumber(item.costPrice)}
+                            {formatNumber(subItemCost)}
                           </td>
                           <td className="px-4 py-2 text-right text-sm text-gray-600">
-                            {formatNumber(item.minPrice)}
+                            {formatNumber(subItemMin)}
                           </td>
                           <td className="px-4 py-2 text-right text-sm text-gray-600">
-                            {formatNumber(item.recommendedPrice)}
+                            {formatNumber(subItemRec)}
                           </td>
                           {priceType === 'custom' && (
                             <td className="px-4 py-1.5">
                               <input
                                 type="text"
-                                value={formatNumber(item.customPrice)}
+                                value={formatNumber(subItemCustom)}
                                 onChange={(e) => handleCustomPriceChange(item.originalIndex, e.target.value)}
-                                className="w-full px-2 py-1 text-right border border-gray-300 rounded text-sm bg-white focus:border-blue-500 outline-none transition-all"
+                                className="w-full px-2 py-1 text-right border border-gray-300 rounded text-sm bg-white focus:border-blue-500 outline-none transition-all font-medium text-gray-800"
                               />
                             </td>
                           )}
@@ -693,10 +776,10 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                             {item.profitMargin.toFixed(0)}%
                           </td>
                           <td className="px-4 py-2 text-right text-sm text-gray-600">
-                            {formatNumber((item.selectedPrice * item.quantity) * 0.08)}
+                            {formatNumber((item.selectedPrice * norm) * 0.08)}
                           </td>
                           <td className="px-4 py-2 text-right text-sm font-semibold text-gray-700">
-                            {formatNumber((item.selectedPrice * item.quantity) * 1.08)}
+                            {formatNumber((item.selectedPrice * norm) * 1.08)}
                           </td>
                           <td className="px-4 py-2 text-center text-xs text-gray-300">
                           </td>
@@ -806,7 +889,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
                                 type="text"
                                 value={formatNumber(item.customPrice)}
                                 onChange={(e) => handleCustomPriceChange(item.originalIndex, e.target.value)}
-                                className="w-full px-2 py-1 text-right border border-gray-300 rounded text-sm"
+                                className="w-full px-2 py-1 text-right border border-gray-300 rounded text-sm bg-white focus:border-blue-500 outline-none transition-all"
                               />
                             </td>
                           )}
