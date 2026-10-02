@@ -62,12 +62,51 @@ export const parseRangeInput = (text, defaultSheet) => {
   };
 };
 
-export const createRegion = (bounds, existing = []) => ({
-  id: newRegionId(),
-  label: `Vùng ${existing.filter((r) => r.sheet === bounds.sheet).length + 1}`,
-  qc: true,
-  ...bounds,
+const REGION_CODE_PATTERN = /^K(\d+)$/;
+
+export const nextRegionNumber = (sheet, existing = []) => {
+  let max = 0;
+  existing.forEach((region) => {
+    if (region.sheet !== sheet) return;
+    const match = REGION_CODE_PATTERN.exec(String(region.id || ''));
+    if (match) max = Math.max(max, Number(match[1]));
+  });
+  return max + 1;
+};
+
+export const createRegion = (bounds, existing = [], extra = {}) => {
+  const number = nextRegionNumber(bounds.sheet, existing);
+  return {
+    id: `K${number}`,
+    label: `Vùng ${number}`,
+    qc: true,
+    ...bounds,
+    ...extra,
+  };
+};
+
+export const unionBounds = (a, b) => ({
+  startRow: Math.min(a.startRow, b.startRow),
+  endRow: Math.max(a.endRow, b.endRow),
+  startCol: Math.min(a.startCol, b.startCol),
+  endCol: Math.max(a.endCol, b.endCol),
 });
+
+export const scenarioCode = (scenario) => {
+  const id = String(scenario?.id || '');
+  const index = id.lastIndexOf('::');
+  return index >= 0 ? id.slice(index + 2) : id;
+};
+
+export const scenarioFiniteBounds = (scenario, fallbackEndCol) => {
+  const bounds = boundsOfScenario(scenario);
+  return {
+    startRow: bounds.startRow,
+    endRow: bounds.endRow,
+    startCol: bounds.startCol,
+    endCol: Number.isFinite(bounds.endCol) ? bounds.endCol : Math.max(bounds.startCol, fallbackEndCol),
+  };
+};
 
 export const boundsOfScenario = (scenario) => {
   const colStart = scenario.colStart ?? 0;

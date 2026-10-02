@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, Eye, ListChecks, Loader2, Search, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { SpellCheckWhitelist } from './SpellCheckWhitelist';
@@ -10,7 +10,9 @@ import {
   usePreviewSheetFromUrlMutation,
 } from '../../api/spellingCheck';
 import { createFileSource } from '../../utils/sheetPreviewSource';
-import { regionRef } from '../../utils/sheetScope';
+import { MOD_LABEL } from '../../utils/hotkeys';
+import { regionRef, scenarioCode } from '../../utils/sheetScope';
+import { HelpTip, KeyCombo } from '../ui/HelpTip';
 
 const SHEET_EXTENSIONS = ['xlsx', 'xlsm'];
 
@@ -39,6 +41,7 @@ export const ResultSheetSelectorPanel = ({
   const [checkedKey, setCheckedKey] = useState(null);
   const [expandedSheet, setExpandedSheet] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const lastSheetRef = useRef(null);
 
   const [previewSheetFromUrl] = usePreviewSheetFromUrlMutation();
   const [listSheets, { isLoading: isLoadingSheetsFile }] = useListSpellCheckSheetsMutation();
@@ -122,15 +125,59 @@ export const ResultSheetSelectorPanel = ({
     load();
   }, [currentKey]);
 
-  const toggleSheet = (name) => {
-    const ids = sheetScenarioIds(name);
-    if (selectedSheets.includes(name)) {
-      onSelectedSheetsChange(selectedSheets.filter((s) => s !== name));
-      onSelectedScenariosChange?.((selectedScenarios || []).filter((id) => !ids.includes(id)));
-      onCustomRegionsChange?.(customRegions.filter((r) => r.sheet !== name));
-    } else {
-      onSelectedSheetsChange([...selectedSheets, name]);
+  const applySheets = (names, select) => {
+    const nameSet = new Set(names);
+    const ids = names.flatMap(sheetScenarioIds);
+    if (select) {
+      onSelectedSheetsChange([...new Set([...selectedSheets, ...names])]);
       onSelectedScenariosChange?.([...new Set([...(selectedScenarios || []), ...ids])]);
+      return;
+    }
+    const idSet = new Set(ids);
+    onSelectedSheetsChange(selectedSheets.filter((s) => !nameSet.has(s)));
+    onSelectedScenariosChange?.((selectedScenarios || []).filter((id) => !idSet.has(id)));
+    onCustomRegionsChange?.(customRegions.filter((r) => !nameSet.has(r.sheet)));
+  };
+
+  const toggleSheet = (name) => {
+    applySheets([name], !selectedSheets.includes(name));
+  };
+
+  const soloSheet = (name) => {
+    onSelectedSheetsChange([name]);
+    onSelectedScenariosChange?.(sheetScenarioIds(name));
+    onCustomRegionsChange?.(customRegions.filter((r) => r.sheet === name));
+  };
+
+  const handleSheetClick = (event, name) => {
+    const list = filteredSheets;
+    const anchor = lastSheetRef.current;
+    if (event.shiftKey && anchor && list.includes(anchor) && list.includes(name)) {
+      const from = list.indexOf(anchor);
+      const to = list.indexOf(name);
+      applySheets(list.slice(Math.min(from, to), Math.max(from, to) + 1), !selectedSheets.includes(name));
+    } else if (event.ctrlKey || event.metaKey) {
+      soloSheet(name);
+    } else {
+      toggleSheet(name);
+    }
+    lastSheetRef.current = name;
+  };
+
+  const owningSheetOf = (scenarioId) =>
+    Object.entries(scenarios).find(([, list]) => (list || []).some((s) => s.id === scenarioId))?.[0];
+
+  const changeScenarios = ({ add = [], remove = [] }) => {
+    const current = new Set(selectedScenarios || []);
+    remove.forEach((id) => current.delete(id));
+    add.forEach((id) => current.add(id));
+    onSelectedScenariosChange?.(Array.from(current));
+    if (add.length === 0) return;
+    const missing = [...new Set(add.map(owningSheetOf).filter(Boolean))].filter((name) => !selectedSheets.includes(name));
+    if (missing.length > 0) onSelectedSheetsChange([...selectedSheets, ...missing]);
+    const restored = new Set(add);
+    if (customRegions.some((r) => restored.has(r.extends))) {
+      onCustomRegionsChange?.(customRegions.filter((r) => !restored.has(r.extends)));
     }
   };
 
@@ -153,9 +200,12 @@ export const ResultSheetSelectorPanel = ({
         : [...(selectedScenarios || []), scenarioId]
     );
     if (!isSelected) {
-      const owningSheet = Object.entries(scenarios).find(([, list]) => (list || []).some((s) => s.id === scenarioId))?.[0];
+      const owningSheet = owningSheetOf(scenarioId);
       if (owningSheet && !selectedSheets.includes(owningSheet)) {
         onSelectedSheetsChange([...selectedSheets, owningSheet]);
+      }
+      if (customRegions.some((r) => r.extends === scenarioId)) {
+        onCustomRegionsChange?.(customRegions.filter((r) => r.extends !== scenarioId));
       }
     }
   };
@@ -165,7 +215,9 @@ export const ResultSheetSelectorPanel = ({
   };
 
   const removeCustomRegion = (id) => {
+    const target = customRegions.find((r) => r.id === id);
     onCustomRegionsChange?.(customRegions.filter((r) => r.id !== id));
+    if (target?.extends) changeScenarios({ add: [target.extends] });
   };
 
   const toggleExpandSheet = (name) => {
@@ -187,6 +239,13 @@ export const ResultSheetSelectorPanel = ({
       <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
         <ListChecks className="w-4 h-4" />
         Chọn sheet
+        <HelpTip id="sheet-selector" title="Chọn sheet và kịch bản cần quét" align="start">
+          <p>Tick các sheet cần kiểm tra chính tả và QC. Bấm vào tên sheet để mở danh sách kịch bản bên trong và bật/tắt từng kịch bản.</p>
+          <p>Mỗi kịch bản có một mã định danh (ví dụ R5C1) dùng xuyên suốt khi xem kết quả.</p>
+          <p>Cần quét một vài ô hoặc một khối riêng? Mở <b>Xem trước và chọn vùng quét</b> để kéo chọn vùng mới hoặc mở rộng kịch bản có sẵn.</p>
+          <p className="pt-1"><KeyCombo keys={['Shift', 'Click']} /> chọn/bỏ cả dải sheet liên tiếp.</p>
+          <p><KeyCombo keys={[MOD_LABEL, 'Click']} /> chỉ chọn đúng sheet này.</p>
+        </HelpTip>
       </div>
 
       <SpellCheckWhitelist whitelist={whitelist} onChange={onWhitelistChange} />
@@ -232,7 +291,8 @@ export const ResultSheetSelectorPanel = ({
                     <input
                       type="checkbox"
                       checked={selectedSheets.includes(name)}
-                      onChange={() => toggleSheet(name)}
+                      onChange={() => {}}
+                      onClick={(e) => handleSheetClick(e, name)}
                     />
                     <button
                       type="button"
@@ -262,6 +322,7 @@ export const ResultSheetSelectorPanel = ({
                             checked={(selectedScenarios || []).includes(s.id)}
                             onChange={() => toggleScenario(s.id)}
                           />
+                          <span className="shrink-0 px-1 py-0.5 rounded bg-slate-100 text-[10px] font-bold text-slate-600">{scenarioCode(s)}</span>
                           <span className="text-slate-700 font-medium">{s.scenarioLabel}</span>
                           <span className="text-slate-400">
                             (dòng {s.startRow}–{s.endRow})
@@ -287,10 +348,15 @@ export const ResultSheetSelectorPanel = ({
             <Eye className="w-3.5 h-3.5" />
             Xem trước và chọn vùng quét
           </button>
+          <HelpTip id="scope-open-preview" size="md" title="Chọn vùng quét trên bảng" align="start" label="Hướng dẫn chọn vùng quét">
+            <p>Mở bảng tính để chọn chính xác phạm vi quét: bật/tắt kịch bản, kéo vùng mới, hoặc mở rộng một kịch bản/vùng sẵn có.</p>
+            <p>Trong cửa sổ đó bấm phím <b>?</b> để xem toàn bộ phím tắt.</p>
+          </HelpTip>
           {customRegions.length > 0 && (
             <ul className="space-y-1">
               {customRegions.map((region) => (
                 <li key={region.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-white border border-amber-200 rounded-lg text-xs">
+                  <span className="shrink-0 px-1 py-0.5 rounded bg-amber-600 text-[10px] font-bold text-white">{region.id}</span>
                   <span className="font-medium text-slate-700 truncate">{region.label || 'Vùng tự chọn'}</span>
                   <span className="text-slate-400 shrink-0">{regionRef(region)}</span>
                   <button
@@ -323,6 +389,7 @@ export const ResultSheetSelectorPanel = ({
           scenariosBySheet={scenarios}
           selectedScenarioIds={selectedScenarios || []}
           onToggleScenario={toggleScenario}
+          onChangeScenarios={changeScenarios}
           draftRegions={customRegions}
           onDraftRegionsChange={onCustomRegionsChange}
           draftDefinesScope

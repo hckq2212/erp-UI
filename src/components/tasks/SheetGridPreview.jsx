@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Loader2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { boundsOfScenario, cellInBounds, colLetters, isCellScanned, parseCellRef } from '../../utils/sheetScope';
+import { boundsOfScenario, cellInBounds, colLetters, isCellScanned, parseCellRef, scenarioCode } from '../../utils/sheetScope';
 
 const ROW_COUNT = 40;
 const COL_COUNT = 14;
@@ -47,7 +47,10 @@ export const SheetGridPreview = ({
   showScanState = false,
   tool = 'view',
   focus = null,
+  activeRegionId = null,
+  drawMode = 'new',
   onToggleScenario,
+  onScenarioClick,
   onDrawRegion,
 }) => {
   const [origin, setOrigin] = useState({ row: 1, col: 1 });
@@ -105,15 +108,24 @@ export const SheetGridPreview = ({
 
   useEffect(() => {
     if (!drag) return undefined;
-    const finish = () => {
+    const finish = (event) => {
       setDrag(null);
-      onDrawRegion?.({
-        sheet,
-        startRow: Math.min(drag.startRow, drag.endRow),
-        endRow: Math.max(drag.startRow, drag.endRow),
-        startCol: Math.min(drag.startCol, drag.endCol),
-        endCol: Math.max(drag.startCol, drag.endCol),
-      });
+      onDrawRegion?.(
+        {
+          sheet,
+          startRow: Math.min(drag.startRow, drag.endRow),
+          endRow: Math.max(drag.startRow, drag.endRow),
+          startCol: Math.min(drag.startCol, drag.endCol),
+          endCol: Math.max(drag.startCol, drag.endCol),
+        },
+        {
+          shift: Boolean(event?.shiftKey),
+          mod: Boolean(event?.ctrlKey || event?.metaKey),
+          startRow: drag.startRow,
+          startCol: drag.startCol,
+          single: drag.startRow === drag.endRow && drag.startCol === drag.endCol,
+        }
+      );
     };
     window.addEventListener('mouseup', finish);
     return () => window.removeEventListener('mouseup', finish);
@@ -127,6 +139,26 @@ export const SheetGridPreview = ({
       selected: selected ? selected.has(scenario.id) : true,
     }));
   }, [scenarios, selectedScenarioIds]);
+
+  const activeBounds = useMemo(() => {
+    if (!activeRegionId) return null;
+    return [...draftRegions, ...fixedRegions].find((region) => region.id === activeRegionId) || null;
+  }, [activeRegionId, draftRegions, fixedRegions]);
+
+  const tagMap = useMemo(() => {
+    const map = new Map();
+    const push = (row, col, tag) => {
+      const key = `${row}:${col}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(tag);
+    };
+    scenarioAreas.forEach(({ scenario, bounds, selected }) => {
+      push(bounds.startRow, bounds.startCol, { text: scenarioCode(scenario), kind: selected ? 'scenario' : 'scenario-off' });
+    });
+    fixedRegions.forEach((region) => push(region.startRow, region.startCol, { text: region.id, kind: 'fixed' }));
+    draftRegions.forEach((region) => push(region.startRow, region.startCol, { text: region.id, kind: 'draft' }));
+    return map;
+  }, [scenarioAreas, fixedRegions, draftRegions]);
 
   const layout = useMemo(() => {
     const spans = new Map();
@@ -238,7 +270,7 @@ export const SheetGridPreview = ({
     const scanned = !showScanState || isCellScanned(areas, row, col);
     const inDrag = dragRect && cellInBounds(dragRect, row, col);
     let tone = 'bg-white';
-    if (inDrag) tone = 'bg-orange-200';
+    if (inDrag) tone = drawMode === 'expand' ? 'bg-sky-200' : 'bg-orange-200';
     else if (spell === 'confirmed') tone = 'bg-yellow-200';
     else if (spell === 'dismissed') tone = 'bg-yellow-50 line-through decoration-slate-400';
     else if (hits.draftHit) tone = 'bg-amber-100';
@@ -250,6 +282,8 @@ export const SheetGridPreview = ({
       !scanned && 'text-slate-300',
       tool === 'region' && 'cursor-crosshair',
       tool === 'scenario' && hits.scenarioHit && 'cursor-pointer',
+      tagMap.has(key) && 'relative',
+      activeBounds && cellInBounds(activeBounds, row, col) && 'ring-1 ring-inset ring-amber-500',
       flash && flash.row === row && flash.col === col && 'relative z-10 ring-2 ring-red-500'
     );
   };
@@ -265,9 +299,21 @@ export const SheetGridPreview = ({
     setDrag((prev) => (prev ? { ...prev, endRow: row, endCol: col } : prev));
   };
 
-  const handleClick = (hits) => {
+  const handleClick = (event, hits) => {
     if (tool !== 'scenario' || !hits.scenarioHit) return;
-    onToggleScenario?.(hits.scenarioHit.scenario.id);
+    const id = hits.scenarioHit.scenario.id;
+    if (onScenarioClick) {
+      onScenarioClick(id, { shift: event.shiftKey, mod: event.ctrlKey || event.metaKey });
+      return;
+    }
+    onToggleScenario?.(id);
+  };
+
+  const TAG_STYLES = {
+    scenario: 'bg-blue-600',
+    'scenario-off': 'bg-slate-500',
+    fixed: 'bg-violet-600',
+    draft: 'bg-amber-600',
   };
 
   return (
@@ -355,8 +401,20 @@ export const SheetGridPreview = ({
                         className={cellClasses(row, col, hits)}
                         onMouseDown={(e) => handleMouseDown(e, row, col)}
                         onMouseEnter={() => handleMouseEnter(row, col)}
-                        onClick={() => handleClick(hits)}
+                        onClick={(e) => handleClick(e, hits)}
                       >
+                        {tagMap.get(key) && (
+                          <span className="absolute top-0 right-0 z-[1] flex gap-px pointer-events-none">
+                            {tagMap.get(key).map((tag, tagIndex) => (
+                              <span
+                                key={`${tag.kind}-${tag.text}-${tagIndex}`}
+                                className={cn('px-1 text-[9px] leading-3 font-bold text-white rounded-bl', TAG_STYLES[tag.kind])}
+                              >
+                                {tag.text}
+                              </span>
+                            ))}
+                          </span>
+                        )}
                         {value ? <div style={cellTextStyle}>{value}</div> : null}
                       </td>
                     );
