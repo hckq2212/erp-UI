@@ -41,7 +41,7 @@ import { toast } from 'react-toastify';
 import { Modal } from '../../../components/ui/Modal';
 import { RichTextEditor } from '../../../components/ui/RichTextEditor';
 import { ExtractedDocument } from '../../../components/ui/ExtractedDocument';
-import { generateProductDescriptionPdf } from '../../../utils/productDescriptionPdf';
+import { ProductDescriptionPdfPreview } from './ProductDescriptionPdfPreview';
 import ProductDescriptionLegend from './ProductDescriptionLegend';
 import { ProjectWorkingFilesSection } from './ProjectWorkingFilesSection';
 import { hasTeamMemberRole } from '../../../utils/teamMember';
@@ -190,7 +190,7 @@ const emptyProduct = () => ({
     extracting: false,
     aiFormatting: false,
     viewMode: 'edit', // 'edit' | 'preview'
-    formatPreview: null, // { html, removed[] } - kết quả AI chờ người dùng áp dụng/huỷ
+    formatPreview: null, // { html, removed[], warnings[] } - kết quả AI chờ người dùng áp dụng/huỷ
     collapsed: true,
 });
 
@@ -282,7 +282,7 @@ const ProductItemCard = ({ item }) => {
     );
 };
 
-const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onReject, onEdit, isReviewing, projectName }) => {
+const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onReject, onEdit, isReviewing, onPreviewPdf }) => {
     const [isRejectingInline, setIsRejectingInline] = useState(false);
     const [reviewNote, setReviewNote] = useState('');
 
@@ -298,9 +298,8 @@ const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onRe
 
     const handleDownloadPdf = () => {
         const items = Array.isArray(submission.items) ? submission.items : [];
-        generateProductDescriptionPdf({
-            title: submission.versionNumber ? `Thong tin chuan san pham - Version ${submission.versionNumber}` : 'Thong tin chuan san pham',
-            projectName,
+        onPreviewPdf({
+            title: submission.versionNumber ? `Thông tin chuẩn sản phẩm - Version ${submission.versionNumber}` : 'Thông tin chuẩn sản phẩm',
             items,
         });
     };
@@ -333,7 +332,7 @@ const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onRe
                         className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50"
                     >
                         <Download className="w-4 h-4" />
-                        Tải PDF
+                        Xem / Tải PDF
                     </button>
                     {canEditSubmission && ['DRAFT', 'REJECTED'].includes(submission.status) && (
                         <button
@@ -526,6 +525,7 @@ const ProductDescriptionSection = ({ project }) => {
     const [loadedSubmissionId, setLoadedSubmissionId] = useState(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [pdfPreview, setPdfPreview] = useState(null); // { title, items } - đang xem trước PDF
     const activeSubmission = useMemo(() => (
         submissions.find((submission) => submission?.id === loadedSubmissionId) || null
     ), [loadedSubmissionId, submissions]);
@@ -621,6 +621,7 @@ const ProductDescriptionSection = ({ project }) => {
                 formatPreview: {
                     html: result.extractedText,
                     removed: Array.isArray(result?.removed) ? result.removed : [],
+                    warnings: Array.isArray(result?.warnings) ? result.warnings : [],
                 },
             });
         } catch (err) {
@@ -1031,6 +1032,11 @@ const ProductDescriptionSection = ({ project }) => {
                                                         Xem trước kết quả AI formatting (chưa áp dụng). Chữ giữ nguyên văn bản gốc, AI chỉ đổi bố cục và loại dòng không liên quan.
                                                     </p>
                                                     <ExtractedDocument html={product.formatPreview.html} maxHeight={420} />
+                                                    {product.formatPreview.warnings?.length > 0 && (
+                                                        <ul className="list-disc space-y-1 rounded-lg border border-amber-300 bg-amber-50 px-6 py-2 text-xs text-amber-800">
+                                                            {product.formatPreview.warnings.map((warning, i) => <li key={i}>{warning}</li>)}
+                                                        </ul>
+                                                    )}
                                                     {product.formatPreview.removed.length > 0 ? (
                                                         <details className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                                                             <summary className="cursor-pointer font-bold">
@@ -1159,15 +1165,14 @@ const ProductDescriptionSection = ({ project }) => {
                     <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
                         <button
                             type="button"
-                            onClick={() => generateProductDescriptionPdf({
-                                title: 'Thong tin chuan san pham (nhap)',
-                                projectName: project?.name,
+                            onClick={() => setPdfPreview({
+                                title: 'Thông tin chuẩn sản phẩm (bản nháp)',
                                 items: products,
                             })}
                             className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50"
                         >
                             <Download className="h-4 w-4" />
-                            Tải PDF
+                            Xem / Tải PDF
                         </button>
                         <button
                             type="button"
@@ -1203,7 +1208,7 @@ const ProductDescriptionSection = ({ project }) => {
                             onReject={handleReject}
                             onEdit={openEditForm}
                             isReviewing={isReviewing}
-                            projectName={project?.name}
+                            onPreviewPdf={setPdfPreview}
                         />
                     ))
                 ) : (
@@ -1219,6 +1224,14 @@ const ProductDescriptionSection = ({ project }) => {
                 submissions={submissions}
                 canEditSubmission={canManageSubmission && !hasPendingSubmission}
                 onEdit={openEditForm}
+            />
+
+            <ProductDescriptionPdfPreview
+                isOpen={Boolean(pdfPreview)}
+                onClose={() => setPdfPreview(null)}
+                title={pdfPreview?.title}
+                projectName={project?.name}
+                items={pdfPreview?.items}
             />
         </div>
     );

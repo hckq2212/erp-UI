@@ -7,14 +7,14 @@ import { ConfirmedCheckErrors } from '../../components/tasks/ConfirmedCheckError
 import { useGetMeQuery } from '../../api/auth';
 import { formatDate, formatDateTime } from '../../utils/format';
 import { toast } from 'react-toastify';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { JOB_PERFORMER_TYPE, PROJECT_MANAGEMENT_ROLES, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../utils/cn';
 import { getFilePreviewUrl } from '../../utils/cloudinary';
 import { ResultSheetSelectorPanel } from '../../components/tasks/ResultSheetSelectorPanel';
-import { regionRef } from '../../utils/sheetScope';
+import { SubmittedScopeSummary } from '../../components/tasks/SubmittedScopeSummary';
 import { PanelErrorBoundary } from '../../components/shared/PanelErrorBoundary';
 import { ReworkTaskModal } from '../../components/tasks/ReworkTaskModal';
 import { TaskAssignModal } from '../Projects/ProjectDetailPage/TaskAssignModal';
@@ -34,6 +34,14 @@ export const TaskDetailPage = () => {
     const { data: task, isLoading: isTaskLoading, error } = useGetTaskQuery(id);
     const { data: reviews } = useGetTaskReviewsQuery(id);
     const { data: resultCheck } = useGetTaskResultCheckQuery(id, { skip: !id });
+    const confirmedSpellErrors = useMemo(
+        () => (resultCheck?.finalizedAt ? (resultCheck.reviewedSpellErrors || []).filter(e => e.confirmed !== false) : []),
+        [resultCheck]
+    );
+    const confirmedQcMismatches = useMemo(
+        () => (resultCheck?.finalizedAt ? (resultCheck.reviewedQcMismatches || []).filter(m => m.confirmed !== false) : []),
+        [resultCheck]
+    );
     const [submitResult, { isLoading: isSubmittingResult }] = useSubmitTaskResultMutation();
     const [submitResultFile, { isLoading: isSubmittingResultFile }] = useSubmitTaskResultFileMutation();
     const [submitResultForReview, { isLoading: isSubmittingResultForReview }] = useSubmitTaskResultForReviewMutation();
@@ -768,8 +776,8 @@ export const TaskDetailPage = () => {
                         </div>
 
                         {task.result ? (
-                            <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100 space-y-4">
-                                <div className="flex items-center justify-between gap-4">
+                            <div className="p-6 bg-blue-50/60 rounded-3xl border border-blue-200/70 space-y-5">
+                                <div className="flex flex-wrap items-center justify-between gap-4">
                                     <div className="flex items-center gap-4 min-w-0">
                                         <div className="w-12 h-12 bg-white rounded-2xl border border-blue-200 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
                                             {task.result.type === 'CHECKLIST' || task.result.type === 'CONFIRMATION'
@@ -778,34 +786,17 @@ export const TaskDetailPage = () => {
                                         </div>
 
                                         <div className="min-w-0 overflow-hidden">
-                                            <p className="text-sm font-bold text-gray-900">{task.result.name}</p>
+                                            <p className="text-base font-extrabold text-gray-900 truncate">{task.result.name}</p>
 
                                             {task.result.note && (
                                                 <p className="text-xs text-gray-500 mt-1">{task.result.note}</p>
                                             )}
 
                                             {task.lastSubmittedBy && (
-                                                <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-0.5">
+                                                <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-blue-700">
+                                                    <User className="w-3 h-3" />
                                                     Người làm: {task.lastSubmittedBy.fullName}
-                                                </p>
-                                            )}
-
-                                            {task.result.sheetNames?.length > 0 && (
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    Sheet đã nộp: {task.result.sheetNames.join(', ')}
-                                                </p>
-                                            )}
-
-                                            {task.result.scenarioLabels?.length > 0 && (
-                                                <p className="text-xs text-gray-500 mt-0.5">
-                                                    Kịch bản đã nộp: {task.result.scenarioLabels.join(', ')}
-                                                </p>
-                                            )}
-
-                                            {task.result.scanScope?.regions?.length > 0 && (
-                                                <p className="text-xs text-gray-500 mt-0.5">
-                                                    Vùng tự chọn: {task.result.scanScope.regions.map(region => `${region.label || 'Vùng'} (${regionRef(region)})`).join(', ')}
-                                                </p>
+                                                </span>
                                             )}
                                         </div>
                                     </div>
@@ -836,6 +827,8 @@ export const TaskDetailPage = () => {
                                     )}
                                 </div>
 
+                                <SubmittedScopeSummary result={task.result} />
+
                                 {task.result.type === 'CHECKLIST' && task.result.checklist?.length > 0 && (
                                     <div className="grid gap-2 pt-2 border-t border-blue-100">
                                         {task.result.checklist.map((item, idx) => (
@@ -858,13 +851,15 @@ export const TaskDetailPage = () => {
                         )}
                     </div>
 
-                    {resultCheck?.finalizedAt && (((resultCheck.reviewedSpellErrors || []).length > 0) || ((resultCheck.reviewedQcMismatches || []).length > 0)) && (
+                    {(confirmedSpellErrors.length > 0 || confirmedQcMismatches.length > 0) && (
                         <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
                             <ConfirmedCheckErrors
+                                variant="section"
                                 title="Lỗi đã chốt ở kết quả đã nộp"
                                 collapsible
-                                spellErrors={(resultCheck.reviewedSpellErrors || []).filter(e => e.confirmed !== false)}
-                                qcMismatches={(resultCheck.reviewedQcMismatches || []).filter(m => m.confirmed !== false)}
+                                finalizedAt={resultCheck?.finalizedAt}
+                                spellErrors={confirmedSpellErrors}
+                                qcMismatches={confirmedQcMismatches}
                             />
                         </div>
                     )}

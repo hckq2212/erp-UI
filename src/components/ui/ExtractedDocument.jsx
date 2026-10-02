@@ -1,10 +1,16 @@
 import { useMemo } from 'react';
 import { sanitizeHtml } from '../../utils/html';
+import { beautifyExtractedHtml, ensureExtractedLayoutStyles } from '../../utils/extractedLayout';
 
 // Hiển thị nội dung trích xuất như một trang tài liệu (nền giấy, chữ rõ, đoạn/danh sách tách bạch)
 // thay vì một khối chữ dính liền, để người duyệt đọc và đối chiếu dễ hơn.
-export const ExtractedDocument = ({ html, maxHeight = 480, emptyText = 'Chưa có nội dung' }) => {
-  const safeHtml = useMemo(() => sanitizeHtml(html || ''), [html]);
+// `beautify` chỉ đổi cách trình bày (tiêu đề nhóm, hàng "nhãn: mục; mục", bảng); chữ được lưu không đổi.
+export const ExtractedDocument = ({ html, maxHeight = 480, emptyText = 'Chưa có nội dung', beautify = true }) => {
+  ensureExtractedLayoutStyles();
+  const safeHtml = useMemo(() => {
+    const clean = sanitizeHtml(html || '');
+    return beautify ? beautifyExtractedHtml(clean) : clean;
+  }, [html, beautify]);
 
   if (!safeHtml.trim()) {
     return (

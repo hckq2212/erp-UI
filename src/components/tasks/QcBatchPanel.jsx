@@ -57,7 +57,13 @@ export const QcMismatchRow = ({ item, readOnly, disabled, onToggle, onLocate, ca
         )}
       </div>
       <div className="text-slate-500">
-        {item.claimed_value} → {item.expected_value ?? 'không tìm thấy'}
+        <span className="text-red-600">{item.claimed_value}</span>
+        <span className="mx-1 text-slate-400">→</span>
+        {item.expected_value != null ? (
+          <span className="font-medium text-emerald-700">{item.expected_value}</span>
+        ) : (
+          <span className="italic text-slate-400">không tìm thấy</span>
+        )}
       </div>
       <div className="text-slate-400 italic">{item.reasoning}</div>
     </div>
