@@ -4,7 +4,7 @@ import { useCreateUserMutation } from '../../api/users';
 import { toast } from 'react-toastify';
 import { USER_ROLE_OPTIONS } from '../../utils/enums';
 
-const DEFAULT_ROLE = 'STAFF_D';
+const DEFAULT_ROLE = 'EDITOR_D';
 
 export const AddUserModal = ({ isOpen, onClose }) => {
     const [createUser, { isLoading }] = useCreateUserMutation();
