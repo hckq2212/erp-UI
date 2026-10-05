@@ -209,24 +209,25 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
         return formatDateTimeISO(parentTask.plannedEndDate);
     }, [parentTask?.plannedEndDate]);
 
-    const minimumDeadline = useMemo(() => {
-        let minDate = new Date();
-        if (latestSubtask?.plannedEndDate) {
-            const subtaskDate = new Date(latestSubtask.plannedEndDate);
-            if (!Number.isNaN(subtaskDate.getTime()) && subtaskDate > minDate) {
-                minDate = subtaskDate;
-            }
-        }
-        return formatDateTimeISO(minDate);
-    }, [latestSubtask?.plannedEndDate]);
+    // Tạm thời cho phép chọn deadline trong quá khứ để nhập bù dữ liệu giai đoạn đầu.
+    // const minimumDeadline = useMemo(() => {
+    //     let minDate = new Date();
+    //     if (latestSubtask?.plannedEndDate) {
+    //         const subtaskDate = new Date(latestSubtask.plannedEndDate);
+    //         if (!Number.isNaN(subtaskDate.getTime()) && subtaskDate > minDate) {
+    //             minDate = subtaskDate;
+    //         }
+    //     }
+    //     return formatDateTimeISO(minDate);
+    // }, [latestSubtask?.plannedEndDate]);
 
-    const safeMinDeadline = useMemo(() => {
-        if (!minimumDeadline) return undefined;
-        if (maximumDeadline && minimumDeadline > maximumDeadline) {
-            return undefined;
-        }
-        return minimumDeadline;
-    }, [minimumDeadline, maximumDeadline]);
+    // const safeMinDeadline = useMemo(() => {
+    //     if (!minimumDeadline) return undefined;
+    //     if (maximumDeadline && minimumDeadline > maximumDeadline) {
+    //         return undefined;
+    //     }
+    //     return minimumDeadline;
+    // }, [minimumDeadline, maximumDeadline]);
     const workloadDate = useMemo(() => {
         const date = plannedEndDate ? new Date(plannedEndDate) : new Date();
         const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
@@ -461,12 +462,13 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
             return;
         }
 
-        const now = new Date();
-        now.setSeconds(0, 0);
-        if (parsedDeadline.getTime() < now.getTime() - 60 * 1000) {
-            toast.error('Deadline không được ở trong quá khứ');
-            return;
-        }
+        // Tạm thời cho phép phân công deadline trong quá khứ để nhập bù dữ liệu giai đoạn đầu.
+        // const now = new Date();
+        // now.setSeconds(0, 0);
+        // if (parsedDeadline.getTime() < now.getTime() - 60 * 1000) {
+        //     toast.error('Deadline không được ở trong quá khứ');
+        //     return;
+        // }
 
         // Ràng buộc 1: Task con không được có deadline sau task cha
         if (parentTask?.plannedEndDate) {
@@ -962,7 +964,8 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                     <input
                                         type="datetime-local"
                                         required
-                                        min={safeMinDeadline}
+                                        // Tạm thời bỏ min để cho phép chọn deadline trong quá khứ.
+                                        // min={safeMinDeadline}
                                         max={maximumDeadline || undefined}
                                         className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all text-slate-700 font-medium"
                                         value={plannedEndDate}

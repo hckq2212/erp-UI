@@ -1026,32 +1026,28 @@ export const TaskDetailPage = () => {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
-                                    <Calendar className="w-5 h-5" />
-                                </div>
-                                <h2 className="text-lg font-bold text-gray-900 tracking-tight">Ngày dự kiến bắt đầu</h2>
-                            </div>
-
-                            <p className="text-md font-bold text-gray-700">
-                                {formatDateTime(task.plannedStartDate) || 'Chưa có thông tin'}
-                            </p>
-                        </div>
 
                         <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
-                            <div className="flex items-center gap-3 mb-6">
+                            <div className="flex gap-3 mb-6">
                                 <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
                                     <Calendar className="w-5 h-5" />
                                 </div>
                                 <h2 className="text-lg font-bold text-gray-900 tracking-tight">Kế hoạch</h2>
                             </div>
+                            <div className='flex flex-row gap-2'>
+                                <div>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Deadline</p>
+                                    <p className="text-md font-bold text-gray-700">{formatDateTime(task.plannedEndDate)}</p>
+                                </div>
 
-                            <div>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Deadline</p>
-                                <p className="text-md font-bold text-gray-700">{formatDateTime(task.plannedEndDate)}</p>
+                                <div>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Ngày bắt đầu công việc</p>
+                                    <p className="text-md font-bold text-gray-700">{formatDateTime(task.plannedStartDate) || 'Chưa có thông tin'}</p>
+                                </div>
                             </div>
+
                         </div>
+
 
                         <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
                             <div className="flex items-center justify-between mb-6">
@@ -1308,7 +1304,7 @@ export const TaskDetailPage = () => {
                 task={task}
                 project={task.project}
             />
-        </div>
+        </div >
     );
 };
 

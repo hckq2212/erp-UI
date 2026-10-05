@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, Fragment } from 'react';
+import { useState, useMemo, useEffect, Fragment, useRef } from 'react';
 import Select from 'react-select';
 import { Calendar, Users, FileText, Search, UserPlus, UserMinus, Plus, AlertCircle, ChevronRight, ChevronDown, Play, X } from 'lucide-react';
 import { TaskAssignModal } from './TaskAssignModal';
@@ -327,6 +327,47 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     const [expandedGroups, setExpandedGroups] = useState({});
     const [approvingTaskId, setApprovingTaskId] = useState(null);
     const [startingTaskId, setStartingTaskId] = useState(null);
+    const dragSelectionRef = useRef({ isDragging: false, checked: true, touchedTaskIds: new Set() });
+
+    const applyTaskSelection = (taskId, checked) => {
+        setSelectedTasks(prev => {
+            const hasTask = prev.includes(taskId);
+            if (checked) return hasTask ? prev : [...prev, taskId];
+            return hasTask ? prev.filter(id => id !== taskId) : prev;
+        });
+    };
+
+    const handleTaskCheckboxMouseDown = (event, task) => {
+        if (!isTaskSelectable(task)) return;
+        event.preventDefault();
+        event.stopPropagation();
+
+        const nextChecked = !selectedTasks.includes(task.id);
+        dragSelectionRef.current = {
+            isDragging: true,
+            checked: nextChecked,
+            touchedTaskIds: new Set([task.id])
+        };
+        applyTaskSelection(task.id, nextChecked);
+    };
+
+    const handleTaskCheckboxMouseEnter = (task) => {
+        const dragState = dragSelectionRef.current;
+        if (!dragState.isDragging || !isTaskSelectable(task) || dragState.touchedTaskIds.has(task.id)) return;
+
+        dragState.touchedTaskIds.add(task.id);
+        applyTaskSelection(task.id, dragState.checked);
+    };
+
+    const stopTaskCheckboxDrag = () => {
+        if (!dragSelectionRef.current.isDragging) return;
+        dragSelectionRef.current = { isDragging: false, checked: true, touchedTaskIds: new Set() };
+    };
+
+    useEffect(() => {
+        window.addEventListener('mouseup', stopTaskCheckboxDrag);
+        return () => window.removeEventListener('mouseup', stopTaskCheckboxDrag);
+    }, []);
 
     const handleStartTask = async (task) => {
         setStartingTaskId(task.id);
@@ -994,7 +1035,13 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                                                     "hover:bg-blue-50/40"
                                                     )}
                                                 >
-                                                    <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                                                    <td
+                                                        className="px-6 py-4 text-center select-none"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        onMouseDown={(e) => handleTaskCheckboxMouseDown(e, task)}
+                                                        onMouseEnter={() => handleTaskCheckboxMouseEnter(task)}
+                                                        onMouseUp={stopTaskCheckboxDrag}
+                                                    >
                                                         <input
                                                             type="checkbox"
                                                             className={cn(
