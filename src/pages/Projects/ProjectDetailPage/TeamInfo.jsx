@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Check, Plus, Trash2, Users, UserPlus, X } from 'lucide-react';
+import Select from 'react-select';
 import { toast } from 'react-toastify';
 import { useGetMeQuery } from '../../../api/auth';
 import { useGetUsersQuery } from '../../../api/users';
@@ -11,7 +12,12 @@ import {
     useRemoveTeamMemberMutation,
     useUpdateTeamMemberRolesMutation,
 } from '../../../api/teams';
-import { TEAM_MEMBER_ROLE, TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../../utils/enums';
+import {
+    PROJECT_MEMBER_EXCLUDED_ACCOUNT_ROLES,
+    TEAM_MEMBER_ROLE,
+    TEAM_MEMBER_ROLE_LABELS,
+    USER_ROLE,
+} from '../../../utils/enums';
 import { getCurrentUserId, getUserAccountRole, isSameUser } from '../../../utils/authUser';
 import { formatWorkloadLabel, getWorkloadColor, getWorkloadDisplayPercent } from '../../../utils/workload';
 import { getTeamMemberRoles, hasTeamMemberRole } from '../../../utils/teamMember';
@@ -25,13 +31,32 @@ const ROLE_DISPLAY_ORDER = [
     TEAM_MEMBER_ROLE.PROJECT_MANAGER,
     TEAM_MEMBER_ROLE.ACCOUNT,
     TEAM_MEMBER_ROLE.EDITOR,
-    TEAM_MEMBER_ROLE.GRAPHIC_DESIGNER,
+    TEAM_MEMBER_ROLE.DESIGNER,
     TEAM_MEMBER_ROLE.CONTENT_CREATOR,
     TEAM_MEMBER_ROLE.CAMERAMAN,
-    TEAM_MEMBER_ROLE.SCRIPTER,
+    TEAM_MEMBER_ROLE.VIDEO_EDITOR,
     TEAM_MEMBER_ROLE.SOCIAL_MEDIA_MANAGER,
-    TEAM_MEMBER_ROLE.SEO_SPECIALIST,
 ];
+
+const USER_ROLE_GROUP_ORDER = [
+    'CONTENT_D',
+    'CONTENT_C',
+    'CONTENT_B',
+    'CONTENT_A',
+    'EDITOR_D',
+    'EDITOR_C',
+    'EDITOR_B',
+    'EDITOR_A',
+    'DESIGNER_D',
+    'DESIGNER_C',
+    'DESIGNER_B',
+    'DESIGNER_A',
+];
+
+const getAccountRoleLevelRank = (role) => {
+    const rank = USER_ROLE_GROUP_ORDER.indexOf(role);
+    return rank === -1 ? USER_ROLE_GROUP_ORDER.indexOf('OTHER') : rank;
+};
 
 const sortRoles = (roles) => [...roles].sort(
     (a, b) => ROLE_DISPLAY_ORDER.indexOf(a) - ROLE_DISPLAY_ORDER.indexOf(b)
@@ -96,10 +121,41 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
         members.filter(member => isSameUser(member.user?.id, userId)).flatMap(getTeamMemberRoles)
     );
     const availableUsers = users.filter(user => {
+        const hasExcludedAccountRole = user.accounts?.some(account =>
+            PROJECT_MEMBER_EXCLUDED_ACCOUNT_ROLES.includes(account.role)
+        ) || PROJECT_MEMBER_EXCLUDED_ACCOUNT_ROLES.includes(getUserAccountRole(user));
         const assignedRoles = getRolesOfUser(user.id);
-        return !assignedRoles.has(TEAM_MEMBER_ROLE.PROJECT_MANAGER)
+        return !hasExcludedAccountRole
+            && !assignedRoles.has(TEAM_MEMBER_ROLE.PROJECT_MANAGER)
             && assignableMemberRoles.some(role => !assignedRoles.has(role));
     });
+    const availableUserOptions = useMemo(() => {
+        const groupMap = new Map(USER_ROLE_GROUP_ORDER.map(role => [role, []]));
+
+        availableUsers.forEach(item => {
+            const accountRole = getUserAccountRole(item);
+            const groupKey = USER_ROLE_GROUP_ORDER.includes(accountRole) ? accountRole : 'OTHER';
+            const option = {
+                value: item.id,
+                role: accountRole,
+                levelRank: getAccountRoleLevelRank(accountRole),
+                label: `${item.fullName} - ${USER_ROLE[accountRole] || accountRole || 'Nhân sự'} - ${formatWorkloadLabel(item.workload)}`,
+            };
+            groupMap.get(groupKey)?.push(option);
+        });
+
+        return USER_ROLE_GROUP_ORDER
+            .map(role => ({
+                label: USER_ROLE[role] || 'Khác',
+                options: groupMap.get(role)
+                    .sort((a, b) => a.label.localeCompare(b.label, 'vi'))
+            }))
+            .filter(group => group.options.length > 0);
+    }, [availableUsers]);
+    const flatAvailableUserOptions = useMemo(
+        () => availableUserOptions.flatMap(group => group.options),
+        [availableUserOptions]
+    );
     const selectedUserRoles = getRolesOfUser(selectedUserId);
     const availableRolesForSelectedUser = assignableMemberRoles.filter(role => !selectedUserRoles.has(role));
     const editableRoleOptions = useMemo(
@@ -252,7 +308,7 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
             if (req.notifId) {
                 try {
                     await markAsRead(req.notifId).unwrap();
-                } catch {}
+                } catch { }
             }
             if (req.localId || req.type === 'PROJECT') {
                 try {
@@ -262,7 +318,7 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
                     localStorage.setItem(key, JSON.stringify(filtered));
                     setLocalStaffingRequests(filtered);
                     localStorage.removeItem(`project_staffing_req_${project?.id}`);
-                } catch {}
+                } catch { }
             }
             toast.success('Đã xác nhận xử lý yêu cầu bổ sung nhân sự');
         } catch (error) {
@@ -283,7 +339,7 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
             if (req.notifId) {
                 try {
                     await markAsRead(req.notifId).unwrap();
-                } catch {}
+                } catch { }
             }
             if (req.localId || req.type === 'PROJECT') {
                 try {
@@ -293,7 +349,7 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
                     localStorage.setItem(key, JSON.stringify(filtered));
                     setLocalStaffingRequests(filtered);
                     localStorage.removeItem(`project_staffing_req_${project?.id}`);
-                } catch {}
+                } catch { }
             }
             toast.success('Đã từ chối yêu cầu bổ sung nhân sự');
         } catch (error) {
@@ -453,11 +509,10 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-1.5 flex-wrap">
-                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                                req.type === 'TASK'
+                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${req.type === 'TASK'
                                                     ? 'bg-blue-100 text-blue-800'
                                                     : 'bg-orange-100 text-orange-800'
-                                            }`}>
+                                                }`}>
                                                 {req.type === 'TASK' ? 'Công việc' : 'Toàn dự án'}
                                             </span>
                                             <span className="font-bold text-gray-800 text-xs truncate">
@@ -598,18 +653,18 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
                     <div className="rounded-xl border border-dashed border-purple-200 bg-purple-50/40 p-3">
                         <p className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-700">Thêm nhân sự</p>
                         <div className="space-y-2">
-                            <select
-                                value={selectedUserId}
-                                onChange={(event) => handleSelectUser(event.target.value)}
-                                className="w-full rounded-lg border border-purple-100 bg-white px-3 py-2 text-sm font-medium text-gray-700"
-                            >
-                                <option value="">{availableUsers.length ? 'Chọn nhân sự' : 'Mọi nhân sự đã có đủ vai trò trong project'}</option>
-                                {availableUsers.map((item) => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.fullName} - {USER_ROLE[getUserAccountRole(item)] || getUserAccountRole(item) || 'Nhân sự'} - {formatWorkloadLabel(item.workload)}
-                                    </option>
-                                ))}
-                            </select>
+                            <Select
+                                aria-label="Tìm và chọn nhân sự"
+                                options={availableUserOptions}
+                                value={flatAvailableUserOptions.find(option => option.value === selectedUserId) || null}
+                                onChange={option => handleSelectUser(option?.value || '')}
+                                placeholder={availableUsers.length ? 'Tìm và chọn nhân sự' : 'Không còn nhân sự phù hợp'}
+                                noOptionsMessage={() => 'Không tìm thấy nhân sự'}
+                                isSearchable
+                                isClearable
+                                className="text-sm"
+                                classNamePrefix="project-member-select"
+                            />
                             <div className="rounded-lg border border-purple-100 bg-white p-2">
                                 <p className="mb-2 text-xs font-semibold text-gray-500">Chọn một hoặc nhiều vai trò</p>
                                 <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">

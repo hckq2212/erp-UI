@@ -14,7 +14,7 @@ import { ResolveStaffingRequestModal } from './ResolveStaffingRequestModal';
 import { SubtaskRoadmapModal } from './SubtaskRoadmapModal';
 import { formatNumber, formatDate } from '../../utils/format';
 import { getCurrentUserId, isSameUser, getUserAccountRole } from '../../utils/authUser';
-import { TASK_STATUS_LABELS } from '../../utils/enums';
+import { STAFF_ROLES, TASK_STATUS_LABELS } from '../../utils/enums';
 import { hasTeamMemberRole } from '../../utils/teamMember';
 
 const emptySubtaskForm = {
@@ -69,7 +69,7 @@ export const TaskDelegationPanel = ({
     const canDelegate = !isProjectOnHold && (isAccount || isPM || isAdminOverride || isTeamLead);
     const isStaffRole = !userRole ||
         userRole.startsWith('STAFF') ||
-        ['STAFF', 'STAFF_A', 'STAFF_B', 'STAFF_C', 'STAFF_D', 'EMPLOYEE', 'USER'].includes(userRole);
+        ['STAFF', 'EMPLOYEE', 'USER', ...STAFF_ROLES].includes(userRole);
     const isManagementRole = ['ADMIN', 'BOD', 'PROJECT_MANAGER', 'ACCOUNT', 'PM', 'TEAM_LEAD'].includes(userRole);
     const canViewAllocationPercent = !isStaffRole && (canDelegate || isManagementRole);
     const isPendingStaffingRequest = task?.supportRequestType === 'STAFFING' &&

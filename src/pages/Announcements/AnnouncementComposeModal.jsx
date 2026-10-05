@@ -8,6 +8,7 @@ import { Calendar, MapPin, Search, Paperclip, X } from 'lucide-react';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import { RichTextEditor } from '../../components/ui/RichTextEditor';
 import { isHtmlEmpty, extractMediaFromHtml, extractMentionsFromHtml } from '../../utils/html';
+import { STAFF_ROLES, USER_ROLE } from '../../utils/enums';
 
 const CATEGORY_OPTIONS = [
   { value: 'GENERAL', label: 'Chung' },
@@ -26,7 +27,7 @@ const PRIORITY_OPTIONS = [
   { value: 'URGENT', label: 'Khẩn cấp' },
 ];
 
-const ROLE_OPTIONS = ['BOD', 'ADMIN', 'ADMIN_SALE', 'BD', 'PM', 'STAFF_A', 'STAFF_B', 'STAFF_C', 'STAFF_D'];
+const ROLE_OPTIONS = ['BOD', 'ADMIN', 'ADMIN_SALE', 'BD', 'PM', ...STAFF_ROLES];
 
 const SCOPE_OPTIONS = [
   { value: 'ALL', label: 'Toàn công ty' },
@@ -243,7 +244,7 @@ export const AnnouncementComposeModal = ({ isOpen, onClose }) => {
                       : 'bg-white text-gray-500 border border-gray-200 hover:border-indigo-300'
                     }`}
                 >
-                  {role}
+                  {USER_ROLE[role] || role}
                 </button>
               ))}
             </div>

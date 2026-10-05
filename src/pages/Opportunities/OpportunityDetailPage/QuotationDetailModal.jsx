@@ -55,14 +55,31 @@ export const QuotationDetailModal = ({
       const quantity = detail.quantity || 0;
       const itemRevenue = sellingPrice * quantity;
       const itemVat = itemRevenue * 0.08;
+      const serviceId = detail.service?.id || detail.serviceId;
+      const packageName = detail.packageName;
+      const opportunityService = packageName
+        ? (opportunity?.packages || [])
+          .find(pkg => (
+            detail.servicePackageId
+              ? String(pkg.servicePackageId) === String(detail.servicePackageId)
+              : pkg.name === packageName
+          ))
+          ?.services?.find(service => String(service.service?.id || service.serviceId) === String(serviceId))
+        : (opportunity?.services || [])
+          .filter(service => !service.opportunityPackageId)
+          .find(service => String(service.service?.id || service.serviceId) === String(serviceId));
+      const jobs = opportunityService?.jobs || [];
 
       runningTotalWithVat += itemRevenue + itemVat;
 
-      const groupKey = detail.packageName || 'STANDALONE';
+      const groupKey = packageName
+        ? String(detail.servicePackageId || packageName)
+        : 'STANDALONE';
 
       if (groupKey === 'STANDALONE') {
         standalone.push({
           ...detail,
+          jobs,
           revenue: itemRevenue,
           vat: itemVat,
           totalWithVat: itemRevenue + itemVat
@@ -73,7 +90,9 @@ export const QuotationDetailModal = ({
       if (!packages[groupKey]) {
         const pkgQty = detail.packageQuantity || 1;
         packages[groupKey] = {
-          name: groupKey,
+          key: groupKey,
+          name: packageName,
+          servicePackageId: detail.servicePackageId,
           quantity: pkgQty,
           sellingPrice: 0,
           costAtSale: 0,
@@ -91,6 +110,7 @@ export const QuotationDetailModal = ({
       packages[groupKey].totalWithVat += itemRevenue + itemVat;
       packages[groupKey].items.push({
         ...detail,
+        jobs,
         norm
       });
     });
@@ -102,7 +122,7 @@ export const QuotationDetailModal = ({
       },
       totalWithVat: runningTotalWithVat
     };
-  }, [quotation?.details]);
+  }, [quotation?.details, opportunity?.packages, opportunity?.services]);
 
   const handleApprove = async () => {
     if (!quotationId) return;
@@ -244,8 +264,8 @@ export const QuotationDetailModal = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {aggregatedItems.packages.map((pkg, pIdx) => {
-                        const packageKey = `pkg-${pIdx}-${pkg.name}`;
+                      {aggregatedItems.packages.map((pkg) => {
+                        const packageKey = `pkg-${pkg.key}`;
                         const isPackageExpanded = Boolean(expandedPackages[packageKey]);
 
                         return (
@@ -291,7 +311,7 @@ export const QuotationDetailModal = ({
 
                             {isPackageExpanded &&
                               pkg.items.map((item, iIdx) => {
-                                const serviceKey = `${packageKey}-item-${iIdx}`;
+                                const serviceKey = `${packageKey}-item-${item.serviceId || item.service?.id || iIdx}`;
                                 const isServiceExpanded = Boolean(expandedServices[serviceKey]);
                                 const serviceDescription = item.service?.description || item.description;
 
@@ -347,6 +367,36 @@ export const QuotationDetailModal = ({
                                         </td>
                                       </tr>
                                     )}
+                                    {isServiceExpanded && (item.jobs || []).map((job, jobIndex) => (
+                                      <tr
+                                        key={`${serviceKey}-job-${job.id || job.jobId || jobIndex}`}
+                                        className="border-b border-blue-50 bg-blue-50/10"
+                                      >
+                                        <td className="px-4 py-2 pl-16 text-xs text-gray-600">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-blue-300">└</span>
+                                            <span>{job.name || job.job?.name || 'Hạng mục'}</span>
+                                            {(job.isBriefVideo || !job.isQuotationItem) && (
+                                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-700">
+                                                Không tính báo giá
+                                              </span>
+                                            )}
+                                          </div>
+                                        </td>
+                                        <td className="px-4 py-2 text-center text-xs text-gray-500">
+                                          {Number(job.quantity || 1)} {job.job?.unit || job.unit || ''}
+                                        </td>
+                                        <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                                        <td
+                                          className="px-4 py-2 text-right text-xs text-gray-500"
+                                          title="Giá vốn hạng mục này đã được tính trong giá vốn dịch vụ"
+                                        >
+                                          {formatNumber(job.costAtSale || job.job?.costPrice || 0)}
+                                        </td>
+                                        <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                                        <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                                      </tr>
+                                    ))}
                                   </Fragment>
                                 );
                               })}
@@ -366,7 +416,7 @@ export const QuotationDetailModal = ({
                           </tr>
 
                           {aggregatedItems.standalone.map((item, idx) => {
-                            const serviceKey = `standalone-${idx}`;
+                            const serviceKey = `standalone-${item.serviceId || item.service?.id || idx}`;
                             const isServiceExpanded = Boolean(expandedServices[serviceKey]);
                             const serviceDescription = item.service?.description || item.description;
 
@@ -417,6 +467,36 @@ export const QuotationDetailModal = ({
                                     </td>
                                   </tr>
                                 )}
+                                {isServiceExpanded && (item.jobs || []).map((job, jobIndex) => (
+                                  <tr
+                                    key={`${serviceKey}-job-${job.id || job.jobId || jobIndex}`}
+                                    className="border-b border-gray-100 bg-gray-50/70"
+                                  >
+                                    <td className="px-4 py-2 pl-10 text-xs text-gray-600">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-gray-300">└</span>
+                                        <span>{job.name || job.job?.name || 'Hạng mục'}</span>
+                                        {(job.isBriefVideo || !job.isQuotationItem) && (
+                                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-700">
+                                            Không tính báo giá
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-2 text-center text-xs text-gray-500">
+                                      {Number(job.quantity || 1)} {job.job?.unit || job.unit || ''}
+                                    </td>
+                                    <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                                    <td
+                                      className="px-4 py-2 text-right text-xs text-gray-500"
+                                      title="Giá vốn hạng mục này đã được tính trong giá vốn dịch vụ"
+                                    >
+                                      {formatNumber(job.costAtSale || job.job?.costPrice || 0)}
+                                    </td>
+                                    <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                                    <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+                                  </tr>
+                                ))}
                               </Fragment>
                             );
                           })}

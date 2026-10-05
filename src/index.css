@@ -90,6 +90,11 @@
   margin: 0.5em 0;
 }
 .rich-content strong, .rich-editor strong { font-weight: 800; }
+/* Nội dung trích xuất hiển thị dạng tài liệu */
+.extracted-doc { font-size: 0.9rem; line-height: 1.75; color: #1f2937; }
+.extracted-doc p { margin: 0 0 0.75em; }
+.extracted-doc ul, .extracted-doc ol { margin: 0.4em 0 0.9em; }
+.extracted-doc li { margin: 0.2em 0; }
 .rich-editor:empty:before {
   content: attr(data-placeholder);
   color: #9ca3af;

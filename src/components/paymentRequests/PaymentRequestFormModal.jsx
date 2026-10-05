@@ -3,7 +3,7 @@ import {
     Briefcase, ClipboardList, Calendar, Wallet, Info,
     Upload, Image as ImageIcon, File as FileIcon, Loader2, Trash2, AlertCircle,
 } from 'lucide-react';
-import { useGetTasksByProjectQuery } from '../../api/tasks';
+import { useGetTasksByProjectQuery, useGetTasksQuery } from '../../api/tasks';
 import { useUploadPaymentRequestInvoiceFileMutation } from '../../api/paymentRequests';
 import { cn } from '../../utils/cn';
 import { ModalShell, ModalHeader, AmountInput } from './PaymentRequestParts';
@@ -145,15 +145,24 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
         projectId,
         { skip: !projectId || type !== 'PROJECT' }
     );
+    const { data: userTasksData, isFetching: isLoadingOtherTasks, isError: isOtherTasksError } = useGetTasksQuery(
+        { assigneeId: currentUserId, limit: 500 },
+        { skip: !currentUserId || type !== 'OTHER_WORK' }
+    );
     const [uploadInvoiceFile] = useUploadPaymentRequestInvoiceFileMutation();
 
-    const myTasks = useMemo(
+    const myProjectTasks = useMemo(
         () => projectTasks.filter((t) => t.assigneeId === currentUserId || t.assignee?.id === currentUserId),
         [projectTasks, currentUserId]
     );
 
+    const nonProjectTasks = useMemo(() => {
+        const list = Array.isArray(userTasksData) ? userTasksData : userTasksData?.data || [];
+        return list.filter((t) => (!t.projectId && !t.project?.id) && (!currentUserId || t.assigneeId === currentUserId || t.assignee?.id === currentUserId));
+    }, [userTasksData, currentUserId]);
+
     const isUploadingFiles = invoiceFiles.some((f) => f.uploading);
-    const isDirty = Boolean(content.trim() || amount || dueDate || invoiceFiles.length || projectId);
+    const isDirty = Boolean(content.trim() || amount || dueDate || invoiceFiles.length || projectId || taskId);
 
     // Esc / bấm nền / nút X đều đi qua đây; nếu đã nhập dở thì hỏi lại để khỏi mất dữ liệu.
     const requestClose = () => {
@@ -248,7 +257,7 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
             await onSubmit({
                 type,
                 projectId: type === 'PROJECT' ? projectId : undefined,
-                taskId: type === 'PROJECT' ? taskId : undefined,
+                taskId: taskId || undefined,
                 content: content.trim(),
                 amount: Number(amount),
                 dueDate,
@@ -332,9 +341,9 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                                 <option value=''>
                                     {isLoadingTasks ? 'Đang tải công việc...' : '-- Chọn công việc --'}
                                 </option>
-                                {myTasks.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                {myProjectTasks.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                             </select>
-                            {projectId && !isLoadingTasks && !isTasksError && myTasks.length === 0 && (
+                            {projectId && !isLoadingTasks && !isTasksError && myProjectTasks.length === 0 && (
                                 <p className='mt-1 text-xs text-orange-600'>Bạn chưa được giao công việc nào trong dự án này</p>
                             )}
                             {isTasksError && (
@@ -343,6 +352,37 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                                 </p>
                             )}
                         </div>
+                    </div>
+                )}
+
+                {type === 'OTHER_WORK' && (
+                    <div>
+                        <label className={labelCls}>
+                            Công việc (không thuộc dự án) <span className='text-xs font-normal text-stone-400'>(tùy chọn)</span>
+                        </label>
+                        <select
+                            value={taskId}
+                            onChange={(e) => { setTaskId(e.target.value); setError(''); }}
+                            disabled={isLoadingOtherTasks}
+                            className={inputCls}
+                        >
+                            <option value=''>
+                                {isLoadingOtherTasks ? 'Đang tải công việc...' : '-- Chọn công việc không thuộc dự án (nếu có) --'}
+                            </option>
+                            {nonProjectTasks.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                    {t.name} {t.code ? `(${t.code})` : ''}
+                                </option>
+                            ))}
+                        </select>
+                        {!isLoadingOtherTasks && !isOtherTasksError && nonProjectTasks.length === 0 && (
+                            <p className='mt-1 text-xs text-stone-400'>Bạn chưa có công việc nào không thuộc dự án (có thể để trống)</p>
+                        )}
+                        {isOtherTasksError && (
+                            <p className='mt-1 flex items-center gap-1 text-xs text-red-600'>
+                                <AlertCircle size={12} /> Không tải được danh sách công việc
+                            </p>
+                        )}
                     </div>
                 )}
 

@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { UserPlus } from 'lucide-react';
+import Select from 'react-select';
 import { toast } from 'react-toastify';
 import { useRespondTaskStaffingMutation } from '../../api/tasks';
 import { useAddTeamMemberMutation, useGetTeamMembersQuery } from '../../api/teams';
 import { useGetUsersQuery } from '../../api/users';
-import { TEAM_MEMBER_ROLE, TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../utils/enums';
+import {
+    PROJECT_MEMBER_EXCLUDED_ACCOUNT_ROLES,
+    TEAM_MEMBER_ROLE,
+    TEAM_MEMBER_ROLE_LABELS,
+    USER_ROLE,
+} from '../../utils/enums';
 import { getUserAccountRole, isSameUser } from '../../utils/authUser';
 import { formatWorkloadLabel } from '../../utils/workload';
 import { getTeamMemberRoles } from '../../utils/teamMember';
@@ -68,11 +74,19 @@ export const ResolveStaffingRequestModal = ({
 
     const availableUsers = useMemo(() => {
         return users.filter(user => {
+            const hasExcludedAccountRole = user.accounts?.some(account =>
+                PROJECT_MEMBER_EXCLUDED_ACCOUNT_ROLES.includes(account.role)
+            ) || PROJECT_MEMBER_EXCLUDED_ACCOUNT_ROLES.includes(getUserAccountRole(user));
             const assignedRoles = getRolesOfUser(user.id);
-            return !assignedRoles.has(TEAM_MEMBER_ROLE.PROJECT_MANAGER)
+            return !hasExcludedAccountRole
+                && !assignedRoles.has(TEAM_MEMBER_ROLE.PROJECT_MANAGER)
                 && assignableMemberRoles.some(role => !assignedRoles.has(role));
         });
     }, [users, effectiveMembers, assignableMemberRoles]);
+    const availableUserOptions = useMemo(() => availableUsers.map(item => ({
+        value: item.id,
+        label: `${item.fullName} - ${USER_ROLE[getUserAccountRole(item)] || getUserAccountRole(item) || 'Nhân sự'} - ${formatWorkloadLabel(item.workload)}`,
+    })), [availableUsers]);
 
     const selectedUserRoles = useMemo(() => getRolesOfUser(selectedUserId), [selectedUserId, effectiveMembers]);
     const availableRolesForSelectedUser = useMemo(
@@ -195,20 +209,18 @@ export const ResolveStaffingRequestModal = ({
                     <>
                         <div>
                             <label className="mb-2 block text-sm font-bold text-gray-700">Nhân sự</label>
-                            <select
-                                value={selectedUserId}
-                                onChange={event => handleSelectUser(event.target.value)}
-                                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                            >
-                                <option value="">
-                                    {availableUsers.length ? 'Chọn nhân sự' : 'Mọi nhân sự đã có đủ vai trò trong project'}
-                                </option>
-                                {availableUsers.map(item => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.fullName} - {USER_ROLE[getUserAccountRole(item)] || getUserAccountRole(item) || 'Nhân sự'} - {formatWorkloadLabel(item.workload)}
-                                    </option>
-                                ))}
-                            </select>
+                            <Select
+                                aria-label="Tìm và chọn nhân sự"
+                                options={availableUserOptions}
+                                value={availableUserOptions.find(option => option.value === selectedUserId) || null}
+                                onChange={option => handleSelectUser(option?.value || '')}
+                                placeholder={availableUsers.length ? 'Tìm và chọn nhân sự' : 'Không còn nhân sự phù hợp'}
+                                noOptionsMessage={() => 'Không tìm thấy nhân sự'}
+                                isSearchable
+                                isClearable
+                                className="text-sm"
+                                classNamePrefix="project-member-select"
+                            />
                         </div>
                         <div>
                             <label className="mb-2 block text-sm font-bold text-gray-700">Vai trò trong đội</label>

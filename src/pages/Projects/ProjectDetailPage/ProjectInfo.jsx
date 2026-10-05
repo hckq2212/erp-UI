@@ -7,11 +7,13 @@ import {
     ChevronDown,
     ChevronUp,
     Download,
+    Eye,
     FileText,
     History,
     Loader2,
     PackageCheck,
     Paperclip,
+    Pencil,
     Plus,
     Send,
     Sparkles,
@@ -23,7 +25,7 @@ import {
     useAiFormatProjectProductDescriptionMutation,
     useApproveProjectProductDescriptionMutation,
     useCreateProjectProductDescriptionMutation,
-    useExtractProjectProductDescriptionFileMutation,
+    useExtractProjectProductDescriptionUploadMutation,
     useGetProjectProductDescriptionsQuery,
     useRejectProjectProductDescriptionMutation,
     useSubmitProjectProductDescriptionMutation,
@@ -38,7 +40,9 @@ import { htmlToPlainText } from '../../../utils/html';
 import { toast } from 'react-toastify';
 import { Modal } from '../../../components/ui/Modal';
 import { RichTextEditor } from '../../../components/ui/RichTextEditor';
-import { generateProductDescriptionPdf } from '../../../utils/productDescriptionPdf';
+import { ExtractedDocument } from '../../../components/ui/ExtractedDocument';
+import { ProductDescriptionPdfPreview } from './ProductDescriptionPdfPreview';
+import ProductDescriptionLegend from './ProductDescriptionLegend';
 import { ProjectWorkingFilesSection } from './ProjectWorkingFilesSection';
 import { hasTeamMemberRole } from '../../../utils/teamMember';
 
@@ -185,6 +189,8 @@ const emptyProduct = () => ({
     docsUploading: false,
     extracting: false,
     aiFormatting: false,
+    viewMode: 'edit', // 'edit' | 'preview'
+    formatPreview: null, // { html, removed[], warnings[] } - kết quả AI chờ người dùng áp dụng/huỷ
     collapsed: true,
 });
 
@@ -201,6 +207,8 @@ const toEditableProduct = (item) => ({
     docsUploading: false,
     extracting: false,
     aiFormatting: false,
+    viewMode: 'edit',
+    formatPreview: null,
     collapsed: true,
 });
 
@@ -210,12 +218,7 @@ const ProductSpecsView = ({ item }) => {
     return (
         <div className="min-w-0 space-y-2">
             {item?.extractedText && (
-                <div className="rounded-lg border border-slate-300 bg-slate-50">
-                    <div
-                        className="rich-content px-3 py-2 text-sm font-medium text-slate-900 max-h-96 overflow-y-auto"
-                        dangerouslySetInnerHTML={{ __html: item.extractedText }}
-                    />
-                </div>
+                <ExtractedDocument html={item.extractedText} maxHeight={384} />
             )}
             {item?.note && (
                 <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2">
@@ -279,7 +282,7 @@ const ProductItemCard = ({ item }) => {
     );
 };
 
-const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onReject, onEdit, isReviewing, projectName }) => {
+const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onReject, onEdit, isReviewing, onPreviewPdf }) => {
     const [isRejectingInline, setIsRejectingInline] = useState(false);
     const [reviewNote, setReviewNote] = useState('');
 
@@ -295,9 +298,8 @@ const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onRe
 
     const handleDownloadPdf = () => {
         const items = Array.isArray(submission.items) ? submission.items : [];
-        generateProductDescriptionPdf({
-            title: submission.versionNumber ? `Thong tin chuan san pham - Version ${submission.versionNumber}` : 'Thong tin chuan san pham',
-            projectName,
+        onPreviewPdf({
+            title: submission.versionNumber ? `Thông tin chuẩn sản phẩm - Version ${submission.versionNumber}` : 'Thông tin chuẩn sản phẩm',
             items,
         });
     };
@@ -330,7 +332,7 @@ const VersionCard = ({ submission, canReview, canEditSubmission, onApprove, onRe
                         className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50"
                     >
                         <Download className="w-4 h-4" />
-                        Tải PDF
+                        Xem / Tải PDF
                     </button>
                     {canEditSubmission && ['DRAFT', 'REJECTED'].includes(submission.status) && (
                         <button
@@ -498,7 +500,7 @@ const ProductDescriptionSection = ({ project }) => {
     const [submitSubmission, { isLoading: isSubmitting }] = useSubmitProjectProductDescriptionMutation();
     const [approveSubmission, { isLoading: isApproving }] = useApproveProjectProductDescriptionMutation();
     const [rejectSubmission, { isLoading: isRejecting }] = useRejectProjectProductDescriptionMutation();
-    const [extractFile] = useExtractProjectProductDescriptionFileMutation();
+    const [extractUpload] = useExtractProjectProductDescriptionUploadMutation();
     const [aiFormat] = useAiFormatProjectProductDescriptionMutation();
 
     const currentUserId = getCurrentUserId(user);
@@ -523,6 +525,7 @@ const ProductDescriptionSection = ({ project }) => {
     const [loadedSubmissionId, setLoadedSubmissionId] = useState(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [pdfPreview, setPdfPreview] = useState(null); // { title, items } - đang xem trước PDF
     const activeSubmission = useMemo(() => (
         submissions.find((submission) => submission?.id === loadedSubmissionId) || null
     ), [loadedSubmissionId, submissions]);
@@ -555,8 +558,30 @@ const ProductDescriptionSection = ({ project }) => {
         setProducts((prev) => prev.length === 1 ? prev : prev.filter((_, idx) => idx !== index));
     };
 
+    // B1: trích xuất text trực tiếp từ file (không phụ thuộc Cloudinary)
+    // B2: upload file gốc lên Cloudinary để lưu trữ; nếu quá giới hạn thì vẫn giữ text đã trích xuất
     const handleDocFileChange = async (productIndex, file) => {
         if (!file) return;
+        updateProduct(productIndex, { fileName: file.name, extracting: true });
+        try {
+            const result = await extractUpload({ projectId, file }).unwrap();
+            updateProduct(productIndex, {
+                extractedText: result?.extractedText || '',
+                hasComplexLayout: Boolean(result?.hasComplexLayout),
+                extractWarnings: Array.isArray(result?.warnings) ? result.warnings : [],
+                extracting: false,
+                viewMode: 'preview',
+                formatPreview: null,
+            });
+            if (result?.hasComplexLayout) {
+                toast.warn('File có nhiều cột/bảng phức tạp, vui lòng kiểm tra kỹ nội dung trích xuất trước khi gửi duyệt');
+            }
+        } catch (extractErr) {
+            toast.error(extractErr?.data?.message || extractErr?.message || 'Trích xuất nội dung file thất bại');
+            updateProduct(productIndex, { extracting: false });
+            return;
+        }
+
         updateProduct(productIndex, { docUploading: true, docUploadProgress: 0 });
         try {
             const uploaded = await uploadToCloudinary(
@@ -564,29 +589,9 @@ const ProductDescriptionSection = ({ project }) => {
                 'GETVINI/ERP/product-description',
                 (progress) => updateProduct(productIndex, { docUploadProgress: progress })
             );
-            updateProduct(productIndex, {
-                fileUrl: uploaded.url,
-                fileName: file.name,
-                docUploading: false,
-                docUploadProgress: 0,
-                extracting: true,
-            });
-            try {
-                const result = await extractFile({ projectId, fileUrl: uploaded.url }).unwrap();
-                updateProduct(productIndex, {
-                    extractedText: result?.extractedText || '',
-                    hasComplexLayout: Boolean(result?.hasComplexLayout),
-                    extracting: false,
-                });
-                if (result?.hasComplexLayout) {
-                    toast.warn('File có nhiều cột/bảng phức tạp, vui lòng kiểm tra kỹ nội dung trích xuất trước khi gửi duyệt');
-                }
-            } catch (extractErr) {
-                toast.error(extractErr?.data?.message || extractErr?.message || 'Trích xuất nội dung file thất bại');
-                updateProduct(productIndex, { extracting: false });
-            }
+            updateProduct(productIndex, { fileUrl: uploaded.url, docUploading: false, docUploadProgress: 0 });
         } catch (err) {
-            toast.error(err?.message || 'Tải file lên thất bại');
+            toast.info('Đã trích xuất nội dung nhưng không lưu được file gốc (có thể quá dung lượng). Nội dung text vẫn được dùng.');
             updateProduct(productIndex, { docUploading: false, docUploadProgress: 0 });
         }
     };
@@ -605,14 +610,34 @@ const ProductDescriptionSection = ({ project }) => {
                 text: product.extractedText,
                 productName: product.productName,
             }).unwrap();
+            if (!result?.extractedText) {
+                toast.error('AI không trả về nội dung, giữ nguyên bản hiện tại');
+                updateProduct(productIndex, { aiFormatting: false });
+                return;
+            }
+            // Chưa ghi đè nội dung: cho người dùng xem trước và đối chiếu các dòng bị loại rồi mới áp dụng
             updateProduct(productIndex, {
-                extractedText: result?.extractedText || product.extractedText,
                 aiFormatting: false,
+                formatPreview: {
+                    html: result.extractedText,
+                    removed: Array.isArray(result?.removed) ? result.removed : [],
+                    warnings: Array.isArray(result?.warnings) ? result.warnings : [],
+                },
             });
         } catch (err) {
             toast.error(err?.data?.message || err?.message || 'AI formatting thất bại');
             updateProduct(productIndex, { aiFormatting: false });
         }
+    };
+
+    const applyFormatPreview = (productIndex) => {
+        const preview = products[productIndex]?.formatPreview;
+        if (!preview) return;
+        updateProduct(productIndex, { extractedText: preview.html, formatPreview: null, viewMode: 'preview' });
+    };
+
+    const discardFormatPreview = (productIndex) => {
+        updateProduct(productIndex, { formatPreview: null });
     };
 
     const handleAdditionalDocsChange = async (productIndex, fileList) => {
@@ -685,7 +710,7 @@ const ProductDescriptionSection = ({ project }) => {
 
             const fileUrl = product.fileUrl.trim();
 
-            if (!fileUrl) {
+            if (!fileUrl && !(product.extractedText || '').trim()) {
                 throw new Error(`Vui lòng upload file thông tin chuẩn (doc/pdf) cho sản phẩm ${productName}`);
             }
 
@@ -857,6 +882,8 @@ const ProductDescriptionSection = ({ project }) => {
                         </p>
                     </div>
 
+                    <ProductDescriptionLegend />
+
                     <div className="space-y-3">
                         {products.map((product, index) => (
                             <div key={index} className="overflow-hidden rounded-xl border-2 border-gray-200 bg-white">
@@ -949,10 +976,30 @@ const ProductDescriptionSection = ({ project }) => {
                                                 <label className="block text-xs font-bold uppercase tracking-wide text-emerald-700">
                                                     Nội dung trích xuất
                                                 </label>
+                                                <div className="ml-auto inline-flex overflow-hidden rounded-lg border border-emerald-300 bg-white text-[11px] font-bold">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => updateProduct(index, { viewMode: 'edit' })}
+                                                        disabled={Boolean(product.formatPreview)}
+                                                        className={`inline-flex items-center gap-1 px-2 py-1 disabled:opacity-40 ${product.viewMode !== 'preview' && !product.formatPreview ? 'bg-emerald-600 text-white' : 'text-emerald-700 hover:bg-emerald-50'}`}
+                                                    >
+                                                        <Pencil className="h-3 w-3" />
+                                                        Chỉnh sửa
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => updateProduct(index, { viewMode: 'preview' })}
+                                                        disabled={Boolean(product.formatPreview)}
+                                                        className={`inline-flex items-center gap-1 px-2 py-1 disabled:opacity-40 ${product.viewMode === 'preview' && !product.formatPreview ? 'bg-emerald-600 text-white' : 'text-emerald-700 hover:bg-emerald-50'}`}
+                                                    >
+                                                        <Eye className="h-3 w-3" />
+                                                        Xem trước
+                                                    </button>
+                                                </div>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleAiFormat(index)}
-                                                    disabled={!canEdit || isSaving || product.aiFormatting || product.extracting || !product.extractedText}
+                                                    disabled={!canEdit || isSaving || product.aiFormatting || product.extracting || !product.extractedText || Boolean(product.formatPreview)}
                                                     className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-50 disabled:opacity-40"
                                                 >
                                                     {product.aiFormatting ? (
@@ -969,11 +1016,62 @@ const ProductDescriptionSection = ({ project }) => {
                                                     File có nhiều cột/bảng phức tạp, nội dung trích xuất bên dưới có thể bị sai thứ tự hoặc thiếu sót. Vui lòng kiểm tra kỹ và chỉnh sửa trước khi gửi duyệt.
                                                 </div>
                                             )}
+                                            {!product.extracting && product.extractWarnings?.length > 0 && (
+                                                <ul className="mb-2 list-disc rounded-lg border border-amber-300 bg-amber-50 px-6 py-2 text-xs text-amber-700">
+                                                    {product.extractWarnings.map((w, i) => <li key={i}>{w}</li>)}
+                                                </ul>
+                                            )}
                                             {product.extracting ? (
                                                 <div className="flex items-center gap-2 rounded-lg border border-emerald-100 bg-white px-3 py-2.5 text-xs text-emerald-600">
                                                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                                     Đang trích xuất nội dung từ file...
                                                 </div>
+                                            ) : product.formatPreview ? (
+                                                <div className="space-y-2">
+                                                    <p className="text-xs font-semibold text-emerald-700">
+                                                        Xem trước kết quả AI formatting (chưa áp dụng). Chữ giữ nguyên văn bản gốc, AI chỉ đổi bố cục và loại dòng không liên quan.
+                                                    </p>
+                                                    <ExtractedDocument html={product.formatPreview.html} maxHeight={420} />
+                                                    {product.formatPreview.warnings?.length > 0 && (
+                                                        <ul className="list-disc space-y-1 rounded-lg border border-amber-300 bg-amber-50 px-6 py-2 text-xs text-amber-800">
+                                                            {product.formatPreview.warnings.map((warning, i) => <li key={i}>{warning}</li>)}
+                                                        </ul>
+                                                    )}
+                                                    {product.formatPreview.removed.length > 0 ? (
+                                                        <details className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                                            <summary className="cursor-pointer font-bold">
+                                                                AI đã loại {product.formatPreview.removed.length} dòng - bấm để kiểm tra không mất thông tin cần thiết
+                                                            </summary>
+                                                            <ul className="mt-2 max-h-40 list-disc space-y-0.5 overflow-y-auto pl-5">
+                                                                {product.formatPreview.removed.map((line, i) => <li key={i}>{line}</li>)}
+                                                            </ul>
+                                                        </details>
+                                                    ) : (
+                                                        <p className="text-xs text-slate-500">AI không loại dòng nào.</p>
+                                                    )}
+                                                    <div className="flex justify-end gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => discardFormatPreview(index)}
+                                                            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                                                        >
+                                                            Hủy
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => applyFormatPreview(index)}
+                                                            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700"
+                                                        >
+                                                            Áp dụng
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : product.viewMode === 'preview' ? (
+                                                <ExtractedDocument
+                                                    html={product.extractedText}
+                                                    maxHeight={480}
+                                                    emptyText="Chưa có nội dung trích xuất"
+                                                />
                                             ) : (
                                                 <RichTextEditor
                                                     value={product.extractedText}
@@ -1067,15 +1165,14 @@ const ProductDescriptionSection = ({ project }) => {
                     <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
                         <button
                             type="button"
-                            onClick={() => generateProductDescriptionPdf({
-                                title: 'Thong tin chuan san pham (nhap)',
-                                projectName: project?.name,
+                            onClick={() => setPdfPreview({
+                                title: 'Thông tin chuẩn sản phẩm (bản nháp)',
                                 items: products,
                             })}
                             className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50"
                         >
                             <Download className="h-4 w-4" />
-                            Tải PDF
+                            Xem / Tải PDF
                         </button>
                         <button
                             type="button"
@@ -1111,7 +1208,7 @@ const ProductDescriptionSection = ({ project }) => {
                             onReject={handleReject}
                             onEdit={openEditForm}
                             isReviewing={isReviewing}
-                            projectName={project?.name}
+                            onPreviewPdf={setPdfPreview}
                         />
                     ))
                 ) : (
@@ -1127,6 +1224,14 @@ const ProductDescriptionSection = ({ project }) => {
                 submissions={submissions}
                 canEditSubmission={canManageSubmission && !hasPendingSubmission}
                 onEdit={openEditForm}
+            />
+
+            <ProductDescriptionPdfPreview
+                isOpen={Boolean(pdfPreview)}
+                onClose={() => setPdfPreview(null)}
+                title={pdfPreview?.title}
+                projectName={project?.name}
+                items={pdfPreview?.items}
             />
         </div>
     );

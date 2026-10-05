@@ -175,6 +175,11 @@ export const getFileExtension = (url = '', fileName = '') => {
 export const isValidFileUrl = (url, fileName = '') => {
   if (!url || typeof url !== 'string') return false;
 
+  if (url.startsWith('blob:')) {
+    const ext = extractExt(fileName);
+    return Boolean(ext && SUPPORTED_EXTENSIONS.includes(ext));
+  }
+
   // Phải là absolute URL (http/https), không chấp nhận route tương đối kiểu /contracts/...
   let parsed;
   try {

@@ -309,11 +309,37 @@ export const USER_ROLE = {
   ADMIN_SALE: "ADMIN kinh doanh",
   BD: "BD",
   PM: "PM",
-  STAFF_A: "Nhân sự Level A",
-  STAFF_B: "Nhân sự Level B",
-  STAFF_C: "Nhân sự Level C",
-  STAFF_D: "Nhân sự Level D",
+  CONTENT_A: "Content A",
+  CONTENT_B: "Content B",
+  CONTENT_C: "Content C",
+  CONTENT_D: "Content Intern",
+  EDITOR_A: "Editor A",
+  EDITOR_B: "Editor B",
+  EDITOR_C: "Editor C",
+  EDITOR_D: "Editor Intern",
+  DESIGNER_A: "Designer A",
+  DESIGNER_B: "Designer B",
+  DESIGNER_C: "Designer C",
+  DESIGNER_D: "Designer Intern",
 };
+
+export const SPECIALIZED_STAFF_ROLES = [
+  'CONTENT_A',
+  'CONTENT_B',
+  'CONTENT_C',
+  'CONTENT_D',
+  'EDITOR_A',
+  'EDITOR_B',
+  'EDITOR_C',
+  'EDITOR_D',
+  'DESIGNER_A',
+  'DESIGNER_B',
+  'DESIGNER_C',
+  'DESIGNER_D',
+];
+
+
+export const STAFF_ROLES = [...SPECIALIZED_STAFF_ROLES];
 
 export const USER_ROLE_OPTIONS = [
   { value: 'ADMIN', label: USER_ROLE.ADMIN },
@@ -321,13 +347,10 @@ export const USER_ROLE_OPTIONS = [
   { value: 'BD', label: USER_ROLE.BD },
   { value: 'ADMIN_SALE', label: USER_ROLE.ADMIN_SALE },
   { value: 'PM', label: USER_ROLE.PM },
-  { value: 'STAFF_A', label: USER_ROLE.STAFF_A },
-  { value: 'STAFF_B', label: USER_ROLE.STAFF_B },
-  { value: 'STAFF_C', label: USER_ROLE.STAFF_C },
-  { value: 'STAFF_D', label: USER_ROLE.STAFF_D },
+  ...STAFF_ROLES.map((role) => ({ value: role, label: USER_ROLE[role] || role })),
 ];
 
-export const STAFF_ROLES = ['STAFF_A', 'STAFF_B', 'STAFF_C', 'STAFF_D'];
+export const PROJECT_MEMBER_EXCLUDED_ACCOUNT_ROLES = ['ADMIN_SALE', 'BOD', 'BD'];
 export const PROJECT_MANAGEMENT_ROLES = ['ADMIN', 'BOD', 'PM'];
 export const ACCEPTANCE_APPROVER_ROLES = ['ADMIN', 'BOD', 'ADMIN_SALE'];
 
@@ -337,10 +360,18 @@ export const USER_ROLE_COLORS = {
   BD: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   ADMIN_SALE: 'bg-violet-50 text-violet-700 border-violet-100',
   PM: 'bg-purple-50 text-purple-700 border-purple-100',
-  STAFF_A: 'bg-cyan-50 text-cyan-700 border-cyan-100',
-  STAFF_B: 'bg-blue-50 text-blue-700 border-blue-100',
-  STAFF_C: 'bg-sky-50 text-sky-700 border-sky-100',
-  STAFF_D: 'bg-slate-50 text-slate-700 border-slate-100',
+  CONTENT_A: 'bg-orange-50 text-orange-700 border-orange-100',
+  CONTENT_B: 'bg-orange-50 text-orange-700 border-orange-100',
+  CONTENT_C: 'bg-orange-50 text-orange-700 border-orange-100',
+  CONTENT_D: 'bg-orange-50 text-orange-700 border-orange-100',
+  EDITOR_A: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  EDITOR_B: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  EDITOR_C: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  EDITOR_D: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  DESIGNER_A: 'bg-teal-50 text-teal-700 border-teal-100',
+  DESIGNER_B: 'bg-teal-50 text-teal-700 border-teal-100',
+  DESIGNER_C: 'bg-teal-50 text-teal-700 border-teal-100',
+  DESIGNER_D: 'bg-teal-50 text-teal-700 border-teal-100',
 };
 
 export const TEAM_MEMBER_ROLE_LABELS = {
