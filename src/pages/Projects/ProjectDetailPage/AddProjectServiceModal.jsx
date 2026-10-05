@@ -27,6 +27,11 @@ const mapServiceJobs = (service, quantity = 1) =>
     jobId: serviceJob.job?.id || serviceJob.jobId,
     jobName: serviceJob.job?.name || 'Công việc',
     quantity: Number(serviceJob.quantity || 1) * Number(quantity || 1),
+    unit: serviceJob.job?.unit || '',
+    unitCost: Number(serviceJob.job?.costPrice || 0),
+    cost: Number(serviceJob.job?.costPrice || 0) *
+      Number(serviceJob.quantity || 1) *
+      Number(quantity || 1),
     isOutput: serviceJob.isOutput,
   }));
 
@@ -218,8 +223,10 @@ export const AddProjectServiceModal = ({ isOpen, onClose, project }) => {
     const packageItems = (templatePackage.items || [])
       .filter((packageItem) => packageItem.service || packageItem.serviceId)
       .map((packageItem) => {
-        const service = packageItem.service ||
-          allServices.find((svc) => String(svc.id) === String(packageItem.serviceId)) ||
+        const service = allServices.find((svc) => (
+          String(svc.id) === String(packageItem.serviceId || packageItem.service?.id)
+        )) ||
+          packageItem.service ||
           {};
         return createRowFromService(service, {
           packageKey: newPackageKey,
@@ -444,7 +451,7 @@ export const AddProjectServiceModal = ({ isOpen, onClose, project }) => {
 
                             {isPackageExpanded &&
                               pkg.items.map((item, iIdx) => {
-                                const serviceKey = `${packageKey}-item-${iIdx}`;
+                                const serviceKey = item.key || `${packageKey}-item-${iIdx}`;
                                 const isServiceExpanded = Boolean(expandedServices[serviceKey]);
 
                                 return (
@@ -488,13 +495,44 @@ export const AddProjectServiceModal = ({ isOpen, onClose, project }) => {
                                       <td />
                                     </tr>
 
-                                    {isServiceExpanded && (
+                                    {isServiceExpanded && item.description && (
                                       <tr className="border-b border-gray-50/50 bg-blue-50/10">
+                                        <td colSpan={6} className="px-4 py-2 pl-16 text-[11px] leading-relaxed text-gray-500">
+                                          <p className="whitespace-pre-wrap">{item.description}</p>
+                                        </td>
+                                      </tr>
+                                    )}
+
+                                    {isServiceExpanded && item.jobs.map((job, jobIndex) => (
+                                      <tr
+                                        key={`${serviceKey}-job-${job.jobId || jobIndex}`}
+                                        className="border-b border-gray-50 bg-slate-50/70 text-xs text-gray-500"
+                                      >
+                                        <td className="px-4 py-2 pl-16">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-blue-300">└</span>
+                                            <span>{job.jobName}</span>
+                                          </div>
+                                        </td>
+                                        <td className="px-4 py-2 text-center">
+                                          {formatNumber(job.quantity)} {job.unit}
+                                        </td>
+                                        <td className="px-4 py-2 text-right text-gray-300">—</td>
                                         <td
-                                          colSpan={6}
-                                          className="px-4 py-3 pl-16 text-[11px] leading-relaxed text-gray-500"
+                                          className="px-4 py-2 text-right italic text-gray-500"
+                                          title="Giá vốn hạng mục đã được tính trong giá vốn dịch vụ"
                                         >
-                                          <p className="whitespace-pre-wrap">{item.description || 'Không có mô tả'}</p>
+                                          {formatNumber(Math.round(job.cost))}
+                                        </td>
+                                        <td className="px-4 py-2 text-right text-gray-300">—</td>
+                                        <td />
+                                      </tr>
+                                    ))}
+
+                                    {isServiceExpanded && item.jobs.length === 0 && (
+                                      <tr className="border-b border-gray-50 bg-slate-50/70">
+                                        <td colSpan={6} className="px-4 py-2 pl-16 text-xs italic text-gray-400">
+                                          Dịch vụ chưa có hạng mục con.
                                         </td>
                                       </tr>
                                     )}
@@ -517,7 +555,7 @@ export const AddProjectServiceModal = ({ isOpen, onClose, project }) => {
                           </tr>
 
                           {aggregatedItems.standalone.map((item, idx) => {
-                            const serviceKey = `standalone-${idx}`;
+                            const serviceKey = item.key || `standalone-${idx}`;
                             const isServiceExpanded = Boolean(expandedServices[serviceKey]);
 
                             return (
@@ -583,13 +621,44 @@ export const AddProjectServiceModal = ({ isOpen, onClose, project }) => {
                                   </td>
                                 </tr>
 
-                                {isServiceExpanded && (
+                                {isServiceExpanded && item.description && (
                                   <tr className="border-b border-gray-100 bg-gray-50/70">
+                                    <td colSpan={6} className="px-4 py-2 pl-10 text-xs leading-relaxed text-gray-500">
+                                      <p className="whitespace-pre-wrap">{item.description}</p>
+                                    </td>
+                                  </tr>
+                                )}
+
+                                {isServiceExpanded && item.jobs.map((job, jobIndex) => (
+                                  <tr
+                                    key={`${serviceKey}-job-${job.jobId || jobIndex}`}
+                                    className="border-b border-gray-100 bg-gray-50/70 text-xs text-gray-500"
+                                  >
+                                    <td className="px-4 py-2 pl-10">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-purple-300">└</span>
+                                        <span>{job.jobName}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-2 text-center">
+                                      {formatNumber(job.quantity)} {job.unit}
+                                    </td>
+                                    <td className="px-4 py-2 text-right text-gray-300">—</td>
                                     <td
-                                      colSpan={6}
-                                      className="px-4 py-3 pl-10 text-xs leading-relaxed text-gray-500"
+                                      className="px-4 py-2 text-right italic text-gray-500"
+                                      title="Giá vốn hạng mục đã được tính trong giá vốn dịch vụ"
                                     >
-                                      <p className="whitespace-pre-wrap">{item.description || 'Không có mô tả'}</p>
+                                      {formatNumber(Math.round(job.cost))}
+                                    </td>
+                                    <td className="px-4 py-2 text-right text-gray-300">—</td>
+                                    <td />
+                                  </tr>
+                                ))}
+
+                                {isServiceExpanded && item.jobs.length === 0 && (
+                                  <tr className="border-b border-gray-100 bg-gray-50/70">
+                                    <td colSpan={6} className="px-4 py-2 pl-10 text-xs italic text-gray-400">
+                                      Dịch vụ chưa có hạng mục con.
                                     </td>
                                   </tr>
                                 )}
