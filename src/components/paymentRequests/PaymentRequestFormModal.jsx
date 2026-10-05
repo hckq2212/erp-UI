@@ -222,11 +222,6 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                 setError('Vui lòng chọn công việc của bạn trong dự án');
                 return;
             }
-        } else if (type === 'OTHER_WORK') {
-            if (!taskId) {
-                setError('Vui lòng chọn công việc của bạn (không thuộc dự án)');
-                return;
-            }
         }
 
         if (!content.trim()) {
@@ -275,7 +270,7 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
     };
 
     const isProjectMissing = hasSubmitted && type === 'PROJECT' && !projectId;
-    const isTaskMissing = hasSubmitted && !taskId;
+    const isTaskMissing = hasSubmitted && type === 'PROJECT' && !taskId;
     const isContentMissing = hasSubmitted && !content.trim();
     const isAmountMissing = hasSubmitted && (!amount || Number(amount) <= 0);
     const isDueDateMissing = hasSubmitted && !dueDate;
@@ -363,16 +358,16 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                 {type === 'OTHER_WORK' && (
                     <div>
                         <label className={labelCls}>
-                            Công việc (không thuộc dự án) <span className='text-red-500'>*</span>
+                            Công việc (không thuộc dự án) <span className='text-xs font-normal text-stone-400'>(tùy chọn)</span>
                         </label>
                         <select
                             value={taskId}
                             onChange={(e) => { setTaskId(e.target.value); setError(''); }}
                             disabled={isLoadingOtherTasks}
-                            className={cn(inputCls, isTaskMissing && 'border-red-400 focus:border-red-500 bg-red-50/20')}
+                            className={inputCls}
                         >
                             <option value=''>
-                                {isLoadingOtherTasks ? 'Đang tải công việc...' : '-- Chọn công việc không thuộc dự án --'}
+                                {isLoadingOtherTasks ? 'Đang tải công việc...' : '-- Chọn công việc không thuộc dự án (nếu có) --'}
                             </option>
                             {nonProjectTasks.map((t) => (
                                 <option key={t.id} value={t.id}>
@@ -381,7 +376,7 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                             ))}
                         </select>
                         {!isLoadingOtherTasks && !isOtherTasksError && nonProjectTasks.length === 0 && (
-                            <p className='mt-1 text-xs text-orange-600'>Bạn chưa có công việc nào không thuộc dự án</p>
+                            <p className='mt-1 text-xs text-stone-400'>Bạn chưa có công việc nào không thuộc dự án (có thể để trống)</p>
                         )}
                         {isOtherTasksError && (
                             <p className='mt-1 flex items-center gap-1 text-xs text-red-600'>
