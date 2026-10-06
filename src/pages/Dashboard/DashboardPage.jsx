@@ -12,10 +12,9 @@ import { useGetTasksQuery } from '../../api/tasks';
 import { MemberSelector } from '../../components/dashboard/MemberSelector';
 import { MonthSelector } from '../../components/dashboard/MonthSelector';
 import { ProjectSelector } from '../../components/dashboard/ProjectSelector';
-import { AdminView } from '../../components/dashboard/AdminView';
-import { TeamLeadView } from '../../components/dashboard/TeamLeadView';
-import { BDView } from '../../components/dashboard/BDView';
-import { MemberView } from '../../components/dashboard/MemberView';
+const AdminView = lazy(() => import('../../components/dashboard/AdminView').then(m => ({ default: m.AdminView })));
+const BDView = lazy(() => import('../../components/dashboard/BDView').then(m => ({ default: m.BDView })));
+const MemberView = lazy(() => import('../../components/dashboard/MemberView').then(m => ({ default: m.MemberView })));
 import { getCurrentUserId } from '../../utils/authUser';
 
 const PaymentOverviewPage = lazy(() =>
@@ -269,67 +268,69 @@ export const DashboardPage = () => {
                         transition={{ delay: 0.4 }}
                         className="space-y-3 pb-2"
                     >
-                        {isViewingMember ? (
-                            <div className="">
-                                <MemberView
-                                    dashboard={dashboard}
-                                    navigate={navigate}
-                                    isViewingMember={isViewingMember}
-                                    isAccountViewingMember={isAccountViewingMember}
-                                    selectedMemberId={selectedMemberId}
-                                    selectedProjectId={selectedProjectId}
-                                    onSelectProject={setSelectedProjectId}
-                                    availableProjects={availableProjects}
-                                    teamMembers={effectiveTeamMembers}
-                                    isTeamLead={isTeamLead}
-                                    onSelectMember={handleSelectMember}
-                                    currentUserId={currentUserId}
-                                    awaitingReviewTasks={awaitingReviewTasks}
-                                    user={user}
-                                    selectedDate={selectedDate}
-                                    viewMode={isPM ? viewMode : 'personal'}
-                                />
-                            </div>
-                        ) : (
-                            <>
-                                {isAdminOrBod && (
-                                    <AdminView
+                        <Suspense fallback={<DashboardRouteFallback />}>
+                            {isViewingMember ? (
+                                <div className="">
+                                    <MemberView
                                         dashboard={dashboard}
                                         navigate={navigate}
-                                        onSelectMember={setSelectedMemberId}
+                                        isViewingMember={isViewingMember}
+                                        isAccountViewingMember={isAccountViewingMember}
+                                        selectedMemberId={selectedMemberId}
+                                        selectedProjectId={selectedProjectId}
+                                        onSelectProject={setSelectedProjectId}
+                                        availableProjects={availableProjects}
+                                        teamMembers={effectiveTeamMembers}
+                                        isTeamLead={isTeamLead}
+                                        onSelectMember={handleSelectMember}
+                                        currentUserId={currentUserId}
+                                        awaitingReviewTasks={awaitingReviewTasks}
+                                        user={user}
+                                        selectedDate={selectedDate}
+                                        viewMode={isPM ? viewMode : 'personal'}
                                     />
-                                )}
-
-                                {!isAdminOrBod && user?.role === 'BD' && (
-                                    <BDView
-                                        dashboard={dashboard}
-                                        navigate={navigate}
-                                    />
-                                )}
-
-                                {!isAdminOrBod && user?.role !== 'BD' && (
-                                    <div className="">
-                                        <MemberView
+                                </div>
+                            ) : (
+                                <>
+                                    {isAdminOrBod && (
+                                        <AdminView
                                             dashboard={dashboard}
                                             navigate={navigate}
-                                            isViewingMember={false}
-                                            selectedMemberId={null}
-                                            selectedProjectId={selectedProjectId}
-                                            onSelectProject={setSelectedProjectId}
-                                            availableProjects={availableProjects}
-                                            teamMembers={effectiveTeamMembers}
-                                            isTeamLead={isTeamLead}
-                                            onSelectMember={handleSelectMember}
-                                            currentUserId={currentUserId}
-                                            awaitingReviewTasks={awaitingReviewTasks}
-                                            user={user}
-                                            selectedDate={selectedDate}
-                                            viewMode={isPM ? viewMode : 'personal'}
+                                            onSelectMember={setSelectedMemberId}
                                         />
-                                    </div>
-                                )}
-                            </>
-                        )}
+                                    )}
+
+                                    {!isAdminOrBod && user?.role === 'BD' && (
+                                        <BDView
+                                            dashboard={dashboard}
+                                            navigate={navigate}
+                                        />
+                                    )}
+
+                                    {!isAdminOrBod && user?.role !== 'BD' && (
+                                        <div className="">
+                                            <MemberView
+                                                dashboard={dashboard}
+                                                navigate={navigate}
+                                                isViewingMember={false}
+                                                selectedMemberId={null}
+                                                selectedProjectId={selectedProjectId}
+                                                onSelectProject={setSelectedProjectId}
+                                                availableProjects={availableProjects}
+                                                teamMembers={effectiveTeamMembers}
+                                                isTeamLead={isTeamLead}
+                                                onSelectMember={handleSelectMember}
+                                                currentUserId={currentUserId}
+                                                awaitingReviewTasks={awaitingReviewTasks}
+                                                user={user}
+                                                selectedDate={selectedDate}
+                                                viewMode={isPM ? viewMode : 'personal'}
+                                            />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </Suspense>
                     </motion.div>
                 </AnimatePresence>
             </motion.div>
