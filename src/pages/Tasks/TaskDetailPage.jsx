@@ -77,11 +77,17 @@ export const TaskDetailPage = () => {
         isSameUser(currentUserId, task?.assignee?.id) ||
         isSameUser(currentUserId, task?.helperId) ||
         isSameUser(currentUserId, task?.helper?.id);
+    const canReviewOpportunityVideoTask = !isProjectOnHold &&
+        isVideoDemoTask &&
+        task?.status === 'AWAITING_REVIEW' &&
+        ['PM', 'ADMIN'].includes(currentUserRole) &&
+        !isAssigneeOrHelper;
     const canStartTask = !isProjectOnHold &&
         task?.status === 'NOT_STARTED' &&
         isAssigneeOrHelper;
     const isAssigner = isSameUser(currentUserId, task?.assignerId) || isSameUser(currentUserId, task?.assigner?.id);
-    const canDecideOutcome = !isProjectOnHold && canDecideTaskOutcome(task, currentUserId);
+    const canDecideOutcome = !isProjectOnHold &&
+        (canDecideTaskOutcome(task, currentUserId) || canReviewOpportunityVideoTask);
     const canSubmitResult = !isProjectOnHold && (isAssigneeOrHelper || isAssigner || canManageProjectTask || ['ADMIN', 'BOD'].includes(user?.role));
     const isReviewerForThisTask = !isProjectOnHold && canManageProjectTask && !isAssigneeOrHelper;
     const isTaskLocked = ['INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED', 'DONE', 'CANCELLED', 'ON_HOLD'].includes(task?.status);
@@ -1292,6 +1298,7 @@ export const TaskDetailPage = () => {
                         await requestRework({
                             id,
                             projectId: task.project?.id,
+                            opportunityId: task.opportunityId,
                             ...data
                         }).unwrap();
                         toast.success('Gửi yêu cầu làm lại thành công');
