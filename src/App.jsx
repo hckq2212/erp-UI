@@ -7,13 +7,15 @@ import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SessionExpiredModal } from './components/auth/SessionExpiredModal';
 
-import { DashboardPage } from './pages/Dashboard/DashboardPage';
-
-import { ChatBubbleWidget } from './components/chat/ChatBubbleWidget';
-
 const lazyNamed = (loader, exportName) => lazy(() =>
   loader().then((module) => ({ default: module[exportName] }))
 );
+
+const DashboardPage = lazyNamed(() => import('./pages/Dashboard/DashboardPage'), 'DashboardPage');
+const ChatBubbleWidget = lazy(() =>
+  import('./components/chat/ChatBubbleWidget').then((module) => ({ default: module.ChatBubbleWidget }))
+);
+
 
 const CustomersPage = lazyNamed(() => import('./pages/Customers/CustomersPage'), 'CustomersPage');
 const CustomerDetailPage = lazyNamed(() => import('./pages/Customers/CustomerDetailPage'), 'CustomerDetailPage');
