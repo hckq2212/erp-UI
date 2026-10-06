@@ -797,7 +797,7 @@ export const AddProjectServiceModal = ({ isOpen, onClose, project }) => {
             type="button"
             onClick={handleSubmit}
             disabled={items.length === 0 || isCreating || isFetching}
-            className="flex-[2] rounded-md bg-green-600 px-4 py-3 font-bold text-white shadow-lg shadow-green-100 transition-all hover:bg-green-700 active:scale-95 disabled:opacity-50"
+            className="flex-[2] rounded-md bg-orange-500 px-4 py-3 font-bold text-white shadow-lg shadow-orange-100 transition-all hover:bg-orange-600 active:scale-95 disabled:cursor-not-allowed disabled:bg-orange-300 disabled:shadow-none"
           >
             <span className="flex items-center justify-center gap-2">
               {isCreating ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle className="h-5 w-5" />}
