@@ -26,12 +26,6 @@ import {
   isGoogleUrl,
   getGoogleEmbedUrl
 } from '../../utils/fileDetector';
-import * as docx from 'docx-preview';
-import * as XLSX from 'xlsx';
-import * as pdfjsLib from 'pdfjs-dist';
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 /**
  * Modal xem trước tài liệu đa năng với giao diện chuẩn như ảnh mẫu
@@ -138,17 +132,20 @@ export const DocumentPreviewModal = ({
     }
   }, [isOpen, url, fileType]);
 
-  // Render file Word (.docx) bằng docx-preview
+  // Render file Word (.docx) bằng docx-preview (nạp động khi cần)
   const renderDocxFile = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(url, {
-        headers: {
-          'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document, */*'
-        }
-      });
+      const [docx, response] = await Promise.all([
+        import('docx-preview'),
+        fetch(url, {
+          headers: {
+            'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document, */*'
+          }
+        })
+      ]);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: Không thể tải file từ Cloudinary`);
@@ -193,13 +190,16 @@ export const DocumentPreviewModal = ({
     }
   };
 
-  // Render file Excel (.xlsx) bằng XLSX parser
+  // Render file Excel (.xlsx) bằng XLSX parser (nạp động khi cần)
   const renderExcelFile = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(url);
+      const [XLSX, response] = await Promise.all([
+        import('xlsx'),
+        fetch(url)
+      ]);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const blob = await response.blob();
       const arrayBuffer = await blob.arrayBuffer();
@@ -227,7 +227,10 @@ export const DocumentPreviewModal = ({
     setActiveSheetIndex(index);
     setCurrentPage(index + 1);
     try {
-      const response = await fetch(url);
+      const [XLSX, response] = await Promise.all([
+        import('xlsx'),
+        fetch(url)
+      ]);
       const arrayBuffer = await (await response.blob()).arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
       const currentSheet = workbook.Sheets[excelSheets[index]];
@@ -238,17 +241,27 @@ export const DocumentPreviewModal = ({
     }
   };
 
-  // Render file PDF bằng pdfjs-dist ra từng trang A4
+  // Render file PDF bằng pdfjs-dist ra từng trang A4 (nạp động khi cần)
   const renderPdfFile = async () => {
     setLoading(true);
     setError(null);
     setPdfPages([]);
 
     try {
-      const response = await fetch(url);
+      const [pdfjsLibModule, pdfWorkerModule, response] = await Promise.all([
+        import('pdfjs-dist'),
+        import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+        fetch(url)
+      ]);
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: Không thể tải file PDF`);
       }
+
+      const pdfjsLib = pdfjsLibModule.default || pdfjsLibModule;
+      const pdfWorker = pdfWorkerModule.default || pdfWorkerModule;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+
       const arrayBuffer = await response.arrayBuffer();
 
       const loadingTask = pdfjsLib.getDocument({
