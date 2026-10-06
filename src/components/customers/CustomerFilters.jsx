@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, memo } from 'react';
 import Select from 'react-select';
 import { Search, RotateCcw, X } from 'lucide-react';
 
@@ -119,13 +119,33 @@ const SOURCE_OPTIONS = [
   { value: 'REFERRAL_PARTNER', label: 'Đối tác giới thiệu' }
 ];
 
-export const CustomerFilters = ({
+const CustomerFiltersComponent = ({
   searchTerm = '',
   onSearch,
   sourceValue = '',
   onFilterSource,
   onReset
 }) => {
+  const [localSearch, setLocalSearch] = useState(searchTerm || '');
+
+  useEffect(() => {
+    setLocalSearch(searchTerm || '');
+  }, [searchTerm]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSearch !== (searchTerm || '')) {
+        onSearch?.(localSearch);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [localSearch, onSearch, searchTerm]);
+
+  const handleClearSearch = () => {
+    setLocalSearch('');
+    onSearch?.('');
+  };
+
   const selectedSource = useMemo(() => {
     if (!sourceValue || sourceValue === 'ALL') return [];
     const values = Array.isArray(sourceValue)
@@ -149,13 +169,13 @@ export const CustomerFilters = ({
           type="text"
           className="w-full pl-12 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none font-medium h-[46px]"
           placeholder="Tìm kiếm theo tên, SĐT, email, MST, đối tác..."
-          value={searchTerm || ''}
-          onChange={(e) => onSearch(e.target.value)}
+          value={localSearch}
+          onChange={(e) => setLocalSearch(e.target.value)}
         />
-        {searchTerm && (
+        {localSearch && (
           <button
             type="button"
-            onClick={() => onSearch('')}
+            onClick={handleClearSearch}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition-colors"
             title="Xóa tìm kiếm"
           >
@@ -192,3 +212,5 @@ export const CustomerFilters = ({
     </div>
   );
 };
+
+export const CustomerFilters = memo(CustomerFiltersComponent);

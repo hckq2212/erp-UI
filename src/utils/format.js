@@ -52,6 +52,22 @@ export const formatCurrency = (value) => {
   return formatted ? `${formatted} VNĐ` : '';
 };
 
+const compactCurrencyFormatter = new Intl.NumberFormat('vi-VN', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+
+/**
+ * Format compact currency / number with Vietnamese short notation (e.g., 1,5 Tr, 2,8 Tỷ)
+ * @param {number|string} value - The number to format
+ * @returns {string} Formatted compact string
+ */
+export const formatCompactCurrency = (value = 0) => {
+  const amount = Number(value || 0);
+  if (!amount) return '0';
+  return compactCurrencyFormatter.format(amount);
+};
+
 /**
  * Format date to Vietnamese format
  * @param {Date|string} date - The date to format

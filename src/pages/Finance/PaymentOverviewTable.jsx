@@ -1,4 +1,4 @@
-import { Fragment, useState, useRef, useEffect } from 'react';
+import { Fragment, useState, useRef, useEffect, useCallback, memo } from 'react';
 import {
   FileText, Plus, Eye, FileCheck, Receipt, ChevronDown, Check,
   CalendarDays, CheckCircle, CheckCircle2, Clock, X, ShieldCheck, AlertCircle, ArrowUpRight,
@@ -707,13 +707,149 @@ const MilestoneList = ({ row, onPreviewDocument }) => {
   );
 };
 
+const PaymentOverviewRow = memo(({
+  row,
+  isExpanded,
+  onToggle,
+  onAddDocument,
+  onPreviewDocument
+}) => {
+  const handleRowClick = (event) => {
+    if (event.target.closest('a, button, input, select, textarea')) return;
+    onToggle(row.id);
+  };
+
+  return (
+    <Fragment>
+      <tr
+        tabIndex={0}
+        aria-expanded={isExpanded}
+        aria-label={`Xem lịch thanh toán của ${row.projectName || row.contractName}`}
+        onClick={handleRowClick}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onToggle(row.id);
+          }
+        }}
+        className={`cursor-pointer border-t border-[#eff4ff] outline-none focus-visible:bg-[#eff4ff] ${
+          isExpanded
+            ? 'bg-[#ffdbca]/25'
+            : row.contractStatus === 'CANCELLED'
+              ? 'bg-[#ffdad6]/25'
+              : 'hover:bg-[#eff4ff]/50'
+        }`}
+      >
+        <td className="px-3 py-3 font-semibold">{row.customerName || '—'}</td>
+        <td className="max-w-56 truncate px-3 py-3 font-semibold" title={row.projectName || row.contractName}>
+          {row.projectName || row.contractName}
+        </td>
+        <td className="px-3 py-3">{row.salesOwner?.name || '—'}</td>
+        <td className="px-3 py-3 font-medium">{row.contractCode}</td>
+        <td className="whitespace-nowrap px-3 py-3 text-right font-semibold tabular-nums">
+          {currency(row.totalWithVat)}
+        </td>
+        <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">
+          {currency(row.sellingPrice)}
+        </td>
+        <td className="px-3 py-3">
+          <StatusBadge status={row.quotationStatus}>
+            {QUOTATION_STATUS_LABELS[row.quotationStatus] || 'Chưa có báo giá'}
+          </StatusBadge>
+        </td>
+        <td className="px-3 py-3">
+          <StatusBadge status={row.contractStatus}>
+            {CONTRACT_STATUS_LABELS[row.contractStatus] || row.contractStatus}
+          </StatusBadge>
+        </td>
+        <td className="px-3 py-3">{row.projectManager || '—'}</td>
+        <td className="px-3 py-3">{row.account || '—'}</td>
+        <td className="px-3 py-3">
+          <StatusBadge status={row.projectStatus}>
+            {PROJECT_STATUS_LABELS[row.projectStatus] || 'Chưa triển khai'}
+          </StatusBadge>
+        </td>
+        <td className="px-3 py-3">
+          {row.collectionMonth ? `Tháng ${new Date(row.collectionMonth).getMonth() + 1}` : '—'}
+        </td>
+        <td className="px-3 py-3 text-center">
+          {formatDateToDDMMYYYY(row.latestPaymentDate) || (
+            <span className="text-slate-400">---</span>
+          )}
+        </td>
+        <td className="whitespace-nowrap px-3 py-3 text-right font-semibold text-[#9d4300] tabular-nums">
+          {currency(row.unpaidAmount)}
+        </td>
+
+        {/* CỘT HỢP ĐỒNG: Xem file trực tiếp không có icon link ngoài */}
+        <td className="px-3 py-3 text-center">
+          {row.contractFileUrl ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPreviewDocument({
+                  url: row.contractFileUrl,
+                  fileName: row.contractName || row.contractCode || 'Hợp đồng'
+                });
+              }}
+              className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg border border-emerald-200 bg-emerald-50/80 px-2.5 font-semibold text-[#006c49] transition-all hover:bg-emerald-100 hover:shadow-2xs active:scale-95"
+              title="Xem trước file hợp đồng"
+            >
+              <Eye className="h-3.5 w-3.5" />
+              <span>Xem file</span>
+            </button>
+          ) : (
+            <span className="text-slate-400 font-normal text-[11px]">Chưa có</span>
+          )}
+        </td>
+
+        {/* CỘT BBNT */}
+        <td className="px-3 py-3 text-center">
+          <DocumentCellPill
+            docs={row.acceptanceMinutes || []}
+            type="acceptance"
+            onAdd={() => onAddDocument(row, 'acceptance')}
+            onPreview={onPreviewDocument}
+          />
+        </td>
+
+        {/* CỘT HĐ VAT */}
+        <td className="px-3 py-3 text-center">
+          <DocumentCellPill
+            docs={row.vatInvoices || []}
+            type="invoice"
+            onAdd={() => onAddDocument(row, 'invoice')}
+            onPreview={onPreviewDocument}
+          />
+        </td>
+
+        <td className="max-w-56 truncate px-3 py-3 text-[#565e74]" title={row.note}>
+          {row.note || '—'}
+        </td>
+      </tr>
+      {isExpanded && (
+        <tr className="bg-[#eff4ff]/40">
+          <td colSpan={18}>
+            <MilestoneList row={row} onPreviewDocument={onPreviewDocument} />
+          </td>
+        </tr>
+      )}
+    </Fragment>
+  );
+}, (prev, next) => {
+  return (
+    prev.row === next.row &&
+    prev.isExpanded === next.isExpanded &&
+    prev.onToggle === next.onToggle &&
+    prev.onAddDocument === next.onAddDocument &&
+    prev.onPreviewDocument === next.onPreviewDocument
+  );
+});
+
 export const PaymentOverviewTable = ({ rows, onAddDocument, onPreviewDocument }) => {
   const [expanded, setExpanded] = useState('');
-  const toggle = (rowId) => setExpanded((current) => (current === rowId ? '' : rowId));
-  const handleRowClick = (event, rowId) => {
-    if (event.target.closest('a, button, input, select, textarea')) return;
-    toggle(rowId);
-  };
+  const toggle = useCallback((rowId) => setExpanded((current) => (current === rowId ? '' : rowId)), []);
 
   return (
     <div className="overflow-x-auto">
@@ -745,122 +881,14 @@ export const PaymentOverviewTable = ({ rows, onAddDocument, onPreviewDocument })
         </thead>
         <tbody>
           {rows.map((row) => (
-            <Fragment key={row.id}>
-              <tr
-                tabIndex={0}
-                aria-expanded={expanded === row.id}
-                aria-label={`Xem lịch thanh toán của ${row.projectName || row.contractName}`}
-                onClick={(event) => handleRowClick(event, row.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    toggle(row.id);
-                  }
-                }}
-                className={`cursor-pointer border-t border-[#eff4ff] outline-none focus-visible:bg-[#eff4ff] ${
-                  expanded === row.id
-                    ? 'bg-[#ffdbca]/25'
-                    : row.contractStatus === 'CANCELLED'
-                      ? 'bg-[#ffdad6]/25'
-                      : 'hover:bg-[#eff4ff]/50'
-                }`}
-              >
-                <td className="px-3 py-3 font-semibold">{row.customerName || '—'}</td>
-                <td className="max-w-56 truncate px-3 py-3 font-semibold" title={row.projectName || row.contractName}>
-                  {row.projectName || row.contractName}
-                </td>
-                <td className="px-3 py-3">{row.salesOwner?.name || '—'}</td>
-                <td className="px-3 py-3 font-medium">{row.contractCode}</td>
-                <td className="whitespace-nowrap px-3 py-3 text-right font-semibold tabular-nums">
-                  {currency(row.totalWithVat)}
-                </td>
-                <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">
-                  {currency(row.sellingPrice)}
-                </td>
-                <td className="px-3 py-3">
-                  <StatusBadge status={row.quotationStatus}>
-                    {QUOTATION_STATUS_LABELS[row.quotationStatus] || 'Chưa có báo giá'}
-                  </StatusBadge>
-                </td>
-                <td className="px-3 py-3">
-                  <StatusBadge status={row.contractStatus}>
-                    {CONTRACT_STATUS_LABELS[row.contractStatus] || row.contractStatus}
-                  </StatusBadge>
-                </td>
-                <td className="px-3 py-3">{row.projectManager || '—'}</td>
-                <td className="px-3 py-3">{row.account || '—'}</td>
-                <td className="px-3 py-3">
-                  <StatusBadge status={row.projectStatus}>
-                    {PROJECT_STATUS_LABELS[row.projectStatus] || 'Chưa triển khai'}
-                  </StatusBadge>
-                </td>
-                <td className="px-3 py-3">
-                  {row.collectionMonth ? `Tháng ${new Date(row.collectionMonth).getMonth() + 1}` : '—'}
-                </td>
-                <td className="px-3 py-3 text-center">
-                  {formatDateToDDMMYYYY(row.latestPaymentDate) || (
-                    <span className="text-slate-400">---</span>
-                  )}
-                </td>
-                <td className="whitespace-nowrap px-3 py-3 text-right font-semibold text-[#9d4300] tabular-nums">
-                  {currency(row.unpaidAmount)}
-                </td>
-
-                {/* CỘT HỢP ĐỒNG: Xem file trực tiếp không có icon link ngoài */}
-                <td className="px-3 py-3 text-center">
-                  {row.contractFileUrl ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onPreviewDocument({
-                          url: row.contractFileUrl,
-                          fileName: row.contractName || row.contractCode || 'Hợp đồng'
-                        });
-                      }}
-                      className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg border border-emerald-200 bg-emerald-50/80 px-2.5 font-semibold text-[#006c49] transition-all hover:bg-emerald-100 hover:shadow-2xs active:scale-95"
-                      title="Xem trước file hợp đồng"
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      <span>Xem file</span>
-                    </button>
-                  ) : (
-                    <span className="text-slate-400 font-normal text-[11px]">Chưa có</span>
-                  )}
-                </td>
-
-                {/* CỘT BBNT */}
-                <td className="px-3 py-3 text-center">
-                  <DocumentCellPill
-                    docs={row.acceptanceMinutes || []}
-                    type="acceptance"
-                    onAdd={() => onAddDocument(row, 'acceptance')}
-                    onPreview={onPreviewDocument}
-                  />
-                </td>
-
-                {/* CỘT HĐ VAT */}
-                <td className="px-3 py-3 text-center">
-                  <DocumentCellPill
-                    docs={row.vatInvoices || []}
-                    type="invoice"
-                    onAdd={() => onAddDocument(row, 'invoice')}
-                    onPreview={onPreviewDocument}
-                  />
-                </td>
-
-                <td className="max-w-56 truncate px-3 py-3 text-[#565e74]" title={row.note}>
-                  {row.note || '—'}
-                </td>
-              </tr>
-              {expanded === row.id && (
-                <tr className="bg-[#eff4ff]/40">
-                  <td colSpan={18}>
-                    <MilestoneList row={row} onPreviewDocument={onPreviewDocument} />
-                  </td>
-                </tr>
-              )}
-            </Fragment>
+            <PaymentOverviewRow
+              key={row.id}
+              row={row}
+              isExpanded={expanded === row.id}
+              onToggle={toggle}
+              onAddDocument={onAddDocument}
+              onPreviewDocument={onPreviewDocument}
+            />
           ))}
         </tbody>
       </table>

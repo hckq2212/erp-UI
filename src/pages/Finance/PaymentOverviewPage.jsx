@@ -12,11 +12,13 @@ import { DocumentPreviewModal } from '../../components/common/DocumentPreviewMod
 import { PaymentOverviewTable } from './PaymentOverviewTable';
 import { DocumentUploadModal } from './DocumentUploadModal';
 
+const compactMillionFormatter = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 });
+
 const money = (value) => formatCurrency(Number(value || 0)).replace('VNĐ', '₫');
 const compactMoney = (value) => {
   const amount = Number(value || 0);
   if (!amount) return '0 tr';
-  return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 }).format(amount / 1_000_000)}tr`;
+  return `${compactMillionFormatter.format(amount / 1_000_000)}tr`;
 };
 
 const badgeClass = (status) => {
