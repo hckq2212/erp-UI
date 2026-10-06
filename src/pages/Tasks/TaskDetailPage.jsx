@@ -69,6 +69,10 @@ export const TaskDetailPage = () => {
     const isProjectAccepted = ['CONFIRMED', 'IN_PROGRESS'].includes(task?.project?.status);
     const canAssignProjectTask = !isProjectOnHold && isProjectAccepted && (user?.role === 'ADMIN' || isAccount);
     const isVideoDemoTask = Boolean(task?.opportunityId && task?.opportunityServiceJob?.isBriefVideo);
+    const canAssignOpportunityVideoTask = !isProjectOnHold &&
+        isVideoDemoTask &&
+        task?.status === 'PENDING' &&
+        ['PM', 'ADMIN'].includes(currentUserRole);
     const isAssigneeOrHelper = isSameUser(currentUserId, task?.assigneeId) ||
         isSameUser(currentUserId, task?.assignee?.id) ||
         isSameUser(currentUserId, task?.helperId) ||
@@ -113,7 +117,7 @@ export const TaskDetailPage = () => {
     const [isLoadingResultSheets, setIsLoadingResultSheets] = useState(false);
 
     const isTaskAssigned = Boolean(task?.assigneeId || task?.assignee?.id || task?.vendorId);
-    const canAssignUnassignedTask = canAssignProjectTask &&
+    const canAssignUnassignedTask = (canAssignProjectTask || canAssignOpportunityVideoTask) &&
         !isTaskAssigned &&
         !['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED', 'AWAITING_REVIEW', 'CANCELLED'].includes(task?.status);
     const fileInputRef = useRef(null);
