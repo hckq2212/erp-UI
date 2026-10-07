@@ -5,7 +5,7 @@ import { useGetTaskReviewsQuery } from '../../api/taskReviews';
 import { useGetTaskResultCheckQuery } from '../../api/taskResultChecks';
 import { ConfirmedCheckErrors } from '../../components/tasks/ConfirmedCheckErrors';
 import { useGetMeQuery } from '../../api/auth';
-import { formatDate, formatDateTime } from '../../utils/format';
+import { formatDate, formatDateTime, formatDateTimeISO } from '../../utils/format';
 import { toast } from 'react-toastify';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { JOB_PERFORMER_TYPE, PROJECT_MANAGEMENT_ROLES, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
@@ -84,7 +84,7 @@ export const TaskDetailPage = () => {
         !isAssigneeOrHelper;
     const canStartTask = !isProjectOnHold &&
         task?.status === 'NOT_STARTED' &&
-        isAssigneeOrHelper;
+        isAssigneeOrHelper || currentUserRole === 'ADMIN';
     const isAssigner = isSameUser(currentUserId, task?.assignerId) || isSameUser(currentUserId, task?.assigner?.id);
     const canDecideOutcome = !isProjectOnHold &&
         (canDecideTaskOutcome(task, currentUserId) || canReviewOpportunityVideoTask);
@@ -104,6 +104,8 @@ export const TaskDetailPage = () => {
     const [isSubtaskModalOpen, setIsSubtaskModalOpen] = useState(false);
     const [isEditingDescription, setIsEditingDescription] = useState(false);
     const [editedDescription, setEditedDescription] = useState('');
+    const [isEditingDeadline, setIsEditingDeadline] = useState(false);
+    const [editedDeadline, setEditedDeadline] = useState('');
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);
     const [submissionType, setSubmissionType] = useState('file');
     const [resultLink, setResultLink] = useState('');
@@ -122,7 +124,8 @@ export const TaskDetailPage = () => {
     const [whitelist, setWhitelist] = useState([]);
     const [isLoadingResultSheets, setIsLoadingResultSheets] = useState(false);
 
-    const isTaskAssigned = Boolean(task?.assigneeId || task?.assignee?.id || task?.vendorId);
+    const isTaskAssigned = Boolean(task?.assigneeId || task?.assignee?.id || task?.vendorId || task?.vendor || task?.performerType === 'VENDOR');
+    const canEditDeadline = !isTaskLocked && !isProjectLocked && isTaskAssigned && (isAccount || isPM || isAdminOverride);
     const canAssignUnassignedTask = (canAssignProjectTask || canAssignOpportunityVideoTask) &&
         !isTaskAssigned &&
         !['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED', 'AWAITING_REVIEW', 'CANCELLED'].includes(task?.status);
@@ -162,6 +165,12 @@ export const TaskDetailPage = () => {
         }
     }, [isResultModalOpen, task?.id]);
 
+    useEffect(() => {
+        if (!isEditingDeadline) {
+            setEditedDeadline(formatDateTimeISO(task?.plannedEndDate) || '');
+        }
+    }, [isEditingDeadline, task?.plannedEndDate]);
+
     const getStatusBadge = status => {
         const label = TASK_STATUS_LABELS[status] || status;
         const icon = ['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED'].includes(status)
@@ -197,6 +206,36 @@ export const TaskDetailPage = () => {
             setIsEditingDescription(false);
         } catch (err) {
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi cập nhật mô tả');
+        }
+    };
+
+    const handleStartEditDeadline = () => {
+        setEditedDeadline(formatDateTimeISO(task?.plannedEndDate) || '');
+        setIsEditingDeadline(true);
+    };
+
+    const handleSaveDeadline = async () => {
+        if (!editedDeadline) {
+            toast.error('Vui lòng nhập deadline');
+            return;
+        }
+
+        const parsedDeadline = new Date(editedDeadline);
+        if (Number.isNaN(parsedDeadline.getTime())) {
+            toast.error('Deadline không hợp lệ');
+            return;
+        }
+
+        try {
+            await updateTask({
+                id,
+                plannedEndDate: parsedDeadline.toISOString(),
+                projectId: task?.project?.id
+            }).unwrap();
+            toast.success('Cập nhật deadline thành công!');
+            setIsEditingDeadline(false);
+        } catch (err) {
+            toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi cập nhật deadline');
         }
     };
 
@@ -634,7 +673,7 @@ export const TaskDetailPage = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
-                    <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                    <div className="bg-white rounded-md shadow-sm border border-gray-100 p-8">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
@@ -723,7 +762,7 @@ export const TaskDetailPage = () => {
                         );
 
                         return (
-                            <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                            <div className="bg-white rounded-md shadow-sm border border-gray-100 p-8">
                                 <div className="flex items-center gap-3 mb-6 justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
@@ -761,7 +800,7 @@ export const TaskDetailPage = () => {
                         );
                     })()}
 
-                    <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8 overflow-hidden">
+                    <div className="bg-white rounded-md shadow-sm border border-gray-100 p-8 overflow-hidden">
                         {isParentBlockedBySubtasks && (
                             <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
                                 Task chính chưa thể nộp kết quả hoặc hoàn thành vì còn {incompleteSubtasks.length} subtask chưa hoàn tất.
@@ -862,7 +901,7 @@ export const TaskDetailPage = () => {
                     </div>
 
                     {(confirmedSpellErrors.length > 0 || confirmedQcMismatches.length > 0) && (
-                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                        <div className="bg-white rounded-md shadow-sm border border-gray-100 p-8">
                             <ConfirmedCheckErrors
                                 variant="section"
                                 title="Lỗi đã chốt ở kết quả đã nộp"
@@ -875,7 +914,7 @@ export const TaskDetailPage = () => {
                     )}
 
                     {task.iterations && task.iterations.length > 0 && (
-                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                        <div className="bg-white rounded-md shadow-sm border border-gray-100 p-8">
                             <div className="flex items-center gap-3 mb-8">
                                 <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600">
                                     <History className="w-5 h-5" />
@@ -938,7 +977,7 @@ export const TaskDetailPage = () => {
                                                                     href={getFilePreviewUrl(file.url, file.type)}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-xl text-[10px] font-bold text-gray-600 hover:border-blue-200 transition-all"
+                                                                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-md text-[10px] font-bold text-gray-600 hover:border-blue-200 transition-all"
                                                                 >
                                                                     <FileText className="w-3 h-3 text-blue-500" />
                                                                     <span className="max-w-[120px] truncate">{file.name}</span>
@@ -996,7 +1035,7 @@ export const TaskDetailPage = () => {
 
                 <div className="lg:col-span-1">
                     <div className="space-y-8">
-                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                        <div className="bg-white rounded-md shadow-sm border border-gray-100 p-8">
                             <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
                                 <User className="w-5 h-5 text-blue-500" />
                                 Nhân sự thực hiện
@@ -1016,7 +1055,7 @@ export const TaskDetailPage = () => {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                        <div className="bg-white rounded-md shadow-sm border border-gray-100 p-8">
                             <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
                                 <UserPlus className="w-5 h-5 text-indigo-500" />
                                 Nhân sự phân công
@@ -1037,29 +1076,75 @@ export const TaskDetailPage = () => {
                         </div>
 
 
-                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
-                            <div className="flex gap-3 mb-6">
+                        <div className="bg-white rounded-md shadow-sm border border-gray-100 p-6">
+                            <div className="mb-6 flex items-center gap-3">
                                 <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
                                     <Calendar className="w-5 h-5" />
                                 </div>
                                 <h2 className="text-lg font-bold text-gray-900 tracking-tight">Kế hoạch</h2>
                             </div>
-                            <div className='flex flex-row gap-2'>
-                                <div>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Deadline</p>
-                                    <p className="text-md font-bold text-gray-700">{formatDateTime(task.plannedEndDate)}</p>
+                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                                <div className="min-w-0">
+                                    <div className="mb-2 flex min-h-7 items-center justify-between gap-3">
+                                        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Deadline</p>
+                                        {canEditDeadline && !isEditingDeadline && (
+                                            <button
+                                                type="button"
+                                                onClick={handleStartEditDeadline}
+                                                className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 transition hover:bg-amber-100"
+                                                title="Sửa deadline"
+                                            >
+                                                <Edit className="h-3 w-3" />
+                                                Sửa
+                                            </button>
+                                        )}
+                                    </div>
+                                    {isEditingDeadline ? (
+                                        <div className="space-y-2">
+                                            <input
+                                                type="datetime-local"
+                                                required
+                                                value={editedDeadline}
+                                                onChange={event => setEditedDeadline(event.target.value)}
+                                                className="w-full rounded-xl border-2 border-amber-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-50"
+                                            />
+                                            <div className="flex flex-wrap gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() => {
+                                                        setEditedDeadline(formatDateTimeISO(task?.plannedEndDate) || '');
+                                                        setIsEditingDeadline(false);
+                                                    }}
+                                                    className="rounded-xl px-3 py-1.5 text-xs font-bold"
+                                                >
+                                                    Hủy
+                                                </Button>
+                                                <Button
+                                                    onClick={handleSaveDeadline}
+                                                    isLoading={isUpdatingTask}
+                                                    className="rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700"
+                                                >
+                                                    Lưu
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="whitespace-nowrap text-lg font-bold leading-tight text-gray-800">{formatDateTime(task.plannedEndDate) || 'Chưa có thông tin'}</p>
+                                    )}
                                 </div>
 
-                                <div>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Ngày bắt đầu công việc</p>
-                                    <p className="text-md font-bold text-gray-700">{formatDateTime(task.plannedStartDate) || 'Chưa có thông tin'}</p>
+                                <div className="min-w-0 sm:border-l sm:border-gray-100 sm:pl-5">
+                                    <div className="mb-2 flex min-h-7 items-center">
+                                        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Ngày bắt đầu</p>
+                                    </div>
+                                    <p className="whitespace-nowrap text-lg font-bold leading-tight text-gray-800">{formatDateTime(task.actualStartDate) || 'Chưa có thông tin'}</p>
                                 </div>
                             </div>
 
                         </div>
 
 
-                        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                        <div className="bg-white rounded-md shadow-sm border border-gray-100 p-8">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                                     <FileText className="w-5 h-5 text-purple-500" />

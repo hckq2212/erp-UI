@@ -184,7 +184,7 @@ export const TaskReviewPage = () => {
 
             <div className="grid grid-cols-1 gap-8">
                 {/* Result Section */}
-                <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                <div className="bg-white rounded-md shadow-sm border border-gray-100 p-8">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
                             <FileText className="w-5 h-5" />
@@ -247,7 +247,7 @@ export const TaskReviewPage = () => {
                 </div>
 
                 {/* Criteria Section */}
-                <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                <div className="bg-white rounded-md shadow-sm border border-gray-100 p-8">
                     <div className="flex items-center justify-between mb-8">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
@@ -363,7 +363,7 @@ export const TaskReviewPage = () => {
                 </div>
 
                 {/* Approval Note */}
-                <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                <div className="bg-white rounded-md shadow-sm border border-gray-100 p-8">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600">
                             <MessageSquare className="w-5 h-5" />

@@ -29,7 +29,7 @@ export const ReviewQueueView = ({ awaitingReviewTasks, user, navigate }) => {
                     <motion.div
                         key={task.id}
                         whileHover={{ y: -5 }}
-                        className="bg-white p-6 rounded-[2.5rem] border border-amber-100 shadow-sm hover:shadow-xl hover:shadow-amber-50 transition-all group relative overflow-hidden"
+                        className="bg-white p-6 rounded-md border border-amber-100 shadow-sm hover:shadow-xl hover:shadow-amber-50 transition-all group relative overflow-hidden"
                     >
                         <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-full -mr-12 -mt-12 opacity-50 group-hover:scale-110 transition-transform" />
                         <div className="relative">
