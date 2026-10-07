@@ -1,7 +1,7 @@
 import { Bell, Search, User, LogOut, Check, Clock, ChevronRight, Menu, Newspaper } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { selectCurrentUser, logout as logoutAction } from '../../store/authSlice';
 import { useGetMyNotificationsQuery, useMarkAsReadMutation } from '../../api/notifications';
@@ -14,7 +14,7 @@ import { clearSessionMarker } from '../../utils/authSession';
 
 import { api } from '../../store/api';
 
-export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
+const HeaderComponent = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
   const user = useSelector(selectCurrentUser);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -325,3 +325,5 @@ export const Header = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
     </header>
   );
 };
+
+export const Header = memo(HeaderComponent);

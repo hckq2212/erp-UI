@@ -18,29 +18,18 @@ export function ChatBubbleWidget() {
     const { data: currentUser } = useGetMeQuery();
     const currentUserId = currentUser?.id;
 
-    const {
-        initSocket,
-        disconnectSocket,
-        rooms,
-        activeRoom,
-        fetchRooms,
-        selectRoom,
-        createDM,
-        onlineUsers,
-        unreadCounts,
-        isConnected
-    } = useChatStore();
-
+    // Chỉ kết nối socket và fetch rooms khi widget thực sự được người dùng bấm mở
     useEffect(() => {
-        if (isChatPage) return;
+        if (isChatPage || !isOpen) return;
 
+        const { initSocket, disconnectSocket, fetchRooms } = useChatStore.getState();
         initSocket();
         fetchRooms();
 
         return () => {
             disconnectSocket();
         };
-    }, [isChatPage]);
+    }, [isChatPage, isOpen]);
 
     const handleToggleWidget = () => {
         setIsOpen(!isOpen);

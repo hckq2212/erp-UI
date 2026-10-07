@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectIsAuthenticated, selectAuthLoading } from '../../store/authSlice';
 
@@ -20,7 +20,7 @@ export const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return children;
+  return children || <Outlet />;
 };
 
 export default ProtectedRoute;

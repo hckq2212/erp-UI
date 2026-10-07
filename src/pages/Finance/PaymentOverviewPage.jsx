@@ -4,7 +4,6 @@ import {
   Download, FolderKanban, RefreshCw, Search, WalletCards,
   FileText, X, Clock, ArrowUpRight
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import { useGetPaymentDashboardQuery } from '../../api/paymentDashboard';
 import { formatCurrency, formatDateToDDMMYYYY } from '../../utils/format';
 import { CONTRACT_STATUS_LABELS, PROJECT_STATUS_LABELS, QUOTATION_STATUS_LABELS } from '../../utils/enums';
@@ -12,11 +11,13 @@ import { DocumentPreviewModal } from '../../components/common/DocumentPreviewMod
 import { PaymentOverviewTable } from './PaymentOverviewTable';
 import { DocumentUploadModal } from './DocumentUploadModal';
 
+const compactMillionFormatter = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 });
+
 const money = (value) => formatCurrency(Number(value || 0)).replace('VNĐ', '₫');
 const compactMoney = (value) => {
   const amount = Number(value || 0);
   if (!amount) return '0 tr';
-  return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 }).format(amount / 1_000_000)}tr`;
+  return `${compactMillionFormatter.format(amount / 1_000_000)}tr`;
 };
 
 const badgeClass = (status) => {

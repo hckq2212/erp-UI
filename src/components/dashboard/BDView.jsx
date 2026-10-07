@@ -12,16 +12,7 @@ import {
 import { DebtCalendar } from './DebtCalendar';
 import { MetricCard } from './member/MetricCard';
 import { TEAM_MEMBER_ROLE_LABELS, USER_ROLE } from '../../utils/enums';
-
-const formatCompactCurrency = (value = 0) => {
-    const amount = Number(value || 0);
-    if (!amount) return '0';
-
-    return new Intl.NumberFormat('vi-VN', {
-        notation: 'compact',
-        maximumFractionDigits: 1,
-    }).format(amount);
-};
+import { formatCompactCurrency } from '../../utils/format';
 
 const BDFocusCard = ({
     totalCustomers = 0,

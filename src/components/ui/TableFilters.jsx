@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, memo } from 'react';
 import Select from 'react-select';
 import { Search, RotateCcw, X, ChevronDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -115,7 +115,7 @@ const filterSelectStyles = {
     })
 };
 
-export const TableFilters = ({
+const TableFiltersComponent = ({
     searchTerm,
     onSearchChange,
     filterValue,
@@ -129,6 +129,25 @@ export const TableFilters = ({
     useNativeSelect = false
 }) => {
     const hasOptions = filterOptions.length > 0;
+    const [localSearch, setLocalSearch] = useState(searchTerm || '');
+
+    useEffect(() => {
+        setLocalSearch(searchTerm || '');
+    }, [searchTerm]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (localSearch !== (searchTerm || '')) {
+                onSearchChange?.(localSearch);
+            }
+        }, 350);
+        return () => clearTimeout(timer);
+    }, [localSearch, onSearchChange, searchTerm]);
+
+    const handleClearSearch = () => {
+        setLocalSearch('');
+        onSearchChange?.('');
+    };
 
     const selectedValue = useMemo(() => {
         if (!filterOptions || filterOptions.length === 0) return isMulti ? [] : null;
@@ -163,13 +182,13 @@ export const TableFilters = ({
                     type="text"
                     className="w-full pl-12 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none font-medium h-[46px]"
                     placeholder={searchPlaceholder}
-                    value={searchTerm || ''}
-                    onChange={(e) => onSearchChange(e.target.value)}
+                    value={localSearch}
+                    onChange={(e) => setLocalSearch(e.target.value)}
                 />
-                {searchTerm && (
+                {localSearch && (
                     <button
                         type="button"
-                        onClick={() => onSearchChange('')}
+                        onClick={handleClearSearch}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition-colors"
                         title="Xóa tìm kiếm"
                     >
@@ -228,3 +247,5 @@ export const TableFilters = ({
         </div>
     );
 };
+
+export const TableFilters = memo(TableFiltersComponent);
