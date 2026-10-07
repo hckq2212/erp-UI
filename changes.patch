@@ -267,7 +267,7 @@
  
 -                    {resultCheck?.finalizedAt && (((resultCheck.reviewedSpellErrors || []).length > 0) || ((resultCheck.reviewedQcMismatches || []).length > 0)) && (
 +                    {(confirmedSpellErrors.length > 0 || confirmedQcMismatches.length > 0) && (
-                         <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-8">
+                         <div className="bg-white rounded-md shadow-sm border border-gray-100 p-8">
                              <ConfirmedCheckErrors
 +                                variant="section"
                                  title="Lỗi đã chốt ở kết quả đã nộp"

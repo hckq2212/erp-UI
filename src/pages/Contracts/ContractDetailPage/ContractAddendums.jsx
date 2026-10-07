@@ -9,6 +9,13 @@ import {
     useSaleApproveAddendumMutation,
     useSaleRejectAddendumMutation,
 } from '../../../api/contractAddendums';
+import { useGetServicesQuery } from '../../../api/services';
+import {
+    calculateProfitMargin as calculateSharedProfitMargin,
+    normalizeServiceJobs,
+    QuotationServicePricingTable,
+    roundToTenThousands as roundSharedPrice,
+} from '../../../components/quotations/QuotationServicePricingTable';
 
 const STATUS_LABELS = {
     DRAFT: 'Nháp',
@@ -182,6 +189,17 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
     const [resubmitAddendum, { isLoading: isResubmitting }] = useResubmitAddendumMutation();
     const [bodApprove, { isLoading: isBodApproving }] = useBodApproveAddendumMutation();
     const [bodReject, { isLoading: isBodRejecting }] = useBodRejectAddendumMutation();
+    const { data: servicesResponse } = useGetServicesQuery({}, {
+        skip: !selectedAddendum || selectedAddendum.type !== 'ADD_SERVICES',
+    });
+    const services = useMemo(
+        () => Array.isArray(servicesResponse) ? servicesResponse : (servicesResponse?.data || []),
+        [servicesResponse]
+    );
+    const servicesById = useMemo(
+        () => new Map(services.map((service) => [String(service.id), service])),
+        [services]
+    );
 
     if (!addendums || addendums.length === 0) {
         return (
@@ -290,6 +308,23 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
             </div>
 
             {selectedAddendum && (
+                selectedAddendum.type === 'ADD_SERVICES' ? (
+                <ServiceAddendumDetailModal
+                    addendum={selectedAddendum}
+                    servicesById={servicesById}
+                    isSale={isSale}
+                    isBod={isBod}
+                    isPmOrAdmin={isPmOrAdmin}
+                    isMutating={isMutating}
+                    formatDate={formatDate}
+                    onClose={() => setSelectedAddendum(null)}
+                    onSaleApprove={(selectedItems) => handleAction(saleApprove, selectedAddendum.id, 'Đã duyệt phụ lục', '', { selectedItems })}
+                    onSaleReject={() => openRejectModal(saleReject, selectedAddendum.id, 'Đã không duyệt phụ lục')}
+                    onResubmit={(selectedItems) => handleAction(resubmitAddendum, selectedAddendum.id, 'Đã gửi lại phụ lục', '', { selectedItems })}
+                    onBodApprove={() => handleAction(bodApprove, selectedAddendum.id, 'Đã duyệt và sinh công việc')}
+                    onBodReject={() => openRejectModal(bodReject, selectedAddendum.id, 'Đã không duyệt phụ lục')}
+                />
+                ) : (
                 <AddendumDetailModal
                     addendum={selectedAddendum}
                     isSale={isSale}
@@ -304,6 +339,7 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
                     onBodApprove={() => handleAction(bodApprove, selectedAddendum.id, 'Đã duyệt và sinh công việc')}
                     onBodReject={() => openRejectModal(bodReject, selectedAddendum.id, 'Đã không duyệt phụ lục')}
                 />
+                )
             )}
 
             {rejectRequest && (
@@ -859,6 +895,120 @@ const AddendumDetailModal = ({
                             </button>
                         </>
                     )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ServiceAddendumDetailModal = ({
+    addendum,
+    servicesById,
+    isSale,
+    isBod,
+    isPmOrAdmin,
+    isMutating,
+    formatDate,
+    onClose,
+    onSaleApprove,
+    onSaleReject,
+    onResubmit,
+    onBodApprove,
+    onBodReject,
+}) => {
+    const sourceItems = Array.isArray(addendum.selectedItems) ? addendum.selectedItems : [];
+    const [priceType, setPriceType] = useState(PRICE_TYPES.CUSTOM);
+    const [pricingItems, setPricingItems] = useState([]);
+    const status = getAddendumStatus(addendum);
+    const canSaleReview = isSale && status === 'PENDING_SALE';
+    const canBodReview = isBod && status === 'PENDING_BOD';
+    const canResubmit = isPmOrAdmin && ['SALE_REJECTED', 'BOD_REJECTED'].includes(status);
+    const canReview = canSaleReview || canBodReview;
+    const canEditPrices = canSaleReview || canResubmit;
+
+    useEffect(() => {
+        setPriceType(PRICE_TYPES.CUSTOM);
+        setPricingItems(sourceItems.map((item, index) => {
+            const costPrice = Number(item.cost || 0);
+            const selectedPrice = Number(item.sellingPrice || 0);
+            const packageQuantity = Number(item.packageQuantity || 1);
+            const quantity = Number(item.quantity || 1);
+            return {
+                key: `${item.packageKey || STANDALONE}-${item.serviceId || index}-${index}`,
+                serviceId: item.serviceId,
+                serviceName: item.serviceName || item.service?.name || 'Dịch vụ',
+                quantity,
+                packageQuantity,
+                norm: item.packageName ? quantity / packageQuantity : 1,
+                packageKey: item.packageKey,
+                packageName: item.packageName || STANDALONE,
+                servicePackageId: item.servicePackageId,
+                unit: item.unit || '',
+                costPrice,
+                minPrice: roundSharedPrice(costPrice / 0.8),
+                recommendedPrice: roundSharedPrice(costPrice / 0.6),
+                customPrice: selectedPrice,
+                selectedPrice,
+                profitMargin: calculateSharedProfitMargin(selectedPrice, costPrice),
+                jobs: normalizeServiceJobs(item.jobs || []),
+            };
+        }));
+    }, [addendum.id]);
+
+    const selectedItemsForSubmit = pricingItems.map((item, index) => ({
+        ...sourceItems[index],
+        sellingPrice: Number(item.selectedPrice || 0),
+    }));
+
+    return (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4">
+            <div className="flex max-h-[92vh] w-full max-w-[95vw] flex-col overflow-hidden rounded-md border border-white/20 bg-white shadow-2xl">
+                <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white p-6">
+                    <div className="flex items-center gap-3">
+                        <FileText className="h-6 w-6 text-purple-600" />
+                        <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{addendum.name}</h3>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                                <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{formatDate(addendum.createdAt)}</span>
+                                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${STATUS_CLASSES[addendum.status] || STATUS_CLASSES.DRAFT}`}>
+                                    {STATUS_LABELS[addendum.status] || addendum.status}
+                                </span>
+                                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black text-blue-600">{TYPE_LABELS[addendum.type]}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" onClick={onClose} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"><X className="h-5 w-5" /></button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6">
+                    {addendum.description && <div className="mb-6 rounded-xl bg-purple-50 p-4"><p className="mb-1 text-sm font-medium text-gray-700">Ghi chú:</p><p className="whitespace-pre-wrap text-sm text-gray-600">{addendum.description}</p></div>}
+                    <h4 className="mb-3 font-semibold text-gray-900">Chi tiết dịch vụ</h4>
+                    <QuotationServicePricingTable
+                        items={pricingItems}
+                        setItems={setPricingItems}
+                        priceType={priceType}
+                        setPriceType={setPriceType}
+                        servicesById={servicesById}
+                        mode={canEditPrices ? 'review' : 'readonly'}
+                        emptyMessage="Chưa có dịch vụ nào trong phụ lục."
+                    />
+
+                    {(addendum.saleReviewNote || addendum.bodReviewNote) && (
+                        <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                            {addendum.saleReviewNote && <p><span className="font-bold">Sale:</span> {addendum.saleReviewNote}</p>}
+                            {addendum.bodReviewNote && <p><span className="font-bold">BOD:</span> {addendum.bodReviewNote}</p>}
+                        </div>
+                    )}
+                    {canResubmit && <p className="mt-3 rounded-xl bg-blue-50 p-4 text-sm font-medium text-blue-900">Phụ lục đã bị từ chối. PM có thể chỉnh đơn giá rồi gửi lại để duyệt từ bước Sale.</p>}
+                </div>
+
+                <div className="flex flex-col gap-3 border-t border-gray-100 bg-gray-50/50 px-6 py-4 md:flex-row md:justify-end">
+                    <button type="button" onClick={onClose} className="rounded-xl bg-white px-4 py-3 font-bold text-gray-700 shadow-sm hover:bg-gray-100">Đóng</button>
+                    {canResubmit && <button type="button" disabled={isMutating} onClick={() => onResubmit(selectedItemsForSubmit)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"><Check className="h-4 w-4" />Gửi lại</button>}
+                    {canReview && <>
+                        <button type="button" disabled={isMutating} onClick={canSaleReview ? onSaleReject : onBodReject} className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-50"><XCircle className="h-4 w-4" />Không duyệt</button>
+                        <button type="button" disabled={isMutating} onClick={canSaleReview ? () => onSaleApprove(selectedItemsForSubmit) : onBodApprove} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"><Check className="h-4 w-4" />Duyệt</button>
+                    </>}
                 </div>
             </div>
         </div>
