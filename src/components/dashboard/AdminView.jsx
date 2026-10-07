@@ -234,7 +234,7 @@ const StaffWorkloadPanel = ({ workloads = [], onSelectMember }) => {
                                     />
                                 </div>
                                 <p className="text-[10px] font-bold text-slate-400">
-                                    {Number(item.pendingVinicoin || 0).toLocaleString()} / {Number(item.kpi || 2500).toLocaleString()} Vinicoin
+                                    {Number(item.pendingVinicoin || 0).toLocaleString()} / {Number(item.kpi || 22000).toLocaleString()} Vinicoin
                                 </p>
                             </button>
                         );

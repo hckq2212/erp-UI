@@ -8,6 +8,9 @@ import {
 } from '../../api/settings';
 import { STAFF_ROLES, USER_ROLE } from '../../utils/enums';
 
+// Phải khớp WorkloadNormService.DAYS_PER_MONTH ở backend: 22.000 Vinicoin/tháng = 800 Vinicoin/ngày.
+const DAYS_PER_MONTH = 27.5;
+
 const inputClass =
   'w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500';
 
@@ -88,7 +91,7 @@ export const WorkloadNormSettingsTab = () => {
             {STAFF_ROLES.map((role) => {
               const row = serverNorms.find((item) => item.role === role);
               const monthlyNorm = Number(norms[role] || row?.monthlyNorm || 0);
-              const dailyNorm = monthlyNorm / 30;
+              const dailyNorm = monthlyNorm / DAYS_PER_MONTH;
 
               return (
                 <tr key={role}>
