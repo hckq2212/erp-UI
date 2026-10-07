@@ -69,15 +69,25 @@ export const TaskDetailPage = () => {
     const isProjectAccepted = ['CONFIRMED', 'IN_PROGRESS'].includes(task?.project?.status);
     const canAssignProjectTask = !isProjectOnHold && isProjectAccepted && (user?.role === 'ADMIN' || isAccount);
     const isVideoDemoTask = Boolean(task?.opportunityId && task?.opportunityServiceJob?.isBriefVideo);
+    const canAssignOpportunityVideoTask = !isProjectOnHold &&
+        isVideoDemoTask &&
+        task?.status === 'PENDING' &&
+        ['PM', 'ADMIN'].includes(currentUserRole);
     const isAssigneeOrHelper = isSameUser(currentUserId, task?.assigneeId) ||
         isSameUser(currentUserId, task?.assignee?.id) ||
         isSameUser(currentUserId, task?.helperId) ||
         isSameUser(currentUserId, task?.helper?.id);
+    const canReviewOpportunityVideoTask = !isProjectOnHold &&
+        isVideoDemoTask &&
+        task?.status === 'AWAITING_REVIEW' &&
+        ['PM', 'ADMIN'].includes(currentUserRole) &&
+        !isAssigneeOrHelper;
     const canStartTask = !isProjectOnHold &&
         task?.status === 'NOT_STARTED' &&
         isAssigneeOrHelper || currentUserRole === 'ADMIN';
     const isAssigner = isSameUser(currentUserId, task?.assignerId) || isSameUser(currentUserId, task?.assigner?.id);
-    const canDecideOutcome = !isProjectOnHold && canDecideTaskOutcome(task, currentUserId);
+    const canDecideOutcome = !isProjectOnHold &&
+        (canDecideTaskOutcome(task, currentUserId) || canReviewOpportunityVideoTask);
     const canSubmitResult = !isProjectOnHold && (isAssigneeOrHelper || isAssigner || canManageProjectTask || ['ADMIN', 'BOD'].includes(user?.role));
     const isReviewerForThisTask = !isProjectOnHold && canManageProjectTask && !isAssigneeOrHelper;
     const isTaskLocked = ['INTERNAL_COMPLETED', 'COMPLETED', 'ACCEPTED', 'DONE', 'CANCELLED', 'ON_HOLD'].includes(task?.status);
@@ -116,7 +126,7 @@ export const TaskDetailPage = () => {
 
     const isTaskAssigned = Boolean(task?.assigneeId || task?.assignee?.id || task?.vendorId || task?.vendor || task?.performerType === 'VENDOR');
     const canEditDeadline = !isTaskLocked && !isProjectLocked && isTaskAssigned && (isAccount || isPM || isAdminOverride);
-    const canAssignUnassignedTask = canAssignProjectTask &&
+    const canAssignUnassignedTask = (canAssignProjectTask || canAssignOpportunityVideoTask) &&
         !isTaskAssigned &&
         !['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED', 'AWAITING_REVIEW', 'CANCELLED'].includes(task?.status);
     const fileInputRef = useRef(null);
@@ -1373,6 +1383,7 @@ export const TaskDetailPage = () => {
                         await requestRework({
                             id,
                             projectId: task.project?.id,
+                            opportunityId: task.opportunityId,
                             ...data
                         }).unwrap();
                         toast.success('Gửi yêu cầu làm lại thành công');

@@ -1,10 +1,8 @@
-import { Fragment, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Briefcase,
   CheckCircle,
-  ChevronDown,
-  ChevronRight,
   Edit,
   FileText,
   Paperclip,
@@ -17,6 +15,12 @@ import {
   useGetQuotationQuery,
   useRejectQuotationMutation
 } from '../../../api/quotations';
+import {
+  calculateProfitMargin,
+  normalizeServiceJobs,
+  QuotationServicePricingTable,
+  roundToTenThousands
+} from '../../../components/quotations/QuotationServicePricingTable';
 import { getFilePreviewUrl } from '../../../utils/cloudinary';
 import { formatNumber } from '../../../utils/format';
 
@@ -38,91 +42,47 @@ export const QuotationDetailModal = ({
 
   const [isRejectingMode, setIsRejectingMode] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [expandedPackages, setExpandedPackages] = useState({});
-  const [expandedServices, setExpandedServices] = useState({});
 
-  const { aggregatedItems, totalWithVat } = useMemo(() => {
-    if (!quotation?.details) {
-      return { aggregatedItems: { packages: [], standalone: [] }, totalWithVat: 0 };
-    }
-
-    const packages = {};
-    const standalone = [];
-    let runningTotalWithVat = 0;
-
-    quotation.details.forEach((detail) => {
-      const sellingPrice = parseFloat(detail.sellingPrice || 0);
-      const quantity = detail.quantity || 0;
-      const itemRevenue = sellingPrice * quantity;
-      const itemVat = itemRevenue * 0.08;
-      const serviceId = detail.service?.id || detail.serviceId;
-      const packageName = detail.packageName;
-      const opportunityService = packageName
-        ? (opportunity?.packages || [])
-          .find(pkg => (
-            detail.servicePackageId
-              ? String(pkg.servicePackageId) === String(detail.servicePackageId)
-              : pkg.name === packageName
-          ))
-          ?.services?.find(service => String(service.service?.id || service.serviceId) === String(serviceId))
-        : (opportunity?.services || [])
-          .filter(service => !service.opportunityPackageId)
-          .find(service => String(service.service?.id || service.serviceId) === String(serviceId));
-      const jobs = opportunityService?.jobs || [];
-
-      runningTotalWithVat += itemRevenue + itemVat;
-
-      const groupKey = packageName
-        ? String(detail.servicePackageId || packageName)
-        : 'STANDALONE';
-
-      if (groupKey === 'STANDALONE') {
-        standalone.push({
-          ...detail,
-          jobs,
-          revenue: itemRevenue,
-          vat: itemVat,
-          totalWithVat: itemRevenue + itemVat
-        });
-        return;
-      }
-
-      if (!packages[groupKey]) {
-        const pkgQty = detail.packageQuantity || 1;
-        packages[groupKey] = {
-          key: groupKey,
-          name: packageName,
-          servicePackageId: detail.servicePackageId,
-          quantity: pkgQty,
-          sellingPrice: 0,
-          costAtSale: 0,
-          vat: 0,
-          totalWithVat: 0,
-          items: []
-        };
-      }
-
-      const norm = detail.packageQuantity ? quantity / detail.packageQuantity : quantity;
-
-      packages[groupKey].sellingPrice += sellingPrice * norm;
-      packages[groupKey].costAtSale += parseFloat(detail.costAtSale || 0) * norm;
-      packages[groupKey].vat += itemVat;
-      packages[groupKey].totalWithVat += itemRevenue + itemVat;
-      packages[groupKey].items.push({
-        ...detail,
-        jobs,
-        norm
-      });
-    });
+  const pricingItems = useMemo(() => (quotation?.details || []).map((detail, index) => {
+    const sellingPrice = Number(detail.sellingPrice || 0);
+    const costPrice = Number(detail.costAtSale || 0);
+    const quantity = Number(detail.quantity || 1);
+    const packageQuantity = Number(detail.packageQuantity || 1);
+    const serviceId = detail.service?.id || detail.serviceId;
+    const packageName = detail.packageName;
+    const isPackageService = Boolean(packageName && packageName !== 'STANDALONE');
+    const opportunityService = isPackageService
+      ? (opportunity?.packages || [])
+        .find(pkg => (
+          detail.servicePackageId
+            ? String(pkg.servicePackageId) === String(detail.servicePackageId)
+            : pkg.name === packageName
+        ))
+        ?.services?.find(service => String(service.service?.id || service.serviceId) === String(serviceId))
+      : (opportunity?.services || [])
+        .filter(service => !service.opportunityPackageId)
+        .find(service => String(service.service?.id || service.serviceId) === String(serviceId));
 
     return {
-      aggregatedItems: {
-        packages: Object.values(packages),
-        standalone
-      },
-      totalWithVat: runningTotalWithVat
+      key: detail.id || `${detail.servicePackageId || 'standalone'}-${serviceId || index}-${index}`,
+      serviceId,
+      serviceName: detail.name || detail.service?.name || 'Dịch vụ',
+      quantity,
+      packageQuantity,
+      norm: isPackageService ? quantity / packageQuantity : 1,
+      packageKey: isPackageService ? detail.servicePackageId || packageName : undefined,
+      packageName: isPackageService ? packageName : 'STANDALONE',
+      servicePackageId: detail.servicePackageId,
+      unit: detail.service?.unit || detail.unit || '',
+      costPrice,
+      minPrice: roundToTenThousands(costPrice / 0.8),
+      recommendedPrice: roundToTenThousands(costPrice / 0.6),
+      customPrice: sellingPrice,
+      selectedPrice: sellingPrice,
+      profitMargin: calculateProfitMargin(sellingPrice, costPrice),
+      jobs: normalizeServiceJobs(opportunityService?.jobs || detail.service?.serviceJobs || [])
     };
-  }, [quotation?.details, opportunity?.packages, opportunity?.services]);
+  }), [quotation?.details, opportunity?.packages, opportunity?.services]);
 
   const handleApprove = async () => {
     if (!quotationId) return;
@@ -164,20 +124,6 @@ export const QuotationDetailModal = ({
     } catch (err) {
       toast.error(err?.data?.message || 'Có lỗi xảy ra khi từ chối báo giá');
     }
-  };
-
-  const togglePackage = (packageKey) => {
-    setExpandedPackages((prev) => ({
-      ...prev,
-      [packageKey]: !prev[packageKey]
-    }));
-  };
-
-  const toggleService = (serviceKey) => {
-    setExpandedServices((prev) => ({
-      ...prev,
-      [serviceKey]: !prev[serviceKey]
-    }));
   };
 
   if (!isOpen) return null;
@@ -251,272 +197,13 @@ export const QuotationDetailModal = ({
 
               <div>
                 <h4 className="mb-3 font-semibold text-gray-900">Chi tiết dịch vụ</h4>
-                <div className="overflow-x-auto rounded-xl border border-gray-200">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-200 bg-gray-50">
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Dịch vụ</th>
-                        <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Số lượng</th>
-                        <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Đơn giá</th>
-                        <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá vốn</th>
-                        <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">VAT (8%)</th>
-                        <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Thành tiền</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {aggregatedItems.packages.map((pkg) => {
-                        const packageKey = `pkg-${pkg.key}`;
-                        const isPackageExpanded = Boolean(expandedPackages[packageKey]);
-
-                        return (
-                          <Fragment key={packageKey}>
-                            <tr
-                              className="cursor-pointer border-b border-blue-100/50 bg-blue-50/30"
-                              onClick={() => togglePackage(packageKey)}
-                            >
-                              <td className="px-4 py-3 text-sm font-bold text-blue-900">
-                                <div className="flex items-center gap-2">
-                                  {isPackageExpanded ? (
-                                    <ChevronDown className="h-4 w-4 shrink-0 text-blue-700" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4 shrink-0 text-blue-700" />
-                                  )}
-                                  <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[10px] font-black uppercase text-white shadow-sm">
-                                    Gói
-                                  </span>
-                                  {pkg.name}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <div className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-1 shadow-sm">
-                                  <span className="text-sm font-bold text-blue-900">{pkg.quantity}</span>
-                                  <span className="text-[10px] font-black uppercase tracking-tighter text-blue-400">
-                                    Gói
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-right text-sm font-bold text-blue-900">
-                                {formatNumber(pkg.sellingPrice)}
-                              </td>
-                              <td className="px-4 py-3 text-right text-sm italic text-blue-700">
-                                {formatNumber(pkg.costAtSale)}
-                              </td>
-                              <td className="px-4 py-3 text-right text-sm font-bold text-blue-900">
-                                {formatNumber(pkg.vat)}
-                              </td>
-                              <td className="px-4 py-3 text-right text-sm font-black italic text-blue-900">
-                                {formatNumber(pkg.totalWithVat)}
-                              </td>
-                            </tr>
-
-                            {isPackageExpanded &&
-                              pkg.items.map((item, iIdx) => {
-                                const serviceKey = `${packageKey}-item-${item.serviceId || item.service?.id || iIdx}`;
-                                const isServiceExpanded = Boolean(expandedServices[serviceKey]);
-                                const serviceDescription = item.service?.description || item.description;
-
-                                return (
-                                  <Fragment key={serviceKey}>
-                                    <tr
-                                      className="cursor-pointer border-b border-gray-50/50 bg-blue-50/5 hover:bg-blue-50/20"
-                                      onClick={() => toggleService(serviceKey)}
-                                    >
-                                      <td className="px-4 py-2 pl-10 text-sm italic text-gray-500">
-                                        <div className="flex items-center gap-2">
-                                          {isServiceExpanded ? (
-                                            <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
-                                          ) : (
-                                            <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" />
-                                          )}
-                                          <span className="font-medium text-gray-600">
-                                            {item.name || item.service?.name || 'N/A'}
-                                          </span>
-                                        </div>
-                                      </td>
-                                      <td className="px-4 py-2 text-center">
-                                        <div className="flex flex-col items-center">
-                                          <span className="text-xs font-bold text-gray-500">
-                                            {Number(item.norm) % 1 === 0
-                                              ? item.norm
-                                              : Number(item.norm).toFixed(2).replace(/\.?0+$/, '')}{' '}
-                                            {item.service?.unit || item.unit} / Gói
-                                          </span>
-                                        </div>
-                                      </td>
-                                      <td className="px-4 py-2 text-right text-xs text-gray-600">
-                                        {formatNumber(item.sellingPrice || 0)}
-                                      </td>
-                                      <td className="px-4 py-2 text-right text-xs italic text-gray-500">
-                                        {formatNumber(item.costAtSale || 0)}
-                                      </td>
-                                      <td className="px-4 py-2 text-right text-xs text-gray-600">
-                                        {formatNumber((item.sellingPrice || 0) * (item.quantity || 0) * 0.08)}
-                                      </td>
-                                      <td className="px-4 py-2 text-right text-xs font-semibold text-gray-700">
-                                        {formatNumber((item.sellingPrice || 0) * (item.quantity || 0) * 1.08)}
-                                      </td>
-                                    </tr>
-
-                                    {isServiceExpanded && serviceDescription && (
-                                      <tr className="border-b border-gray-50/50 bg-blue-50/10">
-                                        <td
-                                          colSpan={6}
-                                          className="px-4 py-3 pl-16 text-[11px] leading-relaxed text-gray-500 whitespace-pre-wrap"
-                                        >
-                                          {serviceDescription}
-                                        </td>
-                                      </tr>
-                                    )}
-                                    {isServiceExpanded && (item.jobs || []).map((job, jobIndex) => (
-                                      <tr
-                                        key={`${serviceKey}-job-${job.id || job.jobId || jobIndex}`}
-                                        className="border-b border-blue-50 bg-blue-50/10"
-                                      >
-                                        <td className="px-4 py-2 pl-16 text-xs text-gray-600">
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-blue-300">└</span>
-                                            <span>{job.name || job.job?.name || 'Hạng mục'}</span>
-                                            {(job.isBriefVideo || !job.isQuotationItem) && (
-                                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-700">
-                                                Không tính báo giá
-                                              </span>
-                                            )}
-                                          </div>
-                                        </td>
-                                        <td className="px-4 py-2 text-center text-xs text-gray-500">
-                                          {Number(job.quantity || 1)} {job.job?.unit || job.unit || ''}
-                                        </td>
-                                        <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
-                                        <td
-                                          className="px-4 py-2 text-right text-xs text-gray-500"
-                                          title="Giá vốn hạng mục này đã được tính trong giá vốn dịch vụ"
-                                        >
-                                          {formatNumber(job.costAtSale || job.job?.costPrice || 0)}
-                                        </td>
-                                        <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
-                                        <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
-                                      </tr>
-                                    ))}
-                                  </Fragment>
-                                );
-                              })}
-                          </Fragment>
-                        );
-                      })}
-
-                      {aggregatedItems.standalone.length > 0 && (
-                        <>
-                          <tr className="border-b border-gray-100 bg-gray-50">
-                            <td
-                              colSpan={6}
-                              className="bg-gray-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-400"
-                            >
-                              Dịch vụ lẻ
-                            </td>
-                          </tr>
-
-                          {aggregatedItems.standalone.map((item, idx) => {
-                            const serviceKey = `standalone-${item.serviceId || item.service?.id || idx}`;
-                            const isServiceExpanded = Boolean(expandedServices[serviceKey]);
-                            const serviceDescription = item.service?.description || item.description;
-
-                            return (
-                              <Fragment key={serviceKey}>
-                                <tr
-                                  className="group cursor-pointer border-b border-gray-100 hover:bg-gray-50"
-                                  onClick={() => toggleService(serviceKey)}
-                                >
-                                  <td className="px-4 py-3 text-sm font-medium italic text-gray-900 transition-colors group-hover:text-purple-700">
-                                    <div className="flex items-center gap-2">
-                                      {isServiceExpanded ? (
-                                        <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
-                                      ) : (
-                                        <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" />
-                                      )}
-                                      <span className="font-bold text-gray-900">
-                                        {item.name || item.service?.name || 'N/A'}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className="px-4 py-3 text-center">
-                                    <span className=" px-2 py-1 text-sm font-bold text-gray-900">
-                                      {item.quantity} {item.service?.unit || item.unit}
-                                    </span>
-                                  </td>
-                                  <td className="px-4 py-3 text-right text-sm text-gray-700">
-                                    {formatNumber(Math.round(item.sellingPrice))}
-                                  </td>
-                                  <td className="px-4 py-3 text-right text-sm italic text-gray-500">
-                                    {formatNumber(Math.round(item.costAtSale))}
-                                  </td>
-                                  <td className="px-4 py-3 text-right text-sm text-gray-900">
-                                    {formatNumber(item.vat)}
-                                  </td>
-                                  <td className="px-4 py-3 text-right text-sm font-black italic text-gray-900">
-                                    {formatNumber(item.totalWithVat)}
-                                  </td>
-                                </tr>
-
-                                {isServiceExpanded && serviceDescription && (
-                                  <tr className="border-b border-gray-100 bg-gray-50/70">
-                                    <td
-                                      colSpan={6}
-                                      className="px-4 py-3 pl-10 text-xs leading-relaxed text-gray-500 whitespace-pre-wrap"
-                                    >
-                                      {serviceDescription}
-                                    </td>
-                                  </tr>
-                                )}
-                                {isServiceExpanded && (item.jobs || []).map((job, jobIndex) => (
-                                  <tr
-                                    key={`${serviceKey}-job-${job.id || job.jobId || jobIndex}`}
-                                    className="border-b border-gray-100 bg-gray-50/70"
-                                  >
-                                    <td className="px-4 py-2 pl-10 text-xs text-gray-600">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-gray-300">└</span>
-                                        <span>{job.name || job.job?.name || 'Hạng mục'}</span>
-                                        {(job.isBriefVideo || !job.isQuotationItem) && (
-                                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-700">
-                                            Không tính báo giá
-                                          </span>
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className="px-4 py-2 text-center text-xs text-gray-500">
-                                      {Number(job.quantity || 1)} {job.job?.unit || job.unit || ''}
-                                    </td>
-                                    <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
-                                    <td
-                                      className="px-4 py-2 text-right text-xs text-gray-500"
-                                      title="Giá vốn hạng mục này đã được tính trong giá vốn dịch vụ"
-                                    >
-                                      {formatNumber(job.costAtSale || job.job?.costPrice || 0)}
-                                    </td>
-                                    <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
-                                    <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
-                                  </tr>
-                                ))}
-                              </Fragment>
-                            );
-                          })}
-                        </>
-                      )}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-gray-50 font-semibold">
-                        <td colSpan="5" className="px-4 py-3 text-right text-sm text-gray-700">
-                          Tổng cộng (có VAT):
-                        </td>
-                        <td className="px-4 py-3 text-right text-sm font-black text-gray-900">
-                          {formatNumber(totalWithVat)} VNĐ
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
+                <QuotationServicePricingTable
+                  items={pricingItems}
+                  priceType="custom"
+                  mode="readonly"
+                  emptyMessage="Báo giá chưa có dịch vụ."
+                />
               </div>
-
               <div>
                 <label className="flex items-center gap-2 font-semibold text-gray-900">
                   <Briefcase className="h-4 w-4 text-blue-600" />
