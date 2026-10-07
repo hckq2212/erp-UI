@@ -75,6 +75,8 @@ export const TaskResultChecksPanel = ({ taskId, projectId }) => {
   const [rerunSpell, { isLoading: isRerunningSpell }] = useRerunResultCheckMutation();
   const [rerunQc, { isLoading: isRerunningQc }] = useRerunResultCheckMutation();
   const [rerunWhitelist, setRerunWhitelist] = useState(null);
+  const [qcNote, setQcNote] = useState('');
+  const [qcRefresh, setQcRefresh] = useState(false);
   const [expandedTokens, setExpandedTokens] = useState({});
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewFocus, setPreviewFocus] = useState(null);
@@ -177,7 +179,9 @@ export const TaskResultChecksPanel = ({ taskId, projectId }) => {
         kind,
         whitelist: activeWhitelist,
         scope: { scenarioIds: [], regions: rerunRegions },
+        ...(kind !== 'SPELL' ? { reviewerNote: qcNote.trim() || undefined, refresh: qcRefresh } : {}),
       }).unwrap();
+      if (kind !== 'SPELL') { setQcNote(''); setQcRefresh(false); }
       toast.success('Đang quét lại các vùng đã chọn...');
       setRerunRegions([]);
       setIsPreviewOpen(false);
@@ -246,7 +250,9 @@ export const TaskResultChecksPanel = ({ taskId, projectId }) => {
 
   const handleRerunQc = async () => {
     try {
-      await rerunQc({ taskId, kind: 'QC', whitelist: activeWhitelist }).unwrap();
+      await rerunQc({ taskId, kind: 'QC', whitelist: activeWhitelist, reviewerNote: qcNote.trim() || undefined, refresh: qcRefresh }).unwrap();
+      setQcNote('');
+      setQcRefresh(false);
       toast.success('Đang kiểm tra lại QC...');
     } catch (err) {
       toast.error(err?.data?.message || 'Không thể kiểm tra lại QC');
@@ -455,6 +461,19 @@ export const TaskResultChecksPanel = ({ taskId, projectId }) => {
           <span className="px-2 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 rounded-full">
             Đối chiếu: {record.qcModels.verify}
           </span>
+          {record.qcModels.stats && record.qcModels.stats.total_blocks > 0 && (
+            <span className="px-2 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-600 rounded-full">
+              Lần quét gần nhất: dùng lại {record.qcModels.stats.reused_blocks}/{record.qcModels.stats.total_blocks} kịch bản không đổi
+            </span>
+          )}
+          {record.qcModels.reviewerNote && (
+            <span
+              title={record.qcModels.reviewerNote}
+              className="px-2 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-700 rounded-full max-w-xs truncate"
+            >
+              Ghi chú cho AI: {record.qcModels.reviewerNote}
+            </span>
+          )}
         </div>
       )}
 
@@ -525,6 +544,28 @@ export const TaskResultChecksPanel = ({ taskId, projectId }) => {
               <PackageSearch className="w-3.5 h-3.5" /> Thêm/cập nhật thông tin sản phẩm để đối chiếu
             </Link>
           )}
+          <details className="text-xs" open={Boolean(qcNote)}>
+            <summary className="cursor-pointer text-slate-500 hover:text-slate-700">
+              Ghi chú cho AI khi kiểm tra lại (tuỳ chọn)
+            </summary>
+            <div className="mt-1.5 space-y-1.5">
+              <textarea
+                value={qcNote}
+                onChange={(e) => setQcNote(e.target.value)}
+                maxLength={1000}
+                rows={3}
+                placeholder="Ví dụ: chú ý đơn vị dung tích; combo 2 sản phẩm tính theo bảng giá mới..."
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
+              <div className="text-[10px] text-slate-400">
+                Chỉ để định hướng đối chiếu, AI vẫn lấy thông tin sản phẩm đã duyệt làm chuẩn. Có ghi chú thì các kịch bản đều được kiểm tra lại.
+              </div>
+              <label className="flex items-center gap-1.5 text-slate-600">
+                <input type="checkbox" checked={qcRefresh} onChange={(e) => setQcRefresh(e.target.checked)} />
+                Gọi lại AI cho cả kịch bản không đổi (không dùng kết quả đã lưu)
+              </label>
+            </div>
+          </details>
           <div>
             <Button type="button" size="sm" variant="outline" isLoading={isRerunningQc} onClick={handleRerunQc}>
               <RefreshCw className="w-3.5 h-3.5 mr-1" /> Kiểm tra lại QC

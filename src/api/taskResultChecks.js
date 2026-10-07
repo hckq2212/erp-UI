@@ -43,10 +43,10 @@ export const taskResultChecksApi = api.injectEndpoints({
       keepUnusedDataFor: 120,
     }),
     rerunResultCheck: builder.mutation({
-      query: ({ taskId, kind, whitelist, scope }) => ({
+      query: ({ taskId, kind, whitelist, scope, reviewerNote, refresh }) => ({
         url: `/task-result-checks/task/${taskId}/rerun`,
         method: 'PATCH',
-        body: { kind, whitelist, scope },
+        body: { kind, whitelist, scope, reviewerNote, refresh },
       }),
       invalidatesTags: (result, error, { taskId }) => [{ type: 'TaskResultChecks', id: taskId }],
     }),
