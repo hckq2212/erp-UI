@@ -10,17 +10,29 @@ import { formatNumber, parseNumber } from '../../utils/format';
 import { Plus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { JOB_CATEGORY_OPTIONS } from '../../utils/enums';
+import { JOB_CATEGORY_OPTIONS, JOB_LEVEL_OPTIONS, JOB_RESPONSIBLE_ROLE_OPTIONS } from '../../utils/enums';
 
 const jobSchema = z.object({
     name: z.string().min(1, 'Tên hạng mục là bắt buộc'),
     nickname: z.string().max(120, 'Nickname không được vượt quá 120 ký tự').optional().default(''),
     code: z.string().min(1, 'Mã hạng mục là bắt buộc'),
     costPrice: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
+    unitPrice: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     vinicoin: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     timeToComplete: z.string().transform((val) => val.replace(/[^0-9.]/g, '')).optional().default('0'),
     defaultPerformerType: z.enum(['INTERNAL', 'EXTERNAL']).default('INTERNAL'),
     categories: z.array(z.string()).optional().default([]),
+    level: z.enum(['A', 'B', 'C']).default('A'),
+    responsibleRole: z.enum([
+        'CONTENT_CREATOR',
+        'EDITOR',
+        'DESIGNER',
+        'CAMERAMAN',
+        'ACCOUNT',
+        'VIDEO_EDITOR',
+        'SOCIAL_MEDIA_MANAGER',
+        'PROJECT_MANAGER'
+    ]).or(z.literal('')).optional().default(''),
     isBriefVideo: z.boolean().optional().default(false),
     isQuotationItem: z.boolean().optional().default(true),
     criteria: z.array(z.object({
@@ -48,9 +60,12 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
             nickname: '',
             code: '',
             costPrice: '',
+            unitPrice: '',
             vinicoin: '',
             timeToComplete: '',
             defaultPerformerType: 'INTERNAL',
+            level: 'A',
+            responsibleRole: '',
             isBriefVideo: false,
             isQuotationItem: true,
             categories: [],
@@ -73,6 +88,7 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
     // }, [isBriefVideoValue, setValue]);
 
     const costPriceValue = watch('costPrice');
+    const unitPriceValue = watch('unitPrice');
     const vinicoinValue = watch('vinicoin');
     const timeToCompleteValue = watch('timeToComplete');
     const categoriesValue = watch('categories');
@@ -104,7 +120,9 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
             const result = await createJob({
                 ...data,
                 // nickname: data.nickname?.trim() || null,
+                responsibleRole: data.responsibleRole || null,
                 costPrice: parseNumber(data.costPrice),
+                unitPrice: parseNumber(data.unitPrice),
                 vinicoin: parseNumber(data.vinicoin),
                 timeToComplete: parseFloat(data.timeToComplete || '0'),
                 criteria: data.criteria.map(c => ({
@@ -159,6 +177,18 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                         suffix="VNĐ"
                     />
                     <Input
+                        label="Đơn giá công việc"
+                        {...register('unitPrice')}
+                        value={formatNumber(unitPriceValue)}
+                        onChange={(e) => {
+                            const rawValue = e.target.value.replace(/[^0-9,]/g, '').replace(/(,.*),/g, '$1');
+                            setValue('unitPrice', rawValue);
+                        }}
+                        error={errors.unitPrice?.message}
+                        placeholder="0"
+                        suffix="VNĐ"
+                    />
+                    <Input
                         label="Vinicoin"
                         {...register('vinicoin')}
                         value={formatNumber(vinicoinValue)}
@@ -181,6 +211,43 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                         error={errors.timeToComplete?.message}
                         placeholder="Số giờ dự kiến để hoàn thành"
                     />
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Level
+                        </label>
+                        <select
+                            {...register('level')}
+                            className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                        >
+                            {JOB_LEVEL_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.level && (
+                            <p className="mt-1 text-sm text-red-600 font-medium">{errors.level.message}</p>
+                        )}
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Phụ trách
+                        </label>
+                        <select
+                            {...register('responsibleRole')}
+                            className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                        >
+                            <option value="">Chưa xác định</option>
+                            {JOB_RESPONSIBLE_ROLE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.responsibleRole && (
+                            <p className="mt-1 text-sm text-red-600 font-medium">{errors.responsibleRole.message}</p>
+                        )}
+                    </div>
                 </div>
 
                 <div className="space-y-3">

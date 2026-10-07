@@ -279,6 +279,24 @@ export const JOB_CATEGORY_OPTIONS = [
   { value: 'KHAC', label: JOB_CATEGORY_LABELS.KHAC }
 ];
 
+export const JOB_LEVEL_LABELS = {
+  A: 'A',
+  B: 'B',
+  C: 'C'
+};
+
+export const JOB_LEVEL_COLORS = {
+  A: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  B: 'bg-blue-50 text-blue-700 border-blue-100',
+  C: 'bg-amber-50 text-amber-700 border-amber-100'
+};
+
+export const JOB_LEVEL_OPTIONS = [
+  { value: 'A', label: JOB_LEVEL_LABELS.A },
+  { value: 'B', label: JOB_LEVEL_LABELS.B },
+  { value: 'C', label: JOB_LEVEL_LABELS.C }
+];
+
 export const JOB_PERFORMER_TYPE = {
   INTERNAL: "Nội bộ",
   PARTNER: "Đối tác",
@@ -384,6 +402,33 @@ export const TEAM_MEMBER_ROLE_LABELS = {
   [TEAM_MEMBER_ROLE.SOCIAL_MEDIA_MANAGER]: 'Quản lý MXH',
   [TEAM_MEMBER_ROLE.PROJECT_MANAGER]: 'PM',
 };
+
+export const JOB_RESPONSIBLE_ROLE_LABELS = {
+  CONTENT_CREATOR: TEAM_MEMBER_ROLE_LABELS[TEAM_MEMBER_ROLE.CONTENT_CREATOR],
+  EDITOR: TEAM_MEMBER_ROLE_LABELS[TEAM_MEMBER_ROLE.EDITOR],
+  DESIGNER: TEAM_MEMBER_ROLE_LABELS[TEAM_MEMBER_ROLE.DESIGNER],
+  CAMERAMAN: TEAM_MEMBER_ROLE_LABELS[TEAM_MEMBER_ROLE.CAMERAMAN],
+  ACCOUNT: TEAM_MEMBER_ROLE_LABELS[TEAM_MEMBER_ROLE.ACCOUNT],
+  VIDEO_EDITOR: TEAM_MEMBER_ROLE_LABELS[TEAM_MEMBER_ROLE.VIDEO_EDITOR],
+  SOCIAL_MEDIA_MANAGER: TEAM_MEMBER_ROLE_LABELS[TEAM_MEMBER_ROLE.SOCIAL_MEDIA_MANAGER],
+  PROJECT_MANAGER: TEAM_MEMBER_ROLE_LABELS[TEAM_MEMBER_ROLE.PROJECT_MANAGER],
+};
+
+export const JOB_RESPONSIBLE_ROLE_COLORS = {
+  CONTENT_CREATOR: 'bg-orange-50 text-orange-700 border-orange-100',
+  EDITOR: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  DESIGNER: 'bg-teal-50 text-teal-700 border-teal-100',
+  CAMERAMAN: 'bg-blue-50 text-blue-700 border-blue-100',
+  ACCOUNT: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  VIDEO_EDITOR: 'bg-purple-50 text-purple-700 border-purple-100',
+  SOCIAL_MEDIA_MANAGER: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+  PROJECT_MANAGER: 'bg-rose-50 text-rose-700 border-rose-100',
+};
+
+export const JOB_RESPONSIBLE_ROLE_OPTIONS = Object.entries(JOB_RESPONSIBLE_ROLE_LABELS).map(([value, label]) => ({
+  value,
+  label
+}));
 
 export const QUOTATION_TYPE = {
   STANDARD: 'STANDARD',

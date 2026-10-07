@@ -9,7 +9,15 @@ import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../../components/ui/Pagination';
 import { TableFilters } from '../../components/ui/TableFilters';
 import { cn } from '../../utils/cn';
-import { JOB_CATEGORY_LABELS, JOB_CATEGORY_COLORS, JOB_CATEGORY_OPTIONS } from '../../utils/enums';
+import {
+    JOB_CATEGORY_LABELS,
+    JOB_CATEGORY_COLORS,
+    JOB_CATEGORY_OPTIONS,
+    JOB_LEVEL_LABELS,
+    JOB_LEVEL_COLORS,
+    JOB_RESPONSIBLE_ROLE_LABELS,
+    JOB_RESPONSIBLE_ROLE_COLORS
+} from '../../utils/enums';
 
 export const JobsPage = () => {
     const navigate = useNavigate();
@@ -107,7 +115,10 @@ export const JobsPage = () => {
                                     <tr className="bg-gray-50/50 border-b border-gray-100">
                                         {renderSortableHeader('Mã Hạng Mục', 'code')}
                                         {renderSortableHeader('Tên Hạng Mục', 'name')}
+                                        {renderSortableHeader('Level', 'level', 'center')}
+                                        {renderSortableHeader('Phụ trách', 'responsibleRole')}
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Category</th>
+                                        {renderSortableHeader('Đơn giá', 'unitPrice')}
                                         {renderSortableHeader('Giá vốn', 'costPrice')}
                                         {renderSortableHeader('Vinicoin', 'vinicoin')}
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Xem chi tiết</th>
@@ -123,6 +134,20 @@ export const JobsPage = () => {
                                                     <div className="mt-0.5 text-xs font-semibold text-gray-400">
                                                         Nickname: {job.nickname}
                                                     </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-center">
+                                                <span className={cn("inline-flex min-w-8 justify-center px-2 py-0.5 rounded-lg text-xs font-bold border", JOB_LEVEL_COLORS[job.level || 'A'] || 'bg-gray-100 text-gray-600 border-gray-200')}>
+                                                    {JOB_LEVEL_LABELS[job.level || 'A'] || job.level || 'A'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm">
+                                                {job.responsibleRole ? (
+                                                    <span className={cn("inline-flex px-2 py-0.5 rounded-lg text-xs font-bold border", JOB_RESPONSIBLE_ROLE_COLORS[job.responsibleRole] || 'bg-gray-100 text-gray-600 border-gray-200')}>
+                                                        {JOB_RESPONSIBLE_ROLE_LABELS[job.responsibleRole] || job.responsibleRole}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs italic text-gray-400">Chưa xác định</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 text-sm">
@@ -141,6 +166,7 @@ export const JobsPage = () => {
                                                     <span className="text-xs italic text-gray-400">Chưa xác định</span>
                                                 )}
                                             </td>
+                                            <td className="px-6 py-4 text-sm text-gray-700 font-bold">{formatCurrency(job.unitPrice || 0)}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-bold">{formatCurrency(job.costPrice)}</td>
                                             <td className="px-6 py-4 text-sm text-orange-600 font-bold">{job.vinicoin || 0}</td>
                                             <td className="px-6 py-4 text-sm text-right">
@@ -155,7 +181,7 @@ export const JobsPage = () => {
                                     ))}
                                     {jobs.length === 0 && (
                                         <tr>
-                                            <td colSpan="6" className="px-6 py-16 text-center text-gray-400 italic">
+                                            <td colSpan="9" className="px-6 py-16 text-center text-gray-400 italic">
                                                 Không tìm thấy hạng mục công việc nào
                                             </td>
                                         </tr>

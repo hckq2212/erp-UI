@@ -20,7 +20,14 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { formatCurrency } from '../../utils/format';
-import { JOB_CATEGORY_LABELS, JOB_CATEGORY_COLORS } from '../../utils/enums';
+import {
+    JOB_CATEGORY_LABELS,
+    JOB_CATEGORY_COLORS,
+    JOB_LEVEL_LABELS,
+    JOB_LEVEL_COLORS,
+    JOB_RESPONSIBLE_ROLE_LABELS,
+    JOB_RESPONSIBLE_ROLE_COLORS
+} from '../../utils/enums';
 import { cn } from '../../utils/cn';
 import { useState } from 'react';
 import { EditJobCriteriaModal } from './EditJobCriteriaModal';
@@ -72,6 +79,14 @@ export const JobDetailPage = () => {
                             <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider border border-blue-100">
                                 {job.code}
                             </span>
+                            <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border", JOB_LEVEL_COLORS[job.level || 'A'] || 'bg-gray-100 text-gray-600 border-gray-200')}>
+                                Level {JOB_LEVEL_LABELS[job.level || 'A'] || job.level || 'A'}
+                            </span>
+                            {job.responsibleRole && (
+                                <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border", JOB_RESPONSIBLE_ROLE_COLORS[job.responsibleRole] || 'bg-gray-100 text-gray-600 border-gray-200')}>
+                                    Phụ trách {JOB_RESPONSIBLE_ROLE_LABELS[job.responsibleRole] || job.responsibleRole}
+                                </span>
+                            )}
                         </div>
                         {job.nickname && (
                             <p className="text-sm font-semibold text-gray-500 mt-1">
@@ -106,7 +121,17 @@ export const JobDetailPage = () => {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                        <DollarSign className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Đơn giá công việc</p>
+                        <p className="text-xl font-bold text-gray-900">{formatCurrency(job.unitPrice || 0)}</p>
+                    </div>
+                </div>
+
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
                         <DollarSign className="w-6 h-6" />
