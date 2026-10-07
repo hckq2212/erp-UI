@@ -14,7 +14,7 @@ import {
     WalletCards,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, formatCompactCurrency } from '../../utils/format';
 import { PROJECT_STATUS_COLORS } from '../../utils/enums';
 import { MetricCard } from './member/MetricCard';
 import { HotProjectList } from './member/HotProjectList';
@@ -38,16 +38,6 @@ const getProgressTone = (progress = 0) => {
     if (progress >= 45) return 'bg-blue-500';
     if (progress > 0) return 'bg-amber-500';
     return 'bg-slate-300';
-};
-
-const formatCompactCurrency = (value = 0) => {
-    const amount = Number(value || 0);
-    if (!amount) return '0';
-
-    return new Intl.NumberFormat('vi-VN', {
-        notation: 'compact',
-        maximumFractionDigits: 1,
-    }).format(amount);
 };
 
 const AdminFocusCard = ({
@@ -234,7 +224,7 @@ const StaffWorkloadPanel = ({ workloads = [], onSelectMember }) => {
                                     />
                                 </div>
                                 <p className="text-[10px] font-bold text-slate-400">
-                                    {Number(item.pendingVinicoin || 0).toLocaleString()} / {Number(item.kpi || 2500).toLocaleString()} Vinicoin
+                                    {Number(item.pendingVinicoin || 0).toLocaleString()} / {Number(item.kpi || 22000).toLocaleString()} Vinicoin
                                 </p>
                             </button>
                         );

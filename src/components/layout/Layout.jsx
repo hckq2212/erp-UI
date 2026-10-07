@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { useSSE } from '../../hooks/useSSE';
@@ -13,7 +14,7 @@ export const Layout = ({ children }) => {
       <Sidebar isCollapsed={isSidebarCollapsed} />
       <div className={`${isSidebarCollapsed ? 'pl-20' : 'pl-64'} pt-16 transition-all duration-300 ease-in-out`}>
         <main className="p-8 pt-0">
-          {children}
+          {children || <Outlet />}
         </main>
       </div>
     </div>

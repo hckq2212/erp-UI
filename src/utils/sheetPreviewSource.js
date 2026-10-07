@@ -1,4 +1,10 @@
-import * as XLSX from 'xlsx';
+let xlsxModulePromise = null;
+const getXlsx = () => {
+  if (!xlsxModulePromise) {
+    xlsxModulePromise = import('xlsx');
+  }
+  return xlsxModulePromise;
+};
 
 const MAX_ROW_COUNT = 200;
 const MAX_COL_COUNT = 60;
@@ -17,7 +23,7 @@ const cellText = (cell) => {
   return raw.length > MAX_CELL_TEXT ? raw.slice(0, MAX_CELL_TEXT) : raw;
 };
 
-export const buildSheetWindow = (workbook, request) => {
+export const buildSheetWindow = (XLSX, workbook, request) => {
   const sheets = workbook.SheetNames;
   if (sheets.length === 0) throw new Error('File không có sheet nào');
   const sheet = request.sheet || sheets[0];
@@ -54,11 +60,15 @@ export const buildSheetWindow = (workbook, request) => {
 
 export const createFileSource = (file) => {
   let workbookPromise = null;
-  const getWorkbook = () => {
+  const getWorkbook = async () => {
+    const XLSX = await getXlsx();
     if (!workbookPromise) {
       workbookPromise = file
         .arrayBuffer()
-        .then((buffer) => XLSX.read(buffer, { type: 'array', cellStyles: false, cellDates: false }))
+        .then((buffer) => ({
+          XLSX,
+          workbook: XLSX.read(buffer, { type: 'array', cellStyles: false, cellDates: false })
+        }))
         .catch((err) => {
           workbookPromise = null;
           throw err;
@@ -68,6 +78,9 @@ export const createFileSource = (file) => {
   };
   return {
     key: `file:${file.name}:${file.size}:${file.lastModified}`,
-    load: async (request) => buildSheetWindow(await getWorkbook(), request),
+    load: async (request) => {
+      const { XLSX, workbook } = await getWorkbook();
+      return buildSheetWindow(XLSX, workbook, request);
+    },
   };
 };

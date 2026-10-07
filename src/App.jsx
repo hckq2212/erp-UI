@@ -7,13 +7,15 @@ import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SessionExpiredModal } from './components/auth/SessionExpiredModal';
 
-import { DashboardPage } from './pages/Dashboard/DashboardPage';
-
-import { ChatBubbleWidget } from './components/chat/ChatBubbleWidget';
-
 const lazyNamed = (loader, exportName) => lazy(() =>
   loader().then((module) => ({ default: module[exportName] }))
 );
+
+const DashboardPage = lazyNamed(() => import('./pages/Dashboard/DashboardPage'), 'DashboardPage');
+const ChatBubbleWidget = lazy(() =>
+  import('./components/chat/ChatBubbleWidget').then((module) => ({ default: module.ChatBubbleWidget }))
+);
+
 
 const CustomersPage = lazyNamed(() => import('./pages/Customers/CustomersPage'), 'CustomersPage');
 const CustomerDetailPage = lazyNamed(() => import('./pages/Customers/CustomerDetailPage'), 'CustomerDetailPage');
@@ -91,629 +93,85 @@ function AppContent() {
   return (
     <>
       <Suspense fallback={<RouteLoadingFallback />}>
-      <Routes>
-
-        {/* =========================
-            Public routes
-        ========================== */}
-
-        <Route
-          path="/login"
-          element={<LoginPage />}
-        />
-
-
-        {/* =========================
-            Dashboard
-        ========================== */}
-
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <DashboardPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Customers
-        ========================== */}
-
-        <Route
-          path="/customers"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <CustomersPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/customers/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <CustomerDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Opportunities
-        ========================== */}
-
-        <Route
-          path="/opportunities"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <OpportunitiesPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/opportunities/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <OpportunityDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Services
-        ========================== */}
-
-        <Route
-          path="/services"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ServicesPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/services/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ServiceDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Jobs
-        ========================== */}
-
-        <Route
-          path="/jobs"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <JobsPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/jobs/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <JobDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Contracts
-        ========================== */}
-
-        <Route
-          path="/contracts"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ContractsPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/contracts/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ContractDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Projects
-        ========================== */}
-
-        <Route
-          path="/projects"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ProjectsPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/projects/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ProjectDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Tasks
-        ========================== */}
-
-        <Route
-          path="/tasks"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <TasksPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/tasks/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <TaskDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/tasks/:id/review"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <TaskReviewPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Finance
-        ========================== */}
-
-        <Route
-          path="/finance"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <FinancePage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/payment-requests/:id?"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <PaymentRequestsPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/finance/overview"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <PaymentOverviewPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/finance/acceptance-minutes"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <AcceptanceMinutesPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/finance/vat-invoices"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <VatInvoicesPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Vendors
-        ========================== */}
-
-        <Route
-          path="/vendors"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <VendorsPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/vendors/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <VendorDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Referral Partners
-        ========================== */}
-
-        <Route
-          path="/referral-partners"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ReferralPartnersPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/referral-partners/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <PartnerDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Document Library
-        ========================== */}
-
-        <Route
-          path="/document-library"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <DocumentLibraryPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Teams
-        ========================== */}
-
-        <Route
-          path="/teams"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <TeamsPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/teams/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <TeamDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Notifications
-        ========================== */}
-
-        <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <NotificationsPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Announcements
-        ========================== */}
-
-        <Route
-          path="/announcements"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <AnnouncementsPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/announcements/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <AnnouncementDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Users
-        ========================== */}
-
-        <Route
-          path="/users"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <UserListPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/users/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <UserDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Me
-        ========================== */}
-
-        <Route
-          path="/me"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <MePage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Service Packages
-        ========================== */}
-
-        <Route
-          path="/service-packages"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ServicePackageListPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/service-packages/:id"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ServicePackageDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Acceptance
-        ========================== */}
-
-        <Route
-          path="/acceptance"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <AcceptanceInboxPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            AI Dashboard
-        ========================== */}
-
-        <Route
-          path="/dashboard-ai"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <DashboardAIPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Create Video AI
-        ========================== */}
-
-        <Route
-          path="/create-video-ai"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <CreateVideoAIPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/create-video-motion-control"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <CreateVideoMotionControlPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Library Video AI
-        ========================== */}
-
-        <Route
-          path="/library-video-ai"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <LibraryVideoAiPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Chat
-        ========================== */}
-
-        {/* <Route
-          path="/chat"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ChatPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        /> */}
-
-
-        {/* =========================
-            Settings
-        ========================== */}
-
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <SettingsPage />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
-
-        {/* =========================
-            Fallback
-        ========================== */}
-
-        <Route
-          path="*"
-          element={<Navigate to="/" replace />}
-        />
-
-      </Routes>
+        <Routes>
+          {/* =========================
+              Public routes
+          ========================== */}
+          <Route
+            path="/login"
+            element={<LoginPage />}
+          />
+
+          {/* =========================
+              Authenticated Application Shell (Persistent Layout & SSE via Outlet)
+          ========================== */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/customers" element={<CustomersPage />} />
+            <Route path="/customers/:id" element={<CustomerDetailPage />} />
+            <Route path="/opportunities" element={<OpportunitiesPage />} />
+            <Route path="/opportunities/:id" element={<OpportunityDetailPage />} />
+            <Route path="/services" element={<ServicesPage />} />
+            <Route path="/services/:id" element={<ServiceDetailPage />} />
+            <Route path="/jobs" element={<JobsPage />} />
+            <Route path="/jobs/:id" element={<JobDetailPage />} />
+            <Route path="/contracts" element={<ContractsPage />} />
+            <Route path="/contracts/:id" element={<ContractDetailPage />} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/projects/:id" element={<ProjectDetailPage />} />
+            <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/tasks/:id" element={<TaskDetailPage />} />
+            <Route path="/tasks/:id/review" element={<TaskReviewPage />} />
+            <Route path="/finance" element={<FinancePage />} />
+            <Route path="/payment-requests/:id?" element={<PaymentRequestsPage />} />
+            <Route path="/finance/overview" element={<PaymentOverviewPage />} />
+            <Route path="/finance/acceptance-minutes" element={<AcceptanceMinutesPage />} />
+            <Route path="/finance/vat-invoices" element={<VatInvoicesPage />} />
+            <Route path="/vendors" element={<VendorsPage />} />
+            <Route path="/vendors/:id" element={<VendorDetailPage />} />
+            <Route path="/referral-partners" element={<ReferralPartnersPage />} />
+            <Route path="/referral-partners/:id" element={<PartnerDetailPage />} />
+            <Route path="/document-library" element={<DocumentLibraryPage />} />
+            <Route path="/teams" element={<TeamsPage />} />
+            <Route path="/teams/:id" element={<TeamDetailPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/announcements" element={<AnnouncementsPage />} />
+            <Route path="/announcements/:id" element={<AnnouncementDetailPage />} />
+            <Route path="/users" element={<UserListPage />} />
+            <Route path="/users/:id" element={<UserDetailPage />} />
+            <Route path="/me" element={<MePage />} />
+            <Route path="/service-packages" element={<ServicePackageListPage />} />
+            <Route path="/service-packages/:id" element={<ServicePackageDetailPage />} />
+            <Route path="/acceptance" element={<AcceptanceInboxPage />} />
+            <Route path="/dashboard-ai" element={<DashboardAIPage />} />
+            <Route path="/create-video-ai" element={<CreateVideoAIPage />} />
+            <Route path="/create-video-motion-control" element={<CreateVideoMotionControlPage />} />
+            <Route path="/library-video-ai" element={<LibraryVideoAiPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            {/* <Route path="/chat" element={<ChatPage />} /> */}
+          </Route>
+
+          {/* =========================
+              Fallback
+          ========================== */}
+          <Route
+            path="*"
+            element={<Navigate to="/" replace />}
+          />
+        </Routes>
       </Suspense>
 
       <SessionExpiredModal />
-      <ChatBubbleWidget />
+      {/* <ChatBubbleWidget /> */}
     </>
   );
 }
-
 
 function App() {
   return (
@@ -722,6 +180,5 @@ function App() {
     </BrowserRouter>
   );
 }
-
 
 export default App;

@@ -118,28 +118,32 @@ export const MemberView = ({
         }) || [];
     }, [awaitingReviewTasks, canManageProjectTasks, currentUserId, selectedProjectId, selectedDate]);
 
-    const rawOverdue = member?.overdueTasks || [];
-    const filteredOverdueTasks = selectedProjectId
-        ? rawOverdue.filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
-        : rawOverdue;
+    const rawOverdue = member?.overdueTasks;
+    const filteredOverdueTasks = useMemo(() => {
+        if (!rawOverdue) return [];
+        if (!selectedProjectId) return rawOverdue;
+        return rawOverdue.filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId);
+    }, [rawOverdue, selectedProjectId]);
+
+    const rawUpcoming = member?.upcomingDeadlines;
+    const filteredUpcomingTasks = useMemo(() => {
+        if (!rawUpcoming) return [];
+        if (!selectedProjectId) return rawUpcoming;
+        return rawUpcoming.filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId);
+    }, [rawUpcoming, selectedProjectId]);
 
     const stats = useMemo(() => {
         const todayStr = new Date().toISOString().split('T')[0];
         const now = new Date();
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        const rawUpcoming = member?.upcomingDeadlines || [];
-        const filteredUpcoming = selectedProjectId
-            ? rawUpcoming.filter(task => task.projectId === selectedProjectId || task.project?.id === selectedProjectId)
-            : rawUpcoming;
-
-        const todayCount = filteredUpcoming.filter(task =>
+        const todayCount = filteredUpcomingTasks.filter(task =>
             task.deadline && task.deadline.startsWith(todayStr)
         ).length;
 
         const overdueCount = member?.overdueCount !== undefined
             ? (selectedProjectId ? filteredOverdueTasks.length : member.overdueCount)
-            : filteredUpcoming.filter(task => task.deadline && new Date(task.deadline) < startOfToday).length;
+            : filteredUpcomingTasks.filter(task => task.deadline && new Date(task.deadline) < startOfToday).length;
         const statusCounts = member?.statusCounts || {};
         const completedCount = member?.completedCount ?? (
             Number(statusCounts[TASK_STATUS.COMPLETED] || 0) +
@@ -156,21 +160,23 @@ export const MemberView = ({
             pending: teamLeadReviewTasks.length,
             progress
         };
-    }, [member, selectedProjectId, teamLeadReviewTasks, filteredOverdueTasks]);
+    }, [member, selectedProjectId, teamLeadReviewTasks, filteredOverdueTasks, filteredUpcomingTasks]);
 
-    const rawTimelineTasks = member?.upcomingDeadlines || [];
-    const filteredTimelineTasks = selectedProjectId
-        ? rawTimelineTasks.filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
-        : rawTimelineTasks;
-    const timelineTasks = filteredTimelineTasks;
+    const timelineTasks = filteredUpcomingTasks;
 
-    const filteredReworkTasks = selectedProjectId
-        ? (member?.reworkTasks || []).filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
-        : member?.reworkTasks;
+    const rawRework = member?.reworkTasks;
+    const filteredReworkTasks = useMemo(() => {
+        if (!rawRework) return [];
+        if (!selectedProjectId) return rawRework;
+        return rawRework.filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId);
+    }, [rawRework, selectedProjectId]);
 
-    const filteredCalendarTasks = selectedProjectId
-        ? (member?.calendarTasks || []).filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId)
-        : member?.calendarTasks;
+    const rawCalendar = member?.calendarTasks;
+    const filteredCalendarTasks = useMemo(() => {
+        if (!rawCalendar) return [];
+        if (!selectedProjectId) return rawCalendar;
+        return rawCalendar.filter(t => t.projectId === selectedProjectId || t.project?.id === selectedProjectId);
+    }, [rawCalendar, selectedProjectId]);
 
     const [selectedCalendarDate, setSelectedCalendarDate] = useState(new Date());
 

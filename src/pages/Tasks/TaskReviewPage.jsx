@@ -95,7 +95,7 @@ export const TaskReviewPage = () => {
                 projectId: task.project?.id
             }).unwrap();
             toast.success('Duyệt công việc thành công!');
-            navigate(`/projects/${task.project?.id}`);
+            navigate(task.project?.id ? `/projects/${task.project.id}` : `/tasks/${task.id}`);
         } catch (err) {
             toast.error(err.data?.message || 'Có lỗi xảy ra khi duyệt công việc');
         }

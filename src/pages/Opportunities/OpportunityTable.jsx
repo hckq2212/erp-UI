@@ -4,6 +4,7 @@ import { cn } from '../../utils/cn';
 import { OPPORTUNITY_STATUS_LABELS, OPPORTUNITY_STATUS_COLORS } from '../../utils/enums';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../../components/ui/Pagination';
+import { formatCurrency } from '../../utils/format';
 
 export const OpportunityTable = ({
     opportunities = [],
@@ -49,11 +50,6 @@ export const OpportunityTable = ({
         }
         onSortChange?.(key, direction === 'ascending' ? 'ASC' : 'DESC');
         requestSort(key);
-    };
-
-    const formatCurrency = (value) => {
-        if (!value) return '0 VNĐ';
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
     };
 
     const getSortIcon = (key) => {
@@ -123,7 +119,7 @@ export const OpportunityTable = ({
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
                                             <DollarSign className="w-4 h-4" />
-                                            {formatCurrency(opp.expectedRevenue)}
+                                            {formatCurrency(opp.expectedRevenue) || '0 VNĐ'}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-center align-middle">

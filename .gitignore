@@ -26,3 +26,4 @@ dist-ssr
 docs
 .agents
 skills-lock.json
+*.md

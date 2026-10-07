@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -55,7 +55,7 @@ const menuItems = [
   { path: '/settings', icon: Settings, label: 'Cài đặt', roles: ['ADMIN'] },
 ];
 
-export const Sidebar = ({ isCollapsed }) => {
+const SidebarComponent = ({ isCollapsed }) => {
   const location = useLocation();
   const { data: me } = useGetMeQuery();
   const [collapsedFlyout, setCollapsedFlyout] = useState(null);
@@ -75,23 +75,26 @@ export const Sidebar = ({ isCollapsed }) => {
     setHoveredTooltip(null);
   };
 
-  const filteredMenuItems = menuItems
-    .filter((item) => {
-      if (!item.roles) return true;
-      return item.roles.includes(me?.role);
-    })
-    .map((item) => {
-      if (!item.children) return item;
-      const filteredChildren = item.children.filter((child) => {
-        if (!child.roles) return true;
-        return child.roles.includes(me?.role);
+  const userRole = me?.role;
+  const filteredMenuItems = useMemo(() => {
+    return menuItems
+      .filter((item) => {
+        if (!item.roles) return true;
+        return item.roles.includes(userRole);
+      })
+      .map((item) => {
+        if (!item.children) return item;
+        const filteredChildren = item.children.filter((child) => {
+          if (!child.roles) return true;
+          return child.roles.includes(userRole);
+        });
+        return { ...item, children: filteredChildren };
+      })
+      .filter((item) => {
+        if (item.children) return item.children.length > 0;
+        return true;
       });
-      return { ...item, children: filteredChildren };
-    })
-    .filter((item) => {
-      if (item.children) return item.children.length > 0;
-      return true;
-    });
+  }, [userRole]);
 
   const [openMenus, setOpenMenus] = useState(() => {
     const initial = {};
@@ -374,3 +377,5 @@ export const Sidebar = ({ isCollapsed }) => {
     </aside>
   );
 };
+
+export const Sidebar = memo(SidebarComponent);
