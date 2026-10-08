@@ -343,7 +343,7 @@ export const ServicesPage = () => {
                                                                 <tr className="text-gray-400 uppercase tracking-wider">
                                                                     <th className="py-2 text-left font-semibold w-28">Mã</th>
                                                                     <th className="py-2 text-left font-semibold">Hạng mục</th>
-                                                                    <th className="py-2 text-center font-semibold w-16">SL</th>
+                                                                    <th className="py-2 text-center font-semibold w-24">SL / ĐVT</th>
                                                                     <th className="py-2 text-center font-semibold w-20">Đầu ra</th>
                                                                     <th className="py-2 text-right font-semibold w-36">Giá vốn</th>
                                                                 </tr>
@@ -360,7 +360,9 @@ export const ServicesPage = () => {
                                                                                 {sj.job?.name}
                                                                             </button>
                                                                         </td>
-                                                                        <td className="py-1.5 text-center text-gray-600">×{sj.quantity || 1}</td>
+                                                                        <td className="py-1.5 text-center text-gray-600 whitespace-nowrap">
+                                                                            ×{sj.quantity || 1}{sj.job?.unit ? <span className="text-gray-400"> {sj.job.unit}</span> : null}
+                                                                        </td>
                                                                         <td className="py-1.5 text-center">
                                                                             {sj.isOutput && <span className="px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-semibold">Đầu ra</span>}
                                                                         </td>

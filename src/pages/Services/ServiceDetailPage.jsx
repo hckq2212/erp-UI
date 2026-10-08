@@ -350,7 +350,6 @@ export const ServiceDetailPage = () => {
                                     <tr className="bg-gray-50 border-b border-gray-100">
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Mã</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Tên hạng mục</th>
-                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Đơn vị</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Số lượng</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Đầu ra</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Giá vốn</th>
@@ -374,11 +373,6 @@ export const ServiceDetailPage = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-sm">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-gray-600">{sj.job?.unit}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm">
                                                 <input
                                                     type="number"
                                                     min="1"
@@ -390,6 +384,7 @@ export const ServiceDetailPage = () => {
                                                     }}
                                                     className="w-16 px-2 py-1 border rounded focus:ring-1 focus:ring-blue-500 outline-none"
                                                 />
+                                                {sj.job?.unit && <span className="ml-2 text-xs text-gray-500">{sj.job.unit}</span>}
                                             </td>
                                             <td className="px-6 py-4 text-sm">
                                                 <input
@@ -402,7 +397,7 @@ export const ServiceDetailPage = () => {
                                             <td className="px-6 py-4 text-sm text-blue-600 font-medium">
                                                 {formatCurrency((sj.job?.costPrice || 0) * jobValue(sj, 'quantity'))}
                                                 <div className="text-[10px] text-gray-400 font-normal">
-                                                    {formatCurrency(sj.job?.costPrice)} / đơn vị
+                                                    {formatCurrency(sj.job?.costPrice)} / {sj.job?.unit || 'đơn vị'}
                                                 </div>
                                                 <div className="mt-1 flex items-center gap-1.5" title="Tỷ trọng trong tổng giá vốn hạng mục">
                                                     <div className="h-1 w-16 bg-gray-100 rounded-full overflow-hidden">
