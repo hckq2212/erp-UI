@@ -9,7 +9,7 @@ import { DocumentPreviewModal } from '../../components/common/DocumentPreviewMod
 import {
     X, Upload, FileText, Download, Eye, Loader2,
     ArrowLeft, CheckCircle, Mail, Phone, User,
-    Camera, Link2, ExternalLink, Shield, ImageIcon,
+    Link2, ExternalLink, Shield,
     Lock, Unlock, Calendar
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -48,24 +48,7 @@ export const UserDetailPage = () => {
     const [idCardNumber, setIdCardNumber] = useState('');
     const [showIdCardNumber, setShowIdCardNumber] = useState(false);
     const [isIdCardNumberFocused, setIsIdCardNumberFocused] = useState(false);
-    const [idCardFrontFile, setIdCardFrontFile] = useState(null);
-    const [idCardFrontPreview, setIdCardFrontPreview] = useState(null);
-    const [idCardBackFile, setIdCardBackFile] = useState(null);
-    const [idCardBackPreview, setIdCardBackPreview] = useState(null);
     const [isUploadingIdCard, setIsUploadingIdCard] = useState(false);
-
-    const IDCARD_FOLDER = 'GETVINI/ERP/id_cards';
-    const MAX_IMG = 5 * 1024 * 1024;
-    const isValidImg = (f) => ['image/jpeg','image/jpg','image/png','image/webp'].includes(f.type) && f.size <= MAX_IMG;
-
-    const handleIdCardImgSelect = (side) => (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        if (!isValidImg(file)) { toast.error('Ảnh phải là JPG/PNG/WEBP, tối đa 5MB'); return; }
-        const preview = URL.createObjectURL(file);
-        if (side === 'front') { setIdCardFrontFile(file); setIdCardFrontPreview(preview); }
-        else { setIdCardBackFile(file); setIdCardBackPreview(preview); }
-    };
 
     const handleSaveIdCard = async () => {
         const cleanIdNumber = idCardNumber?.trim() || '';
@@ -77,20 +60,11 @@ export const UserDetailPage = () => {
         try {
             setIsUploadingIdCard(true);
             const currentIdCard = user?.idCard || {};
-            const idCardUpdate = { ...currentIdCard };
-            if (cleanIdNumber !== (user?.idCard?.idNumber || '')) {
-                idCardUpdate.idNumber = cleanIdNumber;
-            }
-            if (idCardFrontFile) {
-                const r = await uploadToCloudinary(idCardFrontFile, IDCARD_FOLDER);
-                idCardUpdate.frontUrl = r.url;
-            }
-            if (idCardBackFile) {
-                const r = await uploadToCloudinary(idCardBackFile, IDCARD_FOLDER);
-                idCardUpdate.backUrl = r.url;
-            }
+            const idCardUpdate = {
+                ...currentIdCard,
+                idNumber: cleanIdNumber || null,
+            };
             await updateUserProfile({ id, idCard: idCardUpdate }).unwrap();
-            setIdCardFrontFile(null); setIdCardBackFile(null);
             toast.success('Cập nhật CCCD thành công');
         } catch (err) {
             toast.error(err.message || 'Lỗi khi cập nhật CCCD');
@@ -99,7 +73,7 @@ export const UserDetailPage = () => {
         }
     };
 
-    const idCardHasChanges = !!(idCardFrontFile || idCardBackFile || (idCardNumber !== (user?.idCard?.idNumber || '')));
+    const idCardHasChanges = idCardNumber !== (user?.idCard?.idNumber || '');
 
     // File handling state
     const [isUploading, setIsUploading] = useState(false);
@@ -126,12 +100,8 @@ export const UserDetailPage = () => {
         } else {
             setContracts([]);
         }
-        // Sync idCard previews when user data reloads
-        setIdCardFrontPreview(user?.idCard?.frontUrl || null);
-        setIdCardBackPreview(user?.idCard?.backUrl || null);
+        // Sync idCard when user data reloads
         setIdCardNumber(user?.idCard?.idNumber || '');
-        setIdCardFrontFile(null);
-        setIdCardBackFile(null);
     }, [user]);
 
     useEffect(() => () => {
@@ -428,73 +398,6 @@ export const UserDetailPage = () => {
                             </div>
                         </div>
 
-                        {/* Grid 2 mặt CCCD */}
-                        <div className="grid grid-cols-2 gap-3">
-                            {/* Mặt trước */}
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-bold text-gray-600 uppercase">Mặt trước</span>
-                                    {idCardFrontPreview && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setPreviewFile({ url: idCardFrontPreview, name: 'CCCD - Mặt trước' })}
-                                            className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-1"
-                                        >
-                                            <Eye className="w-3 h-3" /> Xem
-                                        </button>
-                                    )}
-                                </div>
-                                <label className="relative group block aspect-[4/3] rounded-2xl overflow-hidden border-2 border-dashed border-gray-200 hover:border-blue-400 cursor-pointer bg-gray-50 transition-all">
-                                    {idCardFrontPreview ? (
-                                        <img src={idCardFrontPreview} alt="CCCD Mặt trước" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 p-2 text-center">
-                                            <ImageIcon className="w-6 h-6 text-gray-300" />
-                                            <span className="text-[10px] font-bold text-gray-400">Chọn ảnh mặt trước</span>
-                                        </div>
-                                    )}
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                        <div className="bg-white/90 text-gray-800 text-[11px] font-black px-2.5 py-1 rounded-lg flex items-center gap-1 shadow">
-                                            <Camera className="w-3.5 h-3.5" /> Thay ảnh
-                                        </div>
-                                    </div>
-                                    <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handleIdCardImgSelect('front')} className="hidden" />
-                                </label>
-                            </div>
-
-                            {/* Mặt sau */}
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[11px] font-bold text-gray-600 uppercase">Mặt sau</span>
-                                    {idCardBackPreview && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setPreviewFile({ url: idCardBackPreview, name: 'CCCD - Mặt sau' })}
-                                            className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-1"
-                                        >
-                                            <Eye className="w-3 h-3" /> Xem
-                                        </button>
-                                    )}
-                                </div>
-                                <label className="relative group block aspect-[4/3] rounded-2xl overflow-hidden border-2 border-dashed border-gray-200 hover:border-blue-400 cursor-pointer bg-gray-50 transition-all">
-                                    {idCardBackPreview ? (
-                                        <img src={idCardBackPreview} alt="CCCD Mặt sau" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 p-2 text-center">
-                                            <ImageIcon className="w-6 h-6 text-gray-300" />
-                                            <span className="text-[10px] font-bold text-gray-400">Chọn ảnh mặt sau</span>
-                                        </div>
-                                    )}
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                        <div className="bg-white/90 text-gray-800 text-[11px] font-black px-2.5 py-1 rounded-lg flex items-center gap-1 shadow">
-                                            <Camera className="w-3.5 h-3.5" /> Thay ảnh
-                                        </div>
-                                    </div>
-                                    <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handleIdCardImgSelect('back')} className="hidden" />
-                                </label>
-                            </div>
-                        </div>
-
                         {/* Save / Cancel buttons for CCCD */}
                         {idCardHasChanges && (
                             <div className="flex items-center gap-2 pt-2">
@@ -518,13 +421,7 @@ export const UserDetailPage = () => {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => {
-                                        setIdCardFrontFile(null);
-                                        setIdCardBackFile(null);
-                                        setIdCardFrontPreview(user?.idCard?.frontUrl || null);
-                                        setIdCardBackPreview(user?.idCard?.backUrl || null);
-                                        setIdCardNumber(user?.idCard?.idNumber || '');
-                                    }}
+                                    onClick={() => setIdCardNumber(user?.idCard?.idNumber || '')}
                                     disabled={isUploadingIdCard || isUpdatingProfile}
                                     className="px-3 py-2.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-2xl font-bold text-xs transition-all"
                                 >

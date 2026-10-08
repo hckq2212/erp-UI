@@ -7,13 +7,12 @@ import { toast } from 'react-toastify';
 import {
     User, Mail, Phone, Lock, Unlock, Save, Loader2,
     Info, Calendar, Camera, Link2, ExternalLink,
-    Shield, X, Plus, ImageIcon, Eye, EyeOff
+    Shield, X, Plus, Eye, EyeOff
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { maskIdCardNumber } from '../../utils/format';
 
 const AVATAR_FOLDER = 'GETVINI/ERP/avatars';
-const IDCARD_FOLDER = 'GETVINI/ERP/id_cards';
 const MAX_IMG_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_IMG_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
@@ -73,41 +72,6 @@ const HobbiesTagInput = ({ tags = [], onChange }) => {
     );
 };
 
-// ─── ImageUploadBox Component ─────────────────────────────────────────────
-const ImageUploadBox = ({ label, previewUrl, onFileSelect, disabled }) => {
-    const inputRef = useRef(null);
-    return (
-        <div className="space-y-2">
-            <p className="text-[11px] font-black text-gray-400 uppercase tracking-wider">{label}</p>
-            <div
-                onClick={() => !disabled && inputRef.current?.click()}
-                className={`relative group w-full aspect-[4/3] rounded-2xl overflow-hidden border-2 border-dashed transition-all ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-orange-300'} ${previewUrl ? 'border-transparent' : 'border-gray-200 bg-gray-50'}`}
-            >
-                {previewUrl ? (
-                    <img src={previewUrl} alt={label} className="w-full h-full object-cover" />
-                ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-                        <ImageIcon className="w-8 h-8 text-gray-300" />
-                        <p className="text-xs text-gray-400 font-bold">Chọn ảnh</p>
-                    </div>
-                )}
-                <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${previewUrl ? 'opacity-0 group-hover:opacity-100' : 'opacity-0 group-hover:opacity-60'}`}>
-                    <Camera className="w-6 h-6 text-white" />
-                </div>
-            </div>
-            <input
-                ref={inputRef}
-                type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
-                disabled={disabled}
-                onChange={onFileSelect}
-                className="hidden"
-            />
-            <p className="text-[10px] text-gray-400">JPG, PNG, WEBP — tối đa 5MB</p>
-        </div>
-    );
-};
-
 // ─── Main MePage ───────────────────────────────────────────────────────────
 export const MePage = () => {
     const user = useSelector(selectCurrentUser);
@@ -124,16 +88,12 @@ export const MePage = () => {
         password: '', confirmPassword: '',
         avatarUrl: '', portfolioUrl: '',
         hobbies: [],
-        idCard: { frontUrl: '', backUrl: '', idNumber: '' },
+        idCard: { idNumber: '' },
     });
 
     // Local preview states (before upload)
     const [avatarPreview, setAvatarPreview] = useState(null);
     const [avatarFile, setAvatarFile] = useState(null);
-    const [idCardFrontFile, setIdCardFrontFile] = useState(null);
-    const [idCardFrontPreview, setIdCardFrontPreview] = useState(null);
-    const [idCardBackFile, setIdCardBackFile] = useState(null);
-    const [idCardBackPreview, setIdCardBackPreview] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
@@ -148,14 +108,10 @@ export const MePage = () => {
                 portfolioUrl: user.portfolioUrl || '',
                 hobbies: Array.isArray(user.hobbies) ? user.hobbies : [],
                 idCard: {
-                    frontUrl: user.idCard?.frontUrl || '',
-                    backUrl: user.idCard?.backUrl || '',
                     idNumber: user.idCard?.idNumber || '',
                 },
             });
             setAvatarPreview(user.avatarUrl || null);
-            setIdCardFrontPreview(user.idCard?.frontUrl || null);
-            setIdCardBackPreview(user.idCard?.backUrl || null);
         }
     }, [user]);
 
@@ -183,18 +139,6 @@ export const MePage = () => {
         }
         setAvatarFile(file);
         setAvatarPreview(URL.createObjectURL(file));
-    };
-
-    const handleIdCardSelect = (side) => (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        if (!isValidImageFile(file)) {
-            toast.error('Ảnh CCCD phải là JPG/PNG/WEBP và tối đa 5MB');
-            return;
-        }
-        const preview = URL.createObjectURL(file);
-        if (side === 'front') { setIdCardFrontFile(file); setIdCardFrontPreview(preview); }
-        else { setIdCardBackFile(file); setIdCardBackPreview(preview); }
     };
 
     const handleSubmit = async (e) => {
@@ -230,24 +174,12 @@ export const MePage = () => {
                 updateData.avatarUrl = result.url;
             }
 
-            // Upload CCCD images if changed
-            const idCardUpdate = { ...formData.idCard };
-            if (idCardFrontFile) {
-                const result = await uploadToCloudinary(idCardFrontFile, IDCARD_FOLDER);
-                idCardUpdate.frontUrl = result.url;
-            }
-            if (idCardBackFile) {
-                const result = await uploadToCloudinary(idCardBackFile, IDCARD_FOLDER);
-                idCardUpdate.backUrl = result.url;
-            }
-            const hasIdCard = idCardUpdate.frontUrl || idCardUpdate.backUrl || idCardUpdate.idNumber;
-            updateData.idCard = hasIdCard ? idCardUpdate : null;
+            // Update CCCD number
+            updateData.idCard = cleanIdNumber ? { idNumber: cleanIdNumber } : null;
 
             await updateMe(updateData).unwrap();
             toast.success('Cập nhật hồ sơ thành công');
             setAvatarFile(null);
-            setIdCardFrontFile(null);
-            setIdCardBackFile(null);
             setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
             refetch();
         } catch (err) {
@@ -391,7 +323,7 @@ export const MePage = () => {
                     </div>
                 </motion.div>
 
-                {/* ── Section 2: CCCD 2 mặt ── */}
+                {/* ── Section 2: CCCD / CMND ── */}
                 <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -404,31 +336,16 @@ export const MePage = () => {
                                 <Shield className="w-5 h-5" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-black text-gray-900">CCCD / CMND</h2>
-                                <p className="text-[11px] text-gray-400 mt-0.5">🛡️ Chỉ bạn và Quản lý có thể xem thông tin này</p>
+                                <h2 className="text-xl font-black text-gray-900">Căn cước công dân (CCCD / CMND)</h2>
+                                <p className="text-[11px] text-gray-400 mt-0.5">🛡️ Số định danh cá nhân được mã hóa bảo mật, chỉ bạn và Quản lý có thể xem</p>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <ImageUploadBox
-                            label="Mặt trước"
-                            previewUrl={idCardFrontPreview}
-                            onFileSelect={handleIdCardSelect('front')}
-                            disabled={isBusy}
-                        />
-                        <ImageUploadBox
-                            label="Mặt sau"
-                            previewUrl={idCardBackPreview}
-                            onFileSelect={handleIdCardSelect('back')}
-                            disabled={isBusy}
-                        />
                     </div>
 
                     {/* ID number */}
                     <div className="space-y-2">
                         <div className="flex items-center justify-between ml-1">
-                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider">Số CCCD / CMND</label>
+                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider">Số CCCD / CMND (9 hoặc 12 chữ số)</label>
                             {formData.idCard.idNumber && (
                                 <button
                                     type="button"
