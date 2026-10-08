@@ -2,9 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import { useGetServicesQuery, useDeleteServiceMutation, useCreateServiceMutation, useBulkDeleteServicesMutation } from '../../api/services';
 import { useGetMeQuery } from '../../api/auth';
 import { formatCurrency } from '../../utils/format';
-import { Plus, ArrowUp, ArrowDown, ArrowUpDown, Copy, Trash2, X, CheckSquare, Square, Pencil } from 'lucide-react';
+import { Plus, ArrowUp, ArrowDown, ArrowUpDown, Copy, Trash2, X, CheckSquare, Square, Pencil, ChevronRight, ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { CreateServiceModal } from './CreateServiceModal';
 import { EditServiceModal } from './EditServiceModal';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
@@ -26,6 +26,10 @@ export const ServicesPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
+    const [expandedIds, setExpandedIds] = useState([]);
+
+    const toggleExpand = (id) =>
+        setExpandedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
     const services = useMemo(() => {
         const rawData = Array.isArray(servicesData) ? servicesData : (servicesData?.data || []);
@@ -70,9 +74,14 @@ export const ServicesPage = () => {
         totalItems
     } = useTableFeatures(services, { initialSort: { key: 'code', direction: 'ascending' } });
 
+    const expandableIds = paginatedServices.filter(s => (s.serviceJobs || []).length > 0).map(s => s.id);
+    const allExpanded = expandableIds.length > 0 && expandableIds.every(id => expandedIds.includes(id));
+    const handleToggleAll = () => setExpandedIds(allExpanded ? [] : expandableIds);
+
     const handleToggleSelectionMode = () => {
         setIsSelectionMode(!isSelectionMode);
         setSelectedIds([]);
+        setExpandedIds([]);
     };
 
     const handleSelectRow = (id) => {
@@ -213,6 +222,18 @@ export const ServicesPage = () => {
                                                 </button>
                                             </th>
                                         )}
+                                        {!isSelectionMode && (
+                                            <th className="pl-4 pr-0 py-4 w-10">
+                                                <button
+                                                    onClick={handleToggleAll}
+                                                    disabled={expandableIds.length === 0}
+                                                    className="p-1 text-gray-400 hover:text-blue-600 disabled:opacity-30 transition-colors"
+                                                    title={allExpanded ? 'Thu gọn tất cả hạng mục' : 'Mở rộng tất cả hạng mục'}
+                                                >
+                                                    {allExpanded ? <ChevronsDownUp className="w-4 h-4" /> : <ChevronsUpDown className="w-4 h-4" />}
+                                                </button>
+                                            </th>
+                                        )}
                                         {renderSortableHeader('Tên Dịch Vụ', 'name')}
                                         {renderSortableHeader('Mã Dịch Vụ', 'code')}
                                         {renderSortableHeader('Đơn vị', 'unit')}
@@ -221,9 +242,12 @@ export const ServicesPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {paginatedServices.map((service) => (
+                                    {paginatedServices.map((service) => {
+                                        const jobs = service.serviceJobs || [];
+                                        const isExpanded = !isSelectionMode && expandedIds.includes(service.id);
+                                        return (
+                                        <Fragment key={service.id}>
                                         <tr
-                                            key={service.id}
                                             className={cnUtility(
                                                 "hover:bg-gray-50/50 transition-colors cursor-pointer",
                                                 selectedIds.includes(service.id) && "bg-blue-50/50 hover:bg-blue-50"
@@ -241,7 +265,35 @@ export const ServicesPage = () => {
                                                     </div>
                                                 </td>
                                             )}
-                                            <td className="px-6 py-4 text-sm text-gray-900 font-medium uppercase">{service.name}</td>
+                                            {!isSelectionMode && (
+                                                <td className="pl-4 pr-0 py-4 w-10">
+                                                    {jobs.length > 0 && (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); toggleExpand(service.id); }}
+                                                            className="p-1 text-gray-400 hover:text-blue-600 rounded transition-colors"
+                                                            title={isExpanded ? 'Thu gọn hạng mục' : 'Xem hạng mục cấu thành'}
+                                                            aria-expanded={isExpanded}
+                                                        >
+                                                            <ChevronRight className={cnUtility("w-4 h-4 transition-transform", isExpanded && "rotate-90 text-blue-600")} />
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            )}
+                                            <td className="px-6 py-4 text-sm text-gray-900 font-medium uppercase">
+                                                <div className="flex items-center gap-2">
+                                                    <span>{service.name}</span>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); if (jobs.length && !isSelectionMode) toggleExpand(service.id); }}
+                                                        className={cnUtility(
+                                                            "px-2 py-0.5 rounded-full text-[11px] font-semibold normal-case",
+                                                            jobs.length === 0 ? "bg-gray-100 text-gray-400 cursor-default"
+                                                                : isExpanded ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                                                        )}
+                                                    >
+                                                        {jobs.length} hạng mục
+                                                    </button>
+                                                </div>
+                                            </td>
                                             <td className="px-6 py-4 text-sm font-mono text-blue-600 font-bold">{service.code}</td>
                                             <td className="px-6 py-4 text-sm text-gray-500 italic lowercase">{service.unit || '---'}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-bold">{formatCurrency(service.costPrice)}</td>
@@ -282,10 +334,55 @@ export const ServicesPage = () => {
                                                 </td>
                                             )}
                                         </tr>
-                                    ))}
+                                        {isExpanded && (
+                                            <tr className="bg-gray-50/60">
+                                                <td colSpan={6} className="px-6 pb-4 pt-0">
+                                                    <div className="ml-10 border-l-2 border-blue-100 pl-4">
+                                                        <table className="w-full text-xs">
+                                                            <thead>
+                                                                <tr className="text-gray-400 uppercase tracking-wider">
+                                                                    <th className="py-2 text-left font-semibold w-28">Mã</th>
+                                                                    <th className="py-2 text-left font-semibold">Hạng mục</th>
+                                                                    <th className="py-2 text-center font-semibold w-24">SL / ĐVT</th>
+                                                                    <th className="py-2 text-center font-semibold w-20">Đầu ra</th>
+                                                                    <th className="py-2 text-right font-semibold w-36">Giá vốn</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-gray-100">
+                                                                {jobs.map(sj => (
+                                                                    <tr key={sj.id} className="hover:bg-white transition-colors">
+                                                                        <td className="py-1.5 font-mono text-gray-500">{sj.job?.code}</td>
+                                                                        <td className="py-1.5">
+                                                                            <button
+                                                                                onClick={() => navigate(`/jobs/${sj.jobId}`)}
+                                                                                className="text-gray-700 hover:text-blue-600 hover:underline text-left"
+                                                                            >
+                                                                                {sj.job?.name}
+                                                                            </button>
+                                                                        </td>
+                                                                        <td className="py-1.5 text-center text-gray-600 whitespace-nowrap">
+                                                                            ×{sj.quantity || 1}{sj.job?.unit ? <span className="text-gray-400"> {sj.job.unit}</span> : null}
+                                                                        </td>
+                                                                        <td className="py-1.5 text-center">
+                                                                            {sj.isOutput && <span className="px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-semibold">Đầu ra</span>}
+                                                                        </td>
+                                                                        <td className="py-1.5 text-right text-gray-600 font-medium">
+                                                                            {formatCurrency((sj.job?.costPrice || 0) * (sj.quantity || 1))}
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                        </Fragment>
+                                        );
+                                    })}
                                     {services.length === 0 && (
                                         <tr>
-                                            <td colSpan="5" className="px-6 py-16 text-center text-gray-400 italic">
+                                            <td colSpan="6" className="px-6 py-16 text-center text-gray-400 italic">
                                                 Không tìm thấy dịch vụ nào
                                             </td>
                                         </tr>
