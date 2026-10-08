@@ -1,59 +1,11 @@
 import { useState, useEffect, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard, Users, Briefcase, FileText,
-  FileSignature, Rocket, CheckSquare, DollarSign, Settings, Store,
-  CheckCircle2, Package, User, Handshake, FolderOpenDotIcon, Video, BookText, Megaphone, Bell, Archive,
-  Sparkles, ChevronDown, ChartNoAxesCombined, MessageSquare, Wallet, FileCheck, Receipt
-} from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useGetMeQuery } from '../../api/auth';
+import { MENU_ITEMS as menuItems } from '../../config/routes.config';
 
-const menuItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/opportunities', icon: Briefcase, label: 'Cơ Hội', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
-  { path: '/contracts', icon: FileSignature, label: 'Hợp Đồng', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE', 'PM'] },
-  { path: '/customers', icon: Users, label: 'Khách Hàng', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
-  { path: '/projects', icon: FolderOpenDotIcon, label: 'Dự Án' },
-  { path: '/tasks', icon: CheckSquare, label: 'Công Việc' },
-  { path: '/acceptance', icon: CheckCircle2, label: 'Nghiệm thu', roles: ['ADMIN', 'BOD', 'ADMIN_SALE', 'PM'] },
-  // { path: '/finance', icon: DollarSign, label: 'Lộ trình thanh toán', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'] },
-  { path: '/payment-requests', icon: Wallet, label: 'Yêu cầu thanh toán' },
-  {
-    id: 'payments',
-    label: 'Thanh toán',
-    icon: DollarSign,
-    roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE'],
-    children: [
-      { path: '/finance/overview', icon: LayoutDashboard, label: 'Tổng quan' },
-      { path: '/finance/acceptance-minutes', icon: FileCheck, label: 'Biên bản nghiệm thu' },
-      { path: '/finance/vat-invoices', icon: Receipt, label: 'Hóa đơn VAT' },
-      { path: '/finance', icon: FileText, label: 'Lộ trình thanh toán' },
-    ],
-  },
-
-  { path: '/service-packages', icon: Package, label: 'Gói dịch vụ', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE', 'PM'] },
-  { path: '/services', icon: Briefcase, label: 'Dịch vụ', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE', 'PM'] },
-  { path: '/jobs', icon: CheckSquare, label: 'Hạng mục công việc', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE', 'PM'] },
-  { path: '/teams', icon: Users, label: 'Đội dự án', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE', 'PM'] },
-  { path: '/users', icon: User, label: 'Nhân sự', roles: ['ADMIN', 'BOD'] },
-  { path: '/vendors', icon: Store, label: 'Vendor', roles: ['ADMIN', 'BOD', 'PM'] },
-  { path: '/referral-partners', icon: Handshake, label: 'Đối tác', roles: ['ADMIN', 'BOD', 'BD', 'ADMIN_SALE', 'PM'] },
-  {
-    id: 'ai',
-    label: 'AI',
-    icon: Sparkles,
-    children: [
-      { path: '/dashboard-ai', icon: ChartNoAxesCombined, label: 'Thống kê AI' },
-      { path: '/create-video-ai', icon: Video, label: 'Tạo Video AI' },
-      { path: '/library-video-ai', icon: BookText, label: 'Thư viện Video AI' },
-    ],
-  },
-  { path: '/document-library', icon: Archive, label: 'Kho tài liệu' },
-  // { path: '/chat', icon: MessageSquare, label: 'Tin nhắn' },
-  { path: '/settings', icon: Settings, label: 'Cài đặt', roles: ['ADMIN'] },
-];
 
 const SidebarComponent = ({ isCollapsed }) => {
   const location = useLocation();

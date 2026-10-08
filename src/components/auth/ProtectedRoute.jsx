@@ -1,11 +1,23 @@
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { selectIsAuthenticated, selectAuthLoading } from '../../store/authSlice';
+import { selectIsAuthenticated, selectAuthLoading, selectCurrentUser } from '../../store/authSlice';
+import { useGetMeQuery } from '../../api/auth';
+import { ForbiddenPage } from '../../pages/Auth/ForbiddenPage';
 
-export const ProtectedRoute = ({ children }) => {
+import { ROUTE_PERMISSIONS } from '../../config/routes.config';
+import { hasRole, matchRouteRoles } from '../../hooks/usePermission';
+
+export const ProtectedRoute = ({ allowedRoles, children }) => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
-  const isLoading = useSelector(selectAuthLoading);
+  const authLoading = useSelector(selectAuthLoading);
+  const reduxUser = useSelector(selectCurrentUser);
+  const { data: queryUser, isLoading: queryLoading } = useGetMeQuery(undefined, {
+    skip: !isAuthenticated,
+  });
   const location = useLocation();
+
+  const isLoading = authLoading || (isAuthenticated && queryLoading && !reduxUser);
+  const currentUser = queryUser || reduxUser;
 
   if (isLoading) {
     return (
@@ -18,6 +30,15 @@ export const ProtectedRoute = ({ children }) => {
   if (!isAuthenticated) {
     // Redirect to login page, but save the attempted url
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Kiểm tra phân quyền RBAC: ưu tiên allowedRoles truyền trực tiếp, nếu không tự động dò từ ROUTE_PERMISSIONS
+  const requiredRoles = allowedRoles || matchRouteRoles(location.pathname, ROUTE_PERMISSIONS);
+  if (requiredRoles && requiredRoles.length > 0) {
+    const userRole = currentUser?.role;
+    if (!hasRole(userRole, requiredRoles)) {
+      return <ForbiddenPage currentRole={userRole} />;
+    }
   }
 
   return children || <Outlet />;
