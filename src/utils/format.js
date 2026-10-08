@@ -2,6 +2,10 @@ import { format } from 'date-fns';
 
 /**
  * Format number with thousand separators (Vietnamese format)
+ * Quy ước: "." = hàng nghìn, "," = thập phân.
+ * - Kiểu number: dấu "." của JS là thập phân (1234.5 -> "1.234,5")
+ * - Kiểu string: coi là chuỗi kiểu VN, dấu "." luôn là hàng nghìn
+ *   (nếu nhận chuỗi thập phân kiểu quốc tế từ API, hãy Number() trước khi truyền vào)
  * @param {number|string} value - The number to format
  * @returns {string} Formatted number string (e.g., 100.000.000)
  */
@@ -17,28 +21,16 @@ export const formatNumber = (value) => {
   let integerPart = '';
   let decimalPart = undefined;
 
-  if (strValue.includes(',')) {
+  if (typeof value === 'number') {
+    const parts = strValue.split('.');
+    integerPart = parts[0];
+    decimalPart = parts[1];
+  } else if (strValue.includes(',')) {
     const parts = strValue.split(',');
     integerPart = parts[0].replace(/\./g, '');
     decimalPart = parts[1];
-  } else if ((strValue.match(/\./g) || []).length > 1) {
-    integerPart = strValue.replace(/\./g, '');
-  } else if (strValue.includes('.')) {
-    if (typeof value === 'number') {
-      const parts = strValue.split('.');
-      integerPart = parts[0];
-      decimalPart = parts[1];
-    } else {
-      const parts = strValue.split('.');
-      if (parts[1] && parts[1].length === 3 && parts[0].length <= 3 && !parts[1].endsWith('00')) {
-        integerPart = parts[0] + parts[1];
-      } else {
-        integerPart = parts[0];
-        decimalPart = parts[1];
-      }
-    }
   } else {
-    integerPart = strValue;
+    integerPart = strValue.replace(/\./g, '');
   }
 
   const cleanInt = integerPart.replace(/\D/g, '');
@@ -49,8 +41,10 @@ export const formatNumber = (value) => {
   let result = formattedInteger;
   if (decimalPart !== undefined) {
     const trimmedDecimal = decimalPart.replace(/\D/g, '').slice(0, 3);
-    if (trimmedDecimal && trimmedDecimal !== '000') {
-      result = `${formattedInteger},${trimmedDecimal}`;
+    if (trimmedDecimal === '' && typeof value === 'string') {
+      result = `${formattedInteger}.`;
+    } else if (trimmedDecimal && trimmedDecimal !== '000') {
+      result = `${formattedInteger}.${trimmedDecimal}`;
     }
   }
 
@@ -76,17 +70,8 @@ export const parseNumber = (value) => {
   let cleaned = '';
   if (str.includes(',')) {
     cleaned = str.replace(/\./g, '').replace(/,/g, '.');
-  } else if ((str.match(/\./g) || []).length > 1) {
-    cleaned = str.replace(/\./g, '');
-  } else if (str.includes('.')) {
-    const parts = str.split('.');
-    if (parts[1].length === 3) {
-      cleaned = str.replace(/\./g, '');
-    } else {
-      cleaned = str;
-    }
   } else {
-    cleaned = str;
+    cleaned = str.replace(/\./g, '');
   }
 
   const num = parseFloat(cleaned);
