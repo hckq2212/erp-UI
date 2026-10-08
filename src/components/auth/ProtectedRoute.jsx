@@ -1,6 +1,6 @@
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { selectIsAuthenticated, selectAuthLoading, selectCurrentUser } from '../../store/authSlice';
+import { selectIsAuthenticated, selectAuthLoading, selectCurrentUser, selectSessionExpired } from '../../store/authSlice';
 import { useGetMeQuery } from '../../api/auth';
 import { ForbiddenPage } from '../../pages/Auth/ForbiddenPage';
 
@@ -11,8 +11,9 @@ export const ProtectedRoute = ({ allowedRoles, children }) => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const authLoading = useSelector(selectAuthLoading);
   const reduxUser = useSelector(selectCurrentUser);
+  const sessionExpired = useSelector(selectSessionExpired);
   const { data: queryUser, isLoading: queryLoading } = useGetMeQuery(undefined, {
-    skip: !isAuthenticated,
+    skip: !isAuthenticated || sessionExpired,
   });
   const location = useLocation();
 
