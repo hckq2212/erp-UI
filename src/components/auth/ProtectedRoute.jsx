@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { selectIsAuthenticated, selectAuthLoading, selectCurrentUser, selectSessionExpired } from '../../store/authSlice';
 import { useGetMeQuery } from '../../api/auth';
 import { ForbiddenPage } from '../../pages/Auth/ForbiddenPage';
+import { hasSessionMarker } from '../../utils/authSession';
 
 import { ROUTE_PERMISSIONS } from '../../config/routes.config';
 import { hasRole, matchRouteRoles } from '../../hooks/usePermission';
@@ -12,12 +13,13 @@ export const ProtectedRoute = ({ allowedRoles, children }) => {
   const authLoading = useSelector(selectAuthLoading);
   const reduxUser = useSelector(selectCurrentUser);
   const sessionExpired = useSelector(selectSessionExpired);
+  const hasStoredSession = hasSessionMarker();
   const { data: queryUser, isLoading: queryLoading } = useGetMeQuery(undefined, {
-    skip: !isAuthenticated || sessionExpired,
+    skip: !isAuthenticated || sessionExpired || !hasStoredSession,
   });
   const location = useLocation();
 
-  const isLoading = authLoading || (isAuthenticated && queryLoading && !reduxUser);
+  const isLoading = (hasStoredSession && authLoading) || (isAuthenticated && queryLoading && !reduxUser);
   const currentUser = queryUser || reduxUser;
 
   if (isLoading) {
