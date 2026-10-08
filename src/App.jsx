@@ -6,6 +6,15 @@ import { useGetMeQuery } from './api/auth';
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SessionExpiredModal } from './components/auth/SessionExpiredModal';
+import { ROUTE_PERMISSIONS } from './config/routes.config';
+
+const RoleRoute = ({ path, element }) => {
+  const allowedRoles = ROUTE_PERMISSIONS[path];
+  if (!allowedRoles || allowedRoles.length === 0) {
+    return element;
+  }
+  return <ProtectedRoute allowedRoles={allowedRoles}>{element}</ProtectedRoute>;
+};
 
 const lazyNamed = (loader, exportName) => lazy(() =>
   loader().then((module) => ({ default: module[exportName] }))
@@ -113,47 +122,47 @@ function AppContent() {
             }
           >
             <Route path="/" element={<DashboardPage />} />
-            <Route path="/customers" element={<CustomersPage />} />
-            <Route path="/customers/:id" element={<CustomerDetailPage />} />
-            <Route path="/opportunities" element={<OpportunitiesPage />} />
-            <Route path="/opportunities/:id" element={<OpportunityDetailPage />} />
-            <Route path="/services" element={<ServicesPage />} />
-            <Route path="/services/:id" element={<ServiceDetailPage />} />
-            <Route path="/jobs" element={<JobsPage />} />
-            <Route path="/jobs/:id" element={<JobDetailPage />} />
-            <Route path="/contracts" element={<ContractsPage />} />
-            <Route path="/contracts/:id" element={<ContractDetailPage />} />
+            <Route path="/customers" element={<RoleRoute path="/customers" element={<CustomersPage />} />} />
+            <Route path="/customers/:id" element={<RoleRoute path="/customers/:id" element={<CustomerDetailPage />} />} />
+            <Route path="/opportunities" element={<RoleRoute path="/opportunities" element={<OpportunitiesPage />} />} />
+            <Route path="/opportunities/:id" element={<RoleRoute path="/opportunities/:id" element={<OpportunityDetailPage />} />} />
+            <Route path="/services" element={<RoleRoute path="/services" element={<ServicesPage />} />} />
+            <Route path="/services/:id" element={<RoleRoute path="/services/:id" element={<ServiceDetailPage />} />} />
+            <Route path="/jobs" element={<RoleRoute path="/jobs" element={<JobsPage />} />} />
+            <Route path="/jobs/:id" element={<RoleRoute path="/jobs/:id" element={<JobDetailPage />} />} />
+            <Route path="/contracts" element={<RoleRoute path="/contracts" element={<ContractsPage />} />} />
+            <Route path="/contracts/:id" element={<RoleRoute path="/contracts/:id" element={<ContractDetailPage />} />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/tasks/:id" element={<TaskDetailPage />} />
             <Route path="/tasks/:id/review" element={<TaskReviewPage />} />
-            <Route path="/finance" element={<FinancePage />} />
+            <Route path="/finance" element={<RoleRoute path="/finance" element={<FinancePage />} />} />
             <Route path="/payment-requests/:id?" element={<PaymentRequestsPage />} />
-            <Route path="/finance/overview" element={<PaymentOverviewPage />} />
-            <Route path="/finance/acceptance-minutes" element={<AcceptanceMinutesPage />} />
-            <Route path="/finance/vat-invoices" element={<VatInvoicesPage />} />
-            <Route path="/vendors" element={<VendorsPage />} />
-            <Route path="/vendors/:id" element={<VendorDetailPage />} />
-            <Route path="/referral-partners" element={<ReferralPartnersPage />} />
-            <Route path="/referral-partners/:id" element={<PartnerDetailPage />} />
+            <Route path="/finance/overview" element={<RoleRoute path="/finance/overview" element={<PaymentOverviewPage />} />} />
+            <Route path="/finance/acceptance-minutes" element={<RoleRoute path="/finance/acceptance-minutes" element={<AcceptanceMinutesPage />} />} />
+            <Route path="/finance/vat-invoices" element={<RoleRoute path="/finance/vat-invoices" element={<VatInvoicesPage />} />} />
+            <Route path="/vendors" element={<RoleRoute path="/vendors" element={<VendorsPage />} />} />
+            <Route path="/vendors/:id" element={<RoleRoute path="/vendors/:id" element={<VendorDetailPage />} />} />
+            <Route path="/referral-partners" element={<RoleRoute path="/referral-partners" element={<ReferralPartnersPage />} />} />
+            <Route path="/referral-partners/:id" element={<RoleRoute path="/referral-partners/:id" element={<PartnerDetailPage />} />} />
             <Route path="/document-library" element={<DocumentLibraryPage />} />
-            <Route path="/teams" element={<TeamsPage />} />
-            <Route path="/teams/:id" element={<TeamDetailPage />} />
+            <Route path="/teams" element={<RoleRoute path="/teams" element={<TeamsPage />} />} />
+            <Route path="/teams/:id" element={<RoleRoute path="/teams/:id" element={<TeamDetailPage />} />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/announcements" element={<AnnouncementsPage />} />
             <Route path="/announcements/:id" element={<AnnouncementDetailPage />} />
-            <Route path="/users" element={<UserListPage />} />
-            <Route path="/users/:id" element={<UserDetailPage />} />
+            <Route path="/users" element={<RoleRoute path="/users" element={<UserListPage />} />} />
+            <Route path="/users/:id" element={<RoleRoute path="/users/:id" element={<UserDetailPage />} />} />
             <Route path="/me" element={<MePage />} />
-            <Route path="/service-packages" element={<ServicePackageListPage />} />
-            <Route path="/service-packages/:id" element={<ServicePackageDetailPage />} />
-            <Route path="/acceptance" element={<AcceptanceInboxPage />} />
+            <Route path="/service-packages" element={<RoleRoute path="/service-packages" element={<ServicePackageListPage />} />} />
+            <Route path="/service-packages/:id" element={<RoleRoute path="/service-packages/:id" element={<ServicePackageDetailPage />} />} />
+            <Route path="/acceptance" element={<RoleRoute path="/acceptance" element={<AcceptanceInboxPage />} />} />
             <Route path="/dashboard-ai" element={<DashboardAIPage />} />
             <Route path="/create-video-ai" element={<CreateVideoAIPage />} />
             <Route path="/create-video-motion-control" element={<CreateVideoMotionControlPage />} />
             <Route path="/library-video-ai" element={<LibraryVideoAiPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings" element={<RoleRoute path="/settings" element={<SettingsPage />} />} />
             {/* <Route path="/chat" element={<ChatPage />} /> */}
           </Route>
 

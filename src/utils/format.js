@@ -2,43 +2,81 @@ import { format } from 'date-fns';
 
 /**
  * Format number with thousand separators (Vietnamese format)
+ * Quy ước: "." = hàng nghìn, "," = thập phân.
+ * - Kiểu number: dấu "." của JS là thập phân (1234.5 -> "1.234,5")
+ * - Kiểu string: coi là chuỗi kiểu VN, dấu "." luôn là hàng nghìn
+ *   (nếu nhận chuỗi thập phân kiểu quốc tế từ API, hãy Number() trước khi truyền vào)
  * @param {number|string} value - The number to format
  * @returns {string} Formatted number string (e.g., 100.000.000)
  */
 export const formatNumber = (value) => {
   if (value === null || value === undefined || value === '') return '';
 
-  // Convert to string and handle both dot and comma as decimal separators initially
-  const strValue = String(value).replace(/,/g, '.');
-  const parts = strValue.split('.');
-  const integerPart = parts[0];
-  const decimalPart = parts[1];
+  let strValue = String(value).trim();
+  const isNegative = strValue.startsWith('-');
+  if (isNegative) {
+    strValue = strValue.slice(1).trim();
+  }
 
-  // Format integer part with dots as thousand separators
-  const numInteger = parseInt(integerPart || '0');
-  const formattedInteger = isNaN(numInteger) ? '0' : numInteger.toLocaleString('vi-VN');
+  let integerPart = '';
+  let decimalPart = undefined;
 
-  // If there's a decimal part, append it with a comma (maximum 3 decimal places)
+  if (typeof value === 'number') {
+    const parts = strValue.split('.');
+    integerPart = parts[0];
+    decimalPart = parts[1];
+  } else if (strValue.includes(',')) {
+    const parts = strValue.split(',');
+    integerPart = parts[0].replace(/\./g, '');
+    decimalPart = parts[1];
+  } else {
+    integerPart = strValue.replace(/\./g, '');
+  }
+
+  const cleanInt = integerPart.replace(/\D/g, '');
+  if (!cleanInt) return '0';
+
+  const formattedInteger = cleanInt.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+  let result = formattedInteger;
   if (decimalPart !== undefined) {
-    const trimmedDecimal = decimalPart.slice(0, 3);
-    if (trimmedDecimal && trimmedDecimal !== '000') {
-      return `${formattedInteger},${trimmedDecimal}`;
+    const trimmedDecimal = decimalPart.replace(/\D/g, '').slice(0, 3);
+    if (trimmedDecimal === '' && typeof value === 'string') {
+      result = `${formattedInteger}.`;
+    } else if (trimmedDecimal && trimmedDecimal !== '000') {
+      result = `${formattedInteger}.${trimmedDecimal}`;
     }
   }
 
-  return formattedInteger;
+  return isNegative ? `-${result}` : result;
 };
 
 /**
  * Parse formatted number string back to number
- * @param {string} value - The formatted string (e.g., "100.000,500")
+ * @param {string|number} value - The formatted string (e.g., "100.000,500") or number
  * @returns {number} The parsed number (float)
  */
 export const parseNumber = (value) => {
   if (value === null || value === undefined || value === '') return 0;
-  const cleaned = String(value).replace(/\./g, '').replace(/,/g, '.');
+  if (typeof value === 'number') return isNaN(value) ? 0 : value;
+
+  let str = String(value).trim();
+  const isNegative = str.startsWith('-');
+  if (isNegative) str = str.slice(1).trim();
+
+  str = str.replace(/[^\d.,]/g, '');
+  if (!str) return 0;
+
+  let cleaned = '';
+  if (str.includes(',')) {
+    cleaned = str.replace(/\./g, '').replace(/,/g, '.');
+  } else {
+    cleaned = str.replace(/\./g, '');
+  }
+
   const num = parseFloat(cleaned);
-  return isNaN(num) ? 0 : num;
+  if (isNaN(num)) return 0;
+  return isNegative ? -num : num;
 };
 
 

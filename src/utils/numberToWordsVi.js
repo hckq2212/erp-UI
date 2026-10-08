@@ -1,7 +1,4 @@
-/**
- * Chuyển đổi số tiền (number/string) thành chuỗi bằng chữ tiếng Việt
- * Ví dụ: 10000000 -> "Mười triệu đồng chẵn"
- */
+import { parseNumber } from './format';
 
 const DIGITS = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
 
@@ -28,7 +25,7 @@ function readGroup(group, showZeroUnits = true) {
     } else if (ten === 0) {
         if (hundred > 0 && unit > 0) result += "lẻ ";
         if (unit > 0) {
-            if (unit === 5 && hundred > 0) result += "lăm ";
+            if (unit === 5 && hundred > 0) result += "năm ";
             else result += `${DIGITS[unit]} `;
         }
     }
@@ -37,7 +34,8 @@ function readGroup(group, showZeroUnits = true) {
 }
 
 export function readMoneyToWords(amount) {
-    const num = Math.round(Math.abs(Number(amount) || 0));
+    const parsed = typeof amount === 'number' ? amount : parseNumber(amount);
+    const num = Math.round(Math.abs(Number(parsed) || 0));
     if (num === 0) return "Không đồng";
 
     const UNITS = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ"];

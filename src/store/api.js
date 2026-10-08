@@ -3,8 +3,10 @@ import { clearSessionMarker, hasSessionMarker, markSessionActive } from '../util
 
 const configuredApiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
+const hasApiSuffix = /\/api(\/v\d+)?$/.test(configuredApiUrl);
+
 export const BASE_URL = configuredApiUrl
-  ? (configuredApiUrl.endsWith('/api') ? configuredApiUrl : `${configuredApiUrl}/api`)
+  ? (hasApiSuffix ? configuredApiUrl : `${configuredApiUrl}/api`)
   : '/api';
 
 const runtimeOrigin = globalThis.location?.origin || 'http://localhost:5173';
@@ -47,29 +49,59 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
       };
 
       const lockName = 'auth-refresh';
-      refreshPromise = globalThis.navigator?.locks
-        ? globalThis.navigator.locks.request(lockName, refreshUnderLock)
-        : refreshUnderLock();
-      refreshPromise = refreshPromise.finally(() => {
+      const executeWithLock = async () => {
+        if (!globalThis.navigator?.locks) {
+          return refreshUnderLock();
+        }
+
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort('auth-refresh-timeout'), 10000);
+
+        try {
+          return await globalThis.navigator.locks.request(
+            lockName,
+            { signal: controller.signal },
+            refreshUnderLock
+          );
+        } catch (lockErr) {
+          console.warn('[auth] navigator.locks aborted or failed, falling back to direct refresh:', lockErr);
+          return refreshUnderLock();
+        } finally {
+          clearTimeout(timer);
+        }
+      };
+
+      refreshPromise = executeWithLock().finally(() => {
         refreshPromise = null;
       });
     }
 
     const refreshOutcome = await refreshPromise;
-    if (refreshOutcome.refreshed) {
+    if (refreshOutcome?.refreshed) {
       result = await baseQuery(args, api, extraOptions);
     } else {
-      const refreshError = refreshOutcome.refreshResult?.error;
-      if (
-        refreshError?.status === 401 &&
-        refreshError?.data?.code === 'SESSION_EXPIRED' &&
-        hasSessionMarker()
-      ) {
+      const refreshError = refreshOutcome?.refreshResult?.error;
+      if (refreshError?.status === 401 || refreshError?.status === 403) {
+        clearSessionMarker();
         api.dispatch({ type: 'auth/sessionExpired' });
       } else if (refreshError) {
         // Preserve the session for transient network and server failures.
         result = refreshOutcome.refreshResult;
       }
+    }
+  }
+
+  // 🛡️ BỘ CHUYỂN ĐỔI THÔNG MINH (SMART UNWRAPPER): Tự động bóc vỏ { success: true, data: ... }
+  if (result.data && typeof result.data === 'object' && result.data.success === true && 'data' in result.data) {
+    if (result.data.meta && Array.isArray(result.data.data)) {
+      result.data = {
+        data: result.data.data,
+        total: result.data.meta.total,
+        page: result.data.meta.page,
+        limit: result.data.meta.limit,
+      };
+    } else {
+      result.data = result.data.data;
     }
   }
 
