@@ -52,6 +52,12 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.sessionExpired = false;
       })
+      .addMatcher(authApi.endpoints.updateMe.matchFulfilled, (state, action) => {
+        const user = action.payload?.user || action.payload;
+        if (user) {
+          state.user = { ...state.user, ...user };
+        }
+      })
       .addMatcher(authApi.endpoints.getMe.matchRejected, (state, action) => {
         if (action.payload?.status === 401) {
           state.user = null;

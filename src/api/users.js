@@ -67,6 +67,17 @@ export const usersApi = api.injectEndpoints({
         { type: 'Users', id: 'LIST' },
       ],
     }),
+    updateUserProfile: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/users/${id}`,
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Users', id },
+        { type: 'Users', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -78,4 +89,5 @@ export const {
   useDeleteUserMutation,
   useUpdateUserRoleMutation,
   useUpdateUserLaborContractsMutation,
+  useUpdateUserProfileMutation,
 } = usersApi;

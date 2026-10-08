@@ -294,22 +294,20 @@ const HeaderComponent = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             className="flex items-center space-x-2"
             onClick={() => navigate(`/me`)}
           >
-            <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-[#F38820] shadow-sm">
-              <User className="h-5 w-5" />
+            <div className="w-8 h-8 rounded-lg overflow-hidden bg-orange-100 flex items-center justify-center text-[#F38820] shadow-sm border border-gray-100 shrink-0">
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt={user?.fullName || 'Avatar'} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xs font-black text-[#F38820]">
+                  {(user?.fullName?.[0] || user?.username?.[0] || 'U').toUpperCase()}
+                </span>
+              )}
             </div>
             <div className="flex flex-col items-start">
               <span className="text-xs font-black text-gray-900 leading-none">{user?.fullName || user?.username || 'User'}</span>
-              <div className="flex items-center gap-1 mt-1">
-                <div className="w-3 h-3 bg-amber-400 rounded-full flex items-center justify-center">
-                  <span className="text-[6px] font-black text-white">V</span>
-                </div>
-                <span
-                  className="text-[10px] font-black text-amber-600 leading-none"
-                  title={`Tổng tích lũy: ${user?.vinicoinTotal?.toLocaleString() || 0} Vinicoin`}
-                >
-                  {user?.vinicoin?.toLocaleString() || 0}
-                </span>
-              </div>
+              <span className="text-[10px] font-bold text-gray-400 leading-none mt-1">
+                {user?.role || user?.account?.role || ''}
+              </span>
             </div>
           </button>
           <div className="w-px h-4 bg-gray-200 mx-1" />

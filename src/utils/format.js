@@ -81,11 +81,24 @@ export const parseNumber = (value) => {
 
 
 /**
- * Format currency with VNĐ suffix
+ * Format API currency with VNĐ suffix. A single dot in a numeric string is
+ * the Decimal separator ("70000.000" -> "70.000 VNĐ"). Keep the string's
+ * digits intact so display does not round VAT/totals or lose large amounts.
+ * Use inputFormat: 'vi' for an already masked string such as "70.000".
  * @param {number|string} value - The number to format
+ * @param {{inputFormat?: 'decimal'|'vi'}} options - The source number format
  * @returns {string} Formatted currency string (e.g., 100.000.000 VNĐ)
  */
-export const formatCurrency = (value) => {
+export const formatCurrency = (value, { inputFormat = 'decimal' } = {}) => {
+  const decimal = String(value ?? '').trim().match(/^(-?)(\d+)(?:\.(\d+))?$/);
+  if (inputFormat === 'decimal' && decimal) {
+    const [, sign, integer, fraction = ''] = decimal;
+    const grouped = integer.replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const significantFraction = fraction.replace(/0+$/, '');
+    return `${sign}${grouped}${significantFraction ? `,${significantFraction}` : ''} VNĐ`;
+  }
+
+  // Preserve legacy support for Vietnamese strings with multiple groups.
   const formatted = formatNumber(value);
   return formatted ? `${formatted} VNĐ` : '';
 };
@@ -265,4 +278,15 @@ export const formatDateToYYYYMMDD = (date) => {
   const d = new Date(date);
   if (isNaN(d.getTime())) return '';
   return format(d, 'yyyy-MM-dd');
+};
+
+export const maskIdCardNumber = (value) => {
+  if (!value) return '';
+  const clean = String(value).trim();
+  if (clean.length <= 4) return clean;
+  if (clean.length <= 6) return clean.slice(0, 2) + '*'.repeat(clean.length - 3) + clean.slice(-1);
+  const first = clean.slice(0, 3);
+  const last = clean.slice(-3);
+  const middleCount = Math.max(3, clean.length - 6);
+  return `${first}${'*'.repeat(middleCount)}${last}`;
 };
