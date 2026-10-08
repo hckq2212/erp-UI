@@ -118,7 +118,6 @@ export const JobsPage = () => {
                                         {renderSortableHeader('Level', 'level', 'center')}
                                         {renderSortableHeader('Phụ trách', 'responsibleRole')}
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Category</th>
-                                        {renderSortableHeader('Đơn giá', 'unitPrice')}
                                         {renderSortableHeader('Giá vốn', 'costPrice')}
                                         {renderSortableHeader('Vinicoin', 'vinicoin')}
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Xem chi tiết</th>
@@ -166,7 +165,6 @@ export const JobsPage = () => {
                                                     <span className="text-xs italic text-gray-400">Chưa xác định</span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-700 font-bold">{formatCurrency(job.unitPrice || 0)}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-bold">{formatCurrency(job.costPrice)}</td>
                                             <td className="px-6 py-4 text-sm text-orange-600 font-bold">{job.vinicoin || 0}</td>
                                             <td className="px-6 py-4 text-sm text-right">
@@ -181,7 +179,7 @@ export const JobsPage = () => {
                                     ))}
                                     {jobs.length === 0 && (
                                         <tr>
-                                            <td colSpan="9" className="px-6 py-16 text-center text-gray-400 italic">
+                                            <td colSpan="8" className="px-6 py-16 text-center text-gray-400 italic">
                                                 Không tìm thấy hạng mục công việc nào
                                             </td>
                                         </tr>

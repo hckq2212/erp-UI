@@ -126,7 +126,7 @@ export const TaskDetailPage = () => {
     const [isLoadingResultSheets, setIsLoadingResultSheets] = useState(false);
 
     const isTaskAssigned = Boolean(task?.assigneeId || task?.assignee?.id || task?.vendorId || task?.vendor || task?.performerType === 'VENDOR');
-    const canEditDeadline = !isTaskLocked && !isProjectLocked && isTaskAssigned && (isAccount || isPM || isAdminOverride);
+    const canEditDeadline = !isTaskLocked && !isProjectLocked && isTaskAssigned && (isAccount || user?.role === 'ADMIN');
     const canAssignUnassignedTask = (canAssignProjectTask || canAssignOpportunityVideoTask) &&
         !isTaskAssigned &&
         !['COMPLETED', 'ACCEPTED', 'DONE', 'INTERNAL_COMPLETED', 'AWAITING_REVIEW', 'CANCELLED'].includes(task?.status);
@@ -1157,6 +1157,11 @@ export const TaskDetailPage = () => {
                                                     <p className="mt-1 text-xs text-gray-600">
                                                         Lý do: <span className="font-semibold text-gray-800">{item.reason}</span>
                                                     </p>
+                                                    {(item.changedByName || item.changedById) && (
+                                                        <p className="mt-1 text-xs text-gray-600">
+                                                            Người sửa: <span className="font-semibold text-gray-800">{item.changedByName || item.changedById}</span>
+                                                        </p>
+                                                    )}
                                                     <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                                                         {formatDateTime(item.changedAt)}
                                                     </p>

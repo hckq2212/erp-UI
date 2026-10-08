@@ -121,17 +121,7 @@ export const JobDetailPage = () => {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                        <DollarSign className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Đơn giá công việc</p>
-                        <p className="text-xl font-bold text-gray-900">{formatCurrency(job.unitPrice || 0)}</p>
-                    </div>
-                </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
                         <DollarSign className="w-6 h-6" />

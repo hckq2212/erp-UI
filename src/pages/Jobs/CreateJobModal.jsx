@@ -17,7 +17,6 @@ const jobSchema = z.object({
     nickname: z.string().max(120, 'Nickname không được vượt quá 120 ký tự').optional().default(''),
     code: z.string().min(1, 'Mã hạng mục là bắt buộc'),
     costPrice: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
-    unitPrice: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     vinicoin: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     timeToComplete: z.string().transform((val) => val.replace(/[^0-9.]/g, '')).optional().default('0'),
     defaultPerformerType: z.enum(['INTERNAL', 'EXTERNAL']).default('INTERNAL'),
@@ -60,7 +59,6 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
             nickname: '',
             code: '',
             costPrice: '',
-            unitPrice: '',
             vinicoin: '',
             timeToComplete: '',
             defaultPerformerType: 'INTERNAL',
@@ -88,7 +86,6 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
     // }, [isBriefVideoValue, setValue]);
 
     const costPriceValue = watch('costPrice');
-    const unitPriceValue = watch('unitPrice');
     const vinicoinValue = watch('vinicoin');
     const timeToCompleteValue = watch('timeToComplete');
     const categoriesValue = watch('categories');
@@ -122,7 +119,6 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                 // nickname: data.nickname?.trim() || null,
                 responsibleRole: data.responsibleRole || null,
                 costPrice: parseNumber(data.costPrice),
-                unitPrice: parseNumber(data.unitPrice),
                 vinicoin: parseNumber(data.vinicoin),
                 timeToComplete: parseFloat(data.timeToComplete || '0'),
                 criteria: data.criteria.map(c => ({
@@ -173,18 +169,6 @@ export const CreateJobModal = ({ isOpen, onClose }) => {
                             setValue('costPrice', rawValue);
                         }}
                         error={errors.costPrice?.message}
-                        placeholder="0"
-                        suffix="VNĐ"
-                    />
-                    <Input
-                        label="Đơn giá công việc"
-                        {...register('unitPrice')}
-                        value={formatNumber(unitPriceValue)}
-                        onChange={(e) => {
-                            const rawValue = e.target.value.replace(/[^0-9,]/g, '').replace(/(,.*),/g, '$1');
-                            setValue('unitPrice', rawValue);
-                        }}
-                        error={errors.unitPrice?.message}
                         placeholder="0"
                         suffix="VNĐ"
                     />

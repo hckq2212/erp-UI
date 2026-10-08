@@ -16,7 +16,6 @@ const jobInfoSchema = z.object({
     nickname: z.string().max(120, 'Nickname không được vượt quá 120 ký tự').optional().default(''),
     code: z.string().min(1, 'Mã hạng mục là bắt buộc'),
     costPrice: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
-    unitPrice: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     vinicoin: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     timeToComplete: z.string().transform((val) => val.replace(/[^0-9.]/g, '')).optional().default('0'),
     level: z.enum(['A', 'B', 'C']).default('A'),
@@ -53,7 +52,6 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
             nickname: '',
             code: '',
             costPrice: '',
-            unitPrice: '',
             vinicoin: '',
             timeToComplete: '',
             level: 'A',
@@ -72,7 +70,6 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
                 nickname: job.nickname || '',
                 code: job.code,
                 costPrice: String(Number(job.costPrice ?? 0)),
-                unitPrice: String(Number(job.unitPrice ?? 0)),
                 vinicoin: String(job.vinicoin || '0'),
                 timeToComplete: String(job.timeToComplete || '0'),
                 level: job.level || 'A',
@@ -85,7 +82,6 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
     }, [isOpen, job, reset]);
 
     // const costPriceValue = watch('costPrice');
-    // const unitPriceValue = watch('unitPrice');
     // const vinicoinValue = watch('vinicoin');
     // const timeToCompleteValue = watch('timeToComplete');
     // const isBriefVideoValue = watch('isBriefVideo');
@@ -94,7 +90,6 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
     //     if (isBriefVideoValue) setValue('isQuotationItem', false);
     // }, [isBriefVideoValue, setValue]);
     const costPriceValue = watch('costPrice');
-    const unitPriceValue = watch('unitPrice');
     const vinicoinValue = watch('vinicoin');
     const timeToCompleteValue = watch('timeToComplete');
     const categoriesValue = watch('categories');
@@ -124,7 +119,6 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
                 nickname: data.nickname?.trim() || null,
                 responsibleRole: data.responsibleRole || null,
                 costPrice: parseNumber(data.costPrice),
-                unitPrice: parseNumber(data.unitPrice),
                 vinicoin: parseNumber(data.vinicoin),
                 timeToComplete: parseFloat(data.timeToComplete || '0'),
             }).unwrap();
@@ -168,18 +162,6 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
                             setValue('costPrice', rawValue);
                         }}
                         error={errors.costPrice?.message}
-                        placeholder="0"
-                        suffix="VNĐ"
-                    />
-                    <Input
-                        label="Đơn giá công việc"
-                        {...register('unitPrice')}
-                        value={formatNumber(unitPriceValue)}
-                        onChange={(e) => {
-                            const rawValue = e.target.value.replace(/[^0-9,]/g, '').replace(/(,.*),/g, '$1');
-                            setValue('unitPrice', rawValue);
-                        }}
-                        error={errors.unitPrice?.message}
                         placeholder="0"
                         suffix="VNĐ"
                     />
