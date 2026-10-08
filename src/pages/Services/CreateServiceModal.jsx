@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -26,6 +26,7 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
     const [createService, { isLoading }] = useCreateServiceMutation();
     const { data: jobs = [] } = useGetJobsQuery();
     const [isAddJobModalOpen, setIsAddJobModalOpen] = useState(false);
+    const [jobQuantities, setJobQuantities] = useState({});
 
     const {
         register,
@@ -47,46 +48,82 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
 
     const selectedJobIds = watch('jobIds') || [];
 
-    const handleAddJob = (jobId) => {
+    useEffect(() => {
+        if (!isOpen) {
+            reset();
+            setJobQuantities({});
+        }
+    }, [isOpen, reset]);
+
+    const handleAddJob = (jobId, quantity = 1) => {
         const strId = String(jobId);
         if (!selectedJobIds.map(String).includes(strId)) {
             setValue('jobIds', [...selectedJobIds, strId], { shouldValidate: true, shouldDirty: true });
+            setJobQuantities(prev => ({ ...prev, [strId]: quantity || 1 }));
         }
     };
 
     const handleAddJobsFromService = async (sourceService) => {
         const currentIds = selectedJobIds.map(String);
         const sourceJobs = (sourceService.serviceJobs || [])
-            .map(sj => String(sj.jobId))
-            .filter(id => !currentIds.includes(id));
+            .filter(sj => !currentIds.includes(String(sj.jobId)));
 
         if (sourceJobs.length === 0) {
             toast.info('Dịch vụ được chọn không có hạng mục mới');
             return 0;
         }
 
-        setValue('jobIds', [...selectedJobIds, ...sourceJobs], { shouldValidate: true, shouldDirty: true });
+        const newJobIds = sourceJobs.map(sj => String(sj.jobId));
+        const newQuantities = {};
+        sourceJobs.forEach(sj => {
+            newQuantities[String(sj.jobId)] = sj.quantity || 1;
+        });
+
+        setValue('jobIds', [...selectedJobIds, ...newJobIds], { shouldValidate: true, shouldDirty: true });
+        setJobQuantities(prev => ({ ...prev, ...newQuantities }));
         toast.success(`Đã thêm ${sourceJobs.length} hạng mục từ "${sourceService.name}"`);
         return sourceJobs.length;
     };
 
     const handleRemoveJob = (jobIdToRemove) => {
+        const strId = String(jobIdToRemove);
         setValue(
             'jobIds',
-            selectedJobIds.filter(id => String(id) !== String(jobIdToRemove)),
+            selectedJobIds.filter(id => String(id) !== strId),
             { shouldValidate: true, shouldDirty: true }
         );
+        setJobQuantities(prev => {
+            const next = { ...prev };
+            delete next[strId];
+            return next;
+        });
+    };
+
+    const handleQuantityChange = (jobId, value) => {
+        const strId = String(jobId);
+        setJobQuantities(prev => ({
+            ...prev,
+            [strId]: value,
+        }));
     };
 
     const onSubmit = async (data) => {
         try {
+            const jobConfigs = selectedJobIds.map(jobId => ({
+                jobId,
+                quantity: Math.max(1, Number(jobQuantities[String(jobId)]) || 1),
+                isOutput: false,
+            }));
+
             const cleanedData = {
                 ...data,
-                description: data.description ? data.description.trim() : ''
+                description: data.description ? data.description.trim() : '',
+                jobConfigs,
             };
             const res = await createService(cleanedData).unwrap();
             toast.success('Tạo dịch vụ thành công');
             reset();
+            setJobQuantities({});
             if (res?.id) navigate(`/services/${res.id}`);
             onClose();
         } catch (err) {
@@ -98,7 +135,10 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
         .map(id => jobs.find(j => String(j.id) === String(id)))
         .filter(Boolean);
 
-    const totalCostPrice = selectedJobsList.reduce((sum, j) => sum + (Number(j.costPrice) || 0), 0);
+    const totalCostPrice = selectedJobsList.reduce((sum, j) => {
+        const qty = Math.max(1, Number(jobQuantities[String(j.id)]) || 1);
+        return sum + (Number(j.costPrice) || 0) * qty;
+    }, 0);
 
     return (
         <>
@@ -178,37 +218,77 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
                                                 <th className="px-4 py-2.5 font-semibold">Mã</th>
                                                 <th className="px-4 py-2.5 font-semibold">Tên hạng mục</th>
                                                 <th className="px-4 py-2.5 font-semibold">Đơn vị</th>
+                                                <th className="px-4 py-2.5 font-semibold text-center w-28">Số lượng</th>
                                                 <th className="px-4 py-2.5 font-semibold text-right">Giá vốn</th>
                                                 <th className="px-4 py-2.5 font-semibold text-center w-12">Xóa</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100 bg-white">
-                                            {selectedJobsList.map((job) => (
-                                                <tr key={job.id} className="hover:bg-gray-50/80 transition-colors">
-                                                    <td className="px-4 py-3 font-mono text-xs text-gray-500 font-semibold">
-                                                        {job.code}
-                                                    </td>
-                                                    <td className="px-4 py-3 font-medium text-gray-900">
-                                                        {job.name}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-gray-600 text-xs">
-                                                        {job.unit || '-'}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right font-medium text-gray-700 text-xs">
-                                                        {formatCurrency(job.costPrice)}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-center">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleRemoveJob(job.id)}
-                                                            className="p-1 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                                                            title="Xóa hạng mục"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            {selectedJobsList.map((job) => {
+                                                const rawQty = jobQuantities[String(job.id)];
+                                                const qty = Math.max(1, Number(rawQty) || 1);
+                                                const lineCost = (Number(job.costPrice) || 0) * qty;
+
+                                                return (
+                                                    <tr key={job.id} className="hover:bg-gray-50/80 transition-colors">
+                                                        <td className="px-4 py-3 font-mono text-xs text-gray-500 font-semibold">
+                                                            {job.code}
+                                                        </td>
+                                                        <td className="px-4 py-3 font-medium text-gray-900">
+                                                            {job.name}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-gray-600 text-xs">
+                                                            {job.unit || '-'}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center">
+                                                            <div className="flex items-center justify-center">
+                                                                <input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    step="1"
+                                                                    value={rawQty ?? 1}
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value;
+                                                                        if (val === '') {
+                                                                            handleQuantityChange(job.id, '');
+                                                                        } else {
+                                                                            const num = parseInt(val, 10);
+                                                                            handleQuantityChange(job.id, isNaN(num) ? 1 : Math.max(1, num));
+                                                                        }
+                                                                    }}
+                                                                    onBlur={(e) => {
+                                                                        const num = parseInt(e.target.value, 10);
+                                                                        if (isNaN(num) || num < 1) {
+                                                                            handleQuantityChange(job.id, 1);
+                                                                        }
+                                                                    }}
+                                                                    className="w-16 h-8 text-center text-sm font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white transition-all shadow-sm"
+                                                                />
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right">
+                                                            <div className="font-semibold text-gray-900 text-xs">
+                                                                {formatCurrency(lineCost)}
+                                                            </div>
+                                                            {qty > 1 && (
+                                                                <div className="text-[10px] text-gray-400 font-normal">
+                                                                    {formatCurrency(job.costPrice)} / {job.unit || 'đơn vị'}
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveJob(job.id)}
+                                                                className="p-1 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                                                                title="Xóa hạng mục"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>

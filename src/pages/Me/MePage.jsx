@@ -149,11 +149,6 @@ export const MePage = () => {
             return;
         }
 
-        const cleanIdNumber = formData.idCard?.idNumber ? String(formData.idCard.idNumber).trim() : '';
-        if (cleanIdNumber && !/^([0-9]{9}|[0-9]{12})$/.test(cleanIdNumber)) {
-            toast.error('Số CCCD / CMND phải gồm đúng 9 hoặc 12 chữ số');
-            return;
-        }
 
         try {
             setIsUploading(true);
@@ -173,10 +168,6 @@ export const MePage = () => {
                 const result = await uploadToCloudinary(avatarFile, AVATAR_FOLDER);
                 updateData.avatarUrl = result.url;
             }
-
-            // Update CCCD number
-            updateData.idCard = cleanIdNumber ? { idNumber: cleanIdNumber } : null;
-
             await updateMe(updateData).unwrap();
             toast.success('Cập nhật hồ sơ thành công');
             setAvatarFile(null);
@@ -320,80 +311,6 @@ export const MePage = () => {
                             tags={formData.hobbies}
                             onChange={(tags) => setFormData(prev => ({ ...prev, hobbies: tags }))}
                         />
-                    </div>
-                </motion.div>
-
-                {/* ── Section 2: CCCD / CMND ── */}
-                <motion.div
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-white p-8 rounded-[0.5rem] border border-gray-100 shadow-sm space-y-6"
-                >
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center">
-                                <Shield className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-black text-gray-900">Căn cước công dân (CCCD / CMND)</h2>
-                                <p className="text-[11px] text-gray-400 mt-0.5">🛡️ Số định danh cá nhân được mã hóa bảo mật, chỉ bạn và Quản lý có thể xem</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ID number */}
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between ml-1">
-                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider">Số CCCD / CMND (9 hoặc 12 chữ số)</label>
-                            {formData.idCard.idNumber && (
-                                <button
-                                    type="button"
-                                    onClick={() => setShowIdNumber(prev => !prev)}
-                                    className="text-[11px] font-bold text-gray-500 hover:text-orange-600 flex items-center gap-1.5 transition-colors"
-                                    title={showIdNumber ? "Khóa lại / Che bớt số CCCD" : "Mở khóa / Xem đầy đủ số CCCD"}
-                                >
-                                    {showIdNumber ? (
-                                        <>
-                                            <Unlock className="w-3.5 h-3.5 text-orange-500" />
-                                            <span className="text-orange-600 font-bold">Đang hiện đầy đủ</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Lock className="w-3.5 h-3.5 text-gray-400" />
-                                            <span>Mở khóa xem đủ</span>
-                                        </>
-                                    )}
-                                </button>
-                            )}
-                        </div>
-                        <div className="relative">
-                            <input
-                                type="text"
-                                name="idNumber"
-                                value={
-                                    showIdNumber || isIdNumberFocused
-                                        ? formData.idCard.idNumber
-                                        : maskIdCardNumber(formData.idCard.idNumber)
-                                }
-                                onFocus={() => setIsIdNumberFocused(true)}
-                                onBlur={() => setIsIdNumberFocused(false)}
-                                onChange={handleIdCardChange}
-                                maxLength={12}
-                                className="w-full pl-5 pr-12 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-100 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-700 text-sm tracking-widest font-mono"
-                                placeholder="012 345 678 901"
-                            />
-                            {formData.idCard.idNumber && (
-                                <button
-                                    type="button"
-                                    onClick={() => setShowIdNumber(prev => !prev)}
-                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-orange-600 focus:outline-none transition-colors"
-                                    title={showIdNumber ? "Khóa lại / Che số CCCD" : "Mở khóa / Xem số CCCD"}
-                                >
-                                    {showIdNumber ? <Unlock className="w-5 h-5 text-orange-500" /> : <Lock className="w-5 h-5" />}
-                                </button>
-                            )}
-                        </div>
                     </div>
                 </motion.div>
 
