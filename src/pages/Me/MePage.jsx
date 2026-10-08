@@ -5,7 +5,8 @@ import { selectCurrentUser } from '../../store/authSlice';
 import { toast } from 'react-toastify';
 import {
     User, Mail, Phone, Lock, Save, Loader2,
-    Shield, Briefcase, Star, Info, Settings, Calendar
+    Shield, Briefcase, Star, Info, Settings, Calendar,
+    Eye, EyeOff
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -18,6 +19,9 @@ export const MePage = () => {
     const user = useSelector(selectCurrentUser);
     const { refetch } = useGetMeQuery();
     const [updateMe, { isLoading: isUpdating }] = useUpdateMeMutation();
+
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const [formData, setFormData] = useState({
         fullName: '',
@@ -226,25 +230,43 @@ export const MePage = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Mật khẩu mới</label>
-                                        <input
-                                            type="password"
-                                            name="password"
-                                            value={formData.password}
-                                            onChange={handleChange}
-                                            className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-100 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-700 text-sm"
-                                            placeholder="••••••••"
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                name="password"
+                                                value={formData.password}
+                                                onChange={handleChange}
+                                                className="w-full pl-5 pr-12 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-100 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-700 text-sm"
+                                                placeholder="••••••••"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(prev => !prev)}
+                                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                                            >
+                                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-1">Xác nhận mật khẩu</label>
-                                        <input
-                                            type="password"
-                                            name="confirmPassword"
-                                            value={formData.confirmPassword}
-                                            onChange={handleChange}
-                                            className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-100 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-700 text-sm"
-                                            placeholder="••••••••"
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type={showConfirmPassword ? "text" : "password"}
+                                                name="confirmPassword"
+                                                value={formData.confirmPassword}
+                                                onChange={handleChange}
+                                                className="w-full pl-5 pr-12 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-100 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-700 text-sm"
+                                                placeholder="••••••••"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(prev => !prev)}
+                                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                                            >
+                                                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 <p className="mt-3 text-[10px] text-gray-400 italic">* Để trống nếu không muốn thay đổi mật khẩu</p>
