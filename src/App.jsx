@@ -1,5 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 import { useGetMeQuery } from './api/auth';
 
@@ -7,6 +8,8 @@ import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SessionExpiredModal } from './components/auth/SessionExpiredModal';
 import { ROUTE_PERMISSIONS } from './config/routes.config';
+import { selectSessionExpired } from './store/authSlice';
+import { hasSessionMarker } from './utils/authSession';
 
 const RoleRoute = ({ path, element }) => {
   const allowedRoles = ROUTE_PERMISSIONS[path];
@@ -82,8 +85,14 @@ const RouteLoadingFallback = () => (
 );
 
 function AppContent() {
+  const sessionExpired = useSelector(selectSessionExpired);
+  const pathname = globalThis.location?.pathname || '/';
+  const shouldCheckSession = hasSessionMarker() && !sessionExpired && pathname !== '/login';
+
   // Use the query to check if the user is logged in via cookies on startup
-  const { data: currentUser, isLoading } = useGetMeQuery();
+  const { isLoading } = useGetMeQuery(undefined, {
+    skip: !shouldCheckSession,
+  });
 
   if (isLoading) {
     return (

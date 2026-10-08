@@ -18,7 +18,7 @@ const jobSchema = z.object({
     performerType: z.enum(['INTERNAL', 'EXTERNAL']),
 });
 
-export const AddJobModal = ({ isOpen, onClose, onAddJob, onAddJobsFromService, serviceId, existingJobIds = [] }) => {
+export const AddJobModal = ({ isOpen, onClose, onAddJob, onAddJobsFromService, serviceId, existingJobIds = [], zIndex }) => {
     const [isCreatingNew, setIsCreatingNew] = useState(false);
     const [isSelectingService, setIsSelectingService] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -105,6 +105,7 @@ export const AddJobModal = ({ isOpen, onClose, onAddJob, onAddJobsFromService, s
             isOpen={isOpen}
             onClose={onClose}
             title={isCreatingNew ? 'Tạo Hạng Mục Mới' : isSelectingService ? 'Thêm Hạng Mục Từ Dịch Vụ' : 'Thêm Hạng Mục Công Việc'}
+            zIndex={zIndex}
         >
             {isCreatingNew ? (
                 <form onSubmit={handleSubmit(handleCreateJob)} className="space-y-4">

@@ -350,6 +350,7 @@ export const ServiceDetailPage = () => {
                                     <tr className="bg-gray-50 border-b border-gray-100">
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Mã</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Tên hạng mục</th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Đơn vị</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Số lượng</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Đầu ra</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Giá vốn</th>
@@ -370,6 +371,11 @@ export const ServiceDetailPage = () => {
                                                     >
                                                         {sj.job?.name}
                                                     </button>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-gray-600">{sj.job?.unit}</span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-sm">

@@ -2,11 +2,11 @@ import { X } from 'lucide-react';
 import { Fragment } from 'react';
 import { cn } from '../../utils/cn';
 
-export const Modal = ({ isOpen, onClose, title, children, className }) => {
+export const Modal = ({ isOpen, onClose, title, children, className, zIndex = 'z-50' }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto overflow-x-hidden bg-black/50 p-4 mb-0">
+    <div className={cn("fixed inset-0 overflow-y-auto overflow-x-hidden bg-black/50 p-4 mb-0", zIndex)}>
       <div className={cn("relative w-full max-w-2xl mx-auto my-6 md:my-10", className)}>
         <div className="relative bg-white rounded-lg shadow-xl flex flex-col max-h-[85vh]">
           <div className="flex items-start justify-between p-4 border-b rounded-t shrink-0">
