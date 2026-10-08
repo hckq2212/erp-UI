@@ -106,6 +106,7 @@ export const TaskDetailPage = () => {
     const [editedDescription, setEditedDescription] = useState('');
     const [isEditingDeadline, setIsEditingDeadline] = useState(false);
     const [editedDeadline, setEditedDeadline] = useState('');
+    const [deadlineChangeReason, setDeadlineChangeReason] = useState('');
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);
     const [submissionType, setSubmissionType] = useState('file');
     const [resultLink, setResultLink] = useState('');
@@ -168,6 +169,7 @@ export const TaskDetailPage = () => {
     useEffect(() => {
         if (!isEditingDeadline) {
             setEditedDeadline(formatDateTimeISO(task?.plannedEndDate) || '');
+            setDeadlineChangeReason('');
         }
     }, [isEditingDeadline, task?.plannedEndDate]);
 
@@ -219,6 +221,10 @@ export const TaskDetailPage = () => {
             toast.error('Vui lòng nhập deadline');
             return;
         }
+        if (!deadlineChangeReason.trim()) {
+            toast.error('Vui lòng nhập lý do sửa deadline');
+            return;
+        }
 
         const parsedDeadline = new Date(editedDeadline);
         if (Number.isNaN(parsedDeadline.getTime())) {
@@ -230,6 +236,7 @@ export const TaskDetailPage = () => {
             await updateTask({
                 id,
                 plannedEndDate: parsedDeadline.toISOString(),
+                deadlineChangeReason: deadlineChangeReason.trim(),
                 projectId: task?.project?.id
             }).unwrap();
             toast.success('Cập nhật deadline thành công!');
@@ -1108,11 +1115,19 @@ export const TaskDetailPage = () => {
                                                 onChange={event => setEditedDeadline(event.target.value)}
                                                 className="w-full rounded-xl border-2 border-amber-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-50"
                                             />
+                                            <textarea
+                                                rows={3}
+                                                value={deadlineChangeReason}
+                                                onChange={event => setDeadlineChangeReason(event.target.value)}
+                                                placeholder="Nhập lý do sửa deadline..."
+                                                className="w-full resize-none rounded-xl border-2 border-amber-100 bg-white px-3 py-2 text-sm font-medium text-gray-700 outline-none transition placeholder:text-gray-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-50"
+                                            />
                                             <div className="flex flex-wrap gap-2">
                                                 <Button
                                                     variant="outline"
                                                     onClick={() => {
                                                         setEditedDeadline(formatDateTimeISO(task?.plannedEndDate) || '');
+                                                        setDeadlineChangeReason('');
                                                         setIsEditingDeadline(false);
                                                     }}
                                                     className="rounded-xl px-3 py-1.5 text-xs font-bold"
@@ -1130,6 +1145,24 @@ export const TaskDetailPage = () => {
                                         </div>
                                     ) : (
                                         <p className="whitespace-nowrap text-lg font-bold leading-tight text-gray-800">{formatDateTime(task.plannedEndDate) || 'Chưa có thông tin'}</p>
+                                    )}
+                                    {Array.isArray(task.deadlineChangeHistory) && task.deadlineChangeHistory.length > 0 && (
+                                        <div className="mt-3 space-y-2">
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Lịch sử sửa deadline</p>
+                                            {task.deadlineChangeHistory.slice().reverse().slice(0, 3).map((item, index) => (
+                                                <div key={`${item.changedAt || index}-${index}`} className="rounded-xl border border-amber-100 bg-amber-50/60 px-3 py-2">
+                                                    <p className="text-xs font-semibold text-gray-700">
+                                                        Cũ: <span className="font-bold">{formatDateTime(item.oldDeadline) || 'Chưa có thông tin'}</span>
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-gray-600">
+                                                        Lý do: <span className="font-semibold text-gray-800">{item.reason}</span>
+                                                    </p>
+                                                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                                                        {formatDateTime(item.changedAt)}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
 
