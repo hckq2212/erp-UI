@@ -140,33 +140,37 @@ export const QuotationServicePricingTable = ({
   };
 
   const handlePackageCustomPriceChange = (packageName, value) => {
-    const indexes = items.reduce((result, item, index) => (
-      item.packageName === packageName ? [...result, index] : result
-    ), []);
-    if (indexes.length === 0) return;
     const totalPrice = parseNumber(value);
-    const weights = indexes.map((index) => {
-      const item = items[index];
-      return Number(item.recommendedPrice || item.costPrice || 1) * Number(item.norm || 1);
-    });
-    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-    let allocated = 0;
 
-    setItems((previous) => previous.map((item, index) => {
-      const position = indexes.indexOf(index);
-      if (position < 0) return item;
-      const linePrice = position === indexes.length - 1
-        ? Math.max(0, totalPrice - allocated)
-        : Math.round(totalPrice * (totalWeight > 0 ? weights[position] / totalWeight : 1 / indexes.length));
-      allocated += linePrice;
-      const customPrice = linePrice / Number(item.norm || 1);
-      return {
-        ...item,
-        customPrice,
-        selectedPrice: customPrice,
-        profitMargin: calculateProfitMargin(customPrice, item.costPrice),
-      };
-    }));
+    setItems((previous) => {
+      const indexes = previous.reduce((result, item, index) => (
+        item.packageName === packageName ? [...result, index] : result
+      ), []);
+      if (indexes.length === 0) return previous;
+
+      const weights = indexes.map((index) => {
+        const item = previous[index];
+        return Number(item.recommendedPrice || item.costPrice || 1) * Number(item.norm || 1);
+      });
+      const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+      let allocated = 0;
+
+      return previous.map((item, index) => {
+        const position = indexes.indexOf(index);
+        if (position < 0) return item;
+        const linePrice = position === indexes.length - 1
+          ? Math.max(0, totalPrice - allocated)
+          : Math.round(totalPrice * (totalWeight > 0 ? weights[position] / totalWeight : 1 / indexes.length));
+        allocated += linePrice;
+        const customPrice = linePrice / Number(item.norm || 1);
+        return {
+          ...item,
+          customPrice,
+          selectedPrice: customPrice,
+          profitMargin: calculateProfitMargin(customPrice, item.costPrice),
+        };
+      });
+    });
   };
 
   const handlePackageQuantityChange = (packageName, value) => {
