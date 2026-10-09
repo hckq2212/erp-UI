@@ -9,7 +9,12 @@ export const ActivityFeed = ({ notifications = [] }) => {
         <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm h-full">
             <div className="flex items-center justify-between mb-8">
                 <h3 className="text-sm font-black text-slate-900 tracking-tight">Hoạt động gần đây</h3>
-                <button className="text-[9px] font-black text-orange-500 uppercase tracking-widest">Xem tất cả</button>
+                <button 
+                    type="button"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 transition-all uppercase tracking-wider shadow-xs"
+                >
+                    Xem tất cả
+                </button>
             </div>
 
             <div className="space-y-6">

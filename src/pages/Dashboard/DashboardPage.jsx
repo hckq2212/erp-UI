@@ -124,11 +124,16 @@ export const DashboardPage = () => {
     const [selectedProjectId, setSelectedProjectId] = useState(null);
     const [selectedDate, setSelectedDate] = useState({
         month: new Date().getMonth() + 1,
+        startMonth: new Date().getMonth() + 1,
+        endMonth: new Date().getMonth() + 1,
         year: new Date().getFullYear()
     });
+    const isMultiMonth = selectedDate.startMonth && selectedDate.endMonth && selectedDate.startMonth !== selectedDate.endMonth;
     const { data: dashboardData, isLoading: isDashboardLoading } = useGetDashboardDataQuery({
         userId: selectedMemberId,
-        month: selectedDate.month,
+        month: isMultiMonth ? undefined : (selectedDate.month || selectedDate.startMonth),
+        startMonth: selectedDate.startMonth,
+        endMonth: selectedDate.endMonth,
         year: selectedDate.year,
         projectId: selectedProjectId,
         mode: isPM && !selectedMemberId ? (viewMode === 'personal' ? 'personal' : 'management') : undefined
