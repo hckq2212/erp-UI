@@ -119,17 +119,27 @@ const getSelectedServiceCostWithBudget = (item, services = []) => (
   getSelectedServiceCostPrice(item, services) + Number(item?.budget || 0)
 );
 
+const getPackageCostWithBudget = (pkg, services = []) => {
+  const packageQuantity = Number(pkg?.quantity || 1);
+  const servicesTotal = (pkg?.services || []).reduce((total, serviceItem) => (
+    total + getSelectedServiceCostWithBudget(serviceItem, services) * Number(serviceItem.quantity || 1)
+  ), 0);
+
+  return servicesTotal * packageQuantity;
+};
+
 const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJobBriefChange, onJobIncludedChange, onRemove, hasError }) => {
   const [isJobsOpen, setIsJobsOpen] = useState(false);
   const isUnselected = !item.serviceId && hasError;
   const jobs = item.jobs || [];
+  const lineCost = getSelectedServiceCostWithBudget(item, availableServices) * Number(item.quantity || 1);
   const serviceOptions = availableServices.map(service => ({
     value: service.id,
     label: service.name,
   }));
   return (
     <div className={`space-y-3 p-3 rounded-xl border ${isUnselected ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
-      <div className="flex items-end gap-3">
+      <div className="flex flex-wrap items-end gap-3">
         <div className={`flex-1 rounded-lg ${isUnselected ? 'ring-2 ring-red-400' : ''}`}>
           <Select
             instanceId={`standalone-service-${index}`}
@@ -150,6 +160,12 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJ
           min={1}
           className="w-20 px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-center transition-all"
         />
+        <div className="w-40 text-right">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Giá vốn</p>
+          <p className="mt-1 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-bold text-gray-800">
+            {formatNumber(lineCost)} VNĐ
+          </p>
+        </div>
         <label className="w-36 text-[10px] font-bold uppercase tracking-wider text-gray-500">
           Ngân sách
           <input
@@ -299,6 +315,7 @@ const PackageItem = memo(({
   const [isServicesOpen, setIsServicesOpen] = useState(false);
   const [expandedServiceJobs, setExpandedServiceJobs] = useState({});
   const serviceCount = pkg.services?.length || 0;
+  const packageCost = getPackageCostWithBudget(pkg, availableServices);
 
   return (
     <div className="bg-blue-50/40 border-2 border-blue-100 rounded-2xl p-5 space-y-4">
@@ -313,6 +330,11 @@ const PackageItem = memo(({
         </div>
 
         <div className="flex items-center gap-4">
+          <div className="hidden text-right sm:block">
+            <p className="text-[10px] font-black uppercase tracking-wider text-blue-500">Giá vốn gói</p>
+            <p className="text-sm font-bold text-blue-950">{formatNumber(packageCost)} VNĐ</p>
+          </div>
+
           <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm">
             <span className="text-xs text-gray-500">SL</span>
             <input
@@ -374,13 +396,14 @@ const PackageItem = memo(({
           const jobs = serviceItem.jobs || [];
           const serviceJobsKey = `${serviceItem.serviceId || 'empty'}-${serviceIndex}`;
           const isJobsOpen = Boolean(expandedServiceJobs[serviceJobsKey]);
+          const lineCost = getSelectedServiceCostWithBudget(serviceItem, availableServices) * Number(serviceItem.quantity || 1);
 
           return (
             <div
               key={`${index}-${serviceIndex}`}
               className="bg-white border border-blue-100 rounded-xl p-3 space-y-3"
             >
-              <div className="flex items-end gap-3">
+              <div className="flex flex-wrap items-end gap-3">
                 <div className="flex-1 text-sm">
                   <Select
                     instanceId={`package-${index}-service-${serviceIndex}`}
@@ -416,6 +439,12 @@ const PackageItem = memo(({
                   }
                   className="w-20 px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-center"
                 />
+                <div className="w-40 text-right">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Giá vốn</p>
+                  <p className="mt-1 rounded-lg border border-gray-200 bg-blue-50/40 px-3 py-2.5 text-sm font-bold text-blue-950">
+                    {formatNumber(lineCost)} VNĐ
+                  </p>
+                </div>
                 <label className="w-36 text-[10px] font-bold uppercase tracking-wider text-gray-500">
                   Ngân sách
                   <input
@@ -1188,6 +1217,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
 
     return standaloneTotal + packagesTotal;
   }, [selectedServices, selectedPackages, services]);
+  const expectedSellingValue = totalValue * 1.4;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1803,9 +1833,13 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
 
                 {/* Total */}
                 <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4 rounded-xl text-white">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center gap-4">
                     <span className="font-medium">Tổng giá vốn của các dịch vụ đã chọn:</span>
                     <span className="text-2xl font-bold">{totalValue.toLocaleString('vi-VN')} VNĐ</span>
+                  </div>
+                  <div className="mt-3 flex justify-between items-center gap-4 border-t border-white/20 pt-3">
+                    <span className="font-medium">Giá bán dự kiến (140% giá vốn):</span>
+                    <span className="text-2xl font-bold">{Math.round(expectedSellingValue).toLocaleString('vi-VN')} VNĐ</span>
                   </div>
                 </div>
               </div>
