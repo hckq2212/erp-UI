@@ -30,7 +30,7 @@ import {
 import { getFilePreviewUrl } from '../../../utils/cloudinary';
 import { cn } from '../../../utils/cn';
 import { getTaskDisplayName } from '../../../utils/taskName';
-import { formatDate } from '../../../utils/format';
+import { formatDate, formatNumber } from '../../../utils/format';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../../store/authSlice';
 import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
@@ -635,6 +635,7 @@ export const ContractInfo = ({ contract, projectId, project }) => {
                                                                                 ? `${serviceTasks.length} công việc`
                                                                                 : `${serviceTasks.length} công việc của bạn`}
                                                                         </span>
+                                                                        <span>Ngân sách: {formatNumber(item.budget || 0)} VNĐ</span>
                                                                         <span>{results.length} kết quả</span>
                                                                         {item.nickname?.trim() && originalServiceName && (
                                                                             <span title={originalServiceName}>Gốc: {originalServiceName}</span>

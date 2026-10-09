@@ -23,28 +23,33 @@ const selectStyles = (focusColor) => ({
 
 const createPricingItem = (service, overrides = {}) => {
   const costPrice = Number(overrides.costPrice ?? service?.costPrice ?? 0);
-  const minPrice = roundToTenThousands(costPrice / 0.8);
-  const recommendedPrice = roundToTenThousands(costPrice / 0.6);
+  const budget = Number(overrides.budget ?? service?.budget ?? 0);
+  const totalCost = costPrice + budget;
+  const minPrice = roundToTenThousands(totalCost / 0.8);
+  const recommendedPrice = roundToTenThousands(totalCost / 0.6);
   const customPrice = overrides.allowZeroSellingPrice
     ? Number(overrides.sellingPrice || 0)
-    : Number(overrides.sellingPrice || 0) || recommendedPrice;
+    : Number(overrides.customPrice ?? recommendedPrice);
   const selectedPrice = overrides.priceType === 'minimum' ? minPrice : overrides.priceType === 'recommended' ? recommendedPrice : customPrice;
   return {
     key: overrides.key,
     serviceId: overrides.serviceId || service?.id,
+    opportunityServiceId: overrides.opportunityServiceId,
     serviceName: overrides.serviceName || service?.name || 'Dịch vụ',
     quantity: Number(overrides.quantity || 1),
     packageQuantity: Number(overrides.packageQuantity || 1),
     norm: Number(overrides.norm || 1),
     packageName: overrides.packageName || 'STANDALONE',
+    packageKey: overrides.packageKey,
     servicePackageId: overrides.servicePackageId,
     unit: overrides.unit || service?.unit || '',
     costPrice,
+    budget,
     minPrice,
     recommendedPrice,
     customPrice,
     selectedPrice,
-    profitMargin: calculateProfitMargin(selectedPrice, costPrice),
+    profitMargin: calculateProfitMargin(selectedPrice, costPrice, budget),
     jobs: normalizeServiceJobs(overrides.jobs || service?.serviceJobs || []),
   };
 };
@@ -84,9 +89,10 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
         : (opportunity?.services || []).find((service) => !service.opportunityPackageId && String(service.service?.id || service.serviceId) === String(serviceId));
       return createPricingItem(detail.service || {}, {
         serviceId, serviceName: detail.service?.name, quantity: detail.quantity,
+        opportunityServiceId: detail.opportunityServiceId || detail.opportunityService?.id,
         packageQuantity: detail.packageQuantity, norm: Number(detail.quantity || 1) / Number(detail.packageQuantity || 1),
-        packageName: detail.packageName || 'STANDALONE', servicePackageId: detail.servicePackageId,
-        unit: detail.service?.unit || detail.unit, costPrice: detail.costAtSale, sellingPrice: detail.sellingPrice,
+        packageName: detail.packageName || 'STANDALONE', packageKey: detail.packageKey || detail.opportunityService?.opportunityPackageId || detail.servicePackageId || detail.packageName, servicePackageId: detail.servicePackageId,
+        unit: detail.service?.unit || detail.unit, costPrice: detail.costAtSale, budget: detail.budget, sellingPrice: detail.sellingPrice,
         allowZeroSellingPrice: true, jobs: opportunityService?.jobs || detail.service?.serviceJobs || [],
       });
     }));
@@ -96,8 +102,9 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     if (!isOpen || isEditMode || !opportunityServices) return;
     const standalone = opportunityServices.filter((service) => !service.opportunityPackageId).map((service) => createPricingItem(service.service || service, {
       serviceId: service.service?.id || service.id, serviceName: service.service?.name || service.name,
+      opportunityServiceId: service.id,
       quantity: service.quantity, unit: service.service?.unit || service.unit, costPrice: service.costAtSale,
-      sellingPrice: service.sellingPrice, jobs: service.jobs || service.service?.serviceJobs || [],
+      budget: service.budget, sellingPrice: service.sellingPrice, jobs: service.jobs || service.service?.serviceJobs || [],
     }));
     const packaged = (opportunity?.packages || []).flatMap((pkg) => (pkg.services || []).map((service) => {
       const norm = Number(service.quantity || 1) / Number(pkg.quantity || 1);
@@ -105,9 +112,11 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
       const rawSelling = Number(service.sellingPrice || 0);
       return createPricingItem(service.service || service, {
         serviceId: service.serviceId, serviceName: service.service?.name || service.name,
-        quantity: service.quantity, packageQuantity: pkg.quantity, norm, packageName: pkg.name,
+        opportunityServiceId: service.id,
+        quantity: service.quantity, packageQuantity: pkg.quantity, norm, packageName: pkg.name, packageKey: pkg.id,
         servicePackageId: pkg.servicePackageId, unit: service.service?.unit || service.unit,
         costPrice: norm > 1 && rawCost > 100000 ? Math.round(rawCost / norm) : rawCost,
+        budget: service.budget,
         sellingPrice: norm > 1 && rawSelling > 100000 ? Math.round(rawSelling / norm) : rawSelling,
         jobs: service.jobs || service.service?.serviceJobs || [],
       });
@@ -115,8 +124,8 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     setItems([...standalone, ...packaged]); setNotes(''); setPriceType('custom');
   }, [isOpen, isEditMode, opportunityServices, opportunity?.packages]);
 
-  const serviceOptions = useMemo(() => services.filter((service) => !items.some((item) => item.packageName === 'STANDALONE' && String(item.serviceId) === String(service.id))).map((service) => ({ value: service.id, label: `${service.code ? `${service.code} - ` : ''}${service.name} - ${formatNumber(service.costPrice)} VNĐ` })), [services, items]);
-  const packageOptions = useMemo(() => packageTemplates.filter((pkg) => !items.some((item) => item.packageName === pkg.name)).map((pkg) => ({ value: pkg.id, label: `${pkg.name} (${pkg.items?.length || 0} dịch vụ)` })), [packageTemplates, items]);
+  const serviceOptions = useMemo(() => services.map((service) => ({ value: service.id, label: `${service.code ? `${service.code} - ` : ''}${service.name} - ${formatNumber(service.costPrice)} VNĐ` })), [services]);
+  const packageOptions = useMemo(() => packageTemplates.map((pkg) => ({ value: pkg.id, label: `${pkg.name} (${pkg.items?.length || 0} dịch vụ)` })), [packageTemplates]);
 
   const handleAddService = () => {
     const service = servicesById.get(String(selectedServiceId));
@@ -128,11 +137,11 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
   const handleAddPackage = () => {
     const template = packageTemplates.find((pkg) => String(pkg.id) === String(selectedPackageId));
     if (!template) return;
-    if (items.some((item) => item.packageName === template.name)) return toast.error(`Gói "${template.name}" đã có trong báo giá.`);
+    const packageKey = `${template.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const packageItems = (template.items || []).map((packageItem) => {
       const serviceId = packageItem.service?.id || packageItem.serviceId;
       const service = servicesById.get(String(serviceId)) || packageItem.service || {};
-      return createPricingItem(service, { serviceId, quantity: packageItem.defaultQuantity, norm: packageItem.defaultQuantity, packageName: template.name, servicePackageId: template.id, priceType });
+      return createPricingItem(service, { serviceId, quantity: packageItem.defaultQuantity, norm: packageItem.defaultQuantity, packageName: template.name, packageKey, servicePackageId: template.id, priceType });
     });
     setItems((previous) => [...previous, ...packageItems]); setSelectedPackageId(''); setShowAddPackage(false);
   };
@@ -142,7 +151,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     const payload = {
       note: notes,
       totalAmount: getServicePricingTotals(items).totalWithVat,
-      details: items.map((item) => ({ serviceId: item.serviceId, quantity: item.quantity, sellingPrice: item.selectedPrice, costAtSale: item.costPrice, name: item.serviceName, packageQuantity: item.packageQuantity || 1, packageName: item.packageName !== 'STANDALONE' ? item.packageName : undefined, servicePackageId: item.servicePackageId, isPackageService: item.packageName !== 'STANDALONE' })),
+      details: items.map((item) => ({ serviceId: item.serviceId, opportunityServiceId: item.opportunityServiceId, quantity: item.quantity, sellingPrice: item.selectedPrice, costAtSale: item.costPrice, budget: Number(item.budget || 0), name: item.serviceName, packageQuantity: item.packageQuantity || 1, packageName: item.packageName !== 'STANDALONE' ? item.packageName : undefined, packageKey: item.packageName !== 'STANDALONE' ? item.packageKey : undefined, servicePackageId: item.servicePackageId, isPackageService: item.packageName !== 'STANDALONE' })),
     };
     if (isEditMode) {
       if (editQuotation.status === 'REJECTED') { payload.status = 'DRAFT'; payload.description = ''; }

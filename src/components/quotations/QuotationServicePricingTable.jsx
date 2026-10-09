@@ -18,14 +18,17 @@ export const normalizeServiceJobs = (jobs = []) => jobs.map((serviceJob) => {
 
 export const roundToTenThousands = (value) => Math.ceil(Number(value || 0) / 10000) * 10000;
 
-export const calculateProfitMargin = (sellingPrice, costPrice) => {
+export const getEffectiveCostPrice = (item = {}) => Number(item.costPrice || 0) + Number(item.budget || 0);
+
+export const calculateProfitMargin = (sellingPrice, costPrice, budget = 0) => {
   if (!Number(sellingPrice)) return 0;
-  return ((Number(sellingPrice) - Number(costPrice || 0)) / Number(sellingPrice)) * 100;
+  const totalCost = Number(costPrice || 0) + Number(budget || 0);
+  return ((Number(sellingPrice) - totalCost) / Number(sellingPrice)) * 100;
 };
 
 export const getServicePricingTotals = (items = []) => items.reduce((totals, item) => {
   const revenue = Number(item.selectedPrice || 0) * Number(item.quantity || 0);
-  const cost = Number(item.costPrice || 0) * Number(item.quantity || 0);
+  const cost = getEffectiveCostPrice(item) * Number(item.quantity || 0);
   return {
     revenue: totals.revenue + revenue,
     cost: totals.cost + cost,
@@ -49,7 +52,7 @@ export const QuotationServicePricingTable = ({
   const canEditPrices = mode !== 'readonly';
   const canEditStructure = mode === 'edit';
   const showActions = canEditStructure;
-  const columnCount = (priceType === 'custom' ? 9 : 8) + (showActions ? 1 : 0);
+  const columnCount = (priceType === 'custom' ? 10 : 9) + (showActions ? 1 : 0);
 
   const totals = useMemo(() => getServicePricingTotals(items), [items]);
   const overallProfitMargin = totals.revenue > 0
@@ -85,7 +88,7 @@ export const QuotationServicePricingTable = ({
         };
       }
       const norm = Number(item.norm || 1);
-      packages[key].costPrice += Number(item.costPrice || 0) * norm;
+      packages[key].costPrice += getEffectiveCostPrice(item) * norm;
       packages[key].minPrice += Number(item.minPrice || 0) * norm;
       packages[key].recommendedPrice += Number(item.recommendedPrice || 0) * norm;
       packages[key].customPrice += Number(item.customPrice || 0) * norm;
@@ -120,7 +123,7 @@ export const QuotationServicePricingTable = ({
         : type === 'recommended'
           ? item.recommendedPrice
           : item.customPrice;
-      return { ...item, selectedPrice, profitMargin: calculateProfitMargin(selectedPrice, item.costPrice) };
+      return { ...item, selectedPrice, profitMargin: calculateProfitMargin(selectedPrice, item.costPrice, item.budget) };
     }));
   };
 
@@ -134,20 +137,45 @@ export const QuotationServicePricingTable = ({
         ...item,
         customPrice,
         selectedPrice: customPrice,
-        profitMargin: calculateProfitMargin(customPrice, item.costPrice),
+        profitMargin: calculateProfitMargin(customPrice, item.costPrice, item.budget),
       };
     }));
   };
 
-  const handlePackageCustomPriceChange = (packageName, value) => {
+  const handleBudgetChange = (index, value) => {
+    const budget = parseNumber(value);
+    setItems((previous) => previous.map((item, itemIndex) => itemIndex === index
+      ? (() => {
+        const totalCost = Number(item.costPrice || 0) + Number(budget || 0);
+        const minPrice = roundToTenThousands(totalCost / 0.8);
+        const recommendedPrice = roundToTenThousands(totalCost / 0.6);
+        const selectedPrice = priceType === 'minimum'
+          ? minPrice
+          : priceType === 'recommended'
+            ? recommendedPrice
+            : item.selectedPrice;
+
+        return {
+          ...item,
+          budget,
+          minPrice,
+          recommendedPrice,
+          selectedPrice,
+          profitMargin: calculateProfitMargin(selectedPrice, item.costPrice, budget),
+        };
+      })()
+      : item));
+  };
+
+  const handlePackageCustomPriceChange = (packageKey, value) => {
     const indexes = items.reduce((result, item, index) => (
-      item.packageName === packageName ? [...result, index] : result
+      String(item.packageKey || item.servicePackageId || item.packageName) === String(packageKey) ? [...result, index] : result
     ), []);
     if (indexes.length === 0) return;
     const totalPrice = parseNumber(value);
     const weights = indexes.map((index) => {
       const item = items[index];
-      return Number(item.recommendedPrice || item.costPrice || 1) * Number(item.norm || 1);
+      return Number(item.recommendedPrice || getEffectiveCostPrice(item) || 1) * Number(item.norm || 1);
     });
     const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
     let allocated = 0;
@@ -164,14 +192,14 @@ export const QuotationServicePricingTable = ({
         ...item,
         customPrice,
         selectedPrice: customPrice,
-        profitMargin: calculateProfitMargin(customPrice, item.costPrice),
+        profitMargin: calculateProfitMargin(customPrice, item.costPrice, item.budget),
       };
     }));
   };
 
-  const handlePackageQuantityChange = (packageName, value) => {
+  const handlePackageQuantityChange = (packageKey, value) => {
     const quantity = parseInt(value, 10) || 1;
-    setItems((previous) => previous.map((item) => item.packageName === packageName
+    setItems((previous) => previous.map((item) => String(item.packageKey || item.servicePackageId || item.packageName) === String(packageKey)
       ? { ...item, packageQuantity: quantity, quantity: Number(item.norm || 1) * quantity }
       : item));
   };
@@ -196,6 +224,7 @@ export const QuotationServicePricingTable = ({
       <td className="px-4 py-2 text-right text-xs text-gray-500" title="Giá vốn hạng mục này đã được tính trong giá vốn dịch vụ">{formatNumber(job.costAtSale)}</td>
       <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
       <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
+      <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
       {priceType === 'custom' && <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>}
       <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
       <td className="px-4 py-2 text-center text-xs text-gray-300">—</td>
@@ -206,19 +235,13 @@ export const QuotationServicePricingTable = ({
 
   return (
     <>
-      {canEditPrices && (
-        <div className="mb-4 flex items-center rounded-xl border border-blue-200/60 bg-blue-50/70 p-3 text-xs font-medium text-blue-800 shadow-sm">
-          <span className="mr-2 rounded bg-blue-600 px-2 py-0.5 text-[10px] font-black uppercase text-white">Mẹo</span>
-          Nhập trực tiếp Giá bán tùy chỉnh tại dòng Tiêu đề Gói dịch vụ để tự động phân bổ giá trọn gói về các dịch vụ con trong gói đó.
-        </div>
-      )}
-
       <div className="mb-6 overflow-x-auto rounded-xl border border-gray-100 shadow-sm">
-        <table className="w-full min-w-[1300px] border-collapse">
+        <table className="w-full min-w-[1450px] border-collapse">
           <thead><tr className="border-b border-gray-200 bg-gray-50">
             <th className="sticky left-0 z-10 w-[250px] border-r border-gray-100 bg-gray-50 px-4 py-3 text-left text-sm font-semibold text-gray-700">Hạng mục</th>
             <th className="w-[100px] px-4 py-3 text-center text-sm font-semibold text-gray-700">Số lượng</th>
             <th className="w-[120px] px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá vốn</th>
+            <th className="w-[150px] px-4 py-3 text-right text-sm font-semibold text-gray-700">Ngân sách</th>
             <th className="w-[150px] px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá bán tối thiểu</th>
             <th className="w-[150px] px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá bán đề xuất</th>
             {priceType === 'custom' && <th className="w-[180px] px-4 py-3 text-right text-sm font-semibold text-gray-700">Giá bán tùy chỉnh</th>}
@@ -230,20 +253,22 @@ export const QuotationServicePricingTable = ({
           <tbody>
             {displayGroups.packages.map((pkg) => {
               const packageOpen = Boolean(expandedRows.packages[pkg.key]);
+              const packageBudget = pkg.items.reduce((sum, item) => sum + Number(item.budget || 0) * Number(item.norm || 1), 0);
               return <Fragment key={pkg.key}>
                 <tr className="border-b border-blue-100 bg-blue-50/50">
                   <td className="sticky left-0 z-10 border-r border-blue-100 bg-blue-50/50 px-4 py-2 text-sm font-bold text-blue-900">
                     <div className="flex items-center gap-2"><button type="button" onClick={() => toggleExpanded('packages', pkg.key)} className="rounded p-1 text-blue-600 hover:bg-blue-100">{packageOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</button><span className="rounded bg-blue-600 px-1.5 py-0.5 text-[10px] font-black uppercase text-white">Gói</span>{pkg.name}</div>
                   </td>
-                  <td className="px-2 py-2 text-center">{canEditStructure ? <><input type="number" min="1" value={pkg.quantity} onChange={(event) => handlePackageQuantityChange(pkg.name, event.target.value)} className="w-10 rounded border-2 border-blue-200 bg-white py-1 text-center text-sm font-bold text-blue-900" /><span className="ml-1 text-[10px] font-black uppercase text-blue-400">Gói</span></> : <span className="font-bold text-blue-900">{pkg.quantity} Gói</span>}</td>
+                  <td className="px-2 py-2 text-center">{canEditStructure ? <><input type="number" min="1" value={pkg.quantity} onChange={(event) => handlePackageQuantityChange(pkg.key, event.target.value)} className="w-10 rounded border-2 border-blue-200 bg-white py-1 text-center text-sm font-bold text-blue-900" /><span className="ml-1 text-[10px] font-black uppercase text-blue-400">Gói</span></> : <span className="font-bold text-blue-900">{pkg.quantity} Gói</span>}</td>
                   <td className="px-4 py-2 text-right text-sm font-bold text-blue-900">{formatNumber(pkg.costPrice)}</td>
+                  <td className="px-4 py-2 text-right text-sm font-bold text-blue-900">{formatNumber(packageBudget)}</td>
                   <td className="px-4 py-2 text-right text-sm text-blue-700">{formatNumber(pkg.minPrice)}</td>
                   <td className="px-4 py-2 text-right text-sm text-blue-700">{formatNumber(pkg.recommendedPrice)}</td>
-                  {priceType === 'custom' && <td className="px-3 py-1.5 text-right">{canEditPrices ? <input type="text" value={formatNumber(pkg.customPrice)} onChange={(event) => handlePackageCustomPriceChange(pkg.name, event.target.value)} className="w-36 rounded-lg border-2 border-blue-300 bg-white px-2 py-1 text-right text-sm font-bold text-blue-900 outline-none focus:border-blue-600" /> : <span className="font-bold text-blue-900">{formatNumber(pkg.customPrice)}</span>}</td>}
+                  {priceType === 'custom' && <td className="px-3 py-1.5 text-right">{canEditPrices ? <input type="text" value={formatNumber(pkg.customPrice)} onChange={(event) => handlePackageCustomPriceChange(pkg.key, event.target.value)} className="w-36 rounded-lg border-2 border-blue-300 bg-white px-2 py-1 text-right text-sm font-bold text-blue-900 outline-none focus:border-blue-600" /> : <span className="font-bold text-blue-900">{formatNumber(pkg.customPrice)}</span>}</td>}
                   <td className={`px-4 py-2 text-right text-sm font-black ${pkg.profitMargin < 0 ? 'text-red-600' : 'text-blue-600'}`}>{pkg.profitMargin.toFixed(0)}%</td>
                   <td className="px-4 py-2 text-right text-sm font-bold text-blue-900">{formatNumber(pkg.vat)}</td>
                   <td className="px-4 py-2 text-right text-sm font-bold text-blue-900">{formatNumber(pkg.totalWithVat)}</td>
-                  {showActions && <td className="px-4 py-2 text-center"><button type="button" onClick={() => setItems((previous) => previous.filter((item) => item.packageName !== pkg.name))} className="rounded p-1.5 text-red-400 hover:bg-white"><Trash2 className="h-4 w-4" /></button></td>}
+                  {showActions && <td className="px-4 py-2 text-center"><button type="button" onClick={() => setItems((previous) => previous.filter((item) => String(item.packageKey || item.servicePackageId || item.packageName) !== String(pkg.key)))} className="rounded p-1.5 text-red-400 hover:bg-white"><Trash2 className="h-4 w-4" /></button></td>}
                 </tr>
                 {packageOpen && pkg.items.map((item) => {
                   const norm = Number(item.norm || 1);
@@ -253,7 +278,9 @@ export const QuotationServicePricingTable = ({
                     <tr className="border-b border-gray-50 bg-blue-50/10">
                       <td className="sticky left-0 z-10 border-r border-blue-50 bg-white py-2 pl-10 pr-4 text-sm text-gray-600"><div className="flex items-center gap-2">{item.jobs.length > 0 ? <button type="button" onClick={() => toggleExpanded('services', serviceKey)} className="rounded p-1 text-indigo-500">{serviceOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}</button> : <span className="w-5 text-center text-gray-300">•</span>}<span className="italic">{item.serviceName}</span></div></td>
                       <td className="whitespace-nowrap px-2 py-2 text-center text-[11px] text-gray-500">{item.norm} {item.unit ? `${item.unit} / gói` : '/ gói'}</td>
-                      <td className="px-4 py-2 text-right text-sm text-gray-600">{formatNumber(item.costPrice * norm)}</td><td className="px-4 py-2 text-right text-sm text-gray-600">{formatNumber(item.minPrice * norm)}</td><td className="px-4 py-2 text-right text-sm text-gray-600">{formatNumber(item.recommendedPrice * norm)}</td>
+                      <td className="px-4 py-2 text-right text-sm text-gray-600">{formatNumber(getEffectiveCostPrice(item) * norm)}</td>
+                      <td className="px-4 py-1.5">{canEditPrices ? <input type="text" value={formatNumber(item.budget || 0)} onChange={(event) => handleBudgetChange(item.originalIndex, event.target.value)} className="w-full rounded border border-gray-300 px-2 py-1 text-right text-sm" /> : <div className="text-right text-sm">{formatNumber(item.budget || 0)}</div>}</td>
+                      <td className="px-4 py-2 text-right text-sm text-gray-600">{formatNumber(item.minPrice * norm)}</td><td className="px-4 py-2 text-right text-sm text-gray-600">{formatNumber(item.recommendedPrice * norm)}</td>
                       {priceType === 'custom' && <td className="px-4 py-1.5">{canEditPrices ? <input type="text" value={formatNumber(item.customPrice * norm)} onChange={(event) => handleCustomPriceChange(item.originalIndex, event.target.value)} className="w-full rounded border border-gray-300 px-2 py-1 text-right text-sm" /> : <div className="text-right text-sm">{formatNumber(item.customPrice * norm)}</div>}</td>}
                       <td className={`px-4 py-2 text-right text-sm ${item.profitMargin < 0 ? 'text-red-600' : 'text-blue-600'}`}>{Number(item.profitMargin || 0).toFixed(0)}%</td><td className="px-4 py-2 text-right text-sm">{formatNumber(item.selectedPrice * norm * 0.08)}</td><td className="px-4 py-2 text-right text-sm font-semibold">{formatNumber(item.selectedPrice * norm * 1.08)}</td>{showActions && <td />}
                     </tr>
@@ -271,7 +298,9 @@ export const QuotationServicePricingTable = ({
                   <tr className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="sticky left-0 z-10 border-r border-gray-100 bg-white px-4 py-3 text-sm"><div className="flex items-center gap-2">{item.jobs.length > 0 ? <button type="button" onClick={() => toggleExpanded('services', serviceKey)} className="rounded p-1 text-gray-500">{serviceOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}</button> : <span className="w-5 text-center text-gray-300">•</span>}<span>{item.serviceName}</span></div></td>
                     <td className="px-2 py-2 text-center">{canEditStructure ? <div className="flex items-center justify-center gap-1"><input type="number" min="1" value={item.quantity} onChange={(event) => handleStandaloneQuantityChange(item.originalIndex, event.target.value)} className="w-10 rounded border border-gray-300 py-1 text-center text-sm" /><span className="text-[10px] font-bold uppercase text-gray-400">{item.unit}</span></div> : <span className="font-bold">{item.quantity} {item.unit}</span>}</td>
-                    <td className="px-4 py-3 text-right text-sm">{formatNumber(item.costPrice)}</td><td className="px-4 py-3 text-right text-sm">{formatNumber(item.minPrice)}</td><td className="px-4 py-3 text-right text-sm">{formatNumber(item.recommendedPrice)}</td>
+                    <td className="px-4 py-3 text-right text-sm">{formatNumber(getEffectiveCostPrice(item))}</td>
+                    <td className="px-4 py-3">{canEditPrices ? <input type="text" value={formatNumber(item.budget || 0)} onChange={(event) => handleBudgetChange(item.originalIndex, event.target.value)} className="w-full rounded border border-gray-300 px-2 py-1 text-right text-sm" /> : <div className="text-right text-sm">{formatNumber(item.budget || 0)}</div>}</td>
+                    <td className="px-4 py-3 text-right text-sm">{formatNumber(item.minPrice)}</td><td className="px-4 py-3 text-right text-sm">{formatNumber(item.recommendedPrice)}</td>
                     {priceType === 'custom' && <td className="px-4 py-3">{canEditPrices ? <input type="text" value={formatNumber(item.customPrice)} onChange={(event) => handleCustomPriceChange(item.originalIndex, event.target.value)} className="w-full rounded border border-gray-300 px-2 py-1 text-right text-sm" /> : <div className="text-right text-sm">{formatNumber(item.customPrice)}</div>}</td>}
                     <td className={`px-4 py-3 text-right text-sm ${item.profitMargin < 0 ? 'text-red-600' : 'text-blue-600'}`}>{Number(item.profitMargin || 0).toFixed(0)}%</td><td className="px-4 py-3 text-right text-sm">{formatNumber(item.selectedPrice * item.quantity * 0.08)}</td><td className="px-4 py-3 text-right text-sm font-bold">{formatNumber(item.selectedPrice * item.quantity * 1.08)}</td>
                     {showActions && <td className="px-4 py-3 text-center"><button type="button" disabled={items.length <= minimumItems} onClick={() => setItems((previous) => previous.filter((_, index) => index !== item.originalIndex))} className="rounded p-1.5 text-red-600 disabled:opacity-30"><Trash2 className="h-4 w-4" /></button></td>}

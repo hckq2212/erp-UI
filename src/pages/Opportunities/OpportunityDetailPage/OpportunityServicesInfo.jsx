@@ -213,7 +213,8 @@ const ServiceCard = ({ service, opportunityId, canEditPrices, canHandleDemo, pac
                 <p className="text-xs text-gray-500">Số lượng: {Number(service.quantity || 1) / Number(packageQuantity || 1)} {service.service?.unit || service.unit}</p>
             </div>
             <div className="text-right text-xs text-gray-500">
-                <p>Giá vốn: <strong>{formatNumber(service.costAtSale)} VNĐ</strong></p>
+                <p>Giá vốn: <strong>{formatNumber(Number(service.costAtSale || 0) + Number(service.budget || 0))} VNĐ</strong></p>
+                <p>Ngân sách: <strong>{formatNumber(service.budget || 0)} VNĐ</strong></p>
             </div>
         </div>
         <JobPrices service={service} opportunityId={opportunityId} canEditPrices={canEditPrices} canHandleDemo={canHandleDemo} />

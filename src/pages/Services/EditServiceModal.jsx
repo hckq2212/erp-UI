@@ -28,6 +28,7 @@ export const EditServiceModal = ({ isOpen, onClose, service }) => {
 
     const [jobQuantities, setJobQuantities] = useState({});
 
+
     const {
         register,
         handleSubmit,

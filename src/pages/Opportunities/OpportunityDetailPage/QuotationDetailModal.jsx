@@ -46,6 +46,8 @@ export const QuotationDetailModal = ({
   const pricingItems = useMemo(() => (quotation?.details || []).map((detail, index) => {
     const sellingPrice = Number(detail.sellingPrice || 0);
     const costPrice = Number(detail.costAtSale || 0);
+    const budget = Number(detail.budget || 0);
+    const totalCost = costPrice + budget;
     const quantity = Number(detail.quantity || 1);
     const packageQuantity = Number(detail.packageQuantity || 1);
     const serviceId = detail.service?.id || detail.serviceId;
@@ -66,6 +68,7 @@ export const QuotationDetailModal = ({
     return {
       key: detail.id || `${detail.servicePackageId || 'standalone'}-${serviceId || index}-${index}`,
       serviceId,
+      opportunityServiceId: detail.opportunityServiceId || detail.opportunityService?.id || opportunityService?.id,
       serviceName: detail.name || detail.service?.name || 'Dịch vụ',
       quantity,
       packageQuantity,
@@ -75,11 +78,12 @@ export const QuotationDetailModal = ({
       servicePackageId: detail.servicePackageId,
       unit: detail.service?.unit || detail.unit || '',
       costPrice,
-      minPrice: roundToTenThousands(costPrice / 0.8),
-      recommendedPrice: roundToTenThousands(costPrice / 0.6),
+      budget,
+      minPrice: roundToTenThousands(totalCost / 0.8),
+      recommendedPrice: roundToTenThousands(totalCost / 0.6),
       customPrice: sellingPrice,
       selectedPrice: sellingPrice,
-      profitMargin: calculateProfitMargin(sellingPrice, costPrice),
+      profitMargin: calculateProfitMargin(sellingPrice, costPrice, budget),
       jobs: normalizeServiceJobs(opportunityService?.jobs || detail.service?.serviceJobs || [])
     };
   }), [quotation?.details, opportunity?.packages, opportunity?.services]);

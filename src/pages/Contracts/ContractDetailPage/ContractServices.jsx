@@ -3,12 +3,13 @@ import { Layers, Briefcase } from 'lucide-react';
 export const ContractServices = ({ contractServices = [] }) => {
   // Group and aggregate services to avoid listing duplicate lines (since quantity is stored as multiple rows)
   const aggregated = contractServices.reduce((acc, item) => {
-    const key = `${item.serviceId || item.id}_${item.isPackageService}_${item.packageName || ''}_${item.sellingPrice}`;
+    const key = `${item.serviceId || item.id}_${item.isPackageService}_${item.packageName || ''}_${item.sellingPrice}_${item.budget || 0}`;
     if (!acc[key]) {
       acc[key] = {
         id: item.id,
         name: item.name || item.service?.name || 'Chưa xác định',
         sellingPrice: Number(item.sellingPrice || 0),
+        budget: Number(item.budget || 0),
         isPackageService: !!item.isPackageService,
         packageName: item.packageName || null,
         quantity: 0
@@ -37,6 +38,7 @@ export const ContractServices = ({ contractServices = [] }) => {
   // Calculate totals
   const totalStandalone = standaloneServices.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
   const totalPackages = packageServices.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
+  const totalBudget = aggregatedList.reduce((sum, item) => sum + (item.budget * item.quantity), 0);
   const grandTotal = totalStandalone + totalPackages;
 
   return (
@@ -65,6 +67,7 @@ export const ContractServices = ({ contractServices = [] }) => {
                     <th className="px-6 py-3">Tên dịch vụ</th>
                     <th className="px-6 py-3 text-center">Số lượng</th>
                     <th className="px-6 py-3 text-right">Đơn giá</th>
+                    <th className="px-6 py-3 text-right">Ngân sách</th>
                     <th className="px-6 py-3 text-right">Thành tiền</th>
                   </tr>
                 </thead>
@@ -74,6 +77,7 @@ export const ContractServices = ({ contractServices = [] }) => {
                       <td className="px-6 py-4 font-medium text-gray-900">{item.name}</td>
                       <td className="px-6 py-4 text-center">{item.quantity}</td>
                       <td className="px-6 py-4 text-right">{item.sellingPrice.toLocaleString('vi-VN')} đ</td>
+                      <td className="px-6 py-4 text-right">{(item.budget * item.quantity).toLocaleString('vi-VN')} đ</td>
                       <td className="px-6 py-4 text-right font-semibold text-gray-900">{(item.sellingPrice * item.quantity).toLocaleString('vi-VN')} đ</td>
                     </tr>
                   ))}
@@ -95,13 +99,19 @@ export const ContractServices = ({ contractServices = [] }) => {
             <div className="space-y-4">
               {Object.entries(packagesGrouped).map(([packageName, items]) => {
                 const packageSum = items.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
+                const packageBudget = items.reduce((sum, item) => sum + (item.budget * item.quantity), 0);
                 return (
                   <div key={packageName} className="border border-indigo-100 rounded-xl overflow-hidden shadow-sm bg-indigo-50/5">
                     <div className="bg-indigo-50/40 px-6 py-3 border-b border-indigo-100 flex justify-between items-center">
                       <span className="font-bold text-indigo-900">{packageName}</span>
-                      {/* <span className="text-xs font-semibold text-indigo-600 bg-indigo-100 px-2.5 py-1 rounded-full">
-                        Tổng gói: {packageSum.toLocaleString('vi-VN')} đ
-                      </span> */}
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <span className="text-xs font-semibold text-indigo-600 bg-indigo-100 px-2.5 py-1 rounded-full">
+                          Ngân sách: {packageBudget.toLocaleString('vi-VN')} đ
+                        </span>
+                        <span className="text-xs font-semibold text-indigo-600 bg-indigo-100 px-2.5 py-1 rounded-full">
+                          Tổng gói: {packageSum.toLocaleString('vi-VN')} đ
+                        </span>
+                      </div>
                     </div>
                     <table className="w-full text-sm text-left text-gray-500 bg-white">
                       <thead className="text-xs text-gray-500 uppercase bg-gray-50/50">
@@ -109,6 +119,7 @@ export const ContractServices = ({ contractServices = [] }) => {
                           <th className="px-6 py-2">Hạng mục dịch vụ</th>
                           <th className="px-6 py-2 text-center">Số lượng</th>
                           <th className="px-6 py-2 text-right">Đơn giá bổ trợ</th>
+                          <th className="px-6 py-2 text-right">Ngân sách</th>
                           <th className="px-6 py-2 text-right">Thành tiền</th>
                         </tr>
                       </thead>
@@ -121,6 +132,7 @@ export const ContractServices = ({ contractServices = [] }) => {
                             </td>
                             <td className="px-6 py-3 text-center">{item.quantity}</td>
                             <td className="px-6 py-3 text-right">{item.sellingPrice.toLocaleString('vi-VN')} đ</td>
+                            <td className="px-6 py-3 text-right">{(item.budget * item.quantity).toLocaleString('vi-VN')} đ</td>
                             <td className="px-6 py-3 text-right font-medium text-gray-900">{(item.sellingPrice * item.quantity).toLocaleString('vi-VN')} đ</td>
                           </tr>
                         ))}
@@ -141,6 +153,7 @@ export const ContractServices = ({ contractServices = [] }) => {
         <div>
           <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Tổng giá trị dịch vụ</div>
           <div className="text-xl font-extrabold text-blue-600">{grandTotal.toLocaleString('vi-VN')} đ</div>
+          <div className="mt-1 text-xs font-semibold text-gray-500">Tổng ngân sách: {totalBudget.toLocaleString('vi-VN')} đ</div>
         </div>
       </div>
     </div>

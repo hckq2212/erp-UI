@@ -61,7 +61,7 @@ const createEmptyOpportunityNameParts = () => ({
   monthYear: '',
 });
 
-const createEmptyServices = () => [{ serviceId: '', quantity: 1 }];
+const createEmptyServices = () => [{ serviceId: '', quantity: 1, budget: 0 }];
 const createEmptyPackages = () => [{ servicePackageId: '', services: [], quantity: 1 }];
 
 const searchableSelectStyles = {
@@ -82,6 +82,43 @@ const searchableSelectStyles = {
   }),
 };
 
+const getServiceJobsCost = (jobs = []) => jobs.reduce((total, serviceJob) => {
+  if (serviceJob?.included === false) return total;
+
+  const quantity = Number(serviceJob.quantity || 1);
+  const unitCost = Number(
+    serviceJob.costPrice ??
+    serviceJob.costAtSale ??
+    serviceJob.job?.costPrice ??
+    0
+  );
+
+  return total + unitCost * quantity;
+}, 0);
+
+const getServiceCostPrice = (service) => {
+  const jobsCost = getServiceJobsCost(service?.serviceJobs || service?.jobs || []);
+  if (jobsCost > 0 || (service?.serviceJobs || service?.jobs || []).length > 0) return jobsCost;
+
+  return Number(service?.costPrice || 0);
+};
+
+const getSelectedServiceCostPrice = (item, services = []) => {
+  const jobs = item?.jobs || [];
+  const jobsCost = getServiceJobsCost(jobs);
+  if (jobsCost > 0 || jobs.length > 0) return jobsCost;
+
+  const directCost = Number(item?.costPrice ?? item?.sellingPrice ?? 0);
+  if (directCost > 0) return directCost;
+
+  const service = services.find(s => String(s.id) === String(item?.serviceId));
+  return getServiceCostPrice(service);
+};
+
+const getSelectedServiceCostWithBudget = (item, services = []) => (
+  getSelectedServiceCostPrice(item, services) + Number(item?.budget || 0)
+);
+
 const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJobBriefChange, onJobIncludedChange, onRemove, hasError }) => {
   const [isJobsOpen, setIsJobsOpen] = useState(false);
   const isUnselected = !item.serviceId && hasError;
@@ -92,7 +129,7 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJ
   }));
   return (
     <div className={`space-y-3 p-3 rounded-xl border ${isUnselected ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
-      <div className="flex items-center gap-3">
+      <div className="flex items-end gap-3">
         <div className={`flex-1 rounded-lg ${isUnselected ? 'ring-2 ring-red-400' : ''}`}>
           <Select
             instanceId={`standalone-service-${index}`}
@@ -113,6 +150,16 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJ
           min={1}
           className="w-20 px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-center transition-all"
         />
+        <label className="w-36 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+          Ngân sách
+          <input
+            type="text"
+            value={formatNumber(item.budget)}
+            onChange={(e) => onServiceChange(index, 'budget', e.target.value)}
+            placeholder="Ngân sách"
+            className="mt-1 w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-right text-sm font-medium normal-case tracking-normal transition-all"
+          />
+        </label>
         <button type="button" onClick={() => onRemove(index)} className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all">
           <Trash2 className="w-5 h-5" />
         </button>
@@ -319,15 +366,7 @@ const PackageItem = memo(({
         </div>
 
         {isServicesOpen && (pkg.services || []).map((serviceItem, serviceIndex) => {
-          const selectedIds = (pkg.services || [])
-            .filter((_, i) => i !== serviceIndex)
-            .map(s => String(s.serviceId))
-            .filter(Boolean);
-
-          const packageAvailableServices = availableServices.filter(
-            service => !selectedIds.includes(String(service.id))
-          );
-          const serviceOptions = packageAvailableServices.map(service => ({
+          const serviceOptions = availableServices.map(service => ({
             value: service.id,
             label: service.name,
           }));
@@ -341,7 +380,7 @@ const PackageItem = memo(({
               key={`${index}-${serviceIndex}`}
               className="bg-white border border-blue-100 rounded-xl p-3 space-y-3"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-end gap-3">
                 <div className="flex-1 text-sm">
                   <Select
                     instanceId={`package-${index}-service-${serviceIndex}`}
@@ -377,6 +416,23 @@ const PackageItem = memo(({
                   }
                   className="w-20 px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-center"
                 />
+                <label className="w-36 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                  Ngân sách
+                  <input
+                    type="text"
+                    value={formatNumber(serviceItem.budget || 0)}
+                    onChange={(e) =>
+                      onServiceChange(
+                        index,
+                        serviceIndex,
+                        'budget',
+                        e.target.value
+                      )
+                    }
+                    placeholder="Ngân sách"
+                    className="mt-1 w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-right text-sm font-medium normal-case tracking-normal"
+                  />
+                </label>
 
                 <button
                   type="button"
@@ -644,6 +700,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
       .map(s => ({
         serviceId: s.serviceId || s.service?.id || '',
         quantity: Number(s.quantity) || 1,
+        budget: Number(s.budget) || 0,
         jobs: (s.jobs || s.service?.serviceJobs || []).map(serviceJob => ({
           jobId: serviceJob.job?.id || serviceJob.jobId,
           name: serviceJob.job?.name || serviceJob.name || 'Hạng mục',
@@ -686,6 +743,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
       services: (pkg.services || pkg.items || []).map(s => ({
         serviceId: s.serviceId || s.service?.id || '',
         quantity: Number(s.quantity) || 1,
+        budget: Number(s.budget) || 0,
         sellingPrice: Number(
           s.sellingPrice ?? s.service?.costPrice ?? 0
         ),
@@ -795,7 +853,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
           return {
             serviceId,
             quantity: item.defaultQuantity || 1,
-            sellingPrice: fullService?.costPrice || 0,
+            budget: 0,
+            sellingPrice: getServiceCostPrice(fullService),
             jobs: (fullService?.serviceJobs || []).map(serviceJob => ({
               jobId: serviceJob.job?.id || serviceJob.jobId,
               name: serviceJob.job?.name || 'Hạng mục',
@@ -860,13 +919,15 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
           ...pkgServices[sIndex],
           [field]: field === 'quantity'
             ? Math.max(1, Number(value) || 1)
-            : value
+            : field === 'budget'
+              ? parseNumber(value)
+              : value
         };
       }
 
       if (field === 'serviceId') {
         const service = services.find(s => String(s.id) === String(value));
-        pkgServices[sIndex].sellingPrice = service?.costPrice || 0;
+        pkgServices[sIndex].sellingPrice = getServiceCostPrice(service);
         pkgServices[sIndex].jobs = (service?.serviceJobs || []).map(serviceJob => ({
           jobId: serviceJob.job?.id || serviceJob.jobId,
           name: serviceJob.job?.name || 'Hạng mục',
@@ -904,7 +965,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
       const pkg = { ...updated[pkgIndex] };
       pkg.services = [
         ...(pkg.services || []),
-        { serviceId: '', quantity: 1, sellingPrice: 0, jobs: [] }
+        { serviceId: '', quantity: 1, budget: 0, sellingPrice: 0, jobs: [] }
       ];
       updated[pkgIndex] = pkg;
       return updated;
@@ -960,7 +1021,9 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
         ...updated[index],
         [field]: field === 'quantity'
           ? Math.max(1, Number(value) || 1)
-          : value
+          : field === 'budget'
+            ? parseNumber(value)
+            : value
       };
       if (field === 'serviceId') {
         const service = services.find(s => String(s.id) === String(value));
@@ -1000,7 +1063,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
   }, []);
 
   const addService = useCallback(() => {
-    setSelectedServices(prev => [...prev, { serviceId: '', quantity: 1 }]);
+    setSelectedServices(prev => [...prev, { serviceId: '', quantity: 1, budget: 0 }]);
   }, []);
 
   const removeService = useCallback((index) => {
@@ -1113,14 +1176,13 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
   const totalValue = useMemo(() => {
     const standaloneTotal = selectedServices.reduce((total, item) => {
       if (!item.serviceId) return total;
-      const service = services.find(s => String(s.id) === String(item.serviceId));
-      return total + (service?.costPrice || 0) * item.quantity;
+      return total + getSelectedServiceCostWithBudget(item, services) * (Number(item.quantity) || 1);
     }, 0);
 
     const packagesTotal = selectedPackages.reduce((total, pkg) => {
       const pkgQuantity = Number(pkg.quantity) || 1;
       return total + (pkg.services || []).reduce((pTotal, s) => {
-        return pTotal + (Number(s.sellingPrice) || 0) * (Number(s.quantity) || 1) * pkgQuantity;
+        return pTotal + getSelectedServiceCostWithBudget(s, services) * (Number(s.quantity) || 1) * pkgQuantity;
       }, 0);
     }, 0);
 
@@ -1231,6 +1293,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
         .map(s => ({
           id: s.serviceId,
           quantity: s.quantity,
+          budget: Number(s.budget || 0),
           jobs: s.jobs || []
         }));
 
@@ -1244,6 +1307,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
           services: (pkg.services || []).filter(s => s.serviceId).map(s => ({
             serviceId: s.serviceId,
             quantity: s.quantity,
+            budget: Number(s.budget || 0),
             sellingPrice: s.sellingPrice,
             jobs: s.jobs || []
           }))
@@ -1454,7 +1518,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
                         name="budget"
                         value={formatNumber(formData.budget)}
                         onChange={(e) => handleNumberChange('budget', e.target.value)}
-                        placeholder="0"
+                        placeholder="Ngân sách"
                         className={`w-full px-4 py-3 pr-16 border-2 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-all ${errors.budget ? 'border-red-400' : 'border-blue-200'}`}
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 font-medium text-sm">VNĐ</span>
@@ -1658,9 +1722,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
                             <div className="flex-1 text-sm font-bold text-blue-900">
                               <Select
                                 instanceId={`service-package-${index}`}
-                                options={packageTemplates
-                                  .filter(template => !selectedPackages.some(selected => String(selected.servicePackageId) === String(template.id)))
-                                  .map(template => ({ value: template.id, label: template.name }))}
+                                options={packageTemplates.map(template => ({ value: template.id, label: template.name }))}
                                 value={null}
                                 onChange={(option) => handlePackageTemplateChange(index, option?.value || '')}
                                 placeholder="-- Chọn hoặc tìm gói mẫu --"
@@ -1715,19 +1777,12 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
 
                   <div className="space-y-3">
                     {selectedServices.map((item, index) => {
-                      // Filter out already selected services (except current selection)
-                      const selectedIds = selectedServices
-                        .filter((_, i) => i !== index)
-                        .map(s => String(s.serviceId))
-                        .filter(id => id);
-                      const availableServices = services.filter(s => !selectedIds.includes(String(s.id)));
-
                       return (
                         <ServiceItem
                           key={index}
                           index={index}
                           item={item}
-                          availableServices={availableServices}
+                          availableServices={services}
                           onServiceChange={handleServiceChange}
                           onJobBriefChange={handleServiceJobBriefChange}
                           onJobIncludedChange={handleServiceJobIncludedChange}
