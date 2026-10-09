@@ -168,19 +168,22 @@ export const QuotationServicePricingTable = ({
   };
 
   const handlePackageCustomPriceChange = (packageKey, value) => {
-    const indexes = items.reduce((result, item, index) => (
+    const totalPrice = parseNumber(value);
+
+    setItems((previous) => {
+      const indexes = previous.reduce((result, item, index) => (
+
       String(item.packageKey || item.servicePackageId || item.packageName) === String(packageKey) ? [...result, index] : result
     ), []);
     if (indexes.length === 0) return;
-    const totalPrice = parseNumber(value);
     const weights = indexes.map((index) => {
-      const item = items[index];
+      const item = previous[index];
       return Number(item.recommendedPrice || item.costPrice || 1) * Number(item.norm || 1);
     });
     const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
     let allocated = 0;
 
-    setItems((previous) => previous.map((item, index) => {
+    return previous.map((item, index) => {
       const position = indexes.indexOf(index);
       if (position < 0) return item;
       const linePrice = position === indexes.length - 1
@@ -194,7 +197,8 @@ export const QuotationServicePricingTable = ({
         selectedPrice: customPrice,
         profitMargin: calculateProfitMargin(customPrice, item.costPrice, item.budget),
       };
-    }));
+      });
+    });
   };
 
   const handlePackageQuantityChange = (packageKey, value) => {
