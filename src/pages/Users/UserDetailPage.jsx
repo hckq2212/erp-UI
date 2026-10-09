@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useGetUserQuery, useUpdateUserLaborContractsMutation, useUpdateUserProfileMutation } from '../../api/users';
+import { useGetUserQuery, useUpdateUserLaborContractsMutation } from '../../api/users';
 import { USER_ROLE_COLORS, USER_ROLE } from '../../utils/enums';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import { toast } from 'react-toastify';
@@ -9,11 +9,10 @@ import { DocumentPreviewModal } from '../../components/common/DocumentPreviewMod
 import {
     X, Upload, FileText, Download, Eye, Loader2,
     ArrowLeft, CheckCircle, Mail, Phone, User,
-    Link2, ExternalLink, Shield,
-    Lock, Unlock, Calendar
+    Link2, ExternalLink, Calendar
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { maskIdCardNumber, formatDateToDDMMYYYY } from '../../utils/format';
+import { formatDateToDDMMYYYY } from '../../utils/format';
 
 const MAX_CONTRACT_FILES = 1;
 const MAX_CONTRACT_FILE_SIZE = 10 * 1024 * 1024;
@@ -42,38 +41,6 @@ export const UserDetailPage = () => {
     const navigate = useNavigate();
     const { data: user, isLoading, error } = useGetUserQuery(id);
     const [updateUserLaborContracts, { isLoading: isSavingContracts }] = useUpdateUserLaborContractsMutation();
-    const [updateUserProfile, { isLoading: isUpdatingProfile }] = useUpdateUserProfileMutation();
-
-    // CCCD admin state
-    const [idCardNumber, setIdCardNumber] = useState('');
-    const [showIdCardNumber, setShowIdCardNumber] = useState(false);
-    const [isIdCardNumberFocused, setIsIdCardNumberFocused] = useState(false);
-    const [isUploadingIdCard, setIsUploadingIdCard] = useState(false);
-
-    const handleSaveIdCard = async () => {
-        const cleanIdNumber = idCardNumber?.trim() || '';
-        if (cleanIdNumber && !/^([0-9]{9}|[0-9]{12})$/.test(cleanIdNumber)) {
-            toast.error('Số CCCD / CMND không hợp lệ! Vui lòng nhập đúng 9 hoặc 12 chữ số.');
-            return;
-        }
-
-        try {
-            setIsUploadingIdCard(true);
-            const currentIdCard = user?.idCard || {};
-            const idCardUpdate = {
-                ...currentIdCard,
-                idNumber: cleanIdNumber || null,
-            };
-            await updateUserProfile({ id, idCard: idCardUpdate }).unwrap();
-            toast.success('Cập nhật CCCD thành công');
-        } catch (err) {
-            toast.error(err.message || 'Lỗi khi cập nhật CCCD');
-        } finally {
-            setIsUploadingIdCard(false);
-        }
-    };
-
-    const idCardHasChanges = idCardNumber !== (user?.idCard?.idNumber || '');
 
     // File handling state
     const [isUploading, setIsUploading] = useState(false);
@@ -100,8 +67,6 @@ export const UserDetailPage = () => {
         } else {
             setContracts([]);
         }
-        // Sync idCard when user data reloads
-        setIdCardNumber(user?.idCard?.idNumber || '');
     }, [user]);
 
     useEffect(() => () => {
@@ -323,112 +288,7 @@ export const UserDetailPage = () => {
                                     </div>
                                 </div>
                             )}
-
-
                         </div>
-                    </div>
-
-                    {/* CCCD Card (Admin/Manager Management) */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
-                                    <Shield className="w-4 h-4" />
-                                </div>
-                                <div>
-                                    <h3 className="font-black text-gray-900 text-sm tracking-wide uppercase">Căn cước công dân</h3>
-                                </div>
-                            </div>
-                            {idCardHasChanges && (
-                                <span className="text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full border border-amber-200">
-                                    Chưa lưu
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Số CCCD Input */}
-                        <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                                <label className="text-[11px] font-black text-gray-400 uppercase tracking-wider">Số CCCD</label>
-                                {idCardNumber && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowIdCardNumber(prev => !prev)}
-                                        className="text-[10px] font-bold text-gray-500 hover:text-blue-600 flex items-center gap-1 transition-colors"
-                                        title={showIdCardNumber ? "Khóa lại / Che bớt số CCCD" : "Mở khóa / Xem đầy đủ số CCCD"}
-                                    >
-                                        {showIdCardNumber ? (
-                                            <>
-                                                <Unlock className="w-3 h-3 text-orange-500" />
-                                                <span className="text-orange-600 font-bold">Đang hiện đủ</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Lock className="w-3 h-3 text-gray-400" />
-                                                <span>Mở khóa xem đủ</span>
-                                            </>
-                                        )}
-                                    </button>
-                                )}
-                            </div>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={
-                                        showIdCardNumber || isIdCardNumberFocused
-                                            ? idCardNumber
-                                            : maskIdCardNumber(idCardNumber)
-                                    }
-                                    onFocus={() => setIsIdCardNumberFocused(true)}
-                                    onBlur={() => setIsIdCardNumberFocused(false)}
-                                    onChange={(e) => setIdCardNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                                    placeholder="Chưa cập nhật số CCCD"
-                                    className="w-full pl-3.5 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl text-xs font-bold text-gray-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all font-mono"
-                                />
-                                {idCardNumber && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowIdCardNumber(prev => !prev)}
-                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-blue-600 transition-colors"
-                                        title={showIdCardNumber ? "Khóa lại / Che bớt" : "Mở khóa xem đủ"}
-                                    >
-                                        {showIdCardNumber ? <Unlock className="w-4 h-4 text-orange-500" /> : <Lock className="w-4 h-4" />}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Save / Cancel buttons for CCCD */}
-                        {idCardHasChanges && (
-                            <div className="flex items-center gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={handleSaveIdCard}
-                                    disabled={isUploadingIdCard || isUpdatingProfile}
-                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
-                                >
-                                    {isUploadingIdCard || isUpdatingProfile ? (
-                                        <>
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                            <span>Đang lưu CCCD...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle className="w-3.5 h-3.5" />
-                                            <span>Lưu thay đổi CCCD</span>
-                                        </>
-                                    )}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setIdCardNumber(user?.idCard?.idNumber || '')}
-                                    disabled={isUploadingIdCard || isUpdatingProfile}
-                                    className="px-3 py-2.5 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-2xl font-bold text-xs transition-all"
-                                >
-                                    Hủy
-                                </button>
-                            </div>
-                        )}
                     </div>
 
                     {/* Labor Contract Card */}

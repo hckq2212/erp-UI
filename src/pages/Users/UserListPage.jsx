@@ -6,6 +6,30 @@ import { useGetMeQuery } from '../../api/auth';
 import { AddUserModal } from './AddUserModal';
 import { USER_ROLE, USER_ROLE_COLORS, USER_ROLE_OPTIONS } from '../../utils/enums';
 
+const UserAvatar = ({ user, size = 'md' }) => {
+    const [imgError, setImgError] = useState(false);
+    const avatarUrl = user?.avatarUrl || user?.avatar;
+    const initial = (user?.fullName?.[0] || user?.account?.username?.[0] || 'U').toUpperCase();
+    const sizeClasses = size === 'lg' ? 'w-12 h-12 text-xl' : 'w-10 h-10 text-base';
+
+    return (
+        <div className={`${sizeClasses} rounded-full overflow-hidden bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0 border border-gray-100 shadow-sm group-hover:border-blue-200 transition-all`}>
+            {avatarUrl && !imgError ? (
+                <img
+                    src={avatarUrl}
+                    alt={user?.fullName || 'Avatar'}
+                    className="w-full h-full object-cover"
+                    onError={() => setImgError(true)}
+                />
+            ) : (
+                <span className="w-full h-full flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    {initial}
+                </span>
+            )}
+        </div>
+    );
+};
+
 export const UserListPage = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
@@ -129,9 +153,7 @@ export const UserListPage = () => {
                         >
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                        {user.fullName?.[0]}
-                                    </div>
+                                    <UserAvatar user={user} size="lg" />
                                     <div>
                                         <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
                                             {user.fullName}
@@ -185,9 +207,7 @@ export const UserListPage = () => {
                                     >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold text-base group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
-                                                    {user.fullName?.[0]}
-                                                </div>
+                                                <UserAvatar user={user} size="md" />
                                                 <div>
                                                     <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors text-sm">
                                                         {user.fullName}
@@ -246,3 +266,4 @@ export const UserListPage = () => {
         </div>
     );
 };
+
