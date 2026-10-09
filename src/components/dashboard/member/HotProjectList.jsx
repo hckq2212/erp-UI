@@ -33,8 +33,13 @@ export const HotProjectList = ({
                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{subtitle}</p>
                     </div>
                 </div>
-                <button className="text-[9px] font-black text-slate-400 hover:text-rose-500 transition-colors uppercase tracking-widest flex items-center gap-1">
-                    Xem tất cả <ChevronRight size={10} />
+                <button 
+                    type="button"
+                    onClick={() => navigate ? navigate('/projects') : window.location.assign('/projects')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 transition-all uppercase tracking-wider shadow-xs"
+                >
+                    <span>Xem tất cả</span>
+                    <ChevronRight size={12} />
                 </button>
             </div>
 

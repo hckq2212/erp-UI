@@ -106,11 +106,17 @@ export const MemberView = ({
             const matchesProject = !selectedProjectId || task.projectId === selectedProjectId || task.project?.id === selectedProjectId;
 
             let matchesDate = true;
-            if (selectedDate?.month && selectedDate?.year) {
+            const startM = selectedDate?.startMonth || selectedDate?.month;
+            const endM = selectedDate?.endMonth || selectedDate?.month;
+            const targetYear = selectedDate?.year;
+
+            if (startM && endM && targetYear) {
                 const targetDateStr = task.plannedEndDate || task.actualEndDate || task.createdAt;
                 if (targetDateStr) {
                     const d = new Date(targetDateStr);
-                    matchesDate = (d.getMonth() + 1 === selectedDate.month) && (d.getFullYear() === selectedDate.year);
+                    const taskMonth = d.getMonth() + 1;
+                    const taskYear = d.getFullYear();
+                    matchesDate = (taskYear === targetYear) && (taskMonth >= startM && taskMonth <= endM);
                 }
             }
 
@@ -203,10 +209,12 @@ export const MemberView = ({
         : (isPersonalMode ? (currentUserId || user?.id || member?.id || '') : '');
 
     const now = new Date();
-    const targetMonth = selectedDate?.month ?? (now.getMonth() + 1);
+    const hasMonthFilter = Boolean(selectedDate?.month || selectedDate?.startMonth);
+    const startM = selectedDate?.startMonth || selectedDate?.month || (now.getMonth() + 1);
+    const endM = selectedDate?.endMonth || selectedDate?.month || (now.getMonth() + 1);
     const targetYear = selectedDate?.year ?? now.getFullYear();
-    const startOfMonthStr = format(new Date(targetYear, targetMonth - 1, 1), 'yyyy-MM-dd');
-    const endOfMonthStr = format(new Date(targetYear, targetMonth, 0), 'yyyy-MM-dd');
+    const startOfMonthStr = format(new Date(targetYear, startM - 1, 1), 'yyyy-MM-dd');
+    const endOfMonthStr = format(new Date(targetYear, endM, 0), 'yyyy-MM-dd');
 
     const buildTasksUrl = useCallback(({
         status,
@@ -229,7 +237,7 @@ export const MemberView = ({
         } else if (deadlineFrom || deadlineTo) {
             if (deadlineFrom) params.set('deadlineFrom', deadlineFrom);
             if (deadlineTo) params.set('deadlineTo', deadlineTo);
-        } else if (includeMonth) {
+        } else if (includeMonth && hasMonthFilter) {
             params.set('deadlineFrom', startOfMonthStr);
             params.set('deadlineTo', endOfMonthStr);
         }

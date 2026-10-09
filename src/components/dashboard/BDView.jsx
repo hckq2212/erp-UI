@@ -118,9 +118,10 @@ const BDProjectList = ({ projects = [], navigate }) => (
             <button
                 type="button"
                 onClick={() => navigate('/projects')}
-                className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400 transition-colors hover:text-emerald-500"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-all uppercase tracking-wider shadow-xs"
             >
-                Xem tất cả <ArrowUpRight size={10} />
+                <span>Xem tất cả</span>
+                <ArrowUpRight size={12} />
             </button>
         </div>
 
