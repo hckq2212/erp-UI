@@ -175,7 +175,7 @@ export const QuotationServicePricingTable = ({
     const totalPrice = parseNumber(value);
     const weights = indexes.map((index) => {
       const item = items[index];
-      return Number(item.recommendedPrice || getEffectiveCostPrice(item) || 1) * Number(item.norm || 1);
+      return Number(item.recommendedPrice || item.costPrice || 1) * Number(item.norm || 1);
     });
     const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
     let allocated = 0;
