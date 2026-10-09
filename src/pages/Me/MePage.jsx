@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { maskIdCardNumber } from '../../utils/format';
+import { AvatarCropModal } from '../../components/common/AvatarCropModal';
 
 const AVATAR_FOLDER = 'GETVINI/ERP/avatars';
 const MAX_IMG_SIZE = 5 * 1024 * 1024; // 5MB
@@ -94,6 +95,8 @@ export const MePage = () => {
     // Local preview states (before upload)
     const [avatarPreview, setAvatarPreview] = useState(null);
     const [avatarFile, setAvatarFile] = useState(null);
+    const [cropModalOpen, setCropModalOpen] = useState(false);
+    const [rawAvatarFile, setRawAvatarFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
@@ -137,8 +140,36 @@ export const MePage = () => {
             toast.error('Ảnh đại diện phải là JPG/PNG/WEBP và tối đa 5MB');
             return;
         }
-        setAvatarFile(file);
-        setAvatarPreview(URL.createObjectURL(file));
+        setRawAvatarFile(file);
+        setCropModalOpen(true);
+        e.target.value = null;
+    };
+
+    const handleCropComplete = async (croppedFile, previewUrl) => {
+        try {
+            setIsUploading(true);
+            setAvatarPreview(previewUrl);
+
+            // 1. Tải ảnh lên Cloudinary
+            const result = await uploadToCloudinary(croppedFile, AVATAR_FOLDER);
+            const newAvatarUrl = result.url;
+
+            // 2. Gọi API cập nhật ảnh đại diện vào hệ thống ngay lập tức
+            await updateMe({ avatarUrl: newAvatarUrl }).unwrap();
+
+            // 3. Cập nhật state thành công
+            setAvatarPreview(newAvatarUrl);
+            setAvatarFile(null);
+            setFormData(prev => ({ ...prev, avatarUrl: newAvatarUrl }));
+            toast.success('Cập nhật ảnh đại diện thành công');
+            refetch();
+        } catch (err) {
+            setAvatarPreview(user?.avatarUrl || null);
+            toast.error(err.data?.message || err.message || 'Cập nhật ảnh đại diện thất bại');
+            throw err;
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -196,7 +227,7 @@ export const MePage = () => {
                 <div className="flex items-center gap-6">
                     {/* Avatar upload */}
                     <label className="relative group cursor-pointer shrink-0">
-                        <div className="w-24 h-24 rounded-[2rem] overflow-hidden shadow-2xl shadow-blue-100 ring-8 ring-blue-50">
+                        <div className="w-24 h-24 rounded-full overflow-hidden shadow-2xl shadow-blue-100 ring-8 ring-blue-50 relative">
                             {avatarPreview ? (
                                 <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
@@ -204,10 +235,17 @@ export const MePage = () => {
                                     {initials}
                                 </div>
                             )}
+                            {isUploading && (
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                    <Loader2 className="w-7 h-7 text-white animate-spin" />
+                                </div>
+                            )}
                         </div>
-                        <div className="absolute inset-0 rounded-[2rem] bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Camera className="w-6 h-6 text-white" />
-                        </div>
+                        {!isUploading && (
+                            <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Camera className="w-6 h-6 text-white" />
+                            </div>
+                        )}
                         <input type="file" accept="image/*" className="hidden" onChange={handleAvatarSelect} disabled={isBusy} />
                     </label>
 
@@ -387,6 +425,17 @@ export const MePage = () => {
                     </button>
                 </div>
             </form>
+
+            {/* Modal Crop Avatar hình tròn */}
+            <AvatarCropModal
+                isOpen={cropModalOpen}
+                imageFile={rawAvatarFile}
+                onClose={() => {
+                    setCropModalOpen(false);
+                    setRawAvatarFile(null);
+                }}
+                onCropComplete={handleCropComplete}
+            />
         </div>
     );
 };

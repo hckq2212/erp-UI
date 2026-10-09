@@ -255,7 +255,7 @@ export const UserDetailPage = () => {
                     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                         {/* ... existing profile card content ... */}
                         <div className="p-8 text-center bg-gradient-to-b from-blue-50 to-white pt-10">
-                            <div className="w-24 h-24 rounded-3xl overflow-hidden mx-auto shadow-xl shadow-blue-100 mb-6">
+                            <div className="w-24 h-24 rounded-full overflow-hidden mx-auto shadow-xl shadow-blue-100 ring-4 ring-blue-50 mb-6">
                                 {user.avatarUrl ? (
                                     <img src={user.avatarUrl} alt={user.fullName} className="w-full h-full object-cover" />
                                 ) : (

@@ -294,7 +294,7 @@ const HeaderComponent = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             className="flex items-center space-x-2"
             onClick={() => navigate(`/me`)}
           >
-            <div className="w-8 h-8 rounded-lg overflow-hidden bg-orange-100 flex items-center justify-center text-[#F38820] shadow-sm border border-gray-100 shrink-0">
+            <div className="w-8 h-8 rounded-full overflow-hidden bg-orange-100 flex items-center justify-center text-[#F38820] shadow-sm border border-gray-100 shrink-0">
               {user?.avatarUrl ? (
                 <img src={user.avatarUrl} alt={user?.fullName || 'Avatar'} className="w-full h-full object-cover" />
               ) : (
