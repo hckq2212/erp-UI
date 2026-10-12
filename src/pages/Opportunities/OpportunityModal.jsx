@@ -172,6 +172,7 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJ
           <input
             type="text"
             disabled={availableServices.find(service => String(service.id) === String(item.serviceId))?.isBudget !== true}
+            readOnly={availableServices.find(service => String(service.id) === String(item.serviceId))?.isBudget !== true}
             title={budgetLockedMessage}
             value={formatNumber(item.budget)}
             onChange={(e) => onServiceChange(index, 'budget', e.target.value)}
