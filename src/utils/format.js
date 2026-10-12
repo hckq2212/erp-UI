@@ -20,7 +20,7 @@ export const formatNumber = (value) => {
 
   let integerPart = '';
   let decimalPart = undefined;
-
+  
   if (typeof value === 'number') {
     const parts = strValue.split('.');
     integerPart = parts[0];
@@ -30,7 +30,9 @@ export const formatNumber = (value) => {
     integerPart = parts[0].replace(/\./g, '');
     decimalPart = parts[1];
   } else {
-    integerPart = strValue.replace(/\./g, '');
+    const parts = strValue.split('.');
+    integerPart = parts[0];
+    decimalPart = parts[1];
   }
 
   const cleanInt = integerPart.replace(/\D/g, '');
