@@ -39,6 +39,7 @@ import { CloseProjectModal } from './CloseProjectModal';
 import { PauseHistorySection } from './PauseHistorySection';
 import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
 import { cn } from '../../../utils/cn';
+import { formatNumber } from '../../../utils/format';
 
 const serviceSummaryCollator = new Intl.Collator('vi', { numeric: true, sensitivity: 'base' });
 
@@ -57,9 +58,11 @@ const ServiceExecutionSummary = ({ services = [], title = 'Thống kê dịch v�
         quantity: 0,
         active: 0,
         accepted: 0,
+        budget: 0,
       };
 
       existing.quantity += 1;
+      existing.budget += Number(service.budget || 0);
       if (service.status === 'COMPLETED') {
         existing.accepted += 1;
       } else if (service.status !== 'CANCELLED') {
@@ -91,6 +94,7 @@ const ServiceExecutionSummary = ({ services = [], title = 'Thống kê dịch v�
             <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
               <tr>
                 <th className="px-5 py-3">Tên dịch vụ</th>
+                <th className="px-4 py-3 text-center">Ngân sách</th>
                 <th className="px-4 py-3 text-center">Số lượng</th>
                 <th className="px-4 py-3 text-center">Đang thực thi</th>
                 <th className="px-4 py-3 text-center">Đã nghiệm thu</th>
@@ -100,6 +104,9 @@ const ServiceExecutionSummary = ({ services = [], title = 'Thống kê dịch v�
               {rows.map((row) => (
                 <tr key={row.key} className="text-sm">
                   <td className="px-5 py-3 font-bold text-slate-800">{row.name}</td>
+                  <td className="px-4 py-3 text-center font-bold text-blue-600">
+                    {formatNumber(row.budget)} VNĐ
+                  </td>
                   <td className="px-4 py-3 text-center font-extrabold text-slate-700">{row.quantity}</td>
                   <td className="px-4 py-3 text-center font-extrabold text-blue-700">{row.active}</td>
                   <td className="px-4 py-3 text-center font-extrabold text-emerald-700">{row.accepted}</td>

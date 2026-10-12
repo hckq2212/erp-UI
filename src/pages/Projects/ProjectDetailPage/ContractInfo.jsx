@@ -339,6 +339,9 @@ export const ContractInfo = ({ contract, projectId, project }) => {
     const [nicknameDraft, setNicknameDraft] = useState('');
     const [updateContractServiceNickname, { isLoading: isUpdatingNickname }] = useUpdateContractServiceNicknameMutation();
     const services = Array.isArray(contract?.services) ? contract.services : [];
+    const totalBudget = useMemo(() => {
+        return services.reduce((sum, item) => sum + Number(item.budget || 0), 0);
+    }, [services]);
     const user = useSelector(selectCurrentUser);
     const currentUserId = getCurrentUserId(user);
 
@@ -480,7 +483,12 @@ export const ContractInfo = ({ contract, projectId, project }) => {
                             <LayoutList className="h-5 w-5" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-gray-900">Hạng mục dịch vụ</h2>
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                                <h2 className="text-lg font-bold text-gray-900">Hạng mục dịch vụ</h2>
+                                <span className="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
+                                    Tổng ngân sách: {formatNumber(totalBudget)} VNĐ
+                                </span>
+                            </div>
                             <p className="mt-1 text-sm text-gray-500">Xem nhanh trạng thái nghiệm thu, tiến độ công việc và kết quả theo từng gói.</p>
                         </div>
                     </div>
@@ -635,7 +643,9 @@ export const ContractInfo = ({ contract, projectId, project }) => {
                                                                                 ? `${serviceTasks.length} công việc`
                                                                                 : `${serviceTasks.length} công việc của bạn`}
                                                                         </span>
-                                                                        <span>Ngân sách: {formatNumber(item.budget || 0)} VNĐ</span>
+                                                                        <span className={Number(item.budget || 0) > 0 ? "font-bold text-blue-600" : ""}>
+                                                                            Ngân sách: {formatNumber(item.budget || 0)} VNĐ
+                                                                        </span>
                                                                         <span>{results.length} kết quả</span>
                                                                         {item.nickname?.trim() && originalServiceName && (
                                                                             <span title={originalServiceName}>Gốc: {originalServiceName}</span>

@@ -45,6 +45,7 @@ import { ProductDescriptionPdfPreview } from './ProductDescriptionPdfPreview';
 import ProductDescriptionLegend from './ProductDescriptionLegend';
 import { ProjectWorkingFilesSection } from './ProjectWorkingFilesSection';
 import { hasTeamMemberRole } from '../../../utils/teamMember';
+import { formatNumber } from '../../../utils/format';
 
 const STATUS_LABELS = {
     DRAFT: 'Bản nháp',
@@ -1242,6 +1243,10 @@ export const ProjectInfo = ({ project }) => {
     const [updateProject, { isLoading: isUpdatingTimeline }] = useUpdateProjectMutation();
     const contract = project?.contract || {};
     const contractAttachments = Array.isArray(contract.attachments) ? contract.attachments : [];
+    const totalBudget = useMemo(() => {
+        const services = Array.isArray(contract.services) ? contract.services : [];
+        return services.reduce((sum, s) => sum + Number(s.budget || 0), 0);
+    }, [contract.services]);
     const timeline = getProjectTimeline(project?.plannedStartDate, project?.plannedEndDate);
     const [timelineForm, setTimelineForm] = useState({
         plannedStartDate: toDateInputValue(project?.plannedStartDate),
@@ -1302,7 +1307,7 @@ export const ProjectInfo = ({ project }) => {
                 </div>
 
                 <div className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Mã hợp đồng</p>
                             <p className="text-sm font-medium text-gray-700">{contract.contractCode || 'Chưa có'}</p>
@@ -1310,6 +1315,12 @@ export const ProjectInfo = ({ project }) => {
                         <div>
                             <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Tên hợp đồng</p>
                             <p className="text-sm font-medium text-gray-700">{contract.name || 'Chưa có'}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Tổng ngân sách</p>
+                            <p className="text-sm font-bold text-blue-600">
+                                {formatNumber(totalBudget)} VNĐ
+                            </p>
                         </div>
                     </div>
                     <div className="border-t border-gray-100 pt-4">
