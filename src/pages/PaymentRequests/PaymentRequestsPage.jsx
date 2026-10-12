@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-    Search, Plus, Wallet, RefreshCw, ArrowUp, ArrowDown, ArrowUpDown, X, Briefcase, ClipboardList, Calendar, DollarSign,
+    Search, Plus, Wallet, RefreshCw, ArrowUp, ArrowDown, ArrowUpDown, X, Briefcase, ClipboardList, Calendar, DollarSign, Zap,
 } from 'lucide-react';
 import {
     useGetPaymentRequestsQuery,
@@ -432,14 +432,25 @@ export const PaymentRequestsPage = () => {
                                     )}
                                 >
                                     <td className={cn('max-w-sm border-l-4 px-4 py-3', highlight ? 'border-orange-500' : 'border-transparent')}>
-                                        {highlight && (
-                                            <span className='mb-1 inline-block rounded-md bg-white px-1.5 py-0.5 text-[11px] font-semibold text-orange-600 ring-1 ring-orange-300'>
-                                                {r.approvalStatus === 'DRAFT' ? 'Cần gửi duyệt' : 'Cần bổ sung'}
-                                            </span>
-                                        )}
+                                        <div className='flex flex-wrap items-center gap-1 mb-1'>
+                                            {highlight && (
+                                                <span className='inline-block rounded-md bg-white px-1.5 py-0.5 text-[11px] font-semibold text-orange-600 ring-1 ring-orange-300'>
+                                                    {r.approvalStatus === 'DRAFT' ? 'Cần gửi duyệt' : 'Cần bổ sung'}
+                                                </span>
+                                            )}
+                                            {r.isUrgent && (
+                                                <span className='inline-flex items-center gap-0.5 rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-800 ring-1 ring-amber-300'>
+                                                    <Zap size={11} className='fill-amber-600 text-amber-600' /> GẤP
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className='line-clamp-2 font-medium text-stone-800'>{r.content}</p>
                                         <p className='mt-0.5 truncate text-xs text-stone-500'>
-                                            {[TYPE_LABELS[r.type] || r.type, vendorName && `Vendor: ${vendorName}`, taskName && `Việc: ${taskName}`].filter(Boolean).join(' · ')}
+                                            {[
+                                                TYPE_LABELS[r.type] || r.type,
+                                                vendorName && `Vendor: ${vendorName}`,
+                                                taskName && `Việc: ${taskName}`
+                                            ].filter(Boolean).join(' · ')}
                                         </p>
                                     </td>
                                     <td className='px-4 py-3 text-stone-600'>

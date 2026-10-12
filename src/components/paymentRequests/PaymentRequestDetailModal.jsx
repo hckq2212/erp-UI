@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import {
     Upload, Image as ImageIcon, File as FileIcon, Loader2, Trash2, History, AlertCircle,
     Wallet, Store, Check, Paperclip, ExternalLink, Ban, Landmark, Info, Printer,
+    Zap, FileText, FileSignature, Receipt, ClipboardList,
 } from 'lucide-react';
 import {
     useReviewPaymentRequestMutation,
@@ -29,7 +30,12 @@ const canPay = (role) => ['BOD', 'ADMIN', 'ADMIN_SALE'].includes(role);
 const canCancelApproved = (role) => ['BOD', 'ADMIN'].includes(role);
 
 const MAX_FILE_MB = 15;
-const ACCEPTED_TYPES = ['image/', 'application/pdf'];
+const ACCEPTED_TYPES = [
+    'image/',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+];
 
 const HISTORY_ACTION_LABELS = {
     CREATED: 'Tạo yêu cầu',
@@ -121,22 +127,32 @@ const ProgressSteps = ({ request }) => {
     );
 };
 
-const FileLinks = ({ files, icon: Icon, tone }) =>
-    files.map((f, idx) => (
-        <a
-            key={`${f.url}-${idx}`}
-            href={f.url}
-            target='_blank'
-            rel='noreferrer'
-            className='group flex items-center gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 transition hover:border-orange-300 hover:bg-orange-50/50'
-        >
-            <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-md', tone)}>
-                <Icon size={15} />
-            </span>
-            <span className='min-w-0 flex-1 truncate text-sm text-stone-700'>{f.name || 'Tệp đính kèm'}</span>
-            <ExternalLink size={14} className='shrink-0 text-stone-300 group-hover:text-orange-500' />
-        </a>
-    ));
+const FileLinks = ({ files, icon: DefaultIcon, tone: defaultTone }) =>
+    files.map((f, idx) => {
+        const isDoc = Boolean(f.name?.match(/\.(doc|docx)$/i) || f.fileType === 'DOC');
+        const isPdf = Boolean(f.name?.match(/\.pdf$/i) || f.fileType === 'PDF');
+        const Icon = DefaultIcon || (isPdf ? FileIcon : (isDoc ? FileText : ImageIcon));
+        const tone = defaultTone || (isPdf ? 'bg-red-100 text-red-600' : (isDoc ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'));
+
+        return (
+            <a
+                key={`${f.url || f.publicId || idx}-${idx}`}
+                href={f.url}
+                target='_blank'
+                rel='noreferrer'
+                className='group flex items-center gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 transition hover:border-orange-300 hover:bg-orange-50/50'
+            >
+                <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-md', tone)}>
+                    <Icon size={15} />
+                </span>
+                <div className='min-w-0 flex-1'>
+                    <p className='truncate text-sm font-medium text-stone-700'>{f.name || 'Tệp đính kèm'}</p>
+                    {f.size ? <p className='text-[10px] text-stone-400'>{(f.size / 1024).toFixed(0)} KB</p> : null}
+                </div>
+                <ExternalLink size={14} className='shrink-0 text-stone-300 group-hover:text-orange-500' />
+            </a>
+        );
+    });
 
 const RequestHistory = ({ history }) => {
     if (!history || history.length === 0) return null;
@@ -210,9 +226,9 @@ const SupplementSection = ({ request, onDone }) => {
     const handleFilesSelected = async (fileList) => {
         const files = Array.from(fileList || []);
         for (const file of files) {
-            const isAccepted = ACCEPTED_TYPES.some((t) => file.type.startsWith(t));
+            const isAccepted = ACCEPTED_TYPES.some((t) => file.type.startsWith(t)) || Boolean(file.name.match(/\.(docx?|pdf|jpe?g|png|webp)$/i));
             if (!isAccepted) {
-                setError(`File "${file.name}" không phải ảnh hoặc PDF`);
+                setError(`File "${file.name}" không hợp lệ (hỗ trợ Ảnh, PDF hoặc Word .doc/.docx)`);
                 continue;
             }
             if (file.size > MAX_FILE_MB * 1024 * 1024) {
@@ -242,7 +258,7 @@ const SupplementSection = ({ request, onDone }) => {
             return;
         }
         if (isUploadingFiles) {
-            setError('Vui lòng đợi file hóa đơn tải lên xong');
+            setError('Vui lòng đợi file tải lên xong');
             return;
         }
         const readyFiles = newFiles.filter((f) => !f.uploading);
@@ -254,7 +270,7 @@ const SupplementSection = ({ request, onDone }) => {
                 dueDate,
                 note: note.trim() || undefined,
                 addInvoiceImages: readyFiles.filter((f) => f.fileType === 'IMAGE'),
-                addInvoicePdfs: readyFiles.filter((f) => f.fileType === 'PDF'),
+                addInvoicePdfs: readyFiles.filter((f) => f.fileType !== 'IMAGE'),
             }).unwrap();
             onDone?.();
         } catch (err) {
@@ -267,17 +283,17 @@ const SupplementSection = ({ request, onDone }) => {
             <div className='space-y-3'>
                 <RequestFields {...{ content, setContent, amount, setAmount, dueDate, setDueDate }} />
                 <div>
-                    <label className={labelCls}>Đính kèm hoá đơn bổ sung (nếu có)</label>
+                    <label className={labelCls}>Đính kèm tài liệu / chứng từ bổ sung (nếu có)</label>
                     <div
                         onClick={() => fileInputRef.current?.click()}
                         className='flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-orange-200 bg-white px-4 py-4 text-center hover:border-orange-400 hover:bg-orange-50'
                     >
                         <Upload size={18} className='text-orange-400' />
-                        <p className='text-xs text-stone-500'><span className='font-semibold text-orange-600'>Chọn file</span> để bổ sung</p>
+                        <p className='text-xs text-stone-500'><span className='font-semibold text-orange-600'>Chọn file</span> để bổ sung (Word, PDF, Ảnh)</p>
                         <input
                             ref={fileInputRef}
                             type='file'
-                            accept='image/*,application/pdf'
+                            accept='image/*,application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                             multiple
                             onChange={(e) => { handleFilesSelected(e.target.files); e.target.value = ''; }}
                             className='hidden'
@@ -531,6 +547,11 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                         <Store size={12} /> Thuê vendor
                     </span>
                 )}
+                {request.isUrgent && (
+                    <span className='inline-flex items-center gap-1 rounded-md bg-amber-100 text-amber-800 px-2 py-1 text-xs font-bold ring-1 ring-amber-300'>
+                        <Zap size={12} className='fill-amber-600 text-amber-600' /> GẤP (Chi sau quay)
+                    </span>
+                )}
                 <StatusBadge label={APPROVAL_LABELS[request.approvalStatus] || request.approvalStatus} tone={APPROVAL_TONE[request.approvalStatus]} />
                 {request.approvalStatus === 'APPROVED' && (
                     <StatusBadge label={PAYMENT_LABELS[request.paymentStatus] || request.paymentStatus} tone={PAYMENT_TONE[request.paymentStatus]} />
@@ -630,15 +651,90 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                     )}
                 </Section>
 
-                {/* Hóa đơn */}
-                {(invoiceImages.length > 0 || invoicePdfs.length > 0) && (
-                    <Section title={`Hóa đơn đính kèm (${invoiceImages.length + invoicePdfs.length})`} icon={Paperclip}>
-                        <div className='space-y-2'>
-                            <FileLinks files={invoiceImages} icon={ImageIcon} tone='bg-orange-100 text-orange-600' />
-                            <FileLinks files={invoicePdfs} icon={FileIcon} tone='bg-red-100 text-red-600' />
-                        </div>
-                    </Section>
-                )}
+                {/* Hồ sơ chứng từ đính kèm (Phân loại theo quy chuẩn Getvini) */}
+                {(() => {
+                    const allDocs = [...(invoiceImages || []), ...(invoicePdfs || [])];
+                    if (allDocs.length === 0) return null;
+
+                    const laborContracts = allDocs.filter((f) => f.docType === 'LABOR_CONTRACT');
+                    const acceptanceMinutes = allDocs.filter((f) => f.docType === 'ACCEPTANCE_MINUTE');
+                    const addendums = allDocs.filter((f) => f.docType === 'ADDENDUM');
+                    const vatInvoices = allDocs.filter((f) => f.docType === 'VAT_INVOICE');
+                    const otherDocs = allDocs.filter((f) => !f.docType);
+
+                    const hasGrouped = laborContracts.length > 0 || acceptanceMinutes.length > 0 || addendums.length > 0 || vatInvoices.length > 0;
+
+                    return (
+                        <Section title={`Hồ sơ chứng từ đính kèm (${allDocs.length})`} icon={Paperclip}>
+                            {hasGrouped ? (
+                                <div className='space-y-3.5'>
+                                    {laborContracts.length > 0 && (
+                                        <div>
+                                            <p className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-stone-700'>
+                                                <FileSignature size={14} className='text-orange-500' />
+                                                1. Hợp đồng khoán việc ({laborContracts.length})
+                                            </p>
+                                            <div className='space-y-1.5'>
+                                                <FileLinks files={laborContracts} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {acceptanceMinutes.length > 0 && (
+                                        <div>
+                                            <p className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-stone-700'>
+                                                <ClipboardList size={14} className='text-orange-500' />
+                                                2. Biên bản nghiệm thu ({acceptanceMinutes.length})
+                                            </p>
+                                            <div className='space-y-1.5'>
+                                                <FileLinks files={acceptanceMinutes} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {addendums.length > 0 && (
+                                        <div>
+                                            <p className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-stone-700'>
+                                                <FileText size={14} className='text-orange-500' />
+                                                3. Phụ lục phát sinh ({addendums.length})
+                                            </p>
+                                            <div className='space-y-1.5'>
+                                                <FileLinks files={addendums} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {vatInvoices.length > 0 && (
+                                        <div>
+                                            <p className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-stone-700'>
+                                                <Receipt size={14} className='text-orange-500' />
+                                                4. Hóa đơn VAT ({vatInvoices.length})
+                                            </p>
+                                            <div className='space-y-1.5'>
+                                                <FileLinks files={vatInvoices} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {otherDocs.length > 0 && (
+                                        <div>
+                                            <p className='mb-1.5 text-xs font-bold text-stone-700'>
+                                                Chứng từ khác ({otherDocs.length})
+                                            </p>
+                                            <div className='space-y-1.5'>
+                                                <FileLinks files={otherDocs} />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className='space-y-2'>
+                                    <FileLinks files={allDocs} />
+                                </div>
+                            )}
+                        </Section>
+                    );
+                })()}
 
                 {/* Thông tin đã chi */}
                 {isPaid && (
