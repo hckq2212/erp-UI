@@ -1,3 +1,4 @@
+import { budgetLockedMessage } from '../../components/quotations/serviceBudget';
 import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
 import { X, Plus, Trash2, Upload, Link as LinkIcon, Building2, FileText, MapPin, Calendar, Target, TrendingUp, Clock, Briefcase, ChevronDown, RotateCcw } from 'lucide-react';
 import { useCreateOpportunityMutation, useSaveOpportunityDraftMutation } from '../../api/opportunities';
@@ -170,6 +171,8 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJ
           Ngân sách
           <input
             type="text"
+            disabled={availableServices.find(service => String(service.id) === String(item.serviceId))?.isBudget !== true}
+            title={budgetLockedMessage}
             value={formatNumber(item.budget)}
             onChange={(e) => onServiceChange(index, 'budget', e.target.value)}
             placeholder="Ngân sách"
@@ -449,6 +452,8 @@ const PackageItem = memo(({
                   Ngân sách
                   <input
                     type="text"
+                    disabled={availableServices.find(service => String(service.id) === String(serviceItem.serviceId))?.isBudget !== true}
+                    title={budgetLockedMessage}
                     value={formatNumber(serviceItem.budget || 0)}
                     onChange={(e) =>
                       onServiceChange(
@@ -727,6 +732,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
     const standaloneServices = (initialData.services || [])
       .filter(s => !s.isPackageService)
       .map(s => ({
+        opportunityServiceId: isEditMode ? s.id : undefined,
         serviceId: s.serviceId || s.service?.id || '',
         quantity: Number(s.quantity) || 1,
         budget: Number(s.budget) || 0,
@@ -770,6 +776,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
         '',
       quantity: Number(pkg.quantity) || 1,
       services: (pkg.services || pkg.items || []).map(s => ({
+        opportunityServiceId: isEditMode ? s.id : undefined,
         serviceId: s.serviceId || s.service?.id || '',
         quantity: Number(s.quantity) || 1,
         budget: Number(s.budget) || 0,
@@ -813,7 +820,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
     setExistingAttachments(otherAttachments);
     setFiles([]);
     setErrors({});
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, isEditMode]);
 
   useEffect(() => {
     if (!isOpen || initialData) return;
@@ -925,6 +932,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
   const handlePackageServiceChange = useCallback((pkgIndex, sIndex, field, value) => {
     setSelectedPackages(prev => {
       if (!updatedPackageExists(prev, pkgIndex)) return prev;
+      if (field === 'budget' && services.find(service => String(service.id) === String(prev[pkgIndex].services[sIndex].serviceId))?.isBudget !== true) return prev;
 
       const updated = [...prev];
       const pkg = { ...updated[pkgIndex] };
@@ -955,6 +963,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
       }
 
       if (field === 'serviceId') {
+        pkgServices[sIndex].budget = 0;
+        pkgServices[sIndex].opportunityServiceId = undefined;
         const service = services.find(s => String(s.id) === String(value));
         pkgServices[sIndex].sellingPrice = getServiceCostPrice(service);
         pkgServices[sIndex].jobs = (service?.serviceJobs || []).map(serviceJob => ({
@@ -1045,6 +1055,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
 
   const handleServiceChange = useCallback((index, field, value) => {
     setSelectedServices(prev => {
+      if (field === 'budget' && services.find(service => String(service.id) === String(prev[index].serviceId))?.isBudget !== true) return prev;
       const updated = [...prev];
       updated[index] = {
         ...updated[index],
@@ -1055,6 +1066,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
             : value
       };
       if (field === 'serviceId') {
+        updated[index].budget = 0;
+        updated[index].opportunityServiceId = undefined;
         const service = services.find(s => String(s.id) === String(value));
         updated[index].jobs = (service?.serviceJobs || []).map(serviceJob => ({
           jobId: serviceJob.job?.id || serviceJob.jobId,
@@ -1322,6 +1335,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
         .filter(s => s.serviceId)
         .map(s => ({
           id: s.serviceId,
+          opportunityServiceId: s.opportunityServiceId,
           quantity: s.quantity,
           budget: Number(s.budget || 0),
           jobs: s.jobs || []
@@ -1336,6 +1350,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
           quantity: Number(pkg.quantity) || 1,
           services: (pkg.services || []).filter(s => s.serviceId).map(s => ({
             serviceId: s.serviceId,
+            opportunityServiceId: s.opportunityServiceId,
             quantity: s.quantity,
             budget: Number(s.budget || 0),
             sellingPrice: s.sellingPrice,

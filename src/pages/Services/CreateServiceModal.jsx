@@ -19,6 +19,7 @@ const serviceSchema = z.object({
     unit: z.string().min(1, 'Đơn vị tính là bắt buộc'),
     jobIds: z.array(z.string()).optional().default([]),
     isAI: z.boolean().optional().default(false),
+    isBudget: z.boolean().optional().default(false),
 });
 
 export const CreateServiceModal = ({ isOpen, onClose }) => {
@@ -43,6 +44,7 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
             unit: '',
             jobIds: [],
             isAI: false,
+            isBudget: false,
         },
     });
 
@@ -172,6 +174,11 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
                             </label>
                         </div>
                     </div>
+
+                    <label className="flex min-h-11 items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 cursor-pointer">
+                        <input type="checkbox" {...register('isBudget')} className="h-4 w-4 rounded border-gray-300 accent-[#F38820]" />
+                        <span>Cho phép nhập ngân sách</span>
+                    </label>
 
                     {/* Hạng mục thực hiện section */}
                     <div className="space-y-3 pt-2">

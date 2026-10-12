@@ -33,6 +33,8 @@ const createPricingItem = (service, overrides = {}) => {
   const selectedPrice = overrides.priceType === 'minimum' ? minPrice : overrides.priceType === 'recommended' ? recommendedPrice : customPrice;
   return {
     key: overrides.key,
+    id: overrides.id,
+    isBudget: service?.isBudget === true,
     serviceId: overrides.serviceId || service?.id,
     opportunityServiceId: overrides.opportunityServiceId,
     serviceName: overrides.serviceName || service?.name || 'Dịch vụ',
@@ -88,10 +90,10 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
         ? (opportunity?.packages || []).flatMap((pkg) => pkg.services || []).find((service) => String(service.service?.id || service.serviceId) === String(serviceId))
         : (opportunity?.services || []).find((service) => !service.opportunityPackageId && String(service.service?.id || service.serviceId) === String(serviceId));
       return createPricingItem(detail.service || {}, {
-        serviceId, serviceName: detail.service?.name, quantity: detail.quantity,
+        id: detail.id, serviceId, serviceName: detail.service?.name, quantity: detail.quantity,
         opportunityServiceId: detail.opportunityServiceId || detail.opportunityService?.id,
         packageQuantity: detail.packageQuantity, norm: Number(detail.quantity || 1) / Number(detail.packageQuantity || 1),
-        packageName: detail.packageName || 'STANDALONE', packageKey: detail.packageKey || detail.opportunityService?.opportunityPackageId || detail.servicePackageId || detail.packageName, servicePackageId: detail.servicePackageId,
+        packageName: detail.packageName || 'STANDALONE', packageKey: detail.packageKey, servicePackageId: detail.servicePackageId,
         unit: detail.service?.unit || detail.unit, costPrice: detail.costAtSale, budget: detail.budget, sellingPrice: detail.sellingPrice,
         allowZeroSellingPrice: true, jobs: opportunityService?.jobs || detail.service?.serviceJobs || [],
       });
@@ -151,7 +153,7 @@ export const QuotationModal = ({ opportunity, isOpen, onClose, onSubmit, editQuo
     const payload = {
       note: notes,
       totalAmount: getServicePricingTotals(items).totalWithVat,
-      details: items.map((item) => ({ serviceId: item.serviceId, opportunityServiceId: item.opportunityServiceId, quantity: item.quantity, sellingPrice: item.selectedPrice, costAtSale: item.costPrice, budget: Number(item.budget || 0), name: item.serviceName, packageQuantity: item.packageQuantity || 1, packageName: item.packageName !== 'STANDALONE' ? item.packageName : undefined, packageKey: item.packageName !== 'STANDALONE' ? item.packageKey : undefined, servicePackageId: item.servicePackageId, isPackageService: item.packageName !== 'STANDALONE' })),
+      details: items.map((item) => ({ id: item.id, serviceId: item.serviceId, opportunityServiceId: item.opportunityServiceId, quantity: item.quantity, sellingPrice: item.selectedPrice, costAtSale: item.costPrice, budget: Number(item.budget || 0), name: item.serviceName, packageQuantity: item.packageQuantity || 1, packageName: item.packageName !== 'STANDALONE' ? item.packageName : undefined, packageKey: item.packageName !== 'STANDALONE' ? item.packageKey : undefined, servicePackageId: item.servicePackageId, isPackageService: item.packageName !== 'STANDALONE' })),
     };
     if (isEditMode) {
       if (editQuotation.status === 'REJECTED') { payload.status = 'DRAFT'; payload.description = ''; }
