@@ -2,13 +2,19 @@ import { useMemo, useRef, useState } from 'react';
 import {
     Briefcase, ClipboardList, Calendar, Wallet, Info,
     Upload, Image as ImageIcon, File as FileIcon, Loader2, Trash2, AlertCircle,
-    Copy, Check, FileText, Zap, FileSignature, Receipt
+    Copy, Check, FileText, Zap, FileSignature, Receipt,
+    TrendingUp, AlertTriangle, ShieldCheck, HelpCircle, Layers
 } from 'lucide-react';
 import { useGetTasksByProjectQuery, useGetTasksQuery } from '../../api/tasks';
-import { useUploadPaymentRequestInvoiceFileMutation, useGetPaymentRequestsQuery } from '../../api/paymentRequests';
+import {
+    useUploadPaymentRequestInvoiceFileMutation,
+    useGetPaymentRequestsQuery,
+    useGetServiceBudgetQuery
+} from '../../api/paymentRequests';
 import { useGetMeQuery } from '../../api/auth';
 import { cn } from '../../utils/cn';
 import { ModalShell, ModalHeader, AmountInput } from './PaymentRequestParts';
+import { ServiceBudgetBox } from './ServiceBudgetBox';
 import { inputCls, labelCls, btnPrimary, btnSecondary } from './paymentRequestConfig';
 
 const MAX_FILE_MB = 15;
@@ -205,7 +211,7 @@ const DocumentUploadBox = ({
     };
 
     return (
-        <div className='rounded-xl border border-stone-200 bg-white p-3 space-y-2 transition hover:border-orange-200'>
+        <div className='rounded-xl border border-stone-200 bg-white p-3 space-y-2 transition hover:border-gray-200'>
             <div className='flex items-center justify-between'>
                 <div className='flex items-center gap-2'>
                     <div className='flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600 shrink-0'>
@@ -229,7 +235,7 @@ const DocumentUploadBox = ({
                         'inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-[11px] font-medium transition',
                         isFull
                             ? 'border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed'
-                            : 'border-stone-200 bg-stone-50 text-stone-700 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 disabled:opacity-50'
+                            : 'border-stone-200 bg-stone-50 text-stone-700 hover:border-gray-300 hover:bg-orange-50 hover:text-orange-600 disabled:opacity-50'
                     )}
                     title={isFull ? `Đã đạt tối đa ${maxFiles} file` : 'Tải file'}
                 >
@@ -261,7 +267,7 @@ const DocumentUploadBox = ({
                     onClick={() => !isFull && inputRef.current?.click()}
                     className={cn(
                         'flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed py-2 px-3 text-center transition',
-                        isDragging ? 'border-orange-400 bg-orange-50' : 'border-stone-200 hover:border-orange-300 hover:bg-orange-50/30'
+                        isDragging ? 'border-gray-400 bg-orange-50' : 'border-stone-200 hover:border-gray-300 hover:bg-orange-50/30'
                     )}
                 >
                     <Upload size={13} className='text-stone-400 shrink-0' />
@@ -357,6 +363,18 @@ const DocumentUploadBox = ({
     );
 };
 
+// Kiểm tra một công việc có thuộc dịch vụ có quản lý ngân sách (isBudget === true) hay không
+const isTaskBudgetService = (task) => {
+    if (!task) return false;
+    return (
+        task.contractService?.service?.isBudget === true ||
+        task.contractService?.isBudget === true ||
+        task.opportunityServiceJob?.opportunityService?.service?.isBudget === true ||
+        task.mappedService?.isBudget === true ||
+        task.isBudget === true
+    );
+};
+
 export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitting, currentUserId }) => {
     const [type, setType] = useState('PROJECT');
     const [projectId, setProjectId] = useState('');
@@ -364,15 +382,19 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
     const [content, setContent] = useState('');
     const [amount, setAmount] = useState('');
     const [dueDate, setDueDate] = useState('');
+    const [settlementDueDate, setSettlementDueDate] = useState('');
+    const [overBudgetReason, setOverBudgetReason] = useState('');
     const [isUrgent, setIsUrgent] = useState(false);
     const [autoStandardizeFileName, setAutoStandardizeFileName] = useState(true);
     const [attachedFiles, setAttachedFiles] = useState([]); // { name, standardName, originalName, url, size, fileType, publicId, uploading?, tempId, docType }
     const [error, setError] = useState('');
     const [hasSubmitted, setHasSubmitted] = useState(false);
 
+    const isProjectBased = type === 'PROJECT' || type === 'ADVANCE';
+
     const { data: projectTasks = [], isFetching: isLoadingTasks, isError: isTasksError } = useGetTasksByProjectQuery(
         projectId,
-        { skip: !projectId || type !== 'PROJECT' }
+        { skip: !projectId || !isProjectBased }
     );
     const { data: userTasksData, isFetching: isLoadingOtherTasks, isError: isOtherTasksError } = useGetTasksQuery(
         { assigneeId: currentUserId, limit: 500 },
@@ -383,8 +405,21 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
 
     const { data: projectRequestsData } = useGetPaymentRequestsQuery(
         { projectId, limit: 100 },
-        { skip: !projectId || type !== 'PROJECT' }
+        { skip: !projectId || !isProjectBased }
     );
+
+    const { data: budgetInfo, isFetching: isLoadingBudget } = useGetServiceBudgetQuery(
+        { projectId, taskId },
+        { skip: !projectId || !taskId || !isProjectBased }
+    );
+
+    const isOverBudgetLevel3 = useMemo(() => {
+        if (!budgetInfo?.hasService || !budgetInfo?.hasTotalServiceBudget) return false;
+        const numAmount = Number(amount) || 0;
+        if (numAmount <= 0) return false;
+        const remainingTotal = Number(budgetInfo.remainingTotalServiceBudget) || 0;
+        return remainingTotal <= 0 || numAmount > remainingTotal;
+    }, [budgetInfo, amount]);
 
     const existingProjectFileNames = useMemo(() => {
         const names = new Set();
@@ -415,7 +450,16 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
     };
 
     const myProjectTasks = useMemo(
-        () => projectTasks.filter((t) => t.assigneeId === currentUserId || t.assignee?.id === currentUserId),
+        () => projectTasks.filter((t) => {
+            const isAssigned = t.assigneeId === currentUserId || t.assignee?.id === currentUserId;
+            if (!isAssigned) return false;
+            return isTaskBudgetService(t);
+        }),
+        [projectTasks, currentUserId]
+    );
+
+    const hasAnyAssignedTaskInProject = useMemo(
+        () => projectTasks.some((t) => t.assigneeId === currentUserId || t.assignee?.id === currentUserId),
         [projectTasks, currentUserId]
     );
 
@@ -611,7 +655,7 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
         setError('');
         setHasSubmitted(true);
 
-        if (type === 'PROJECT') {
+        if (isProjectBased) {
             if (!projectId) {
                 setError('Vui lòng chọn dự án');
                 return;
@@ -637,6 +681,16 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
             return;
         }
 
+        if (type === 'ADVANCE' && !settlementDueDate) {
+            setError('Vui lòng chọn hoặc nhập hạn hoàn ứng dự kiến cho phiếu tạm ứng');
+            return;
+        }
+
+        if (isOverBudgetLevel3 && (!overBudgetReason || !overBudgetReason.trim())) {
+            setError('Yêu cầu thanh toán vượt ngân sách dịch vụ dự án. Vui lòng nhập lý do giải trình.');
+            return;
+        }
+
         if (isUploadingFiles) {
             setError('Vui lòng đợi file tải lên hoàn tất trước khi gửi');
             return;
@@ -650,11 +704,13 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
         try {
             await onSubmit({
                 type,
-                projectId: type === 'PROJECT' ? projectId : undefined,
+                projectId: isProjectBased ? projectId : undefined,
                 taskId: taskId || undefined,
                 content: content.trim(),
                 amount: Number(amount),
                 dueDate,
+                settlementDueDate: type === 'ADVANCE' ? settlementDueDate : undefined,
+                overBudgetReason: overBudgetReason?.trim() || undefined,
                 isUrgent,
                 invoiceImages,
                 invoicePdfs,
@@ -664,18 +720,19 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
         }
     };
 
-    const isProjectMissing = hasSubmitted && type === 'PROJECT' && !projectId;
-    const isTaskMissing = hasSubmitted && type === 'PROJECT' && !taskId;
+    const isProjectMissing = hasSubmitted && isProjectBased && !projectId;
+    const isTaskMissing = hasSubmitted && isProjectBased && !taskId;
     const isContentMissing = hasSubmitted && !content.trim();
     const isAmountMissing = hasSubmitted && (!amount || Number(amount) <= 0);
     const isDueDateMissing = hasSubmitted && !dueDate;
+    const isSettlementDueDateMissing = hasSubmitted && type === 'ADVANCE' && !settlementDueDate;
 
     const typeBtn = (value, Icon, label, onPick) => (
         <button
             type='button'
             onClick={onPick}
             className={cn(
-                'flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition',
+                'flex items-center justify-center gap-1.5 rounded-md px-2.5 py-2 text-xs font-semibold sm:text-sm transition',
                 type === value ? 'bg-white text-orange-600 shadow-sm ring-1 ring-orange-200' : 'text-stone-500 hover:text-stone-700'
             )}
         >
@@ -687,8 +744,8 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
         <ModalShell onClose={requestClose} maxWidth='max-w-xl'>
             <ModalHeader
                 icon={Wallet}
-                title='Tạo yêu cầu thanh toán'
-                subtitle='Chi phí sản xuất, khoán việc & gửi Admin Sale duyệt'
+                title={type === 'ADVANCE' ? 'Tạo phiếu tạm ứng sản xuất' : 'Tạo yêu cầu thanh toán'}
+                subtitle={type === 'ADVANCE' ? 'Tạm ứng kinh phí thực hiện & quyết toán hoàn ứng sau khi hoàn thành' : 'Chi phí sản xuất, khoán việc & gửi Admin Sale duyệt'}
                 onClose={requestClose}
             />
 
@@ -698,56 +755,85 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                     <label className={labelCls}>
                         Loại yêu cầu <span className='text-red-500'>*</span>
                     </label>
-                    <div className='grid grid-cols-2 gap-1 rounded-lg bg-orange-50 p-1'>
+                    <div className='grid grid-cols-3 gap-1 rounded-lg bg-orange-50 p-1'>
                         {typeBtn('PROJECT', Briefcase, 'Theo dự án', () => { setType('PROJECT'); handleProjectChange(projectId, 'PROJECT'); })}
                         {typeBtn('OTHER_WORK', ClipboardList, 'Công việc khác', () => { setType('OTHER_WORK'); handleProjectChange('', 'OTHER_WORK'); })}
+                        {typeBtn('ADVANCE', Wallet, 'Tạm ứng', () => { setType('ADVANCE'); handleProjectChange(projectId, 'ADVANCE'); })}
                     </div>
                     <p className='mt-2 flex items-start gap-1.5 text-xs text-stone-500'>
                         <Info size={13} className='mt-0.5 shrink-0 text-orange-500' />
-                        Khi giao việc cho vendor, hệ thống tự tạo sẵn yêu cầu (thuộc loại “Theo dự án”), bạn không cần tạo thủ công.
+                        {type === 'ADVANCE' ? (
+                            <span>Phiếu tạm ứng chi phí sản xuất: Kế toán duyệt và chi tiền trước; nhân sự hoàn ứng đầy đủ chứng từ sau khi nghiệm thu.</span>
+                        ) : (
+                            <span>Khi giao việc cho vendor, hệ thống tự tạo sẵn yêu cầu (thuộc loại “Theo dự án”), bạn không cần tạo thủ công.</span>
+                        )}
                     </p>
                 </div>
 
                 {/* 2. Chọn dự án & Công việc */}
-                {type === 'PROJECT' && (
-                    <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
-                        <div>
-                            <label className={labelCls}>
-                                Dự án <span className='text-red-500'>*</span>
-                            </label>
-                            <select
-                                value={projectId}
-                                onChange={(e) => handleProjectChange(e.target.value)}
-                                className={cn(inputCls, isProjectMissing && 'border-red-400 focus:border-red-500 bg-red-50/20')}
-                            >
-                                <option value=''>-- Chọn dự án --</option>
-                                {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                            </select>
+                {isProjectBased && (
+                    <div className='space-y-3'>
+                        <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                            <div>
+                                <label className={labelCls}>
+                                    Dự án <span className='text-red-500'>*</span>
+                                </label>
+                                <select
+                                    value={projectId}
+                                    onChange={(e) => handleProjectChange(e.target.value)}
+                                    className={cn(inputCls, isProjectMissing && 'border-red-400 focus:border-red-500 bg-red-50/20')}
+                                >
+                                    <option value=''>-- Chọn dự án --</option>
+                                    {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className={labelCls}>
+                                    Công việc của bạn <span className='text-red-500'>*</span>
+                                </label>
+                                <select
+                                    value={taskId}
+                                    onChange={(e) => { setTaskId(e.target.value); setError(''); }}
+                                    disabled={!projectId || isLoadingTasks}
+                                    className={cn(inputCls, isTaskMissing && 'border-red-400 focus:border-red-500 bg-red-50/20')}
+                                >
+                                    <option value=''>
+                                        {isLoadingTasks ? 'Đang tải công việc...' : '-- Chọn công việc --'}
+                                    </option>
+                                    {myProjectTasks.map((t) => {
+                                        const serviceName = t.contractService?.service?.name || t.contractService?.name || t.mappedService?.name;
+                                        return (
+                                            <option key={t.id} value={t.id}>
+                                                {t.name}{serviceName ? ` (Dịch vụ: ${serviceName})` : ''}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                                {projectId && !isLoadingTasks && !isTasksError && myProjectTasks.length === 0 && (
+                                    <p className='mt-1 text-xs text-orange-600'>
+                                        {hasAnyAssignedTaskInProject
+                                            ? 'Dự án này chưa có công việc nào của bạn thuộc dịch vụ có quản lý ngân sách (isBudget).'
+                                            : 'Bạn chưa được giao công việc nào trong dự án này'}
+                                    </p>
+                                )}
+                                {isTasksError && (
+                                    <p className='mt-1 flex items-center gap-1 text-xs text-red-600'>
+                                        <AlertCircle size={12} /> Không tải được danh sách công việc
+                                    </p>
+                                )}
+                            </div>
                         </div>
-                        <div>
-                            <label className={labelCls}>
-                                Công việc của bạn <span className='text-red-500'>*</span>
-                            </label>
-                            <select
-                                value={taskId}
-                                onChange={(e) => { setTaskId(e.target.value); setError(''); }}
-                                disabled={!projectId || isLoadingTasks}
-                                className={cn(inputCls, isTaskMissing && 'border-red-400 focus:border-red-500 bg-red-50/20')}
-                            >
-                                <option value=''>
-                                    {isLoadingTasks ? 'Đang tải công việc...' : '-- Chọn công việc --'}
-                                </option>
-                                {myProjectTasks.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                            </select>
-                            {projectId && !isLoadingTasks && !isTasksError && myProjectTasks.length === 0 && (
-                                <p className='mt-1 text-xs text-orange-600'>Bạn chưa được giao công việc nào trong dự án này</p>
-                            )}
-                            {isTasksError && (
-                                <p className='mt-1 flex items-center gap-1 text-xs text-red-600'>
-                                    <AlertCircle size={12} /> Không tải được danh sách công việc
-                                </p>
-                            )}
-                        </div>
+
+                        {/* Box Đối Soát Ngân Sách Dịch Vụ 2 Tầng */}
+                        {taskId && (
+                            <ServiceBudgetBox
+                                budgetInfo={budgetInfo}
+                                isLoading={isLoadingBudget}
+                                amount={amount}
+                                overBudgetReason={overBudgetReason}
+                                setOverBudgetReason={setOverBudgetReason}
+                            />
+                        )}
                     </div>
                 )}
 
@@ -792,7 +878,7 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                         value={content}
                         onChange={(e) => { setContent(e.target.value); setError(''); }}
                         rows={2}
-                        placeholder='Mô tả nội dung chi phí sản xuất, họ tên đối tác/talent, công việc...'
+                        placeholder={type === 'ADVANCE' ? 'Mô tả mục đích tạm ứng kinh phí sản xuất, các khoản dự kiến chi...' : 'Mô tả nội dung chi phí sản xuất, họ tên đối tác/talent, công việc...'}
                         className={cn(inputCls, isContentMissing && 'border-red-400 focus:border-red-500 bg-red-50/20')}
                     />
                 </div>
@@ -801,7 +887,7 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                 <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
                     <div>
                         <label className={labelCls}>
-                            Số tiền <span className='text-red-500'>*</span>
+                            Số tiền {type === 'ADVANCE' ? 'tạm ứng' : ''} <span className='text-red-500'>*</span>
                         </label>
                         <AmountInput
                             value={amount}
@@ -811,7 +897,7 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                     </div>
                     <div>
                         <label className={labelCls}>
-                            Thời hạn thanh toán <span className='text-red-500'>*</span>
+                            Thời hạn thanh toán {type === 'ADVANCE' ? '(nhận tiền)' : ''} <span className='text-red-500'>*</span>
                         </label>
                         <DueDateField
                             value={dueDate}
@@ -820,6 +906,25 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                         />
                     </div>
                 </div>
+
+                {/* Hạn hoàn ứng dự kiến cho phiếu tạm ứng */}
+                {type === 'ADVANCE' && (
+                    <div className='rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 space-y-1.5'>
+                        <div className='flex items-center justify-between'>
+                            <label className={labelCls}>
+                                Hạn hoàn ứng dự kiến <span className='text-red-500'>*</span>
+                            </label>
+                            <span className='text-[11px] text-indigo-700 font-medium'>
+                                Thời điểm dự kiến nộp đủ chứng từ quyết toán
+                            </span>
+                        </div>
+                        <DueDateField
+                            value={settlementDueDate}
+                            onChange={(val) => { setSettlementDueDate(val); setError(''); }}
+                            hasError={isSettlementDueDateMissing}
+                        />
+                    </div>
+                )}
 
                 {/* 6. Cờ Thanh toán gấp (Studio yêu cầu thanh toán ngay) */}
                 <label className='flex items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50/70 p-3 cursor-pointer hover:bg-amber-100/60 transition'>
@@ -840,11 +945,26 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                     </div>
                 </label>
 
+                {/* Banner giải thích cho phiếu tạm ứng */}
+                {type === 'ADVANCE' && (
+                    <div className='rounded-xl border border-indigo-200 bg-indigo-50/70 p-3.5 text-xs text-indigo-900'>
+                        <div className='flex items-start gap-2'>
+                            <Info size={16} className='text-indigo-600 shrink-0 mt-0.5' />
+                            <div>
+                                <p className='font-bold'>Chính sách hoàn ứng sản xuất 2 pha:</p>
+                                <p className='mt-0.5 text-indigo-800 leading-relaxed'>
+                                    Phiếu tạm ứng <strong>chưa bắt buộc nộp hóa đơn/biên bản nghiệm thu ngay</strong>. Bạn có thể đính kèm Kế hoạch/Dự toán sơ bộ bên dưới (nếu có). Sau khi hoàn thành công việc và giải ngân xong, bạn sẽ nộp đầy đủ 4 mục chứng từ thực tế tại bước <strong>Quyết toán hoàn ứng</strong>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* 7. Bộ Hồ Sơ Chứng Từ Sản Xuất (Đều là TÙY CHỌN / OPTIONAL) */}
                 <div className='space-y-2.5 pt-1'>
                     <div className='flex items-center justify-between'>
                         <label className={labelCls}>
-                            Hồ sơ chứng từ sản xuất <span className='text-xs font-normal text-stone-400'>(tùy chọn)</span>
+                            {type === 'ADVANCE' ? 'Hồ sơ dự toán / Kế hoạch tạm ứng' : 'Hồ sơ chứng từ sản xuất'} <span className='text-xs font-normal text-stone-400'>(tùy chọn)</span>
                         </label>
                         <span className='text-[11px] text-stone-400'>
                             Đã tải: {attachedFiles.length} file
@@ -852,12 +972,12 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                     </div>
 
                     {/* Option C: Tự động đổi tên theo chuẩn Getvini */}
-                    <label className='flex items-center gap-2.5 rounded-lg border border-orange-200 bg-orange-50/50 p-2.5 cursor-pointer hover:bg-orange-100/50 transition'>
+                    <label className='flex items-center gap-2.5 rounded-lg border border-gray-200 bg-orange-50/50 p-2.5 cursor-pointer hover:bg-orange-100/50 transition'>
                         <input
                             type='checkbox'
                             checked={autoStandardizeFileName}
                             onChange={(e) => handleToggleAutoStandardize(e.target.checked)}
-                            className='h-4 w-4 rounded border-orange-300 text-orange-600 focus:ring-orange-500'
+                            className='h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500'
                         />
                         <div className='min-w-0 flex-1'>
                             <span className='text-xs font-semibold text-stone-800 block'>

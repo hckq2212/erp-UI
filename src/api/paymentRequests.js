@@ -146,6 +146,58 @@ export const paymentRequestsApi = api.injectEndpoints({
             }),
             invalidatesTags: (result, error, { id }) => [{ type: 'PaymentRequests', id }],
         }),
+        getServiceBudget: builder.query({
+            query: (params) => ({
+                url: '/payment-requests/service-budget',
+                params,
+            }),
+        }),
+        recordPaymentRequest: builder.mutation({
+            query: ({ id, ...data }) => ({
+                url: `/payment-requests/${id}/record-payment`,
+                method: 'POST',
+                body: data,
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'PaymentRequests', id },
+                { type: 'PaymentRequests', id: 'LIST' },
+                { type: 'PaymentRequests', id: 'TOTAL_DEBT' },
+            ],
+        }),
+        submitSettlementPaymentRequest: builder.mutation({
+            query: ({ id, ...data }) => ({
+                url: `/payment-requests/${id}/submit-settlement`,
+                method: 'POST',
+                body: data,
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'PaymentRequests', id },
+                { type: 'PaymentRequests', id: 'LIST' },
+            ],
+        }),
+        approveSettlementPaymentRequest: builder.mutation({
+            query: ({ id, ...data }) => ({
+                url: `/payment-requests/${id}/approve-settlement`,
+                method: 'POST',
+                body: data,
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'PaymentRequests', id },
+                { type: 'PaymentRequests', id: 'LIST' },
+                { type: 'PaymentRequests', id: 'TOTAL_DEBT' },
+            ],
+        }),
+        rejectSettlementPaymentRequest: builder.mutation({
+            query: ({ id, reason }) => ({
+                url: `/payment-requests/${id}/reject-settlement`,
+                method: 'POST',
+                body: { reason },
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'PaymentRequests', id },
+                { type: 'PaymentRequests', id: 'LIST' },
+            ],
+        }),
     }),
 });
 
@@ -165,4 +217,10 @@ export const {
     useBodDecidePaymentRequestMutation,
     usePayPaymentRequestMutation,
     useUploadPaymentRequestProofMutation,
+    useGetServiceBudgetQuery,
+    useLazyGetServiceBudgetQuery,
+    useRecordPaymentRequestMutation,
+    useSubmitSettlementPaymentRequestMutation,
+    useApproveSettlementPaymentRequestMutation,
+    useRejectSettlementPaymentRequestMutation,
 } = paymentRequestsApi;

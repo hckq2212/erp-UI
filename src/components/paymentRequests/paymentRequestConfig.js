@@ -2,7 +2,14 @@ import { formatDate } from '../../utils/format';
 
 export const TYPE_LABELS = {
     PROJECT: 'Theo dự án',
+    ADVANCE: 'Tạm ứng',
     OTHER_WORK: 'Công việc khác',
+};
+
+export const TYPE_TONE = {
+    PROJECT: 'bg-blue-50 text-blue-700 border-blue-200',
+    ADVANCE: 'bg-orange-50 text-orange-700 border-gray-200',
+    OTHER_WORK: 'bg-stone-50 text-stone-700 border-stone-200',
 };
 
 export const APPROVAL_LABELS = {
@@ -19,8 +26,17 @@ export const PAYMENT_LABELS = {
     WAITING: 'Chờ thanh toán',
     DUE_SOON: 'Sắp hết hạn',
     OVERDUE: 'Hết hạn',
+    PARTIALLY_PAID: 'Đã chi một phần',
     PAID: 'Đã thanh toán',
     NOT_APPLICABLE: 'Không áp dụng',
+};
+
+export const SETTLEMENT_LABELS = {
+    NOT_APPLICABLE: 'Không áp dụng',
+    PENDING: 'Đang tạm ứng',
+    WAITING_SETTLEMENT: 'Chờ nộp quyết toán',
+    SETTLEMENT_SUBMITTED: 'Chờ duyệt quyết toán',
+    SETTLED: 'Đã hoàn ứng',
 };
 
 // Mỗi trạng thái = màu nền/chữ của badge + màu chấm tròn đầu badge.
@@ -38,8 +54,17 @@ export const PAYMENT_TONE = {
     WAITING: { badge: 'bg-stone-100 text-stone-600', dot: 'bg-stone-400' },
     DUE_SOON: { badge: 'bg-amber-50 text-amber-700', dot: 'bg-amber-400' },
     OVERDUE: { badge: 'bg-red-50 text-red-700', dot: 'bg-red-500' },
+    PARTIALLY_PAID: { badge: 'bg-blue-50 text-blue-700', dot: 'bg-blue-500' },
     PAID: { badge: 'bg-emerald-50 text-emerald-700', dot: 'bg-emerald-500' },
     NOT_APPLICABLE: { badge: 'bg-stone-100 text-stone-400', dot: 'bg-stone-300' },
+};
+
+export const SETTLEMENT_TONE = {
+    NOT_APPLICABLE: { badge: 'bg-stone-100 text-stone-400', dot: 'bg-stone-300' },
+    PENDING: { badge: 'bg-amber-50 text-amber-700', dot: 'bg-amber-500' },
+    WAITING_SETTLEMENT: { badge: 'bg-purple-50 text-purple-700', dot: 'bg-purple-500' },
+    SETTLEMENT_SUBMITTED: { badge: 'bg-blue-50 text-blue-700', dot: 'bg-blue-500' },
+    SETTLED: { badge: 'bg-emerald-50 text-emerald-700', dot: 'bg-emerald-500' },
 };
 
 // Yêu cầu thuê vendor không phải một loại riêng mà là yêu cầu 'Theo dự án' có gắn vendor:
@@ -55,7 +80,7 @@ export const fmtDate = (value) => {
 };
 
 export const inputCls =
-    'w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 disabled:bg-stone-50 disabled:text-stone-400';
+    'w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-100 disabled:bg-stone-50 disabled:text-stone-400';
 
 export const labelCls = 'mb-1 block text-xs font-medium text-stone-500';
 
@@ -66,7 +91,10 @@ export const btnSecondary =
     'inline-flex items-center justify-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-orange-50 hover:text-orange-700 disabled:cursor-not-allowed disabled:opacity-60';
 
 export const btnWarnOutline =
-    'inline-flex items-center justify-center gap-2 rounded-lg border border-orange-300 bg-white px-4 py-2 text-sm font-medium text-orange-700 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60';
+    'inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-orange-700 transition hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60';
 
 export const btnDangerOutline =
+    'inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60';
+
+export const btnDanger =
     'inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60';
