@@ -267,7 +267,7 @@ export const PaymentSettlementModal = ({ request, onClose, onSuccess }) => {
                     </div>
                 </div>
 
-                {/* 2. Bộ hồ sơ chứng từ 4 mục */}
+                {/* 2. Bộ hồ sơ chứng từ */}
                 <div className='space-y-2.5'>
                     <div className='flex items-center justify-between'>
                         <label className={labelCls}>
@@ -280,6 +280,7 @@ export const PaymentSettlementModal = ({ request, onClose, onSuccess }) => {
                     {renderDocSection('2. Hóa đơn VAT', <Receipt size={14} />, 'VAT_INVOICE', 'Hóa đơn tài chính từ bên cung ứng / vendor pháp nhân (nếu có)')}
                     {renderDocSection('3. Hợp đồng khoán việc', <FileSignature size={14} />, 'LABOR_CONTRACT', 'Hợp đồng khoán việc ký kết với nhân sự/talent thực hiện')}
                     {renderDocSection('4. Phụ lục phát sinh', <FileText size={14} />, 'ADDENDUM', 'Phụ lục hợp đồng hoặc tài liệu chứng minh chi phí phát sinh ngoài dự kiến')}
+                    {renderDocSection('5. Các hóa đơn khác', <Receipt size={14} />, 'OTHER_INVOICE', 'Hóa đơn bán lẻ, biên lai thu tiền hoặc các chứng từ chi khác (nếu có)')}
                 </div>
 
                 {/* 3. Ghi chú quyết toán */}

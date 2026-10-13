@@ -868,9 +868,10 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                     const addendums = allDocs.filter((f) => f.docType === 'ADDENDUM');
                     const vatInvoices = allDocs.filter((f) => f.docType === 'VAT_INVOICE');
                     const paymentRequestDocs = allDocs.filter((f) => f.docType === 'PAYMENT_REQUEST_DOC');
+                    const otherInvoices = allDocs.filter((f) => f.docType === 'OTHER_INVOICE');
                     const otherDocs = allDocs.filter((f) => !f.docType);
 
-                    const hasGrouped = laborContracts.length > 0 || acceptanceMinutes.length > 0 || addendums.length > 0 || vatInvoices.length > 0 || paymentRequestDocs.length > 0;
+                    const hasGrouped = laborContracts.length > 0 || acceptanceMinutes.length > 0 || addendums.length > 0 || vatInvoices.length > 0 || paymentRequestDocs.length > 0 || otherInvoices.length > 0;
 
                     return (
                         <Section title={`Hồ sơ chứng từ đính kèm (${allDocs.length})`} icon={Paperclip}>
@@ -932,6 +933,18 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                                             </p>
                                             <div className='space-y-1.5'>
                                                 <FileLinks files={paymentRequestDocs} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {otherInvoices.length > 0 && (
+                                        <div>
+                                            <p className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-stone-700'>
+                                                <Receipt size={14} className='text-orange-500' />
+                                                6. Các hóa đơn khác ({otherInvoices.length})
+                                            </p>
+                                            <div className='space-y-1.5'>
+                                                <FileLinks files={otherInvoices} />
                                             </div>
                                         </div>
                                     )}

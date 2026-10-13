@@ -102,6 +102,9 @@ const formatDocFileName = (file, docType, projectName, existingNames = new Set()
         case 'PAYMENT_REQUEST_DOC':
             docCode = 'DNTT-GETVINI';
             break;
+        case 'OTHER_INVOICE':
+            docCode = 'HDKHAC-GETVINI';
+            break;
         default:
             docCode = 'CHUNGTU-GETVINI';
     }
@@ -1356,6 +1359,20 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                         onRemove={handleRemoveFile}
                         onToggleName={handleToggleFileName}
                         onOpenCreateModal={() => setIsDocModalOpen(true)}
+                        onAddLink={handleAddLink}
+                        disabled={isSubmitting || isUploadingFiles}
+                    />
+
+                    {/* Mục 6: Các hóa đơn khác */}
+                    <DocumentUploadBox
+                        title='6. Các hóa đơn khác'
+                        icon={Receipt}
+                        docType='OTHER_INVOICE'
+                        hint='Tên file mẫu: ngày tháng năm/tên dự án/năm/HDKHAC-GETVINI (hóa đơn bán lẻ, biên lai, vé, bill khác...)'
+                        files={attachedFiles}
+                        onUpload={handleUploadForDocType}
+                        onRemove={handleRemoveFile}
+                        onToggleName={handleToggleFileName}
                         onAddLink={handleAddLink}
                         disabled={isSubmitting || isUploadingFiles}
                     />
