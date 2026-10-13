@@ -185,9 +185,9 @@ export const ServiceBudgetBox = ({
                     <div className="rounded-lg border border-stone-200/80 bg-white p-2.5 space-y-1">
                         <div className="flex items-center justify-between">
                             <span className="font-semibold text-stone-700 truncate" title={itemServiceName}>
-                                Hạng mục: {itemServiceName || 'Công việc này'}
+                                Quỹ dịch vụ: {itemServiceName || 'Dịch vụ này'}
                             </span>
-                            <span className="text-[10px] text-stone-400 bg-stone-50 px-1.5 py-0.5 rounded">Tầng 1</span>
+                            {/* <span className="text-[10px] text-stone-400 bg-stone-50 px-1.5 py-0.5 rounded">Tầng 1</span> */}
                         </div>
                         {hasItemBudget ? (
                             <div className="space-y-0.5 text-[11px] text-stone-600">
@@ -215,9 +215,9 @@ export const ServiceBudgetBox = ({
                     <div className="rounded-lg border border-stone-200/80 bg-white p-2.5 space-y-1">
                         <div className="flex items-center justify-between">
                             <span className="font-semibold text-stone-700 truncate" title={serviceName}>
-                                Tổng quỹ {serviceName || 'dịch vụ'} (Dự án)
+                                Tổng quỹ dịch vụ {serviceName || 'dịch vụ'} (Dự án)
                             </span>
-                            <span className="text-[10px] text-stone-400 bg-stone-50 px-1.5 py-0.5 rounded">Tầng 2</span>
+                            {/* <span className="text-[10px] text-stone-400 bg-stone-50 px-1.5 py-0.5 rounded">Tầng 2</span> */}
                         </div>
                         {hasTotalServiceBudget ? (
                             <div className="space-y-0.5 text-[11px] text-stone-600">
