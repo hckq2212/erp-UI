@@ -1,9 +1,9 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Briefcase, ClipboardList, Calendar, Wallet, Info,
     Upload, Image as ImageIcon, File as FileIcon, Loader2, Trash2, AlertCircle,
     Copy, Check, FileText, Zap, FileSignature, Receipt,
-    TrendingUp, AlertTriangle, ShieldCheck, HelpCircle, Layers
+    TrendingUp, AlertTriangle, ShieldCheck, HelpCircle, Layers, Link2, Sparkles, ExternalLink
 } from 'lucide-react';
 import { useGetTasksByProjectQuery, useGetTasksQuery } from '../../api/tasks';
 import {
@@ -13,8 +13,11 @@ import {
 } from '../../api/paymentRequests';
 import { useGetMeQuery } from '../../api/auth';
 import { cn } from '../../utils/cn';
+import { formatNumber, parseNumber } from '../../utils/format';
+import { readMoneyToWords } from '../../utils/numberToWordsVi';
 import { ModalShell, ModalHeader, AmountInput } from './PaymentRequestParts';
 import { ServiceBudgetBox } from './ServiceBudgetBox';
+import { PaymentRequestDocCreateModal, getPositionByRole, getDepartmentByRole, toIsoDate } from './PaymentRequestDocCreateModal';
 import { inputCls, labelCls, btnPrimary, btnSecondary } from './paymentRequestConfig';
 
 const MAX_FILE_MB = 15;
@@ -28,9 +31,16 @@ const ACCEPTED_TYPES = [
 // yyyy-MM-dd (giá trị input date / lưu trong state) <-> dd/mm/yyyy (hiển thị)
 const isoToDisplay = (iso) => {
     if (!iso) return '';
-    const [y, m, d] = iso.split('-');
-    if (!y || !m || !d) return '';
-    return `${d}/${m}/${y}`;
+    const clean = String(iso).split('T')[0].trim();
+    if (clean.includes('/')) return clean;
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+        if (parts[0].length === 4) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        return `${parts[0]}/${parts[1]}/${parts[2]}`;
+    }
+    return '';
 };
 
 const displayToIso = (display) => {
@@ -54,16 +64,17 @@ const getCurrentDateParts = () => {
 };
 
 const getNormalizedProjectName = (projectName, requestType) => {
-    if (projectName && projectName.trim()) {
-        const clean = projectName
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-zA-Z0-9_-]/g, '_')
-            .replace(/_+/g, '_')
-            .replace(/^_+|_+$/g, '');
-        if (clean) return clean;
+    const raw = (projectName || '').trim();
+    if (requestType === 'OTHER_WORK' || !raw || raw === 'Công việc khác' || raw === 'CongViecKhac' || raw === 'Cong_viec_khac') {
+        return 'CongViecKhac';
     }
-    return requestType === 'OTHER_WORK' ? 'CongViecKhac' : 'GETVINI';
+    const clean = raw
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9_-]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    return clean || 'GETVINI';
 };
 
 const formatDocFileName = (file, docType, projectName, existingNames = new Set(), forcedIndex = 0, requestType = 'PROJECT') => {
@@ -87,6 +98,9 @@ const formatDocFileName = (file, docType, projectName, existingNames = new Set()
             break;
         case 'VAT_INVOICE':
             docCode = 'HDVAT-GETVINI';
+            break;
+        case 'PAYMENT_REQUEST_DOC':
+            docCode = 'DNTT-GETVINI';
             break;
         default:
             docCode = 'CHUNGTU-GETVINI';
@@ -120,6 +134,11 @@ const formatDocFileName = (file, docType, projectName, existingNames = new Set()
 const DueDateField = ({ value, onChange, hasError }) => {
     const [text, setText] = useState(isoToDisplay(value));
     const hiddenDateRef = useRef(null);
+
+    // Đồng bộ text hiển thị khi value prop từ ngoài thay đổi (ví dụ: khi đưa từ Modal tạo mẫu vào)
+    useEffect(() => {
+        setText(isoToDisplay(value));
+    }, [value]);
 
     const syncFromIso = (iso) => setText(isoToDisplay(iso));
 
@@ -182,7 +201,8 @@ const DueDateField = ({ value, onChange, hasError }) => {
     );
 };
 
-// Component Upload chứng từ độc lập cho từng mục (HĐKV, BBNT, Phụ lục, Hóa đơn VAT)
+// Component Upload chứng từ độc lập cho từng mục (HĐKV, BBNT, Phụ lục, Hóa đơn VAT, Giấy ĐNTT)
+// Hỗ trợ 2 chế độ: [ Tải tệp từ máy ] | [ Nhập liên kết (URL) ]
 const DocumentUploadBox = ({
     title,
     icon: BoxIcon,
@@ -193,11 +213,18 @@ const DocumentUploadBox = ({
     onUpload,
     onRemove,
     onToggleName,
+    onOpenCreateModal,
+    onAddLink,
     disabled,
     maxFiles = 5
 }) => {
     const inputRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
+    const [inputMode, setInputMode] = useState('FILE'); // 'FILE' | 'URL'
+    const [linkUrl, setLinkUrl] = useState('');
+    const [linkName, setLinkName] = useState('');
+    const [linkError, setLinkError] = useState('');
+
     const boxFiles = files.filter((f) => f.docType === docType);
     const isFull = boxFiles.length >= maxFiles;
 
@@ -210,8 +237,30 @@ const DocumentUploadBox = ({
         }
     };
 
+    const handleLinkSubmit = (e) => {
+        e?.preventDefault();
+        setLinkError('');
+        if (!linkUrl.trim()) {
+            setLinkError('Vui lòng nhập đường dẫn liên kết');
+            return;
+        }
+        if (!linkUrl.trim().match(/^https?:\/\//i)) {
+            setLinkError('Đường dẫn phải bắt đầu bằng http:// hoặc https://');
+            return;
+        }
+        if (isFull) {
+            setLinkError(`Mục này đã đạt giới hạn tối đa ${maxFiles} file/liên kết`);
+            return;
+        }
+
+        onAddLink?.(linkUrl.trim(), linkName.trim(), docType);
+        setLinkUrl('');
+        setLinkName('');
+    };
+
     return (
-        <div className='rounded-xl border border-stone-200 bg-white p-3 space-y-2 transition hover:border-gray-200'>
+        <div className='rounded-xl border border-stone-200 bg-white p-3 space-y-2.5 transition hover:border-gray-200'>
+            {/* Header: Tiêu đề + Huy hiệu số lượng + Nút thao tác nhanh */}
             <div className='flex items-center justify-between'>
                 <div className='flex items-center gap-2'>
                     <div className='flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600 shrink-0'>
@@ -227,57 +276,148 @@ const DocumentUploadBox = ({
                         </span>
                     </div>
                 </div>
-                <button
-                    type='button'
-                    onClick={() => inputRef.current?.click()}
-                    disabled={disabled || isFull}
-                    className={cn(
-                        'inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-[11px] font-medium transition',
-                        isFull
-                            ? 'border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed'
-                            : 'border-stone-200 bg-stone-50 text-stone-700 hover:border-gray-300 hover:bg-orange-50 hover:text-orange-600 disabled:opacity-50'
+
+                <div className='flex items-center gap-1.5'>
+                    {onOpenCreateModal && (
+                        <button
+                            type='button'
+                            onClick={onOpenCreateModal}
+                            disabled={disabled || isFull}
+                            className='inline-flex items-center gap-1 rounded-md border border-orange-200 bg-orange-50 px-2.5 py-1 text-[11px] font-semibold text-orange-700 shadow-2xs transition hover:bg-orange-100 hover:text-orange-800 disabled:opacity-50 cursor-pointer'
+                            title='Mở form lập Giấy đề nghị thanh toán từ mẫu chuẩn'
+                        >
+                            <Sparkles size={12} className='text-orange-500' />
+                            <span>Tạo từ mẫu</span>
+                        </button>
                     )}
-                    title={isFull ? `Đã đạt tối đa ${maxFiles} file` : 'Tải file'}
-                >
-                    <Upload size={12} /> {isFull ? 'Đã đủ 5 file' : 'Tải file'}
-                </button>
-                <input
-                    ref={inputRef}
-                    type='file'
-                    accept='image/*,application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                    multiple
-                    disabled={isFull}
-                    onChange={(e) => {
-                        onUpload(e.target.files, docType);
-                        e.target.value = '';
-                    }}
-                    className='hidden'
-                />
+
+                    <button
+                        type='button'
+                        onClick={() => inputRef.current?.click()}
+                        disabled={disabled || isFull}
+                        className={cn(
+                            'inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-[11px] font-medium transition cursor-pointer',
+                            isFull
+                                ? 'border-stone-200 bg-stone-100 text-stone-400 cursor-not-allowed'
+                                : 'border-stone-200 bg-stone-50 text-stone-700 hover:border-gray-300 hover:bg-orange-50 hover:text-orange-600 disabled:opacity-50'
+                        )}
+                        title={isFull ? `Đã đạt tối đa ${maxFiles} file` : 'Tải file'}
+                    >
+                        <Upload size={12} /> {isFull ? 'Đã đủ 5 file' : 'Tải file'}
+                    </button>
+                    <input
+                        ref={inputRef}
+                        type='file'
+                        accept='image/*,application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                        multiple
+                        disabled={isFull}
+                        onChange={(e) => {
+                            onUpload(e.target.files, docType);
+                            e.target.value = '';
+                        }}
+                        className='hidden'
+                    />
+                </div>
             </div>
+
             {hint && (
                 <p className='text-[10px] text-stone-400 leading-tight'>{hint}</p>
             )}
 
-            {/* Khung thả file nhanh khi chưa có file */}
-            {boxFiles.length === 0 ? (
+            {/* Thanh chuyển chế độ: Tệp tài liệu đính kèm | Tải tệp từ máy | Nhập liên kết (URL) (Theo Image 3) */}
+            <div className='flex items-center justify-between border-t border-stone-100 pt-2 text-xs'>
+                <span className='text-[11px] font-medium text-stone-500'>Tệp tài liệu đính kèm</span>
+                <div className='flex items-center gap-1 text-[11px]'>
+                    <button
+                        type='button'
+                        onClick={() => setInputMode('FILE')}
+                        className={cn(
+                            'rounded px-2.5 py-0.5 font-medium transition cursor-pointer',
+                            inputMode === 'FILE'
+                                ? 'bg-orange-100 text-orange-600 font-semibold'
+                                : 'text-stone-500 hover:text-stone-800'
+                        )}
+                    >
+                        Tải tệp từ máy
+                    </button>
+                    <span className='text-stone-300'>|</span>
+                    {/* <button
+                        type='button'
+                        onClick={() => setInputMode('URL')}
+                        className={cn(
+                            'rounded px-2.5 py-0.5 font-medium transition cursor-pointer',
+                            inputMode === 'URL'
+                                ? 'bg-orange-100 text-orange-600 font-semibold'
+                                : 'text-stone-500 hover:text-stone-800'
+                        )}
+                    >
+                        Nhập liên kết (URL)
+                    </button> */}
+                </div>
+            </div>
+
+            {/* Nội dung theo chế độ chọn */}
+            {inputMode === 'FILE' ? (
                 <div
                     onDragOver={(e) => { e.preventDefault(); if (!isFull) setIsDragging(true); }}
                     onDragLeave={() => setIsDragging(false)}
                     onDrop={handleDrop}
                     onClick={() => !isFull && inputRef.current?.click()}
                     className={cn(
-                        'flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed py-2 px-3 text-center transition',
-                        isDragging ? 'border-gray-400 bg-orange-50' : 'border-stone-200 hover:border-gray-300 hover:bg-orange-50/30'
+                        'flex flex-col cursor-pointer items-center justify-center gap-1 rounded-xl border border-dashed py-3 px-3 text-center transition',
+                        isDragging ? 'border-gray-400 bg-orange-50' : 'border-stone-200 hover:border-gray-300 hover:bg-orange-50/20'
                     )}
                 >
-                    <Upload size={13} className='text-stone-400 shrink-0' />
-                    <span className='text-[11px] text-stone-500'>Kéo thả hoặc bấm để chọn (tối đa 5 file, mỗi file &le; 15MB)</span>
+                    <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50 text-orange-500 border border-orange-100 shadow-2xs'>
+                        <Upload size={15} />
+                    </div>
+                    <p className='text-xs font-semibold text-stone-700 mt-0.5'>
+                        Nhấp để chọn tệp hoặc kéo thả vào đây
+                    </p>
+                    <p className='text-[10px] text-stone-400'>
+                        Hỗ trợ PDF, DOCX, XLSX, PNG, JPG (Tối đa 15MB)
+                    </p>
                 </div>
             ) : (
+                /* Khung nhập liên kết URL */
+                <div className='rounded-xl border border-dashed border-stone-200 bg-stone-50/60 p-2.5 space-y-2'>
+                    <div className='flex flex-col sm:flex-row gap-2'>
+                        <div className='relative flex-1'>
+                            <input
+                                type='url'
+                                value={linkUrl}
+                                onChange={(e) => { setLinkUrl(e.target.value); setLinkError(''); }}
+                                placeholder='Dán link (Google Drive, Docs, link hóa đơn điện tử...)'
+                                className='w-full rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-xs text-stone-800 placeholder:text-stone-400 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-200'
+                            />
+                        </div>
+                        <input
+                            type='text'
+                            value={linkName}
+                            onChange={(e) => setLinkName(e.target.value)}
+                            placeholder='Tên gợi nhớ (tùy chọn)'
+                            className='w-full sm:w-44 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-xs text-stone-800 placeholder:text-stone-400 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-200'
+                        />
+                        <button
+                            type='button'
+                            disabled={isFull || !linkUrl.trim()}
+                            onClick={handleLinkSubmit}
+                            className='inline-flex items-center justify-center gap-1 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-orange-600 disabled:opacity-50 shrink-0 cursor-pointer'
+                        >
+                            <Link2 size={13} /> Thêm liên kết
+                        </button>
+                    </div>
+                    {linkError && <p className='text-[10px] text-red-500'>{linkError}</p>}
+                </div>
+            )}
+
+            {/* Danh sách file / liên kết đã đính kèm trong mục */}
+            {boxFiles.length > 0 && (
                 <div className='space-y-1.5 pt-0.5'>
                     {boxFiles.map((f) => {
                         const isUsingStandard = f.isStandard ?? Boolean(f.standardName && f.name === f.standardName);
-                        const hasAlternative = Boolean(f.standardName && f.originalName && f.standardName !== f.originalName);
+                        const hasAlternative = !f.isGeneratedDoc && Boolean(f.standardName && f.originalName && f.standardName !== f.originalName);
+                        const isLink = Boolean(f.isLink || f.fileType === 'LINK');
 
                         return (
                             <div
@@ -287,10 +427,12 @@ const DocumentUploadBox = ({
                                 <div className='flex items-center gap-2.5'>
                                     <div className={cn(
                                         'flex h-6 w-6 shrink-0 items-center justify-center rounded',
+                                        isLink ? 'bg-sky-100 text-sky-600' :
                                         f.fileType === 'PDF' ? 'bg-red-100 text-red-600' :
                                         f.fileType === 'DOC' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'
                                     )}>
-                                        {f.fileType === 'PDF' ? <FileIcon size={12} /> :
+                                        {isLink ? <Link2 size={12} /> :
+                                         f.fileType === 'PDF' ? <FileIcon size={12} /> :
                                          f.fileType === 'DOC' ? <FileText size={12} /> : <ImageIcon size={12} />}
                                     </div>
                                     <div className='min-w-0 flex-1'>
@@ -298,7 +440,15 @@ const DocumentUploadBox = ({
                                             <p className='truncate text-xs font-semibold text-stone-800' title={f.name}>
                                                 {f.name}
                                             </p>
-                                            {isUsingStandard ? (
+                                            {f.isGeneratedDoc ? (
+                                                <span className='shrink-0 rounded bg-indigo-50 px-1.5 py-0.5 text-[9px] font-bold text-indigo-700 border border-indigo-200'>
+                                                    Google Drive (Tự động tải lên khi gửi)
+                                                </span>
+                                            ) : isLink ? (
+                                                <span className='shrink-0 rounded bg-sky-50 px-1 py-0.2 text-[9px] font-bold text-sky-700 border border-sky-200'>
+                                                    Liên kết URL
+                                                </span>
+                                            ) : isUsingStandard ? (
                                                 <span className='shrink-0 rounded bg-emerald-50 px-1 py-0.2 text-[9px] font-bold text-emerald-700 border border-emerald-200'>
                                                     Chuẩn Getvini
                                                 </span>
@@ -308,7 +458,18 @@ const DocumentUploadBox = ({
                                                 </span>
                                             )}
                                         </div>
-                                        {f.size ? <p className='text-[10px] text-stone-400 mt-0.5'>{(f.size / 1024).toFixed(0)} KB</p> : null}
+                                        {isLink && f.url ? (
+                                            <a
+                                                href={f.url}
+                                                target='_blank'
+                                                rel='noreferrer'
+                                                className='text-[10px] text-sky-600 hover:underline flex items-center gap-0.5 mt-0.5 truncate'
+                                            >
+                                                <span className='truncate'>{f.url}</span> <ExternalLink size={9} className='shrink-0' />
+                                            </a>
+                                        ) : f.size ? (
+                                            <p className='text-[10px] text-stone-400 mt-0.5'>{(f.size / 1024).toFixed(0)} KB</p>
+                                        ) : null}
                                     </div>
                                     {f.uploading ? (
                                         <Loader2 size={13} className='animate-spin text-stone-400 shrink-0' />
@@ -324,8 +485,22 @@ const DocumentUploadBox = ({
                                     )}
                                 </div>
 
-                                {/* Option B: Nút chuyển đổi nhanh giữa tên chuẩn & tên gốc */}
-                                {!f.uploading && hasAlternative && onToggleName && (
+                                {/* Xem và sửa lại tài liệu mẫu */}
+                                {!f.uploading && f.isGeneratedDoc && onOpenCreateModal && (
+                                    <div className='flex items-center justify-between border-t border-stone-200/60 pt-1 text-[11px]'>
+                                        <button
+                                            type='button'
+                                            onClick={onOpenCreateModal}
+                                            className='inline-flex items-center gap-1 font-medium text-orange-600 hover:text-orange-700 transition cursor-pointer'
+                                        >
+                                            <Sparkles size={11} className='text-orange-500' />
+                                            <span>Xem lại / Sửa thông tin bản mẫu</span>
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Chuyển đổi nhanh giữa tên chuẩn & tên gốc */}
+                                {!f.uploading && !isLink && hasAlternative && onToggleName && (
                                     <div className='flex items-center justify-between border-t border-stone-200/60 pt-1 text-[11px]'>
                                         {isUsingStandard ? (
                                             <button
@@ -387,6 +562,7 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
     const [isUrgent, setIsUrgent] = useState(false);
     const [autoStandardizeFileName, setAutoStandardizeFileName] = useState(true);
     const [attachedFiles, setAttachedFiles] = useState([]); // { name, standardName, originalName, url, size, fileType, publicId, uploading?, tempId, docType }
+    const [isDocModalOpen, setIsDocModalOpen] = useState(false);
     const [error, setError] = useState('');
     const [hasSubmitted, setHasSubmitted] = useState(false);
 
@@ -400,7 +576,7 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
         { assigneeId: currentUserId, limit: 500 },
         { skip: !currentUserId || type !== 'OTHER_WORK' }
     );
-    useGetMeQuery();
+    const { data: me } = useGetMeQuery();
     const [uploadInvoiceFile] = useUploadPaymentRequestInvoiceFileMutation();
 
     const { data: projectRequestsData } = useGetPaymentRequestsQuery(
@@ -649,6 +825,130 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
             })
         );
     };
+
+    const handleAddLink = (url, customName, docType) => {
+        if (!url || !url.trim()) return;
+        const cleanUrl = url.trim();
+        if (!cleanUrl.match(/^https?:\/\//i)) {
+            setError('Đường dẫn liên kết phải bắt đầu bằng http:// hoặc https://');
+            return;
+        }
+
+        const existingCount = attachedFiles.filter((f) => f.docType === docType).length;
+        if (existingCount >= MAX_FILES_PER_DOC_TYPE) {
+            setError(`Mục này đã đạt giới hạn tối đa ${MAX_FILES_PER_DOC_TYPE} file/liên kết.`);
+            return;
+        }
+
+        const rawName = customName?.trim() || cleanUrl.split('/').pop()?.split('?')[0] || 'Tài liệu liên kết';
+        const isDoc = Boolean(cleanUrl.match(/\.(docx?|doc)$/i));
+        const isPdf = Boolean(cleanUrl.match(/\.pdf$/i));
+        const fileType = isPdf ? 'PDF' : (isDoc ? 'DOC' : 'LINK');
+
+        const project = projects?.find((p) => p.id === projectId);
+        const projectName = project?.name || (type === 'OTHER_WORK' ? 'CongViecKhac' : '');
+        const reservedNames = getTakenFileNames();
+        const dummyFile = { name: rawName, originalName: rawName, type: isPdf ? 'application/pdf' : 'application/msword' };
+        const { standardName } = formatDocFileName(dummyFile, docType, projectName, reservedNames, 0, type);
+
+        const fileId = `link_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        setAttachedFiles((prev) => [
+            ...prev,
+            {
+                id: fileId,
+                name: autoStandardizeFileName ? standardName : rawName,
+                standardName,
+                originalName: rawName,
+                url: cleanUrl,
+                size: 0,
+                fileType,
+                docType,
+                uploading: false,
+                isStandard: autoStandardizeFileName,
+                isLink: true,
+            }
+        ]);
+        setError('');
+    };
+
+    const handleApplyDocFromModal = (docFile) => {
+        const fileId = `file_doc_${Date.now()}`;
+        setAttachedFiles((prev) => {
+            const filtered = prev.filter((f) => f.docType !== 'PAYMENT_REQUEST_DOC');
+            return [
+                ...filtered,
+                {
+                    ...docFile,
+                    id: fileId,
+                    name: docFile.name,
+                    standardName: docFile.standardName || docFile.name,
+                    originalName: docFile.originalName || docFile.name,
+                    url: docFile.url || '',
+                    size: docFile.size || 0,
+                    fileType: 'DOC',
+                    docType: 'PAYMENT_REQUEST_DOC',
+                    uploading: false,
+                    isStandard: true,
+                    isGeneratedDoc: docFile.isGeneratedDoc,
+                    docData: docFile.docData,
+                }
+            ];
+        });
+
+        // 🔄 ĐỒNG BỘ TỪ MODAL TẠO MẪU RA FORM CHÍNH:
+        if (docFile?.docData) {
+            const { amount: docAmount, reason: docReason, dueDate: docDueDate, projectName: docProjName } = docFile.docData;
+            // 1. Đồng bộ Số tiền
+            if (docAmount !== undefined && Number(docAmount) > 0) {
+                setAmount(Number(docAmount));
+            }
+            // 2. Đồng bộ Nội dung / Lý do thanh toán
+            if (docReason && docReason.trim()) {
+                setContent(docReason.trim());
+            }
+            // 3. Đồng bộ Hạn thanh toán (chuyển về YYYY-MM-DD cho input date)
+            if (docDueDate && docDueDate.trim()) {
+                const iso = toIsoDate(docDueDate.trim());
+                if (iso) setDueDate(iso);
+            }
+            // 4. Đồng bộ Dự án nếu chưa chọn mà tên dự án trong modal khớp với dự án sẵn có
+            if (docProjName && docProjName.trim() && type === 'PROJECT') {
+                const matched = projects?.find(
+                    (p) => p.name?.toLowerCase().trim() === docProjName.toLowerCase().trim()
+                );
+                if (matched && matched.id !== projectId) {
+                    setProjectId(matched.id);
+                }
+            }
+        }
+
+        setError('');
+    };
+
+    // 🔄 TỰ ĐỘNG ĐỒNG BỘ TỪ FORM CHÍNH VÀO TÀI LIỆU MẪU ĐÃ ĐÍNH KÈM (KHI SỬA Ở FORM CHÍNH)
+    useEffect(() => {
+        setAttachedFiles((prev) => {
+            const hasGeneratedDoc = prev.some((f) => f.isGeneratedDoc);
+            if (!hasGeneratedDoc) return prev;
+            return prev.map((f) => {
+                if (!f.isGeneratedDoc || !f.docData) return f;
+                const project = projects?.find((p) => p.id === projectId);
+                const currentProjName = type === 'OTHER_WORK' ? 'CongViecKhac' : (project?.name || f.docData.projectName || '');
+                const numAmount = amount ? parseNumber(amount) : f.docData.amount;
+                return {
+                    ...f,
+                    docData: {
+                        ...f.docData,
+                        amount: numAmount,
+                        amountInWords: numAmount > 0 ? readMoneyToWords(numAmount) : f.docData.amountInWords,
+                        reason: content?.trim() ? content.trim() : f.docData.reason,
+                        dueDate: dueDate || f.docData.dueDate,
+                        projectName: currentProjName,
+                    }
+                };
+            });
+        });
+    }, [amount, content, dueDate, projectId, type, projects]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -999,6 +1299,7 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                         onUpload={handleUploadForDocType}
                         onRemove={handleRemoveFile}
                         onToggleName={handleToggleFileName}
+                        onAddLink={handleAddLink}
                         disabled={isSubmitting || isUploadingFiles}
                     />
 
@@ -1012,6 +1313,7 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                         onUpload={handleUploadForDocType}
                         onRemove={handleRemoveFile}
                         onToggleName={handleToggleFileName}
+                        onAddLink={handleAddLink}
                         disabled={isSubmitting || isUploadingFiles}
                     />
 
@@ -1025,6 +1327,7 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                         onUpload={handleUploadForDocType}
                         onRemove={handleRemoveFile}
                         onToggleName={handleToggleFileName}
+                        onAddLink={handleAddLink}
                         disabled={isSubmitting || isUploadingFiles}
                     />
 
@@ -1038,6 +1341,22 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                         onUpload={handleUploadForDocType}
                         onRemove={handleRemoveFile}
                         onToggleName={handleToggleFileName}
+                        onAddLink={handleAddLink}
+                        disabled={isSubmitting || isUploadingFiles}
+                    />
+
+                    {/* Mục 5: Giấy đề nghị thanh toán */}
+                    <DocumentUploadBox
+                        title='5. Giấy đề nghị thanh toán'
+                        icon={FileText}
+                        docType='PAYMENT_REQUEST_DOC'
+                        hint='Tên file mẫu: ngày tháng năm/tên dự án/năm/DNTT-GETVINI (hỗ trợ .docx, .pdf)'
+                        files={attachedFiles}
+                        onUpload={handleUploadForDocType}
+                        onRemove={handleRemoveFile}
+                        onToggleName={handleToggleFileName}
+                        onOpenCreateModal={() => setIsDocModalOpen(true)}
+                        onAddLink={handleAddLink}
                         disabled={isSubmitting || isUploadingFiles}
                     />
                 </div>
@@ -1063,6 +1382,30 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                     {isSubmitting ? 'Đang gửi...' : isUploadingFiles ? 'Đang tải file...' : 'Gửi yêu cầu'}
                 </button>
             </div>
+
+            {isDocModalOpen && (() => {
+                const existingDoc = attachedFiles.find((f) => f.isGeneratedDoc)?.docData;
+                return (
+                    <PaymentRequestDocCreateModal
+                        isOpen={isDocModalOpen}
+                        onClose={() => setIsDocModalOpen(false)}
+                        initialData={{
+                            requesterName: me?.fullName || me?.name || existingDoc?.requesterName || '',
+                            role: me?.role,
+                            voucherNo: existingDoc?.voucherNo,
+                            position: existingDoc?.position || getPositionByRole(me?.role),
+                            department: existingDoc?.department || getDepartmentByRole(me?.role),
+                            projectName: type === 'OTHER_WORK' ? 'CongViecKhac' : (projects?.find((p) => p.id === projectId)?.name || existingDoc?.projectName || ''),
+                            amount: (amount !== '' && amount !== null && amount !== undefined) ? amount : (existingDoc?.amount !== undefined ? existingDoc.amount : ''),
+                            reason: content?.trim() || existingDoc?.reason || '',
+                            dueDate: dueDate || existingDoc?.dueDate || '',
+                            requestType: type,
+                        }}
+                        onApplyDoc={handleApplyDocFromModal}
+                        onUploadFile={handleUploadForDocType}
+                    />
+                );
+            })()}
         </ModalShell>
     );
 };

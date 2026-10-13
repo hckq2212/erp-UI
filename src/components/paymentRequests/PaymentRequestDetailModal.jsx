@@ -144,6 +144,23 @@ const FileLinks = ({ files, icon: DefaultIcon, tone: defaultTone }) =>
         const Icon = DefaultIcon || (isPdf ? FileIcon : (isDoc ? FileText : ImageIcon));
         const tone = defaultTone || (isPdf ? 'bg-red-100 text-red-600' : (isDoc ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'));
 
+        if (!f.url) {
+            return (
+                <div
+                    key={`${f.publicId || idx}-${idx}`}
+                    className='group flex items-center gap-3 rounded-lg border border-stone-200 bg-stone-50/50 px-3 py-2 text-stone-500'
+                >
+                    <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-md', tone)}>
+                        <Icon size={15} />
+                    </span>
+                    <div className='min-w-0 flex-1'>
+                        <p className='truncate text-sm font-medium text-stone-700'>{f.name || 'Tệp đính kèm'}</p>
+                        <p className='text-[10px] text-stone-400'>Tài liệu chưa có liên kết trực tuyến</p>
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <a
                 key={`${f.url || f.publicId || idx}-${idx}`}
@@ -850,9 +867,10 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                     const acceptanceMinutes = allDocs.filter((f) => f.docType === 'ACCEPTANCE_MINUTE');
                     const addendums = allDocs.filter((f) => f.docType === 'ADDENDUM');
                     const vatInvoices = allDocs.filter((f) => f.docType === 'VAT_INVOICE');
+                    const paymentRequestDocs = allDocs.filter((f) => f.docType === 'PAYMENT_REQUEST_DOC');
                     const otherDocs = allDocs.filter((f) => !f.docType);
 
-                    const hasGrouped = laborContracts.length > 0 || acceptanceMinutes.length > 0 || addendums.length > 0 || vatInvoices.length > 0;
+                    const hasGrouped = laborContracts.length > 0 || acceptanceMinutes.length > 0 || addendums.length > 0 || vatInvoices.length > 0 || paymentRequestDocs.length > 0;
 
                     return (
                         <Section title={`Hồ sơ chứng từ đính kèm (${allDocs.length})`} icon={Paperclip}>
@@ -902,6 +920,18 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                                             </p>
                                             <div className='space-y-1.5'>
                                                 <FileLinks files={vatInvoices} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {paymentRequestDocs.length > 0 && (
+                                        <div>
+                                            <p className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-stone-700'>
+                                                <FileText size={14} className='text-orange-500' />
+                                                5. Giấy đề nghị thanh toán ({paymentRequestDocs.length})
+                                            </p>
+                                            <div className='space-y-1.5'>
+                                                <FileLinks files={paymentRequestDocs} />
                                             </div>
                                         </div>
                                     )}

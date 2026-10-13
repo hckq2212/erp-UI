@@ -198,6 +198,31 @@ export const paymentRequestsApi = api.injectEndpoints({
                 { type: 'PaymentRequests', id: 'LIST' },
             ],
         }),
+        getNextPaymentRequestStt: builder.query({
+            query: () => '/payment-requests/next-stt',
+        }),
+        generateWordAndUploadPaymentRequestDoc: builder.mutation({
+            query: (data) => ({
+                url: '/payment-requests/generate-word-and-upload',
+                method: 'POST',
+                body: data,
+            }),
+        }),
+        getPaymentRequestDocPreview: builder.query({
+            query: (id) => `/payment-requests/${id}/doc-preview`,
+            providesTags: (result, error, id) => [{ type: 'PaymentRequests', id: `DOC_PREVIEW_${id}` }],
+        }),
+        syncGoogleSheetPaymentRequest: builder.mutation({
+            query: ({ id, ...data }) => ({
+                url: `/payment-requests/${id}/sync-google-sheet`,
+                method: 'POST',
+                body: data,
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'PaymentRequests', id },
+                { type: 'PaymentRequests', id: 'LIST' },
+            ],
+        }),
     }),
 });
 
@@ -223,4 +248,12 @@ export const {
     useSubmitSettlementPaymentRequestMutation,
     useApproveSettlementPaymentRequestMutation,
     useRejectSettlementPaymentRequestMutation,
+    useGetNextPaymentRequestSttQuery,
+    useLazyGetNextPaymentRequestSttQuery,
+    useGenerateWordAndUploadPaymentRequestDocMutation,
+    useGetPaymentRequestDocPreviewQuery,
+    useLazyGetPaymentRequestDocPreviewQuery,
+    useSyncGoogleSheetPaymentRequestMutation,
 } = paymentRequestsApi;
+
+
