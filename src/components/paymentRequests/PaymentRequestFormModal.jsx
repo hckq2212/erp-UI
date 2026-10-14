@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Select from 'react-select';
 import {
     Briefcase, ClipboardList, Calendar, Wallet, Info,
     Upload, Image as ImageIcon, File as FileIcon, Loader2, Trash2, AlertCircle,
@@ -553,6 +554,125 @@ const isTaskBudgetService = (task) => {
     );
 };
 
+const isProjectClosed = (p) => ['COMPLETED', 'CANCELLED'].includes(p?.status);
+const isProjectOnHold = (p) => p?.status === 'ON_HOLD' || Boolean(p?.isOnHold);
+
+const stripDiacritics = (str = '') =>
+    String(str)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D')
+        .toLowerCase();
+
+const customFilterOption = (option, rawInput) => {
+    if (!rawInput) return true;
+    const search = stripDiacritics(rawInput.trim());
+    const label = stripDiacritics(option.label || '');
+    return label.includes(search);
+};
+
+const getSelectStyles = (hasError = false) => ({
+    control: (base, state) => ({
+        ...base,
+        minHeight: '38px',
+        backgroundColor: state.isDisabled ? '#F9FAFB' : '#FFFFFF',
+        borderColor: hasError
+            ? '#F87171'
+            : state.isFocused
+                ? '#F38820'
+                : '#E5E7EB',
+        borderRadius: '0.5rem',
+        boxShadow: state.isFocused
+            ? hasError
+                ? '0 0 0 2px rgba(239, 68, 68, 0.2)'
+                : '0 0 0 2px rgba(243, 136, 32, 0.2)'
+            : 'none',
+        '&:hover': {
+            borderColor: hasError
+                ? '#EF4444'
+                : state.isFocused
+                    ? '#F38820'
+                    : '#D1D5DB',
+        },
+        fontSize: '0.875rem',
+        cursor: state.isDisabled ? 'not-allowed' : 'pointer',
+        transition: 'all 0.15s ease',
+    }),
+    valueContainer: (base) => ({
+        ...base,
+        padding: '2px 10px',
+    }),
+    input: (base) => ({
+        ...base,
+        margin: 0,
+        padding: 0,
+        color: '#1F2937',
+        fontSize: '0.875rem',
+    }),
+    placeholder: (base) => ({
+        ...base,
+        color: '#9CA3AF',
+        fontSize: '0.875rem',
+    }),
+    singleValue: (base) => ({
+        ...base,
+        color: '#1F2937',
+        fontSize: '0.875rem',
+        fontWeight: 500,
+    }),
+    indicatorSeparator: () => ({ display: 'none' }),
+    dropdownIndicator: (base, state) => ({
+        ...base,
+        color: state.isFocused ? '#F38820' : '#9CA3AF',
+        padding: '4px 8px',
+        '&:hover': {
+            color: '#F38820',
+        },
+    }),
+    clearIndicator: (base) => ({
+        ...base,
+        color: '#9CA3AF',
+        padding: '4px 8px',
+        cursor: 'pointer',
+        '&:hover': {
+            color: '#EF4444',
+        },
+    }),
+    menuPortal: (base) => ({
+        ...base,
+        zIndex: 9999,
+    }),
+    menu: (base) => ({
+        ...base,
+        zIndex: 9999,
+        borderRadius: '0.5rem',
+        overflow: 'hidden',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        border: '1px solid #E5E7EB',
+    }),
+    menuList: (base) => ({
+        ...base,
+        maxHeight: '220px',
+        padding: '4px',
+    }),
+    option: (base, state) => ({
+        ...base,
+        fontSize: '0.875rem',
+        borderRadius: '0.375rem',
+        padding: '8px 12px',
+        margin: '1px 0',
+        cursor: 'pointer',
+        backgroundColor: state.isSelected ? '#FFF7ED' : state.isFocused ? '#F3F4F6' : 'transparent',
+        color: state.isSelected ? '#F38820' : '#1F2937',
+        fontWeight: state.isSelected ? 600 : 400,
+        ':active': {
+            backgroundColor: '#FFEDD5',
+            color: '#C2410C',
+        },
+    }),
+});
+
 export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitting, currentUserId }) => {
     const [type, setType] = useState('PROJECT');
     const [projectId, setProjectId] = useState('');
@@ -646,6 +766,44 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
         const list = Array.isArray(userTasksData) ? userTasksData : userTasksData?.data || [];
         return list.filter((t) => (!t.projectId && !t.project?.id) && (!currentUserId || t.assigneeId === currentUserId || t.assignee?.id === currentUserId));
     }, [userTasksData, currentUserId]);
+
+    const activeProjects = useMemo(() => {
+        if (!Array.isArray(projects)) return [];
+        return projects.filter((p) => !isProjectClosed(p) && !isProjectOnHold(p));
+    }, [projects]);
+
+    const projectOptions = useMemo(() => {
+        return activeProjects.map((p) => {
+            const contractCode = p.contract?.contractCode || p.contractCode;
+            const label = contractCode ? `[${contractCode}] ${p.name}` : p.name;
+            return {
+                value: p.id,
+                label,
+                project: p,
+            };
+        });
+    }, [activeProjects]);
+
+    const taskOptions = useMemo(() => {
+        return myProjectTasks.map((t) => {
+            const serviceName = t.contractService?.service?.name || t.contractService?.name || t.mappedService?.name;
+            const codePrefix = t.code ? `[${t.code}] ` : '';
+            const serviceSuffix = serviceName ? ` (Dịch vụ: ${serviceName})` : '';
+            return {
+                value: t.id,
+                label: `${codePrefix}${t.name}${serviceSuffix}`,
+                task: t,
+            };
+        });
+    }, [myProjectTasks]);
+
+    const nonProjectTaskOptions = useMemo(() => {
+        return nonProjectTasks.map((t) => ({
+            value: t.id,
+            label: `${t.code ? `[${t.code}] ` : ''}${t.name}`,
+            task: t,
+        }));
+    }, [nonProjectTasks]);
 
     const handleProjectChange = (newProjectId, newType = type) => {
         setProjectId(newProjectId);
@@ -914,9 +1072,9 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                 const iso = toIsoDate(docDueDate.trim());
                 if (iso) setDueDate(iso);
             }
-            // 4. Đồng bộ Dự án nếu chưa chọn mà tên dự án trong modal khớp với dự án sẵn có
+            // 4. Đồng bộ Dự án nếu chưa chọn mà tên dự án trong modal khớp với dự án sẵn có (chỉ nhận dự án đang hoạt động)
             if (docProjName && docProjName.trim() && type === 'PROJECT') {
-                const matched = projects?.find(
+                const matched = activeProjects?.find(
                     (p) => p.name?.toLowerCase().trim() === docProjName.toLowerCase().trim()
                 );
                 if (matched && matched.id !== projectId) {
@@ -962,6 +1120,15 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
             if (!projectId) {
                 setError('Vui lòng chọn dự án');
                 return;
+            }
+            const selectedProject = projects?.find((p) => p.id === projectId);
+            if (selectedProject) {
+                const isClosed = isProjectClosed(selectedProject);
+                const isOnHold = isProjectOnHold(selectedProject);
+                if (isClosed || isOnHold) {
+                    setError(`Dự án "${selectedProject.name}" đang ở trạng thái ${isClosed ? 'đã đóng' : 'tạm dừng'}. Không thể tạo yêu cầu thanh toán / tạm ứng.`);
+                    return;
+                }
             }
             if (!taskId) {
                 setError('Vui lòng chọn công việc của bạn trong dự án');
@@ -1081,37 +1248,55 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                                 <label className={labelCls}>
                                     Dự án <span className='text-red-500'>*</span>
                                 </label>
-                                <select
-                                    value={projectId}
-                                    onChange={(e) => handleProjectChange(e.target.value)}
-                                    className={cn(inputCls, isProjectMissing && 'border-red-400 focus:border-red-500 bg-red-50/20')}
-                                >
-                                    <option value=''>-- Chọn dự án --</option>
-                                    {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                </select>
+                                <Select
+                                    value={projectOptions.find((opt) => opt.value === projectId) || null}
+                                    onChange={(opt) => handleProjectChange(opt ? opt.value : '')}
+                                    options={projectOptions}
+                                    placeholder='-- Tìm kiếm & chọn dự án --'
+                                    noOptionsMessage={() => (activeProjects.length === 0 ? 'Không có dự án đang hoạt động' : 'Không tìm thấy dự án phù hợp')}
+                                    isClearable
+                                    isSearchable
+                                    filterOption={customFilterOption}
+                                    styles={getSelectStyles(isProjectMissing)}
+                                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                    menuPosition='fixed'
+                                />
+                                {activeProjects.length < (projects?.length || 0) && (
+                                    <p className='mt-1 text-[11px] text-stone-400'>
+                                        * Đã ẩn các dự án đã đóng hoặc tạm dừng.
+                                    </p>
+                                )}
                             </div>
                             <div>
                                 <label className={labelCls}>
                                     Công việc của bạn <span className='text-red-500'>*</span>
                                 </label>
-                                <select
-                                    value={taskId}
-                                    onChange={(e) => { setTaskId(e.target.value); setError(''); }}
-                                    disabled={!projectId || isLoadingTasks}
-                                    className={cn(inputCls, isTaskMissing && 'border-red-400 focus:border-red-500 bg-red-50/20')}
-                                >
-                                    <option value=''>
-                                        {isLoadingTasks ? 'Đang tải công việc...' : '-- Chọn công việc --'}
-                                    </option>
-                                    {myProjectTasks.map((t) => {
-                                        const serviceName = t.contractService?.service?.name || t.contractService?.name || t.mappedService?.name;
-                                        return (
-                                            <option key={t.id} value={t.id}>
-                                                {t.name}{serviceName ? ` (Dịch vụ: ${serviceName})` : ''}
-                                            </option>
-                                        );
-                                    })}
-                                </select>
+                                <Select
+                                    value={taskOptions.find((opt) => opt.value === taskId) || null}
+                                    onChange={(opt) => {
+                                        setTaskId(opt ? opt.value : '');
+                                        setError('');
+                                    }}
+                                    options={taskOptions}
+                                    placeholder={
+                                        !projectId
+                                            ? '-- Vui lòng chọn dự án trước --'
+                                            : isLoadingTasks
+                                                ? 'Đang tải công việc...'
+                                                : myProjectTasks.length === 0
+                                                    ? 'Không có công việc phù hợp'
+                                                    : '-- Tìm kiếm & chọn công việc --'
+                                    }
+                                    noOptionsMessage={() => 'Không tìm thấy công việc phù hợp'}
+                                    isDisabled={!projectId || isLoadingTasks}
+                                    isLoading={isLoadingTasks}
+                                    isClearable
+                                    isSearchable
+                                    filterOption={customFilterOption}
+                                    styles={getSelectStyles(isTaskMissing)}
+                                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                    menuPosition='fixed'
+                                />
                                 {projectId && !isLoadingTasks && !isTasksError && myProjectTasks.length === 0 && (
                                     <p className='mt-1 text-xs text-orange-600'>
                                         {hasAnyAssignedTaskInProject
@@ -1145,21 +1330,28 @@ export const PaymentRequestFormModal = ({ projects, onClose, onSubmit, isSubmitt
                         <label className={labelCls}>
                             Công việc (không thuộc dự án) <span className='text-xs font-normal text-stone-400'>(tùy chọn)</span>
                         </label>
-                        <select
-                            value={taskId}
-                            onChange={(e) => { setTaskId(e.target.value); setError(''); }}
-                            disabled={isLoadingOtherTasks}
-                            className={inputCls}
-                        >
-                            <option value=''>
-                                {isLoadingOtherTasks ? 'Đang tải công việc...' : '-- Chọn công việc không thuộc dự án (nếu có) --'}
-                            </option>
-                            {nonProjectTasks.map((t) => (
-                                <option key={t.id} value={t.id}>
-                                    {t.name} {t.code ? `(${t.code})` : ''}
-                                </option>
-                            ))}
-                        </select>
+                        <Select
+                            value={nonProjectTaskOptions.find((opt) => opt.value === taskId) || null}
+                            onChange={(opt) => {
+                                setTaskId(opt ? opt.value : '');
+                                setError('');
+                            }}
+                            options={nonProjectTaskOptions}
+                            placeholder={
+                                isLoadingOtherTasks
+                                    ? 'Đang tải công việc...'
+                                    : '-- Tìm kiếm & chọn công việc không thuộc dự án (nếu có) --'
+                            }
+                            noOptionsMessage={() => 'Không tìm thấy công việc'}
+                            isDisabled={isLoadingOtherTasks}
+                            isLoading={isLoadingOtherTasks}
+                            isClearable
+                            isSearchable
+                            filterOption={customFilterOption}
+                            styles={getSelectStyles(false)}
+                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                            menuPosition='fixed'
+                        />
                         {!isLoadingOtherTasks && !isOtherTasksError && nonProjectTasks.length === 0 && (
                             <p className='mt-1 text-xs text-stone-400'>Bạn chưa có công việc nào không thuộc dự án (có thể để trống)</p>
                         )}
