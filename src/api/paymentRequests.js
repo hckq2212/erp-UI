@@ -152,6 +152,12 @@ export const paymentRequestsApi = api.injectEndpoints({
                 params,
             }),
         }),
+        getProjectBudgetSummary: builder.query({
+            query: (projectId) => `/payment-requests/project-budget-summary/${projectId}`,
+            providesTags: (result, error, projectId) => [
+                { type: 'PaymentRequests', id: `PROJECT_BUDGET_${projectId}` },
+            ],
+        }),
         recordPaymentRequest: builder.mutation({
             query: ({ id, ...data }) => ({
                 url: `/payment-requests/${id}/record-payment`,
@@ -192,6 +198,17 @@ export const paymentRequestsApi = api.injectEndpoints({
                 url: `/payment-requests/${id}/reject-settlement`,
                 method: 'POST',
                 body: { reason },
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'PaymentRequests', id },
+                { type: 'PaymentRequests', id: 'LIST' },
+            ],
+        }),
+        addSettlementFilesPaymentRequest: builder.mutation({
+            query: ({ id, files }) => ({
+                url: `/payment-requests/${id}/settlement-files`,
+                method: 'POST',
+                body: { files },
             }),
             invalidatesTags: (result, error, { id }) => [
                 { type: 'PaymentRequests', id },
@@ -244,10 +261,12 @@ export const {
     useUploadPaymentRequestProofMutation,
     useGetServiceBudgetQuery,
     useLazyGetServiceBudgetQuery,
+    useGetProjectBudgetSummaryQuery,
     useRecordPaymentRequestMutation,
     useSubmitSettlementPaymentRequestMutation,
     useApproveSettlementPaymentRequestMutation,
     useRejectSettlementPaymentRequestMutation,
+    useAddSettlementFilesPaymentRequestMutation,
     useGetNextPaymentRequestSttQuery,
     useLazyGetNextPaymentRequestSttQuery,
     useGenerateWordAndUploadPaymentRequestDocMutation,

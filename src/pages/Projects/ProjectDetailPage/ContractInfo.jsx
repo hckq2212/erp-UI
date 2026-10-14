@@ -16,6 +16,9 @@ import {
     Send,
     AlertTriangle,
     X,
+    Wallet,
+    Receipt,
+    PiggyBank,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { CreateAcceptanceModal } from './CreateAcceptanceModal';
@@ -329,7 +332,7 @@ const ServiceDetails = ({ serviceTasks, results, feedback, onOpenTask, canSeeAll
     </div>
 );
 
-export const ContractInfo = ({ contract, projectId, project }) => {
+export const ContractInfo = ({ contract, projectId, project, budgetSummary = null }) => {
     const navigate = useNavigate();
     const [isAcceptanceModalOpen, setIsAcceptanceModalOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -342,6 +345,24 @@ export const ContractInfo = ({ contract, projectId, project }) => {
     const totalBudget = useMemo(() => {
         return services.reduce((sum, item) => sum + Number(item.budget || 0), 0);
     }, [services]);
+
+    const serviceBudgets = useMemo(() => budgetSummary?.serviceBudgets || [], [budgetSummary]);
+    const getServiceSpendInfo = (item) => {
+        const csId = item.id;
+        const csServiceId = item.serviceId || item.service?.id;
+        const name = (item.name || item.service?.name || '').trim().toLowerCase();
+        let spent = 0;
+        serviceBudgets.forEach((sb) => {
+            if ((sb.contractServiceId && sb.contractServiceId === csId) ||
+                (sb.serviceId && csServiceId && sb.serviceId === csServiceId) ||
+                (sb.serviceName && sb.serviceName.trim().toLowerCase() === name)) {
+                spent += Number(sb.spent || 0);
+            }
+        });
+        const budget = Number(item.budget || 0);
+        return { spent, remaining: budget - spent };
+    };
+
     const user = useSelector(selectCurrentUser);
     const currentUserId = getCurrentUserId(user);
 
@@ -488,6 +509,21 @@ export const ContractInfo = ({ contract, projectId, project }) => {
                                 <span className="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
                                     Tổng ngân sách: {formatNumber(totalBudget)} VNĐ
                                 </span>
+                                {budgetSummary && (
+                                    <>
+                                        <span className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-[#F38820]">
+                                            Đã chi: {formatNumber(budgetSummary.totalProjectSpent || 0)} VNĐ
+                                        </span>
+                                        <span className={cn(
+                                            "inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-bold",
+                                            (budgetSummary.remainingProjectBudget ?? (totalBudget - (budgetSummary.totalProjectSpent || 0))) < 0
+                                                ? "border-rose-200 bg-rose-50 text-rose-700"
+                                                : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                        )}>
+                                            Còn lại: {formatNumber(budgetSummary.remainingProjectBudget ?? (totalBudget - (budgetSummary.totalProjectSpent || 0)))} VNĐ
+                                        </span>
+                                    </>
+                                )}
                             </div>
                             <p className="mt-1 text-sm text-gray-500">Xem nhanh trạng thái nghiệm thu, tiến độ công việc và kết quả theo từng gói.</p>
                         </div>
@@ -580,6 +616,7 @@ export const ContractInfo = ({ contract, projectId, project }) => {
                                                 const serviceTasks = canSeeAllTasks
                                                     ? enrichedTasks
                                                     : enrichedTasks.filter(isUserTask);
+                                                const itemSpendInfo = getServiceSpendInfo(item);
                                                 const results = Array.isArray(item.results) ? item.results : [];
                                                 const serviceCode = getServiceCode(item);
                                                 const serviceName = getServiceName(item);
@@ -637,20 +674,52 @@ export const ContractInfo = ({ contract, projectId, project }) => {
                                                                             </button>
                                                                         )}
                                                                     </div>
-                                                                    <div className="mt-1 flex flex-wrap gap-2 text-xs font-semibold text-gray-400">
+                                                                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-gray-400">
                                                                         <span>
                                                                             {canSeeAllTasks
                                                                                 ? `${serviceTasks.length} công việc`
                                                                                 : `${serviceTasks.length} công việc của bạn`}
                                                                         </span>
-                                                                        <span className={Number(item.budget || 0) > 0 ? "font-bold text-blue-600" : ""}>
-                                                                            Ngân sách: {formatNumber(item.budget || 0)} VNĐ
-                                                                        </span>
+                                                                        <span>•</span>
                                                                         <span>{results.length} kết quả</span>
                                                                         {item.nickname?.trim() && originalServiceName && (
-                                                                            <span title={originalServiceName}>Gốc: {originalServiceName}</span>
+                                                                            <>
+                                                                                <span>•</span>
+                                                                                <span title={originalServiceName} className="italic text-slate-400">Gốc: {originalServiceName}</span>
+                                                                            </>
                                                                         )}
                                                                     </div>
+
+                                                                    {/* Hàng chỉ số tài chính dịch vụ */}
+                                                                    <div className="mt-2.5 flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                                                                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50/70 px-2.5 py-1 text-xs font-semibold text-blue-800">
+                                                                            <Wallet className="h-3.5 w-3.5 text-blue-600" />
+                                                                            <span>Ngân sách:</span>
+                                                                            <b className="font-bold text-blue-900">{formatNumber(item.budget || 0)} VNĐ</b>
+                                                                        </span>
+                                                                        {budgetSummary && (
+                                                                            <span className="inline-flex items-center gap-1.5 rounded-lg border border-orange-100 bg-orange-50/70 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                                                                                <Receipt className="h-3.5 w-3.5 text-[#F38820]" />
+                                                                                <span>Đã chi:</span>
+                                                                                <b className="font-bold text-[#F38820]">{formatNumber(itemSpendInfo.spent)} VNĐ</b>
+                                                                            </span>
+                                                                        )}
+                                                                        {budgetSummary && Number(item.budget || 0) > 0 && (
+                                                                            <span className={cn(
+                                                                                "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold",
+                                                                                itemSpendInfo.remaining < 0
+                                                                                    ? "border-rose-200 bg-rose-50 text-rose-800"
+                                                                                    : "border-emerald-200 bg-emerald-50 text-emerald-800"
+                                                                            )}>
+                                                                                <PiggyBank className={cn("h-3.5 w-3.5", itemSpendInfo.remaining < 0 ? "text-rose-600" : "text-emerald-600")} />
+                                                                                <span>Còn lại:</span>
+                                                                                <b className={cn("font-bold", itemSpendInfo.remaining < 0 ? "text-rose-700" : "text-emerald-700")}>
+                                                                                    {formatNumber(itemSpendInfo.remaining)} VNĐ
+                                                                                </b>
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    
                                                                 </div>
                                                             </div>
 
