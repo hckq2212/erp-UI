@@ -972,7 +972,7 @@ export const TaskTable = ({
                         <input
                             type="text"
                             placeholder="Tìm tên công việc"
-                            className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all h-[38px]"
+                            className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-[#F38820] focus:bg-white transition-all h-[38px]"
                             value={filter.search}
                             onChange={(e) => setFilter({ ...filter, search: e.target.value })}
                         />
@@ -1049,7 +1049,7 @@ export const TaskTable = ({
                             <button
                                 type="button"
                                 onClick={() => setShowAddServiceModal(true)}
-                                className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm font-medium text-xs sm:text-sm whitespace-nowrap"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all active:scale-95 shadow-sm font-medium text-xs sm:text-sm whitespace-nowrap"
                             >
                                 <Plus className="w-4 h-4" />
                                 <span>Thêm dịch vụ</span>
@@ -1068,7 +1068,7 @@ export const TaskTable = ({
                                         type="checkbox"
                                         className={cn(
                                             "w-4 h-4 border-gray-300 rounded cursor-pointer",
-                                            selectionMode === 'unassign' ? "text-red-600 focus:ring-red-500" : "text-blue-600 focus:ring-blue-500"
+                                            selectionMode === 'unassign' ? "text-red-600 focus:ring-red-500" : "text-orange-500 accent-[#F38820] focus:ring-orange-400"
                                         )}
                                         checked={selectableFilteredTasks.length > 0 && selectableFilteredTasks.every(t => selectedTasks.includes(t.id))}
                                         disabled={selectableFilteredTasks.length === 0}
@@ -1109,7 +1109,7 @@ export const TaskTable = ({
                                                 <td className="px-6 py-3 text-center">
                                                     <input
                                                         type="checkbox"
-                                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                                        className="w-4 h-4 text-orange-500 accent-[#F38820] border-gray-300 rounded focus:ring-orange-400 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                                                         disabled={assignableTasksInGroup.length === 0}
                                                         checked={allAssignableSelected}
                                                         ref={input => {
@@ -1157,7 +1157,7 @@ export const TaskTable = ({
                                                         task.isSupportRequested ? "bg-red-50/50 hover:bg-red-50 border-l-4 border-l-red-500" :
                                                             Number(task.spentAmount || 0) > Number(task.cost || 0) ? "bg-red-50/40 hover:bg-red-50 border-l-4 border-l-red-400" :
                                                                 task.isExtra ? "bg-amber-50/50 hover:bg-amber-50 border-l-4 border-l-amber-400" :
-                                                                    "hover:bg-blue-50/40"
+                                                                    "hover:bg-orange-50/20"
                                                     )}
                                                 >
                                                     <td
@@ -1171,7 +1171,7 @@ export const TaskTable = ({
                                                             type="checkbox"
                                                             className={cn(
                                                                 "w-4 h-4 border-gray-300 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed",
-                                                                selectionMode === 'unassign' ? "text-red-600 focus:ring-red-500" : "text-blue-600 focus:ring-blue-500"
+                                                                selectionMode === 'unassign' ? "text-red-600 focus:ring-red-500" : "text-orange-500 accent-[#F38820] focus:ring-orange-400"
                                                             )}
                                                             disabled={!isTaskSelectable(task)}
                                                             checked={selectedTasks.includes(task.id)}
@@ -1247,7 +1247,7 @@ export const TaskTable = ({
                                                                 (task.status === 'PENDING' || task.status === 'AWAITING_SUPPORT') && (
                                                                     <button
                                                                         onClick={() => setAssigningTask(task)}
-                                                                        className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all active:scale-95 text-xs font-bold uppercase"
+                                                                        className="inline-flex whitespace-nowrap items-center gap-1.5 px-3 py-1.5 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-all active:scale-95 text-xs font-bold uppercase shadow-sm"
                                                                     >
                                                                         Phân công
                                                                     </button>
@@ -1557,7 +1557,7 @@ export const TaskTable = ({
             {selectedTasks.length > 0 && (
                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-200 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 z-50 ">
                     <div className="flex items-center gap-2 border-r border-gray-700 pr-6">
-                        <span className=" text-blue-600 text-xs font-bold px-2 py-0.5 rounded-full">
+                        <span className=" text-orange-600 text-xs font-bold px-2 py-0.5 rounded-full">
                             Đã chọn {selectedTasks.length} công việc
                         </span>
                     </div>
@@ -1587,7 +1587,7 @@ export const TaskTable = ({
                                     const tasksToAssign = tasks.filter(t => selectedTasks.includes(t.id));
                                     setAssigningTask(tasksToAssign);
                                 }}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-orange-500/20"
                             >
                                 <Users className="w-3.5 h-3.5" />
                                 Phân công
