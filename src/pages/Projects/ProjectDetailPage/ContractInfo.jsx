@@ -332,7 +332,7 @@ const ServiceDetails = ({ serviceTasks, results, feedback, onOpenTask, canSeeAll
     </div>
 );
 
-export const ContractInfo = ({ contract, projectId, project, budgetSummary = null }) => {
+export const ContractInfo = ({ contract, projectId, project, budgetSummary = null, isClosed: propIsClosed, isOnHold: propIsOnHold }) => {
     const navigate = useNavigate();
     const [isAcceptanceModalOpen, setIsAcceptanceModalOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -372,14 +372,14 @@ export const ContractInfo = ({ contract, projectId, project, budgetSummary = nul
     const isProjectManager = isSameUser(projectManagerMember?.user?.id, currentUserId) ||
         isSameUser(project?.projectManager?.id, currentUserId) ||
         Boolean(project?.team?.members?.some((m) => hasTeamMemberRole(m, 'PROJECT_MANAGER') && isSameUser(m.user?.id, currentUserId)));
-    const isClosed = ['COMPLETED', 'CANCELLED'].includes(project?.status);
-    const isOnHold = project?.status === 'ON_HOLD' || Boolean(project?.isOnHold);
+    const isClosed = propIsClosed ?? ['COMPLETED', 'CANCELLED'].includes(project?.status);
+    const isOnHold = propIsOnHold ?? (project?.status === 'ON_HOLD' || Boolean(project?.isOnHold));
     const isAdminOrBOD = ['ADMIN', 'BOD'].includes(user?.role);
     const canSeeAllTasks = isAdminOrBOD || isProjectLead || isProjectManager;
-    // Team Lead/ACCOUNT can inspect all project tasks, but acceptance submission
-    // is reserved for project managers and management roles.
-    const canSendAcceptance = isAdminOrBOD || isProjectManager || user?.role === 'ADMIN_SALE';
-    const canEditServiceNickname = canSeeAllTasks;
+    // Khi dự án tạm dừng (ON_HOLD) hoặc đã đóng (COMPLETED/CANCELLED),
+    // toàn bộ chức năng gửi nghiệm thu và chỉnh sửa nickname dịch vụ đều bị khóa.
+    const canSendAcceptance = !isClosed && !isOnHold && (isAdminOrBOD || isProjectManager || user?.role === 'ADMIN_SALE');
+    const canEditServiceNickname = !isClosed && !isOnHold && canSeeAllTasks;
 
     const projectTasksMap = useMemo(() => {
         const map = new Map();
@@ -469,6 +469,14 @@ export const ContractInfo = ({ contract, projectId, project, budgetSummary = nul
     };
 
     const startEditServiceNickname = (service) => {
+        if (isClosed) {
+            toast.warning('Dự án đã đóng hoặc hoàn tất, không thể sửa tên dịch vụ.');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể sửa tên dịch vụ.');
+            return;
+        }
         setEditingServiceId(service.id);
         setNicknameDraft(service.nickname || '');
     };
@@ -479,6 +487,14 @@ export const ContractInfo = ({ contract, projectId, project, budgetSummary = nul
     };
 
     const saveServiceNickname = async (service) => {
+        if (isClosed) {
+            toast.warning('Dự án đã đóng hoặc hoàn tất, không thể sửa tên dịch vụ.');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể sửa tên dịch vụ.');
+            return;
+        }
         try {
             await updateContractServiceNickname({
                 id: service.id,
@@ -498,6 +514,35 @@ export const ContractInfo = ({ contract, projectId, project, budgetSummary = nul
     return (
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <div className="space-y-6">
+                {/* Banner trạng thái Read-Only khi Dự án Tạm dừng hoặc Đã đóng */}
+                {isOnHold && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 flex items-start gap-3 shadow-xs">
+                        <div className="w-9 h-9 rounded-lg bg-amber-500 flex items-center justify-center shrink-0 text-white shadow-xs">
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="font-bold text-amber-900 text-sm">Dự án đang tạm dừng (ON_HOLD)</p>
+                            <p className="mt-0.5 text-xs text-amber-800 font-medium">
+                                Toàn bộ chức năng gửi nghiệm thu và chỉnh sửa dịch vụ tạm khóa ở chế độ <b>Chỉ đọc (Read-only)</b> cho đến khi dự án được mở lại.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {isClosed && (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-4 flex items-start gap-3 shadow-xs">
+                        <div className="w-9 h-9 rounded-lg bg-slate-500 flex items-center justify-center shrink-0 text-white shadow-xs">
+                            <AlertTriangle className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="font-bold text-slate-900 text-sm">Dự án đã đóng hoặc hoàn tất ({project?.status})</p>
+                            <p className="mt-0.5 text-xs text-slate-600 font-medium">
+                                Hạng mục dịch vụ và kết quả đang được lưu trữ ở chế độ <b>Chỉ đọc (Read-only)</b>. Không thể gửi thêm nghiệm thu hoặc chỉnh sửa.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div className="flex items-start gap-3">
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">

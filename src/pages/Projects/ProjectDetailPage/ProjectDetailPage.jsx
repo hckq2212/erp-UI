@@ -396,8 +396,8 @@ export const ProjectDetailPage = () => {
   const showCloseDirect = canCloseDirect(project, user);
   const showRequestClose = canRequestClose(project, user);
   const daysLeft = daysUntilAutoClose(project);
-  const inReminderWindow = isInReminderWindow(daysLeft);
-  const isOnHold = project?.status === PAUSE_STATUS.ON_HOLD;
+  const inReminderWindow = isInReminderWindow(daysLeft)
+  const isOnHold = project?.status === PAUSE_STATUS.ON_HOLD || Boolean(project?.isOnHold);
   const isClosed = ['COMPLETED', 'CANCELLED'].includes(project?.status);
   const isPendingPauseApproval = project?.status === PAUSE_STATUS.PENDING_PAUSE_APPROVAL;
   const showPauseTab = isOnHold || isPendingPauseApproval
@@ -807,7 +807,13 @@ export const ProjectDetailPage = () => {
             <TaskStatistics tasks={displayedTasks} />
             <ServiceExecutionSummary services={project.contract?.services || []} budgetSummary={budgetSummary} />
           </div>
-          <TaskTable tasks={displayedTasks} project={project} className="min-w-[2000px]" />
+          <TaskTable
+            tasks={displayedTasks}
+            project={project}
+            isClosed={isClosed}
+            isOnHold={isOnHold}
+            className="min-w-[2000px]"
+          />
         </div>
       )}
 
@@ -817,6 +823,8 @@ export const ProjectDetailPage = () => {
           <TaskTable
             tasks={myTasks}
             project={project}
+            isClosed={isClosed}
+            isOnHold={isOnHold}
             bulkAction="start"
             emptyMessage="Bạn chưa được phân công công việc nào trong dự án này"
           />
@@ -824,7 +832,14 @@ export const ProjectDetailPage = () => {
       )}
 
       {activeTab === 'SERVICES' && isCoreMember && (
-        <ContractInfo contract={project.contract} projectId={project.id} project={project} budgetSummary={budgetSummary} />
+        <ContractInfo
+          contract={project.contract}
+          projectId={project.id}
+          project={project}
+          budgetSummary={budgetSummary}
+          isClosed={isClosed}
+          isOnHold={isOnHold}
+        />
       )}
 
       {activeTab === 'EXTRA' && (

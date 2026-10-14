@@ -171,7 +171,9 @@ const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSe
 };
 import { useGetUsersQuery } from '../../../api/users';
 
-export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) => {
+export const TaskAssignModal = ({ isOpen, onClose, task, project, isClosed: propIsClosed, isOnHold: propIsOnHold, onSuccess }) => {
+    const isClosed = propIsClosed ?? ['COMPLETED', 'CANCELLED'].includes(project?.status);
+    const isOnHold = propIsOnHold ?? (project?.status === 'ON_HOLD' || Boolean(project?.isOnHold));
     const isBulk = Array.isArray(task);
     const tasks = useMemo(() => (isBulk ? task : [task]), [isBulk, task]);
     const representativeTask = tasks[0];
@@ -432,6 +434,15 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
     const handleSubmit = useCallback(async (e) => {
         if (e) e.preventDefault();
 
+        if (isClosed) {
+            toast.warning('Dự án đã đóng — không thể phân công công việc');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng — không thể phân công công việc');
+            return;
+        }
+
         if (!formData.isTeamAssignment && !formData.assigneeId) {
             toast.error('Vui lòng chọn người thực hiện');
             return;
@@ -561,7 +572,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi phân công');
         }
-    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedEndDate, requestSupport, parentTask, latestSubtask, vendors]);
+    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedEndDate, requestSupport, parentTask, latestSubtask, vendors, isClosed, isOnHold]);
 
     return (
         <AnimatePresence>
@@ -619,6 +630,17 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
+
+                        {isOnHold && (
+                            <div className="mx-6 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-800">
+                                ⚠️ Dự án đang tạm dừng — chức năng phân công công việc tạm khóa.
+                            </div>
+                        )}
+                        {isClosed && (
+                            <div className="mx-6 mt-4 rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-700">
+                                🔒 Dự án đã đóng — không thể phân công công việc.
+                            </div>
+                        )}
 
                         <div
                             className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-8 overscroll-contain"
@@ -1129,7 +1151,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={handleSubmit}
-                                disabled={isAssigning || isUploading}
+                                disabled={isAssigning || isUploading || isClosed || isOnHold}
                                 className="flex-[1.5] px-6 py-4 bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:shadow-none"
                             >
                                 {isAssigning || isUploading ? (

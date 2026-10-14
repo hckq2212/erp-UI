@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, Fragment, useRef } from 'react';
 import Select from 'react-select';
-import { Calendar, Users, FileText, Search, UserPlus, UserMinus, Plus, AlertCircle, ChevronRight, ChevronDown, Play, X } from 'lucide-react';
+import { Calendar, Users, FileText, Search, UserPlus, UserMinus, Plus, AlertCircle, ChevronRight, ChevronDown, Play, X, Clock, Archive } from 'lucide-react';
 import { TaskAssignModal } from './TaskAssignModal';
 import { AddProjectServiceModal } from './AddProjectServiceModal';
 import { useNavigate } from 'react-router-dom';
@@ -147,7 +147,14 @@ const filterSelectStyles = {
     })
 };
 
-export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMessage = 'Không tìm thấy công việc nào' }) => {
+export const TaskTable = ({
+    tasks = [],
+    project,
+    isClosed: propIsClosed,
+    isOnHold: propIsOnHold,
+    bulkAction = 'assign',
+    emptyMessage = 'Không tìm thấy công việc nào'
+}) => {
     const navigate = useNavigate();
     const { data: user } = useGetMeQuery();
     const teamId = project?.team?.id;
@@ -287,7 +294,9 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
         ));
     const isProjectManager = isSameUser(currentUserId, project?.projectManager?.id) ||
         Boolean(project?.team?.members?.some(m => hasTeamMemberRole(m, 'PROJECT_MANAGER') && isSameUser(m.user?.id, currentUserId)));
-    const canManageAllTasks = isAdminOrBOD || isProjectLead || isProjectManager;
+    const isClosed = propIsClosed ?? ['COMPLETED', 'CANCELLED'].includes(project?.status);
+    const isOnHold = propIsOnHold ?? (project?.status === 'ON_HOLD' || Boolean(project?.isOnHold));
+    const canManageAllTasks = !isClosed && !isOnHold && (isAdminOrBOD || isProjectLead || isProjectManager);
     const isPersonalView = bulkAction === 'start';
     const isSupportLead = tasks.some(t => isSameUser(t.supportLeadId, currentUserId));
     const isHelper = tasks.some(t => isSameUser(t.helperId, currentUserId));
@@ -295,14 +304,15 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     const isTeamMember = Boolean(project?.team?.members?.some(m => isSameUser(m.user?.id, currentUserId)));
 
     const canSeeTable = true;
-    const canCreateProjectWork = user?.role === 'PM' || user?.role === 'ADMIN';
-    const isProjectInProgress = project?.status === 'IN_PROGRESS' || project?.status === 'CONFIRMED';
+    const canCreateProjectWork = !isClosed && !isOnHold && (user?.role === 'PM' || user?.role === 'ADMIN');
+    const isProjectInProgress = !isClosed && !isOnHold && (project?.status === 'IN_PROGRESS' || project?.status === 'CONFIRMED');
 
     const hasMainPerformer = (task) => Boolean(
         task?.assigneeId || task?.assignee?.id || task?.vendor || task?.vendorId || task?.performerType === 'VENDOR'
     );
 
     const canManageTaskAssignment = (task) => {
+        if (isClosed || isOnHold) return false;
         if (isAdmin) return true;
         if (!isProjectLead) return false;
         if (!hasMainPerformer(task)) return true;
@@ -370,6 +380,14 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     }, []);
 
     const handleStartTask = async (task) => {
+        if (isClosed) {
+            toast.warning('Dự án đã đóng — không thể bắt đầu công việc');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng — không thể bắt đầu công việc');
+            return;
+        }
         setStartingTaskId(task.id);
         try {
             await startTask({ id: task.id, projectId: project?.id }).unwrap();
@@ -382,6 +400,14 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     };
 
     const handleBulkStart = async () => {
+        if (isClosed) {
+            toast.warning('Dự án đã đóng — không thể bắt đầu công việc');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng — không thể bắt đầu công việc');
+            return;
+        }
         if (selectedTasks.length === 0) return;
         if (!window.confirm(`Bắt đầu ${selectedTasks.length} công việc đã chọn?`)) return;
 
@@ -414,6 +440,14 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     };
 
     const handleOpenStaffingModal = () => {
+        if (isClosed) {
+            toast.warning('Dự án đã đóng — không thể yêu cầu bổ sung nhân sự');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng — không thể yêu cầu bổ sung nhân sự');
+            return;
+        }
         if (selectedTasks.length === 1) {
             setStaffingTaskId(selectedTasks[0]);
         } else {
@@ -425,6 +459,14 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     };
 
     const handleOpenResolveStaffing = (req) => {
+        if (isClosed) {
+            toast.warning('Dự án đã đóng — không thể bổ sung nhân sự');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng — không thể bổ sung nhân sự');
+            return;
+        }
         setActiveStaffingRequest(req);
         if (req.type === 'TASK' && req.task) {
             setStaffingTask(req.task);
@@ -435,6 +477,14 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     };
 
     const handleRejectRequest = async (req) => {
+        if (isClosed) {
+            toast.warning('Dự án đã đóng — không thể thao tác');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng — không thể thao tác');
+            return;
+        }
         const isLeadOnly = isProjectLead && !isProjectManager && !hasStaffingAdminOverride;
         const confirmMsg = isLeadOnly
             ? `Bạn có chắc chắn muốn hủy yêu cầu bổ sung nhân sự cho "${req.targetName}"?`
@@ -471,6 +521,14 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     };
 
     const handleSendStaffingRequest = async () => {
+        if (isClosed) {
+            toast.warning('Dự án đã đóng — không thể gửi yêu cầu nhân sự');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng — không thể gửi yêu cầu nhân sự');
+            return;
+        }
         if (!staffingNote.trim()) {
             toast.error('Vui lòng nhập lý do hoặc vị trí nhân sự cần bổ sung');
             return;
@@ -576,6 +634,14 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     };
 
     const handleBulkUnassign = async () => {
+        if (isClosed) {
+            toast.warning('Dự án đã đóng — không thể xoá phân công');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng — không thể xoá phân công');
+            return;
+        }
         if (selectedTasks.length === 0) return;
         if (!window.confirm(`Xoá phân công của ${selectedTasks.length} công việc đã chọn?`)) return;
 
@@ -602,6 +668,10 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     };
 
     const handleRespondSupport = async (taskId, response) => {
+        if (isClosed || isOnHold) {
+            toast.warning(isClosed ? 'Dự án đã đóng — không thể xử lý yêu cầu' : 'Dự án đang tạm dừng — không thể xử lý yêu cầu');
+            return;
+        }
         try {
             await respondToSupport({ id: taskId, action: response, projectId: project.id }).unwrap();
             toast.success(response === 'ACCEPT' ? 'Đã đồng ý hỗ trợ' : 'Đã từ chối hỗ trợ');
@@ -611,6 +681,10 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     };
 
     const handleReturnSupport = async (taskId) => {
+        if (isClosed || isOnHold) {
+            toast.warning(isClosed ? 'Dự án đã đóng — không thể trả lại task' : 'Dự án đang tạm dừng — không thể trả lại task');
+            return;
+        }
         if (!window.confirm('Bạn có chắc chắn muốn trả lại task này cho team chính?')) return;
         try {
             await returnSupport({ id: taskId, projectId: project.id }).unwrap();
@@ -621,6 +695,10 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     };
 
     const handleRequestReturnSupport = async (taskId) => {
+        if (isClosed || isOnHold) {
+            toast.warning(isClosed ? 'Dự án đã đóng — không thể yêu cầu' : 'Dự án đang tạm dừng — không thể yêu cầu');
+            return;
+        }
         try {
             await requestReturnSupport({ id: taskId, note: "Yêu cầu trả lại task", projectId: project.id }).unwrap();
             toast.success('Đã gửi yêu cầu hỗ trợ hoàn thành');
@@ -630,6 +708,14 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
     };
 
     const handleCustomerApprove = async (taskId) => {
+        if (isClosed) {
+            toast.warning('Dự án đã đóng — không thể duyệt công việc');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng — không thể duyệt công việc');
+            return;
+        }
         try {
             setApprovingTaskId(taskId);
             await approveByCustomer({ id: taskId, projectId: project.id }).unwrap();
@@ -757,6 +843,44 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
 
     return (
         <div className="space-y-4">
+            {/* Banner trạng thái tạm dừng */}
+            {isOnHold && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm">
+                    <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white bg-amber-500">
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="font-bold text-amber-900">
+                                Dự án đang tạm dừng — Chế độ chỉ đọc
+                            </p>
+                            <p className="mt-1 text-xs text-amber-700">
+                                Mọi hoạt động phân công, bắt đầu công việc và cập nhật tiến độ đều tạm ngưng cho đến khi dự án được mở lại.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Banner trạng thái đã đóng */}
+            {isClosed && (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-sm">
+                    <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white bg-slate-600">
+                            <Archive className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="font-bold text-slate-800">
+                                Dự án đã đóng — Chế độ lưu trữ chỉ đọc
+                            </p>
+                            <p className="mt-1 text-xs text-slate-600">
+                                Toàn bộ công việc và dữ liệu dự án đã được lưu trữ ở chế độ Chỉ đọc (Read-only).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Khối hiển thị yêu cầu bổ sung nhân sự */}
             {!isPersonalView && (isProjectManager || hasStaffingAdminOverride || isProjectLead) && allStaffingRequests.length > 0 && (
                 <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-orange-50/50 to-amber-50 p-4 shadow-sm space-y-3">
@@ -806,7 +930,8 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                             <button
                                                 type="button"
                                                 onClick={() => handleOpenResolveStaffing(req)}
-                                                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-95 transition-all"
+                                                disabled={isClosed || isOnHold}
+                                                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 active:scale-95 transition-all disabled:opacity-50"
                                             >
                                                 <UserPlus className="h-3.5 w-3.5" />
                                                 <span>Bổ sung nhân sự</span>
@@ -814,7 +939,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                             <button
                                                 type="button"
                                                 onClick={() => handleRejectRequest(req)}
-                                                disabled={isRespondingTaskStaffing}
+                                                disabled={isRespondingTaskStaffing || isClosed || isOnHold}
                                                 className="inline-flex items-center rounded-xl border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 active:scale-95 transition-all disabled:opacity-50"
                                             >
                                                 Từ chối
@@ -825,7 +950,7 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                                         <button
                                             type="button"
                                             onClick={() => handleRejectRequest(req)}
-                                            disabled={isRespondingTaskStaffing}
+                                            disabled={isRespondingTaskStaffing || isClosed || isOnHold}
                                             className="inline-flex items-center rounded-xl border border-red-300 bg-white px-3.5 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 active:scale-95 transition-all shadow-sm disabled:opacity-50"
                                             title="Hủy yêu cầu bổ sung nhân sự này"
                                         >
@@ -1310,6 +1435,8 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                     }}
                     task={assigningTask}
                     project={project}
+                    isClosed={isClosed}
+                    isOnHold={isOnHold}
                 />
             )}
 
@@ -1318,6 +1445,8 @@ export const TaskTable = ({ tasks = [], project, bulkAction = 'assign', emptyMes
                     isOpen={showAddServiceModal}
                     onClose={() => setShowAddServiceModal(false)}
                     project={project}
+                    isClosed={isClosed}
+                    isOnHold={isOnHold}
                 />
             )}
 
