@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
     ShieldCheck, AlertTriangle, AlertCircle, Check, Loader2,
     FileText, ExternalLink, Upload, Trash2, Image as ImageIcon,
-    File as FileIcon, ArrowRight, CornerDownLeft
+    File as FileIcon, ArrowRight, CornerDownLeft, ArrowDownLeft
 } from 'lucide-react';
 import {
     useApproveSettlementPaymentRequestMutation,
@@ -74,8 +74,25 @@ export const PaymentSettlementReviewModal = ({ request, onClose, onSuccess }) =>
         );
     };
 
+    const readyProofs = refundProofFiles.filter((f) => !f.uploading);
+
     const handleApprove = async () => {
         setError('');
+
+        if (isUploadingProofs) {
+            setError('Vui lòng đợi file minh chứng tải lên hoàn tất trước khi duyệt');
+            return;
+        }
+
+        if (readyProofs.length === 0) {
+            const proofLabel = diff > 0
+                ? 'minh chứng chi bù (Ủy nhiệm chi hoặc Phiếu chi đã ký)'
+                : diff < 0
+                ? 'minh chứng thu tiền thừa về quỹ (Phiếu thu đã ký hoặc sao kê tài khoản)'
+                : 'minh chứng đối soát / phê duyệt quyết toán của Kế toán';
+            setError(`Bắt buộc phải tải lên ít nhất 1 ${proofLabel} trước khi duyệt`);
+            return;
+        }
 
         if (diff !== 0 && !refundConfirmed) {
             const msg = diff > 0
@@ -85,24 +102,12 @@ export const PaymentSettlementReviewModal = ({ request, onClose, onSuccess }) =>
             return;
         }
 
-        if (diff > 0) {
-            if (isUploadingProofs) {
-                setError('Vui lòng đợi file chứng từ chi bù tải lên hoàn tất');
-                return;
-            }
-            const readyProofs = refundProofFiles.filter((f) => !f.uploading);
-            if (readyProofs.length === 0) {
-                setError('Bắt buộc tải lên ít nhất 1 chứng từ chi bù (Ủy nhiệm chi hoặc Phiếu chi đã ký)');
-                return;
-            }
-        }
-
         try {
             await approveSettlement({
                 id: request.id,
                 refundConfirmed: Boolean(refundConfirmed),
                 refundPaymentMethod: diff > 0 ? refundPaymentMethod : undefined,
-                refundProofFiles: diff > 0 ? refundProofFiles.filter((f) => !f.uploading) : undefined,
+                refundProofFiles: readyProofs,
                 note: reviewNote.trim() || undefined
             }).unwrap();
 
@@ -134,6 +139,8 @@ export const PaymentSettlementReviewModal = ({ request, onClose, onSuccess }) =>
     };
 
     const settlementFiles = Array.isArray(request?.settlementFiles) ? request.settlementFiles : [];
+    const expenseFiles = settlementFiles.filter((f) => f.docType !== 'REFUND_PROOF');
+    const refundProofFilesFromUser = settlementFiles.filter((f) => f.docType === 'REFUND_PROOF');
 
     return (
         <ModalShell onClose={onClose} maxWidth='max-w-2xl'>
@@ -185,20 +192,20 @@ export const PaymentSettlementReviewModal = ({ request, onClose, onSuccess }) =>
                     </div>
                 </div>
 
-                {/* 2. Hồ sơ chứng từ nhân sự đã nộp */}
+                {/* 2. Hồ sơ chứng từ chi phí do nhân sự nộp */}
                 <div className='rounded-xl border border-stone-200 bg-white p-3.5 space-y-2.5'>
                     <div className='flex items-center justify-between'>
                         <span className='text-xs font-bold text-stone-800 flex items-center gap-1.5'>
                             <FileText size={14} className='text-orange-500' />
-                            Hồ sơ chứng từ quyết toán do nhân sự nộp ({settlementFiles.length} file)
+                            Hồ sơ chứng từ chi phí do nhân sự nộp ({expenseFiles.length} file)
                         </span>
                     </div>
 
-                    {settlementFiles.length === 0 ? (
-                        <p className='text-xs text-stone-400 italic py-1'>Nhân sự chưa đính kèm file chứng từ nào.</p>
+                    {expenseFiles.length === 0 ? (
+                        <p className='text-xs text-stone-400 italic py-1'>Nhân sự chưa đính kèm file chứng từ chi phí nào.</p>
                     ) : (
                         <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
-                            {settlementFiles.map((file, idx) => (
+                            {expenseFiles.map((file, idx) => (
                                 <a
                                     key={file.url || idx}
                                     href={file.url}
@@ -214,7 +221,7 @@ export const PaymentSettlementReviewModal = ({ request, onClose, onSuccess }) =>
                                     </div>
                                     <div className='min-w-0 flex-1'>
                                         <p className='truncate font-medium text-stone-800' title={file.name}>{file.name}</p>
-                                        <span className='text-[10px] text-stone-400'>{file.docType || 'Chứng từ'}</span>
+                                        <span className='text-[10px] text-stone-400'>{file.docType || 'Chứng từ chi'}</span>
                                     </div>
                                     <ExternalLink size={12} className='text-stone-400 shrink-0' />
                                 </a>
@@ -230,97 +237,181 @@ export const PaymentSettlementReviewModal = ({ request, onClose, onSuccess }) =>
                     )}
                 </div>
 
-                {/* 3. Xử lý Chênh lệch nghiệp vụ Kế toán (nếu diff !== 0) */}
-                {!isRejectMode && diff !== 0 && (
-                    <div className='rounded-xl border border-gray-200 bg-orange-50/40 p-4 space-y-3'>
-                        <span className='text-xs font-bold text-stone-800 block'>
-                            Xử lý chênh lệch quỹ ({diff > 0 ? `Chi bù ${formatNumber(diff)} đ` : `Thu hồi ${formatNumber(Math.abs(diff))} đ`})
-                        </span>
+                {/* 2b. Khối Minh chứng hoàn tiền thừa về quỹ do nhân sự nộp (khi diff < 0 hoặc có file) */}
+                {(diff < 0 || refundProofFilesFromUser.length > 0) && (
+                    <div className='rounded-xl border border-indigo-200 bg-indigo-50/30 p-3.5 space-y-2.5'>
+                        <div className='flex items-center justify-between'>
+                            <span className='text-xs font-bold text-indigo-950 flex items-center gap-1.5'>
+                                <ArrowDownLeft size={15} className='text-indigo-600' />
+                                Minh chứng hoàn tiền thừa về quỹ do nhân sự nộp ({refundProofFilesFromUser.length} file)
+                            </span>
+                            {refundProofFilesFromUser.length > 0 ? (
+                                <span className='rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800'>
+                                    ✓ Đã có bill hoàn ứng
+                                </span>
+                            ) : (
+                                <span className='rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800'>
+                                    ⚠️ Chưa có bill hoàn ứng
+                                </span>
+                            )}
+                        </div>
 
+                        {refundProofFilesFromUser.length === 0 ? (
+                            <div className='rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 border border-amber-200 leading-relaxed'>
+                                ⚠️ Nhân sự chưa đính kèm bill chuyển khoản hoặc phiếu nộp tiền thừa ({formatNumber(Math.abs(diff))} đ). Vui lòng kiểm tra sao kê tài khoản nhận kỹ trước khi duyệt hoặc yêu cầu nhân sự bổ sung.
+                            </div>
+                        ) : (
+                            <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
+                                {refundProofFilesFromUser.map((file, idx) => (
+                                    <a
+                                        key={file.url || idx}
+                                        href={file.url}
+                                        target='_blank'
+                                        rel='noopener noreferrer'
+                                        className='flex items-center gap-2 rounded-lg border border-indigo-200 bg-white p-2 text-xs hover:border-indigo-400 hover:bg-indigo-50/60 transition shadow-2xs'
+                                    >
+                                        <div className='flex h-7 w-7 items-center justify-center rounded shrink-0 bg-indigo-100 text-indigo-700'>
+                                            {file.fileType === 'PDF' ? <FileIcon size={14} /> : <ImageIcon size={14} />}
+                                        </div>
+                                        <div className='min-w-0 flex-1'>
+                                            <p className='truncate font-medium text-stone-800' title={file.name}>{file.name}</p>
+                                            <span className='text-[10px] text-indigo-600 font-semibold'>Bill hoàn ứng</span>
+                                        </div>
+                                        <ExternalLink size={12} className='text-indigo-500 shrink-0' />
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Cảnh báo khi nhân sự chưa nộp chứng từ chi phí thực tế */}
+                {Number(request?.settledAmount || 0) > 0 && expenseFiles.length === 0 && (
+                    <div className='flex items-start gap-2.5 rounded-xl bg-amber-50 border border-amber-200 p-3.5 text-xs text-amber-900'>
+                        <AlertTriangle size={16} className='shrink-0 text-amber-600 mt-0.5' />
+                        <div className='space-y-0.5 min-w-0 flex-1'>
+                            <p className='font-bold text-amber-950'>Cảnh báo: Nhân sự chưa nộp chứng từ chi phí thực tế (0 file)</p>
+                            <p className='text-amber-800 leading-relaxed'>
+                                Khoản tiền thực chi ({formatNumber(request?.settledAmount)} đ) chưa có hóa đơn hoặc biên bản nghiệm thu từ nhân sự. Kế toán nên kiểm tra kỹ hoặc bấm <strong>"Yêu cầu làm lại hồ sơ"</strong> để yêu cầu bổ sung.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* 3. Minh chứng xét duyệt của Kế toán (Bắt buộc cho mọi trường hợp) */}
+                {!isRejectMode && (
+                    <div className='rounded-xl border border-stone-200 bg-white p-3.5 space-y-3'>
+                        <div className='flex items-center justify-between'>
+                            <span className='text-xs font-bold text-stone-800 flex items-center gap-1.5'>
+                                <Upload size={14} className='text-orange-500' />
+                                {diff > 0
+                                    ? `Minh chứng chi bù của Kế toán (${formatNumber(diff)} đ)`
+                                    : diff < 0
+                                    ? `Minh chứng thu tiền thừa về quỹ (${formatNumber(Math.abs(diff))} đ)`
+                                    : 'Minh chứng đối soát / phê duyệt quyết toán của Kế toán'}
+                                <span className='text-red-500'>*</span>
+                            </span>
+                            <span className={cn('text-[11px] font-semibold', readyProofs.length > 0 ? 'text-emerald-700' : 'text-amber-700')}>
+                                {readyProofs.length > 0 ? `✓ Đã tải ${readyProofs.length} file` : 'Bắt buộc'}
+                            </span>
+                        </div>
+
+                        {/* Nếu diff > 0: Chọn hình thức chi bù */}
                         {diff > 0 && (
-                            <div className='space-y-3'>
-                                <div>
-                                    <label className={labelCls}>Hình thức chi bù <span className='text-red-500'>*</span></label>
-                                    <div className='grid grid-cols-2 gap-2 mt-1'>
-                                        <label className={cn(
-                                            'flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border p-2 text-xs font-semibold',
-                                            refundPaymentMethod === 'BANK_TRANSFER' ? 'border-gray-500 bg-orange-50 text-orange-700' : 'border-stone-200 bg-white text-stone-600'
-                                        )}>
-                                            <input
-                                                type='radio'
-                                                name='refundPaymentMethod'
-                                                value='BANK_TRANSFER'
-                                                checked={refundPaymentMethod === 'BANK_TRANSFER'}
-                                                onChange={() => setRefundPaymentMethod('BANK_TRANSFER')}
-                                                className='hidden'
-                                            />
-                                            💳 Chuyển khoản (UNC)
-                                        </label>
-                                        <label className={cn(
-                                            'flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border p-2 text-xs font-semibold',
-                                            refundPaymentMethod === 'CASH' ? 'border-gray-500 bg-orange-50 text-orange-700' : 'border-stone-200 bg-white text-stone-600'
-                                        )}>
-                                            <input
-                                                type='radio'
-                                                name='refundPaymentMethod'
-                                                value='CASH'
-                                                checked={refundPaymentMethod === 'CASH'}
-                                                onChange={() => setRefundPaymentMethod('CASH')}
-                                                className='hidden'
-                                            />
-                                            💵 Tiền mặt (Phiếu chi)
-                                        </label>
-                                    </div>
-                                </div>
-
-                                {/* Upload chứng từ chi bù */}
-                                <div>
-                                    <label className={labelCls}>Chứng từ chi bù ({formatNumber(diff)} đ) <span className='text-red-500'>*</span></label>
-                                    <label className='flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-gray-300 bg-white p-3 cursor-pointer hover:bg-orange-50/50 transition'>
-                                        <Upload size={16} className='text-orange-500' />
-                                        <span className='text-xs text-stone-600'>Bấm chọn file UNC / Phiếu chi bù</span>
+                            <div>
+                                <label className={labelCls}>Hình thức chi bù <span className='text-red-500'>*</span></label>
+                                <div className='grid grid-cols-2 gap-2 mt-1'>
+                                    <label className={cn(
+                                        'flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border p-2 text-xs font-semibold',
+                                        refundPaymentMethod === 'BANK_TRANSFER' ? 'border-gray-500 bg-orange-50 text-orange-700' : 'border-stone-200 bg-white text-stone-600'
+                                    )}>
                                         <input
-                                            type='file'
-                                            accept='image/*,application/pdf'
-                                            multiple
-                                            onChange={(e) => { handleUploadRefundProof(e.target.files); e.target.value = ''; }}
+                                            type='radio'
+                                            name='refundPaymentMethod'
+                                            value='BANK_TRANSFER'
+                                            checked={refundPaymentMethod === 'BANK_TRANSFER'}
+                                            onChange={() => setRefundPaymentMethod('BANK_TRANSFER')}
                                             className='hidden'
                                         />
+                                        💳 Chuyển khoản (UNC)
                                     </label>
-                                    {refundProofFiles.length > 0 && (
-                                        <div className='mt-2 space-y-1.5'>
-                                            {refundProofFiles.map((f) => (
-                                                <div key={f.publicId || f.url || f.tempId} className='flex items-center justify-between rounded-lg border bg-white px-2.5 py-1.5 text-xs'>
-                                                    <span className='truncate font-medium text-stone-700'>{f.name}</span>
-                                                    {f.uploading ? <Loader2 size={13} className='animate-spin text-stone-400' /> : (
-                                                        <button type='button' onClick={() => handleRemoveProof(f)} className='text-stone-400 hover:text-red-600'>
-                                                            <Trash2 size={13} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                    <label className={cn(
+                                        'flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border p-2 text-xs font-semibold',
+                                        refundPaymentMethod === 'CASH' ? 'border-gray-500 bg-orange-50 text-orange-700' : 'border-stone-200 bg-white text-stone-600'
+                                    )}>
+                                        <input
+                                            type='radio'
+                                            name='refundPaymentMethod'
+                                            value='CASH'
+                                            checked={refundPaymentMethod === 'CASH'}
+                                            onChange={() => setRefundPaymentMethod('CASH')}
+                                            className='hidden'
+                                        />
+                                        💵 Tiền mặt (Phiếu chi)
+                                    </label>
                                 </div>
                             </div>
                         )}
 
-                        {/* Checkbox xác nhận */}
-                        <label className='flex items-start gap-2 pt-1 cursor-pointer'>
-                            <input
-                                type='checkbox'
-                                checked={refundConfirmed}
-                                onChange={(e) => setRefundConfirmed(e.target.checked)}
-                                className='mt-0.5 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500'
-                            />
-                            <span className='text-xs font-semibold text-stone-800 leading-tight'>
-                                {diff > 0 ? (
-                                    <span>Tôi xác nhận Kế toán đã thực hiện chi bù <strong>{formatNumber(diff)} đ</strong> cho nhân sự theo đúng hồ sơ nghiệm thu.</span>
-                                ) : (
-                                    <span>Tôi xác nhận Kế toán đã thu đủ <strong>{formatNumber(Math.abs(diff))} đ</strong> tiền thừa về quỹ công ty.</span>
-                                )}
+                        {/* Ô upload file */}
+                        <label className='flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-gray-300 bg-orange-50/20 p-3.5 cursor-pointer hover:bg-orange-50/60 hover:border-gray-400 transition'>
+                            <Upload size={18} className='text-orange-500' />
+                            <span className='text-xs font-semibold text-stone-800'>
+                                {diff > 0
+                                    ? 'Bấm chọn file UNC / Phiếu chi bù đã ký'
+                                    : diff < 0
+                                    ? 'Bấm chọn file Phiếu thu tiền hoàn ứng / Sao kê nhận tiền'
+                                    : 'Bấm chọn file Biên bản đối soát / Phiếu duyệt quyết toán'}
                             </span>
+                            <span className='text-[10px] text-stone-400'>Hỗ trợ file ảnh JPG, PNG hoặc PDF tối đa 15MB</span>
+                            <input
+                                type='file'
+                                accept='image/*,application/pdf'
+                                multiple
+                                onChange={(e) => { handleUploadRefundProof(e.target.files); e.target.value = ''; }}
+                                className='hidden'
+                            />
                         </label>
+
+                        {/* Danh sách file Kế toán đã upload */}
+                        {refundProofFiles.length > 0 && (
+                            <div className='space-y-1.5 pt-1'>
+                                {refundProofFiles.map((f) => (
+                                    <div key={f.publicId || f.url || f.tempId} className='flex items-center justify-between rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-1.5 text-xs'>
+                                        <div className='flex items-center gap-2 min-w-0 flex-1'>
+                                            <FileText size={13} className='text-orange-600 shrink-0' />
+                                            <span className='truncate font-medium text-stone-800' title={f.name}>{f.name}</span>
+                                        </div>
+                                        {f.uploading ? (
+                                            <Loader2 size={13} className='animate-spin text-stone-400 shrink-0' />
+                                        ) : (
+                                            <button type='button' onClick={() => handleRemoveProof(f)} className='text-stone-400 hover:text-red-600 shrink-0 ml-2'>
+                                                <Trash2 size={13} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Checkbox xác nhận thu/chi tiền nếu diff !== 0 */}
+                        {diff !== 0 && (
+                            <label className='flex items-start gap-2 pt-2 border-t border-stone-100 cursor-pointer'>
+                                <input
+                                    type='checkbox'
+                                    checked={refundConfirmed}
+                                    onChange={(e) => setRefundConfirmed(e.target.checked)}
+                                    className='mt-0.5 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500'
+                                />
+                                <span className='text-xs font-semibold text-stone-800 leading-tight'>
+                                    {diff > 0 ? (
+                                        <span>Tôi xác nhận Kế toán đã thực hiện chi bù <strong>{formatNumber(diff)} đ</strong> cho nhân sự theo đúng hồ sơ.</span>
+                                    ) : (
+                                        <span>Tôi xác nhận Kế toán đã thu đủ <strong>{formatNumber(Math.abs(diff))} đ</strong> tiền thừa về quỹ công ty.</span>
+                                    )}
+                                </span>
+                            </label>
+                        )}
                     </div>
                 )}
 
@@ -401,15 +492,17 @@ export const PaymentSettlementReviewModal = ({ request, onClose, onSuccess }) =>
                             Gửi yêu cầu làm lại
                         </button>
                     ) : (
-                        <button
-                            type='button'
-                            disabled={isApproving || isUploadingProofs}
-                            onClick={handleApprove}
-                            className={btnPrimary}
-                        >
-                            {(isApproving || isUploadingProofs) && <Loader2 size={14} className='animate-spin' />}
-                            Duyệt quyết toán
-                        </button>
+                        <div className='flex flex-col items-end gap-1'>
+                            <button
+                                type='button'
+                                disabled={isApproving || isUploadingProofs || readyProofs.length === 0 || (diff !== 0 && !refundConfirmed)}
+                                onClick={handleApprove}
+                                className={btnPrimary}
+                            >
+                                {(isApproving || isUploadingProofs) && <Loader2 size={14} className='animate-spin' />}
+                                Duyệt quyết toán
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>

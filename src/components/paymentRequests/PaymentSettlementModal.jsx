@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
     Receipt, FileSignature, ClipboardList, FileText, Upload,
-    Trash2, AlertCircle, Loader2, Check, Info, ArrowRight,
+    Trash2, AlertCircle, Loader2, Check, Info, ArrowRight, ArrowDownLeft,
     Image as ImageIcon, File as FileIcon
 } from 'lucide-react';
 import {
@@ -128,6 +128,24 @@ export const PaymentSettlementModal = ({ request, onClose, onSuccess }) => {
             return;
         }
 
+        const expenseFiles = readyFiles.filter((f) => f.docType !== 'REFUND_PROOF');
+        const refundProofFiles = readyFiles.filter((f) => f.docType === 'REFUND_PROOF');
+
+        if (numSettled > 0 && expenseFiles.length === 0) {
+            setError('Bạn có phát sinh thực chi nhưng chưa tải lên chứng từ chi phí thực tế (Biên bản nghiệm thu, Hóa đơn VAT, Hợp đồng...). Vui lòng tải lên ít nhất 1 chứng từ chi phí ở các mục 1 đến 5.');
+            return;
+        }
+
+        if (diff < 0 && refundProofFiles.length === 0) {
+            setError(`Bạn đang có số tiền thừa cần hoàn ứng là ${formatNumber(Math.abs(diff))} đ. Bắt buộc phải tải lên "6. Minh chứng hoàn ứng" (Bill chuyển khoản hoặc phiếu nộp tiền thừa) trước khi nộp.`);
+            return;
+        }
+
+        if (numSettled === 0 && refundProofFiles.length === 0) {
+            setError('Không phát sinh thực chi. Bắt buộc phải tải lên "6. Minh chứng hoàn ứng" (Bill chuyển khoản hoàn trả 100% tiền tạm ứng về quỹ công ty).');
+            return;
+        }
+
         try {
             await submitSettlement({
                 id: request.id,
@@ -145,19 +163,46 @@ export const PaymentSettlementModal = ({ request, onClose, onSuccess }) => {
 
     const renderDocSection = (title, icon, docType, hint) => {
         const docFiles = attachedFiles.filter((f) => f.docType === docType);
+        const isRefundDoc = docType === 'REFUND_PROOF';
+        const isHighlight = isRefundDoc && diff < 0;
+
         return (
-            <div className='rounded-xl border border-stone-200 bg-white p-3 space-y-2'>
+            <div className={cn(
+                'rounded-xl border p-3 space-y-2 transition',
+                isHighlight
+                    ? 'border-indigo-300 bg-indigo-50/20 ring-1 ring-indigo-200 shadow-2xs'
+                    : 'border-stone-200 bg-white'
+            )}>
                 <div className='flex items-center justify-between'>
                     <div className='flex items-center gap-2'>
-                        <div className='flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600 shrink-0'>
+                        <div className={cn(
+                            'flex h-7 w-7 items-center justify-center rounded-lg shrink-0',
+                            isHighlight ? 'bg-indigo-100 text-indigo-700' : 'bg-orange-100 text-orange-600'
+                        )}>
                             {icon}
                         </div>
                         <div>
-                            <span className='text-xs font-bold text-stone-800'>{title}</span>
+                            <span className={cn('text-xs font-bold', isHighlight ? 'text-indigo-900' : 'text-stone-800')}>{title}</span>
                             <span className='ml-1.5 text-[11px] text-stone-400'>({docFiles.length} file)</span>
+                            {isHighlight && (
+                                docFiles.length === 0 ? (
+                                    <span className='ml-2 inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700'>
+                                        Bắt buộc khi thừa tiền
+                                    </span>
+                                ) : (
+                                    <span className='ml-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700'>
+                                        ✓ Đã đính kèm
+                                    </span>
+                                )
+                            )}
                         </div>
                     </div>
-                    <label className='inline-flex items-center gap-1 rounded-md border border-stone-200 bg-stone-50 px-2.5 py-1 text-[11px] font-medium text-stone-700 hover:border-gray-300 hover:bg-orange-50 hover:text-orange-600 transition cursor-pointer'>
+                    <label className={cn(
+                        'inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-[11px] font-medium transition cursor-pointer',
+                        isHighlight
+                            ? 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                            : 'border-stone-200 bg-stone-50 text-stone-700 hover:border-gray-300 hover:bg-orange-50 hover:text-orange-600'
+                    )}>
                         <Upload size={12} /> Tải file
                         <input
                             type='file'
@@ -194,6 +239,14 @@ export const PaymentSettlementModal = ({ request, onClose, onSuccess }) => {
             </div>
         );
     };
+
+    const readyFiles = attachedFiles.filter((f) => !f.uploading);
+    const expenseFiles = readyFiles.filter((f) => f.docType !== 'REFUND_PROOF');
+    const refundProofFiles = readyFiles.filter((f) => f.docType === 'REFUND_PROOF');
+    const isMissingProof =
+        readyFiles.length === 0 ||
+        (numSettled > 0 && expenseFiles.length === 0) ||
+        ((diff < 0 || numSettled === 0) && refundProofFiles.length === 0);
 
     return (
         <ModalShell onClose={onClose} maxWidth='max-w-2xl'>
@@ -259,7 +312,7 @@ export const PaymentSettlementModal = ({ request, onClose, onSuccess }) => {
                                 <>
                                     <p className='font-bold text-indigo-900'>ℹ️ Thừa tiền tạm ứng {formatNumber(Math.abs(diff))} đ (Hoàn tiền về quỹ)</p>
                                     <p className='text-indigo-800 leading-relaxed'>
-                                        Thực chi ({formatNumber(numSettled)} đ) ít hơn tiền tạm ứng ({formatNumber(paidAmount)} đ). Bạn cần nộp lại <strong>{formatNumber(Math.abs(diff))} đ</strong> thừa về quỹ công ty cho Kế toán.
+                                        Thực chi ({formatNumber(numSettled)} đ) ít hơn tiền tạm ứng ({formatNumber(paidAmount)} đ). Bạn cần nộp lại <strong>{formatNumber(Math.abs(diff))} đ</strong> thừa về quỹ công ty cho Kế toán và tải ảnh Bill chuyển khoản / Phiếu nộp tiền vào mục <strong>6. Minh chứng hoàn ứng</strong> bên dưới.
                                     </p>
                                 </>
                             )}
@@ -281,6 +334,14 @@ export const PaymentSettlementModal = ({ request, onClose, onSuccess }) => {
                     {renderDocSection('3. Hợp đồng khoán việc', <FileSignature size={14} />, 'LABOR_CONTRACT', 'Hợp đồng khoán việc ký kết với nhân sự/talent thực hiện')}
                     {renderDocSection('4. Phụ lục phát sinh', <FileText size={14} />, 'ADDENDUM', 'Phụ lục hợp đồng hoặc tài liệu chứng minh chi phí phát sinh ngoài dự kiến')}
                     {renderDocSection('5. Các hóa đơn khác', <Receipt size={14} />, 'OTHER_INVOICE', 'Hóa đơn bán lẻ, biên lai thu tiền hoặc các chứng từ chi khác (nếu có)')}
+                    {renderDocSection(
+                        '6. Minh chứng hoàn ứng',
+                        <ArrowDownLeft size={14} />,
+                        'REFUND_PROOF',
+                        diff < 0
+                            ? 'Bắt buộc tải lên Bill chuyển khoản hoặc phiếu nộp tiền hoàn trả tiền thừa về tài khoản quỹ công ty'
+                            : 'Đính kèm ảnh Bill chuyển khoản hoàn trả tiền thừa về quỹ công ty (nếu có)'
+                    )}
                 </div>
 
                 {/* 3. Ghi chú quyết toán */}
@@ -297,6 +358,22 @@ export const PaymentSettlementModal = ({ request, onClose, onSuccess }) => {
                     />
                 </div>
 
+                {isMissingProof && !error && (
+                    <div className='flex items-start gap-2 rounded-xl bg-amber-50/80 border border-amber-200 p-3 text-xs text-amber-900'>
+                        <AlertCircle size={15} className='shrink-0 text-amber-600 mt-0.5' />
+                        <div className='space-y-0.5'>
+                            <p className='font-bold'>Chưa đủ hồ sơ minh chứng bắt buộc:</p>
+                            <p className='text-amber-800 leading-relaxed'>
+                                {numSettled > 0 && expenseFiles.length === 0
+                                    ? '• Cần ít nhất 1 chứng từ chi phí thực tế (Biên bản nghiệm thu, Hóa đơn VAT, Hợp đồng khoán việc...)'
+                                    : (diff < 0 || numSettled === 0) && refundProofFiles.length === 0
+                                    ? '• Cần đính kèm "6. Minh chứng hoàn ứng" (Bill chuyển khoản nộp lại tiền thừa về quỹ)'
+                                    : '• Vui lòng tải lên chứng từ quyết toán'}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {error && (
                     <p className='flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600'>
                         <AlertCircle size={14} className='shrink-0' /> {error}
@@ -310,7 +387,7 @@ export const PaymentSettlementModal = ({ request, onClose, onSuccess }) => {
                 </button>
                 <button
                     type='button'
-                    disabled={isSubmitting || isUploadingFiles}
+                    disabled={isSubmitting || isUploadingFiles || isMissingProof}
                     onClick={handleSubmit}
                     className={btnPrimary}
                 >

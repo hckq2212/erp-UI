@@ -522,7 +522,10 @@ export const PaymentRequestsPage = () => {
                                     <td className='px-4 py-3'>
                                         <div className='space-y-1'>
                                             <StatusBadge label={PAYMENT_LABELS[r.paymentStatus] || r.paymentStatus} tone={PAYMENT_TONE[r.paymentStatus]} />
-                                            {r.type === 'ADVANCE' && r.settlementStatus && r.settlementStatus !== 'NOT_APPLICABLE' && (
+                                            {r.type === 'ADVANCE' &&
+                                                !['CANCELLED', 'REJECTED'].includes(r.approvalStatus) &&
+                                                r.settlementStatus &&
+                                                r.settlementStatus !== 'NOT_APPLICABLE' && (
                                                 <div>
                                                     <StatusBadge label={SETTLEMENT_LABELS[r.settlementStatus] || r.settlementStatus} tone={SETTLEMENT_TONE[r.settlementStatus]} />
                                                 </div>

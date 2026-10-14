@@ -3,7 +3,7 @@ import {
     Upload, Image as ImageIcon, File as FileIcon, Loader2, Trash2, History, AlertCircle,
     Wallet, Store, Check, Paperclip, ExternalLink, Ban, Landmark, Info, Printer,
     Zap, FileText, FileSignature, Receipt, ClipboardList, ShieldCheck,
-    AlertTriangle, Layers
+    AlertTriangle, Layers, ArrowDownLeft
 } from 'lucide-react';
 import {
     useReviewPaymentRequestMutation,
@@ -13,6 +13,7 @@ import {
     useSubmitPaymentRequestMutation,
     useSupplementPaymentRequestMutation,
     useUploadPaymentRequestInvoiceFileMutation,
+    useAddSettlementFilesPaymentRequestMutation,
     useGetServiceBudgetQuery,
 } from '../../api/paymentRequests';
 import { formatCurrency } from '../../utils/format';
@@ -431,6 +432,47 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
     const [bodDecide, { isLoading: isDeciding }] = useBodDecidePaymentRequestMutation();
     const [cancelRequest, { isLoading: isCancelling }] = useCancelPaymentRequestMutation();
     const [updateRequest] = useUpdatePaymentRequestMutation();
+    const [uploadInvoiceFile] = useUploadPaymentRequestInvoiceFileMutation();
+    const [addSettlementFiles, { isLoading: isAddingSettlementFiles }] = useAddSettlementFilesPaymentRequestMutation();
+    const [isUploadingRefundProof, setIsUploadingRefundProof] = useState(false);
+    const [refundUploadError, setRefundUploadError] = useState('');
+
+    const handleDirectUploadRefundProof = async (fileList) => {
+        const files = Array.from(fileList || []);
+        if (!files.length) return;
+        setIsUploadingRefundProof(true);
+        setRefundUploadError('');
+
+        try {
+            const uploadedList = [];
+            for (const file of files) {
+                const isAccepted = ACCEPTED_TYPES.some((t) => file.type.startsWith(t)) || Boolean(file.name.match(/\.(docx?|pdf|jpe?g|png|webp)$/i));
+                if (!isAccepted) {
+                    throw new Error(`File "${file.name}" không hợp lệ (hỗ trợ Ảnh, PDF hoặc Word)`);
+                }
+                if (file.size > MAX_FILE_MB * 1024 * 1024) {
+                    throw new Error(`File "${file.name}" vượt quá ${MAX_FILE_MB}MB`);
+                }
+                const uploaded = await uploadInvoiceFile(file).unwrap();
+                uploadedList.push({
+                    ...uploaded,
+                    name: file.name,
+                    originalName: file.name,
+                    docType: 'REFUND_PROOF',
+                    fileType: file.name.match(/\.pdf$/i) ? 'PDF' : 'IMAGE'
+                });
+            }
+
+            await addSettlementFiles({
+                id: request.id,
+                files: uploadedList
+            }).unwrap();
+        } catch (err) {
+            setRefundUploadError(err?.data?.message || err?.message || 'Có lỗi xảy ra khi tải lên minh chứng hoàn ứng');
+        } finally {
+            setIsUploadingRefundProof(false);
+        }
+    };
 
     const handleSaveCashVoucher = async (info) => {
         setError('');
@@ -530,7 +572,10 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                 {request.approvalStatus === 'APPROVED' && (
                     <StatusBadge label={PAYMENT_LABELS[request.paymentStatus] || request.paymentStatus} tone={PAYMENT_TONE[request.paymentStatus]} />
                 )}
-                {request.type === 'ADVANCE' && request.settlementStatus && request.settlementStatus !== 'NOT_APPLICABLE' && (
+                {request.type === 'ADVANCE' &&
+                    !['CANCELLED', 'REJECTED'].includes(request.approvalStatus) &&
+                    request.settlementStatus &&
+                    request.settlementStatus !== 'NOT_APPLICABLE' && (
                     <StatusBadge label={SETTLEMENT_LABELS[request.settlementStatus] || request.settlementStatus} tone={SETTLEMENT_TONE[request.settlementStatus]} />
                 )}
                 {request.isOverdue && (
@@ -765,7 +810,7 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                 )}
 
                 {/* Khối Quyết toán hoàn ứng (dành cho Tạm ứng sản xuất) */}
-                {request.type === 'ADVANCE' && (
+                {request.type === 'ADVANCE' && !['CANCELLED', 'REJECTED'].includes(request.approvalStatus) && (
                     <Section title='Quyết toán hoàn ứng sản xuất' icon={Receipt} tone='action'>
                         <div className='space-y-3 text-xs'>
                             <div className='grid grid-cols-2 gap-2'>
@@ -809,14 +854,105 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                                         </div>
                                     </div>
 
-                                    {Array.isArray(request.settlementFiles) && request.settlementFiles.length > 0 && (
-                                        <div className='pt-1'>
-                                            <span className='text-[11px] font-semibold text-stone-600 block mb-1'>
-                                                Chứng từ quyết toán ({request.settlementFiles.length} file):
-                                            </span>
-                                            <FileLinks files={request.settlementFiles} />
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const allSettlementFiles = Array.isArray(request.settlementFiles) ? request.settlementFiles : [];
+                                        const accountantReviewFiles = allSettlementFiles.filter((f) =>
+                                            ['REFUND_RECEIPT', 'REIMBURSEMENT_PROOF', 'SETTLEMENT_REVIEW_PROOF'].includes(f.docType)
+                                        );
+                                        const expenseFiles = allSettlementFiles.filter((f) =>
+                                            !['REFUND_PROOF', 'REFUND_RECEIPT', 'REIMBURSEMENT_PROOF', 'SETTLEMENT_REVIEW_PROOF'].includes(f.docType)
+                                        );
+                                        const refundProofFiles = allSettlementFiles.filter((f) => f.docType === 'REFUND_PROOF');
+                                        const isRefundExpected = Number(request.settlementDifference) < 0;
+
+                                        return (
+                                            <>
+                                                {expenseFiles.length > 0 ? (
+                                                    <div className='pt-1'>
+                                                        <span className='text-[11px] font-semibold text-stone-600 block mb-1'>
+                                                            Chứng từ quyết toán chi phí ({expenseFiles.length} file):
+                                                        </span>
+                                                        <FileLinks files={expenseFiles} />
+                                                    </div>
+                                                ) : Number(request.settledAmount || 0) > 0 && (
+                                                    <div className='pt-1'>
+                                                        <p className='text-[11px] text-amber-800 bg-amber-50 p-2 rounded border border-amber-200'>
+                                                            ⚠️ Chưa có chứng từ chi phí thực tế do nhân sự nộp.
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {/* Khối Minh chứng hoàn ứng (Khi có hoàn trả tiền thừa hoặc có file đính kèm) */}
+                                                {(isRefundExpected || refundProofFiles.length > 0) && (
+                                                    <div className='mt-2 rounded-lg border border-indigo-200 bg-indigo-50/40 p-2.5 space-y-2'>
+                                                        <div className='flex items-center justify-between'>
+                                                            <span className='text-[11px] font-bold text-indigo-950 flex items-center gap-1.5'>
+                                                                <ArrowDownLeft size={13} className='text-indigo-600' />
+                                                                Minh chứng hoàn tiền thừa về quỹ ({refundProofFiles.length} file):
+                                                            </span>
+                                                            {refundProofFiles.length > 0 ? (
+                                                                <span className='rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800'>
+                                                                    ✓ Đã có bill hoàn ứng
+                                                                </span>
+                                                            ) : (
+                                                                <span className='rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800'>
+                                                                    ⚠️ Thiếu minh chứng
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        {refundProofFiles.length > 0 ? (
+                                                            <div className='space-y-1.5'>
+                                                                <FileLinks files={refundProofFiles} tone='bg-indigo-100 text-indigo-700' />
+                                                            </div>
+                                                        ) : (
+                                                            <p className='text-[11px] text-amber-800 bg-amber-50/80 p-2 rounded border border-amber-200/70'>
+                                                                ⚠️ Chưa có minh chứng chuyển khoản hoàn ứng. Nhân sự cần nộp lại <strong>{formatCurrency(Math.abs(Number(request.settlementDifference)))}</strong> về quỹ công ty.
+                                                            </p>
+                                                        )}
+
+                                                        {/* Nút bổ sung minh chứng hoàn ứng nhanh */}
+                                                        {['SETTLEMENT_SUBMITTED', 'SETTLED', 'WAITING_SETTLEMENT'].includes(request.settlementStatus) && (
+                                                            <div className='pt-1 flex items-center justify-between gap-2 border-t border-indigo-100'>
+                                                                <span className='text-[10px] text-stone-500'>
+                                                                    {refundProofFiles.length > 0 ? 'Cần bổ sung thêm bill chuyển khoản?' : 'Đã chuyển tiền hoàn ứng về tài khoản công ty?'}
+                                                                </span>
+                                                                <label className='inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 bg-white border border-indigo-300 rounded px-2.5 py-1 hover:bg-indigo-50 cursor-pointer shadow-2xs transition'>
+                                                                    {isUploadingRefundProof ? <Loader2 size={12} className='animate-spin' /> : <Upload size={12} />}
+                                                                    <span>{refundProofFiles.length > 0 ? 'Bổ sung thêm bill' : 'Tải lên minh chứng hoàn ứng'}</span>
+                                                                    <input
+                                                                        type='file'
+                                                                        accept='image/*,application/pdf'
+                                                                        multiple
+                                                                        disabled={isUploadingRefundProof}
+                                                                        onChange={(e) => { handleDirectUploadRefundProof(e.target.files); e.target.value = ''; }}
+                                                                        className='hidden'
+                                                                    />
+                                                                </label>
+                                                            </div>
+                                                        )}
+
+                                                        {refundUploadError && (
+                                                            <p className='text-[11px] text-red-600 bg-red-50 p-1.5 rounded border border-red-200'>
+                                                                {refundUploadError}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* Khối Minh chứng xét duyệt của Kế toán */}
+                                                {accountantReviewFiles.length > 0 && (
+                                                    <div className='mt-2 rounded-lg border border-orange-200 bg-orange-50/30 p-2.5 space-y-1.5'>
+                                                        <span className='text-[11px] font-bold text-orange-950 flex items-center gap-1.5'>
+                                                            <ShieldCheck size={13} className='text-orange-600' />
+                                                            Minh chứng đối soát / phê duyệt của Kế toán ({accountantReviewFiles.length} file):
+                                                        </span>
+                                                        <FileLinks files={accountantReviewFiles} tone='bg-orange-100 text-orange-800' />
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
 
                                     {request.settlementNote && (
                                         <p className='text-[11px] text-stone-600 bg-stone-50 p-2 rounded'>
