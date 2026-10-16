@@ -10,7 +10,9 @@ const createEmptyRow = () => ({
     quantity: 1
 });
 
-export const AddExtraTaskModal = ({ isOpen, onClose, project }) => {
+export const AddExtraTaskModal = ({ isOpen, onClose, project, isClosed: propIsClosed, isOnHold: propIsOnHold }) => {
+    const isClosed = propIsClosed ?? ['COMPLETED', 'CANCELLED'].includes(project?.status);
+    const isOnHold = propIsOnHold ?? (project?.status === 'ON_HOLD' || Boolean(project?.isOnHold));
     const { data: jobs = [] } = useGetJobsQuery();
     const [createTask] = useCreateTaskMutation();
     const [rows, setRows] = useState([createEmptyRow()]);
@@ -71,6 +73,14 @@ export const AddExtraTaskModal = ({ isOpen, onClose, project }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isClosed) {
+            toast.warning('Dự án đã đóng — không thể thêm công việc phát sinh');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng — không thể thêm công việc phát sinh');
+            return;
+        }
         if (!validateRows()) return;
 
         setIsSubmitting(true);
@@ -112,6 +122,16 @@ export const AddExtraTaskModal = ({ isOpen, onClose, project }) => {
             className="max-w-4xl"
         >
             <form onSubmit={handleSubmit} className="space-y-4">
+                {isOnHold && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+                        ⚠️ Dự án đang tạm dừng — không thể tạo công việc phát sinh.
+                    </div>
+                )}
+                {isClosed && (
+                    <div className="rounded-xl border border-slate-200 bg-slate-100 p-3 text-xs font-semibold text-slate-700">
+                        🔒 Dự án đã đóng — không thể tạo công việc phát sinh.
+                    </div>
+                )}
                 <div className="rounded-lg border border-gray-200 bg-white">
                     <div className="grid grid-cols-[minmax(0,1fr)_112px_88px] gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3 text-xs font-semibold uppercase text-gray-500">
                         <span>Công việc phát sinh</span>
@@ -172,7 +192,7 @@ export const AddExtraTaskModal = ({ isOpen, onClose, project }) => {
                     <button
                         type="button"
                         onClick={addRow}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isClosed || isOnHold}
                         className="inline-flex h-10 items-center justify-center rounded-md border border-gray-300 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         Thêm công việc
@@ -191,7 +211,7 @@ export const AddExtraTaskModal = ({ isOpen, onClose, project }) => {
                     </button>
                     <button
                         type="submit"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isClosed || isOnHold}
                         className="h-11 min-w-44 rounded-md bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400"
                     >
                         {isSubmitting ? 'Đang xử lý...' : 'Thêm công việc'}

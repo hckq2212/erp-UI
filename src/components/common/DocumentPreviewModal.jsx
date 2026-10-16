@@ -24,7 +24,8 @@ import {
   isValidFileUrl, 
   FILE_TYPES,
   isGoogleUrl,
-  getGoogleEmbedUrl
+  getGoogleEmbedUrl,
+  downloadFile
 } from '../../utils/fileDetector';
 
 /**
@@ -383,15 +384,9 @@ export const DocumentPreviewModal = ({
   };
 
   // Tải file trực tiếp
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!url) return;
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = cleanFileName;
-    a.target = '_blank';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    await downloadFile(url, cleanFileName);
   };
 
   if (!isOpen) return null;

@@ -64,6 +64,8 @@ export const tasksApi = api.injectEndpoints({
       }),
       invalidatesTags: (result, error, { projectId }) => [
         { type: 'Tasks', id: 'LIST' },
+        { type: 'Tasks', id: 'DAILY_WORKLOAD' },
+        'Dashboard',
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
@@ -76,6 +78,8 @@ export const tasksApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
+        { type: 'Tasks', id: 'DAILY_WORKLOAD' },
+        'Dashboard',
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
@@ -88,16 +92,22 @@ export const tasksApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
-        { type: 'Dashboard' },
-        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' },
-      ],
+        { type: 'Tasks', id: 'DAILY_WORKLOAD' },
+        'Dashboard',
+        projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
+      ].filter(Boolean),
     }),
     deleteTask: builder.mutation({
       query: (id) => ({
         url: `/tasks/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: [{ type: 'Tasks', id: 'LIST' }, { type: 'Projects', id: 'LIST' }],
+      invalidatesTags: [
+        { type: 'Tasks', id: 'LIST' },
+        { type: 'Tasks', id: 'DAILY_WORKLOAD' },
+        'Dashboard',
+        { type: 'Projects', id: 'LIST' }
+      ],
     }),
     updateTaskStatus: builder.mutation({
       query: ({ id, status }) => ({
@@ -108,6 +118,8 @@ export const tasksApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
+        { type: 'Tasks', id: 'DAILY_WORKLOAD' },
+        'Dashboard',
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),
@@ -120,6 +132,8 @@ export const tasksApi = api.injectEndpoints({
       invalidatesTags: (result, error, { id, projectId }) => [
         { type: 'Tasks', id },
         { type: 'Tasks', id: 'LIST' },
+        { type: 'Tasks', id: 'DAILY_WORKLOAD' },
+        'Dashboard',
         projectId ? { type: 'Projects', id: projectId } : { type: 'Projects', id: 'LIST' }
       ].filter(Boolean),
     }),

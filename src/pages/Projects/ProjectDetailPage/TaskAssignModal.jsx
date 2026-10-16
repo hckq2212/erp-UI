@@ -58,11 +58,11 @@ const parseDateKey = (dateKey) => {
 };
 
 const getDailyWorkloadClassName = (workloadPercent = 0, taskCount = 0, isSelected = false, hasData = true) => {
-    const selectedClass = isSelected ? 'ring-2 ring-blue-500 ring-offset-1' : '';
+    const selectedClass = isSelected ? 'ring-2 ring-orange-500 ring-offset-1' : '';
     if (!hasData) return `bg-transparent text-slate-300 ${selectedClass}`;
     if (workloadPercent >= 100) return `bg-red-50 text-red-700 ${selectedClass}`;
     if (workloadPercent >= 70) return `bg-amber-50 text-amber-700 ${selectedClass}`;
-    if (workloadPercent > 0 || taskCount > 0) return `bg-blue-50 text-blue-700 ${selectedClass}`;
+    if (workloadPercent > 0 || taskCount > 0) return `bg-orange-50 text-orange-700 ${selectedClass}`;
     return `bg-slate-50 text-slate-500 ${selectedClass}`;
 };
 
@@ -117,7 +117,7 @@ const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSe
 
             {isLoading ? (
                 <div className="flex items-center gap-2 py-2 text-xs font-bold text-slate-400">
-                    <span className="h-3 w-3 rounded-full border-2 border-slate-300 border-t-blue-500 animate-spin" />
+                    <span className="h-3 w-3 rounded-full border-2 border-slate-300 border-t-orange-500 animate-spin" />
                     Đang tải lịch task...
                 </div>
             ) : isError ? (
@@ -150,7 +150,7 @@ const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSe
                                 <button
                                     key={dateKey}
                                     type="button"
-                                    className={`flex aspect-square min-h-10 flex-col items-center justify-center rounded-lg px-1.5 py-1.5 text-center transition hover:bg-blue-50 ${getDailyWorkloadClassName(workloadPercent, taskCount, isSelected, hasData)}`}
+                                    className={`flex aspect-square min-h-10 flex-col items-center justify-center rounded-lg px-1.5 py-1.5 text-center transition hover:bg-orange-50 ${getDailyWorkloadClassName(workloadPercent, taskCount, isSelected, hasData)}`}
                                     title={title}
                                     onClick={() => onSelectDate(dateKey)}
                                 >
@@ -171,7 +171,9 @@ const DailyWorkloadCalendar = ({ data, isLoading, isError, selectedDateKey, onSe
 };
 import { useGetUsersQuery } from '../../../api/users';
 
-export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) => {
+export const TaskAssignModal = ({ isOpen, onClose, task, project, isClosed: propIsClosed, isOnHold: propIsOnHold, onSuccess }) => {
+    const isClosed = propIsClosed ?? ['COMPLETED', 'CANCELLED'].includes(project?.status);
+    const isOnHold = propIsOnHold ?? (project?.status === 'ON_HOLD' || Boolean(project?.isOnHold));
     const isBulk = Array.isArray(task);
     const tasks = useMemo(() => (isBulk ? task : [task]), [isBulk, task]);
     const representativeTask = tasks[0];
@@ -432,6 +434,15 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
     const handleSubmit = useCallback(async (e) => {
         if (e) e.preventDefault();
 
+        if (isClosed) {
+            toast.warning('Dự án đã đóng — không thể phân công công việc');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng — không thể phân công công việc');
+            return;
+        }
+
         if (!formData.isTeamAssignment && !formData.assigneeId) {
             toast.error('Vui lòng chọn người thực hiện');
             return;
@@ -561,7 +572,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
             setIsUploading(false);
             toast.error(err?.data?.message || err?.message || 'Có lỗi xảy ra khi phân công');
         }
-    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedEndDate, requestSupport, parentTask, latestSubtask, vendors]);
+    }, [formData, files, isBulk, tasks, task, projectId, bulkAssignTasks, assignTask, assignSupportTeam, onClose, onSuccess, plannedEndDate, requestSupport, parentTask, latestSubtask, vendors, isClosed, isOnHold]);
 
     return (
         <AnimatePresence>
@@ -591,7 +602,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                     >
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                                <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
                                     <Users className="w-7 h-7" />
                                 </div>
                                 <div>
@@ -620,6 +631,17 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                             </button>
                         </div>
 
+                        {isOnHold && (
+                            <div className="mx-6 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-800">
+                                ⚠️ Dự án đang tạm dừng — chức năng phân công công việc tạm khóa.
+                            </div>
+                        )}
+                        {isClosed && (
+                            <div className="mx-6 mt-4 rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-700">
+                                🔒 Dự án đã đóng — không thể phân công công việc.
+                            </div>
+                        )}
+
                         <div
                             className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-8 overscroll-contain"
                             style={{
@@ -636,7 +658,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                         <button
                                             type="button"
                                             onClick={() => setFormData({ ...formData, performerType: 'INTERNAL', assigneeId: '' })}
-                                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all relative z-10 ${formData.performerType === 'INTERNAL' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'
+                                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all relative z-10 ${formData.performerType === 'INTERNAL' ? 'text-orange-600' : 'text-slate-500 hover:text-slate-700'
                                                 }`}
                                         >
                                             <Info className="w-4 h-4" /> Nội bộ
@@ -647,7 +669,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                         <button
                                             type="button"
                                             onClick={() => setFormData({ ...formData, performerType: 'VENDOR', assigneeId: '' })}
-                                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all relative z-10 ${formData.performerType === 'VENDOR' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'
+                                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all relative z-10 ${formData.performerType === 'VENDOR' ? 'text-orange-600' : 'text-slate-500 hover:text-slate-700'
                                                 }`}
                                         >
                                             <Briefcase className="w-4 h-4" /> Vendor
@@ -695,7 +717,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                     )} */}
                                 </div>
                                 <div className="relative group">
-                                    <div className="absolute left-4 top-1/2 z-10 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
+                                    <div className="absolute left-4 top-1/2 z-10 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-orange-500 transition-colors pointer-events-none">
                                         {formData.isTeamAssignment ? <Users className="w-full h-full" /> : <User className="w-full h-full" />}
                                     </div>
 
@@ -705,7 +727,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                         <>
                                             <button
                                                 type="button"
-                                                className="flex w-full items-center gap-3 rounded-2xl border-2 border-slate-100 bg-white py-4 pl-12 pr-11 text-left font-medium text-slate-700 outline-none transition-all hover:border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50"
+                                                className="flex w-full items-center gap-3 rounded-2xl border-2 border-slate-100 bg-white py-4 pl-12 pr-11 text-left font-medium text-slate-700 outline-none transition-all hover:border-orange-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-50/50"
                                                 onClick={() => setIsAssigneeOpen(prev => !prev)}
                                             >
                                                 {selectedMember ? (
@@ -735,8 +757,8 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                                                 <button
                                                                     key={member.id || member.user.id}
                                                                     type="button"
-                                                                    className={`w-full rounded-xl p-3 text-left transition hover:bg-blue-50 ${formData.assigneeId === member.user.id
-                                                                            ? 'bg-blue-50 ring-1 ring-blue-100'
+                                                                    className={`w-full rounded-xl p-3 text-left transition hover:bg-orange-50 ${formData.assigneeId === member.user.id
+                                                                            ? 'bg-orange-50 ring-1 ring-orange-100'
                                                                             : ''
                                                                         }`}
                                                                     onClick={() => {
@@ -775,7 +797,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                     ) : (
                                         <>
                                             <select
-                                                className="w-full cursor-pointer appearance-none rounded-2xl border-2 border-slate-100 bg-white py-4 pl-12 pr-4 font-medium text-slate-700 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-50/50"
+                                                className="w-full cursor-pointer appearance-none rounded-2xl border-2 border-slate-100 bg-white py-4 pl-12 pr-4 font-medium text-slate-700 outline-none transition-all focus:border-orange-500 focus:ring-4 focus:ring-orange-50/50"
                                                 value={
                                                     formData.isTeamAssignment
                                                         ? formData.selectedTeamId
@@ -960,14 +982,14 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                             <div className="space-y-3">
                                 <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">Deadline</label>
                                 <div className="relative group">
-                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
                                     <input
                                         type="datetime-local"
                                         required
                                         // Tạm thời bỏ min để cho phép chọn deadline trong quá khứ.
                                         // min={safeMinDeadline}
                                         max={maximumDeadline || undefined}
-                                        className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all text-slate-700 font-medium"
+                                        className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-orange-50/50 focus:border-orange-500 outline-none transition-all text-slate-700 font-medium"
                                         value={plannedEndDate}
                                         onChange={(e) => setPlannedEndDate(e.target.value)}
                                     />
@@ -988,11 +1010,11 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                             <div className="space-y-3">
                                 <label className="block text-[13px] font-bold text-slate-500 uppercase tracking-widest ml-1">Ghi chú & Chỉ dẫn</label>
                                 <div className="relative group">
-                                    <FileText className="absolute left-4 top-5 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                                    <FileText className="absolute left-4 top-5 w-5 h-5 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
                                     <textarea
                                         rows={3}
                                         placeholder="Mô tả chi tiết công việc hoặc lưu ý cho người thực hiện..."
-                                        className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50/50 focus:border-blue-500 outline-none transition-all text-slate-700 font-medium placeholder:text-slate-400 min-h-[100px]"
+                                        className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-orange-50/50 focus:border-orange-500 outline-none transition-all text-slate-700 font-medium placeholder:text-slate-400 min-h-[100px]"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     />
@@ -1006,7 +1028,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                     <button
                                         type="button"
                                         onClick={handleAddLink}
-                                        className="flex items-center gap-1.5 py-1.5 px-3 bg-blue-50 text-blue-600 rounded-full text-[11px] font-black uppercase hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                        className="flex items-center gap-1.5 py-1.5 px-3 bg-orange-50 text-orange-600 rounded-full text-[11px] font-black uppercase hover:bg-orange-500 hover:text-white transition-all shadow-sm"
                                     >
                                         <Plus className="w-3.5 h-3.5" /> Thêm Link
                                     </button>
@@ -1025,11 +1047,11 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                                 className="flex gap-2"
                                             >
                                                 <div className="relative flex-1 group">
-                                                    <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                                                    <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
                                                     <input
                                                         type="url"
                                                         placeholder="Nhập link tài liệu (Google Drive, Dropbox...)"
-                                                        className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-xl text-sm outline-none transition-all text-slate-600 font-medium"
+                                                        className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border-2 border-transparent focus:border-orange-500 focus:bg-white rounded-xl text-sm outline-none transition-all text-slate-600 font-medium"
                                                         value={link}
                                                         onChange={(e) => handleLinkChange(index, e.target.value)}
                                                     />
@@ -1047,11 +1069,11 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
 
                                     {/* Files */}
                                     <div
-                                        className="relative overflow-hidden border-2 border-dashed border-slate-200 rounded-3xl p-8 flex flex-col items-center justify-center bg-slate-50/30 hover:bg-blue-50/30 hover:border-blue-300 transition-all cursor-pointer group"
+                                        className="relative overflow-hidden border-2 border-dashed border-slate-200 rounded-3xl p-8 flex flex-col items-center justify-center bg-slate-50/30 hover:bg-orange-50/30 hover:border-orange-300 transition-all cursor-pointer group"
                                         onClick={() => fileInputRef.current.click()}
                                     >
-                                        <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-3 group-hover:scale-110 group-hover:shadow-blue-100 transition-all">
-                                            <Upload className="w-6 h-6 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                        <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-3 group-hover:scale-110 group-hover:shadow-orange-100 transition-all">
+                                            <Upload className="w-6 h-6 text-slate-400 group-hover:text-orange-500 transition-colors" />
                                         </div>
                                         <p className="text-sm font-bold text-slate-600">Thêm tệp đính kèm</p>
                                         <p className="text-[11px] text-slate-400 mt-1 font-medium italic">Kéo thả hoặc bấm để chọn tệp (Tối đa 5 file, 25MB)</p>
@@ -1074,7 +1096,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                                         exit={{ opacity: 0, scale: 0.98 }}
                                                         transition={{ duration: 0.2 }}
                                                         key={`file-${file.name}-${index}`}
-                                                        className="flex items-center justify-between p-4 bg-white border-2 border-slate-50 rounded-2xl hover:border-blue-100 transition-all shadow-sm"
+                                                        className="flex items-center justify-between p-4 bg-white border-2 border-slate-50 rounded-2xl hover:border-orange-100 transition-all shadow-sm"
                                                     >
                                                         <div className="flex items-center gap-4 min-w-0 flex-1">
                                                             <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 shrink-0">
@@ -1087,7 +1109,7 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                                                     {isUploading && uploadProgress[index] !== undefined && (
                                                                         <div className="flex-1 max-w-[100px] h-1 bg-slate-100 rounded-full overflow-hidden">
                                                                             <div
-                                                                                className="bg-blue-600 h-full transition-all duration-300"
+                                                                                className="bg-orange-500 h-full transition-all duration-300"
                                                                                 style={{ width: `${uploadProgress[index]}%` }}
                                                                             ></div>
                                                                         </div>
@@ -1129,8 +1151,8 @@ export const TaskAssignModal = ({ isOpen, onClose, task, project, onSuccess }) =
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={handleSubmit}
-                                disabled={isAssigning || isUploading}
-                                className="flex-[1.5] px-6 py-4 bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:shadow-none"
+                                disabled={isAssigning || isUploading || isClosed || isOnHold}
+                                className="flex-[1.5] px-6 py-4 bg-orange-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-orange-600 shadow-xl shadow-orange-200 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:shadow-none"
                             >
                                 {isAssigning || isUploading ? (
                                     <>

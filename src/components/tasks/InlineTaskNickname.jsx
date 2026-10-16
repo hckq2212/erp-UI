@@ -104,14 +104,6 @@ export const InlineTaskNickname = ({ task, canEdit = false, projectId, className
               Phát sinh
             </span>
           )}
-          {Number(task?.spentAmount || 0) > Number(task?.cost || 0) && (
-            <span
-              className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-300"
-              title={`Đã chi ${Number(task.spentAmount || 0).toLocaleString('vi-VN')}đ / Dự toán ${Number(task.cost || 0).toLocaleString('vi-VN')}đ`}
-            >
-              Vượt chi phí
-            </span>
-          )}
         </div>
       </div>
       {canEdit && (

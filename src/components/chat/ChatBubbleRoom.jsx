@@ -27,8 +27,8 @@ export function ChatBubbleRoom() {
         scrollToBottom();
     }, [messages, typingUsers]);
 
-    const handleSendMessage = (content) => {
-        sendMessage(content);
+    const handleSendMessage = (content, attachments = []) => {
+        sendMessage(content, attachments);
     };
 
     const handleTyping = (isTyping) => {
@@ -65,7 +65,8 @@ export function ChatBubbleRoom() {
                         <ChatMessageItem
                             key={msg.id}
                             message={msg}
-                            isMe={msg.senderId === selfUserId}
+                            isMe={Boolean(selfUserId && (String(msg.senderId) === String(selfUserId) || String(msg.sender?.id) === String(selfUserId)))}
+                            selfUserId={selfUserId}
                         />
                     ))
                 )}
@@ -83,6 +84,7 @@ export function ChatBubbleRoom() {
             <ChatInputWithAutocomplete
                 onSendMessage={handleSendMessage}
                 onTyping={handleTyping}
+                room={activeRoom}
             />
         </div>
     );

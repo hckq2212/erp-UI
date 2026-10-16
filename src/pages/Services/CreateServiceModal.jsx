@@ -9,7 +9,7 @@ import { useCreateServiceMutation } from '../../api/services';
 import { useGetJobsQuery } from '../../api/jobs';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Plus, Trash2, Layers } from 'lucide-react';
+import { Plus, Trash2, Layers, Check } from 'lucide-react';
 import { AddJobModal } from './AddJobModal';
 import { formatCurrency } from '../../utils/format';
 
@@ -49,6 +49,8 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
     });
 
     const selectedJobIds = watch('jobIds') || [];
+    const isAIValue = watch('isAI');
+    const isBudgetValue = watch('isBudget');
 
     useEffect(() => {
         if (!isOpen) {
@@ -164,19 +166,25 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
                         />
 
                         <div className="flex items-end pb-1">
-                            <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 w-full hover:bg-gray-50 cursor-pointer transition-colors">
+                            <label className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 w-full hover:bg-orange-50/40 cursor-pointer transition-colors select-none">
+                                <div className={`w-4 h-4 rounded flex items-center justify-center transition-all shrink-0 ${isAIValue ? 'bg-[#F38820] border border-[#F38820]' : 'border border-gray-300 bg-white'}`}>
+                                    {isAIValue && <Check className="w-3 h-3 stroke-[3] text-white" />}
+                                </div>
                                 <input
                                     type="checkbox"
                                     {...register('isAI')}
-                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    className="sr-only"
                                 />
                                 <span>Dịch vụ liên quan đến AI</span>
                             </label>
                         </div>
                     </div>
 
-                    <label className="flex min-h-11 items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 cursor-pointer">
-                        <input type="checkbox" {...register('isBudget')} className="h-4 w-4 rounded border-gray-300 accent-[#F38820]" />
+                    <label className="flex min-h-11 items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-orange-50/40 cursor-pointer transition-colors select-none">
+                        <div className={`w-4 h-4 rounded flex items-center justify-center transition-all shrink-0 ${isBudgetValue ? 'bg-[#F38820] border border-[#F38820]' : 'border border-gray-300 bg-white'}`}>
+                            {isBudgetValue && <Check className="w-3 h-3 stroke-[3] text-white" />}
+                        </div>
+                        <input type="checkbox" {...register('isBudget')} className="sr-only" />
                         <span>Cho phép nhập ngân sách</span>
                     </label>
 
@@ -187,7 +195,7 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
                                 <label className="block text-sm font-bold text-gray-800">
                                     Hạng mục công việc thực hiện
                                 </label>
-                                <span className="px-2 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 rounded-full border border-blue-100">
+                                <span className="px-2 py-0.5 text-xs font-semibold bg-orange-50 text-[#F38820] rounded-full border border-orange-200">
                                     {selectedJobsList.length} hạng mục
                                 </span>
                             </div>
@@ -196,7 +204,7 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => setIsAddJobModalOpen(true)}
-                                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                className="text-[#F38820] border-orange-200 hover:bg-orange-50"
                             >
                                 <Plus className="h-4 w-4 mr-1" />
                                 Thêm hạng mục
@@ -206,9 +214,9 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
                         {selectedJobsList.length === 0 ? (
                             <div
                                 onClick={() => setIsAddJobModalOpen(true)}
-                                className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer group"
+                                className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-orange-400 hover:bg-orange-50/30 transition-all cursor-pointer group"
                             >
-                                <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
+                                <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-orange-100 group-hover:text-[#F38820] transition-colors">
                                     <Layers className="h-5 w-5" />
                                 </div>
                                 <p className="text-sm font-medium text-gray-700">Chưa có hạng mục nào được chọn</p>
@@ -269,7 +277,7 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
                                                                             handleQuantityChange(job.id, 1);
                                                                         }
                                                                     }}
-                                                                    className="w-16 h-8 text-center text-sm font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white transition-all shadow-sm"
+                                                                    className="w-16 h-8 text-center text-sm font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#F38820] focus:border-[#F38820] outline-none bg-white transition-all shadow-sm"
                                                                 />
                                                             </div>
                                                         </td>
@@ -301,7 +309,7 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
                                 </div>
                                 <div className="bg-gray-50 px-4 py-2.5 border-t border-gray-100 flex justify-between items-center text-xs font-semibold text-gray-600">
                                     <span>Tổng giá vốn tạm tính:</span>
-                                    <span className="text-blue-600 font-bold text-sm">
+                                    <span className="text-[#F38820] font-bold text-sm">
                                         {formatCurrency(totalCostPrice)}
                                     </span>
                                 </div>
@@ -316,7 +324,7 @@ export const CreateServiceModal = ({ isOpen, onClose }) => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
                         <textarea
                             {...register('description')}
-                            className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm min-h-[80px]"
+                            className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-[#F38820] outline-none focus:outline-none focus:ring-1 focus:ring-[#F38820] sm:text-sm min-h-[80px]"
                             placeholder="Nhập mô tả ngắn gọn về dịch vụ..."
                         />
                     </div>

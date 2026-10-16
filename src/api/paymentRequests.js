@@ -146,6 +146,100 @@ export const paymentRequestsApi = api.injectEndpoints({
             }),
             invalidatesTags: (result, error, { id }) => [{ type: 'PaymentRequests', id }],
         }),
+        getServiceBudget: builder.query({
+            query: (params) => ({
+                url: '/payment-requests/service-budget',
+                params,
+            }),
+        }),
+        getProjectBudgetSummary: builder.query({
+            query: (projectId) => `/payment-requests/project-budget-summary/${projectId}`,
+            providesTags: (result, error, projectId) => [
+                { type: 'PaymentRequests', id: `PROJECT_BUDGET_${projectId}` },
+            ],
+        }),
+        recordPaymentRequest: builder.mutation({
+            query: ({ id, ...data }) => ({
+                url: `/payment-requests/${id}/record-payment`,
+                method: 'POST',
+                body: data,
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'PaymentRequests', id },
+                { type: 'PaymentRequests', id: 'LIST' },
+                { type: 'PaymentRequests', id: 'TOTAL_DEBT' },
+            ],
+        }),
+        submitSettlementPaymentRequest: builder.mutation({
+            query: ({ id, ...data }) => ({
+                url: `/payment-requests/${id}/submit-settlement`,
+                method: 'POST',
+                body: data,
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'PaymentRequests', id },
+                { type: 'PaymentRequests', id: 'LIST' },
+            ],
+        }),
+        approveSettlementPaymentRequest: builder.mutation({
+            query: ({ id, ...data }) => ({
+                url: `/payment-requests/${id}/approve-settlement`,
+                method: 'POST',
+                body: data,
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'PaymentRequests', id },
+                { type: 'PaymentRequests', id: 'LIST' },
+                { type: 'PaymentRequests', id: 'TOTAL_DEBT' },
+            ],
+        }),
+        rejectSettlementPaymentRequest: builder.mutation({
+            query: ({ id, reason }) => ({
+                url: `/payment-requests/${id}/reject-settlement`,
+                method: 'POST',
+                body: { reason },
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'PaymentRequests', id },
+                { type: 'PaymentRequests', id: 'LIST' },
+            ],
+        }),
+        addSettlementFilesPaymentRequest: builder.mutation({
+            query: ({ id, files }) => ({
+                url: `/payment-requests/${id}/settlement-files`,
+                method: 'POST',
+                body: { files },
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'PaymentRequests', id },
+                { type: 'PaymentRequests', id: 'LIST' },
+            ],
+        }),
+        getNextPaymentRequestStt: builder.query({
+            query: () => '/payment-requests/next-stt',
+        }),
+        generateWordAndUploadPaymentRequestDoc: builder.mutation({
+            query: (data) => ({
+                url: '/payment-requests/generate-word-and-upload',
+                method: 'POST',
+                body: data,
+            }),
+        }),
+        getPaymentRequestDocPreview: builder.query({
+            query: (id) => `/payment-requests/${id}/doc-preview`,
+            providesTags: (result, error, id) => [{ type: 'PaymentRequests', id: `DOC_PREVIEW_${id}` }],
+        }),
+        syncGoogleSheetPaymentRequest: builder.mutation({
+            query: ({ id, ...data }) => ({
+                url: `/payment-requests/${id}/sync-google-sheet`,
+                method: 'POST',
+                body: data,
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                { type: 'PaymentRequests', id },
+                { type: 'PaymentRequests', id: 'LIST' },
+            ],
+        }),
     }),
 });
 
@@ -165,4 +259,20 @@ export const {
     useBodDecidePaymentRequestMutation,
     usePayPaymentRequestMutation,
     useUploadPaymentRequestProofMutation,
+    useGetServiceBudgetQuery,
+    useLazyGetServiceBudgetQuery,
+    useGetProjectBudgetSummaryQuery,
+    useRecordPaymentRequestMutation,
+    useSubmitSettlementPaymentRequestMutation,
+    useApproveSettlementPaymentRequestMutation,
+    useRejectSettlementPaymentRequestMutation,
+    useAddSettlementFilesPaymentRequestMutation,
+    useGetNextPaymentRequestSttQuery,
+    useLazyGetNextPaymentRequestSttQuery,
+    useGenerateWordAndUploadPaymentRequestDocMutation,
+    useGetPaymentRequestDocPreviewQuery,
+    useLazyGetPaymentRequestDocPreviewQuery,
+    useSyncGoogleSheetPaymentRequestMutation,
 } = paymentRequestsApi;
+
+

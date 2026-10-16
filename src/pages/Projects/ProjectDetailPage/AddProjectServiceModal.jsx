@@ -59,7 +59,9 @@ const createRowFromService = (service, overrides = {}) => {
   };
 };
 
-export const AddProjectServiceModal = ({ isOpen, onClose, project }) => {
+export const AddProjectServiceModal = ({ isOpen, onClose, project, isClosed: propIsClosed, isOnHold: propIsOnHold }) => {
+  const isClosed = propIsClosed ?? ['COMPLETED', 'CANCELLED'].includes(project?.status);
+  const isOnHold = propIsOnHold ?? (project?.status === 'ON_HOLD' || Boolean(project?.isOnHold));
   const { data: servicesResponse, isFetching: isFetchingServices, error: servicesError } = useGetServicesQuery({}, { skip: !isOpen });
   const { data: packageTemplates = [], isFetching: isFetchingPackages } = useGetServicePackagesQuery({}, { skip: !isOpen });
   const [createProjectServiceAddendum, { isLoading: isCreating }] = useCreateProjectServiceAddendumMutation();
@@ -278,6 +280,14 @@ export const AddProjectServiceModal = ({ isOpen, onClose, project }) => {
   };
 
   const handleSubmit = async () => {
+    if (isClosed) {
+      toast.warning('Dự án đã đóng — không thể thêm dịch vụ');
+      return;
+    }
+    if (isOnHold) {
+      toast.warning('Dự án đang tạm dừng — không thể thêm dịch vụ');
+      return;
+    }
     if (!validateItems()) return;
 
     try {
@@ -329,6 +339,17 @@ export const AddProjectServiceModal = ({ isOpen, onClose, project }) => {
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
+
+        {isOnHold && (
+          <div className="mx-6 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-800">
+            ⚠️ Dự án đang tạm dừng — chức năng thêm dịch vụ tạm khóa.
+          </div>
+        )}
+        {isClosed && (
+          <div className="mx-6 mt-4 rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-700">
+            🔒 Dự án đã đóng — không thể thêm dịch vụ.
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto p-6">
           {isFetching ? (
@@ -796,7 +817,7 @@ export const AddProjectServiceModal = ({ isOpen, onClose, project }) => {
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={items.length === 0 || isCreating || isFetching}
+            disabled={items.length === 0 || isCreating || isFetching || isClosed || isOnHold}
             className="flex-[2] rounded-md bg-orange-500 px-4 py-3 font-bold text-white shadow-lg shadow-orange-100 transition-all hover:bg-orange-600 active:scale-95 disabled:cursor-not-allowed disabled:bg-orange-300 disabled:shadow-none"
           >
             <span className="flex items-center justify-center gap-2">

@@ -134,7 +134,7 @@ export const AddJobModal = ({ isOpen, onClose, onAddJob, onAddJobsFromService, s
                             <label className="block text-sm font-medium text-gray-700 mb-1">Loại thực hiện *</label>
                             <select
                                 {...register('performerType')}
-                                className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                                className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-[#F38820] focus:outline-none focus:ring-1 focus:ring-[#F38820] sm:text-sm"
                             >
                                 <option value="INTERNAL">Nội bộ</option>
                                 <option value="EXTERNAL">Bên ngoài</option>
@@ -161,14 +161,14 @@ export const AddJobModal = ({ isOpen, onClose, onAddJob, onAddJobsFromService, s
                             placeholder="Tìm kiếm dịch vụ để lấy hạng mục..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition-all"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#F38820] focus:border-[#F38820] outline-none text-sm transition-all"
                         />
                     </div>
 
                     <div className="max-h-72 overflow-y-auto border border-gray-100 rounded-lg divide-y divide-gray-50">
                         {isLoadingServices ? (
                             <div className="p-10 flex justify-center">
-                                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                                <Loader2 className="h-6 w-6 animate-spin text-[#F38820]" />
                             </div>
                         ) : filteredServices.length > 0 ? (
                             filteredServices.map((sourceService) => (
@@ -188,7 +188,7 @@ export const AddJobModal = ({ isOpen, onClose, onAddJob, onAddJobsFromService, s
                                         onClick={() => handleAddFromService(sourceService)}
                                         isLoading={copyingServiceId === sourceService.id}
                                         disabled={Boolean(copyingServiceId)}
-                                        className="shrink-0 group hover:bg-blue-600 hover:text-white hover:border-blue-600"
+                                        className="shrink-0 group hover:bg-[#F38820] hover:text-white hover:border-[#F38820]"
                                     >
                                         <CopyPlus className="h-4 w-4 mr-1 transition-transform group-active:scale-95" />
                                         Thêm
@@ -222,14 +222,14 @@ export const AddJobModal = ({ isOpen, onClose, onAddJob, onAddJobsFromService, s
                             placeholder="Tìm kiếm hạng mục hiện có..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition-all"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#F38820] focus:border-[#F38820] outline-none text-sm transition-all"
                         />
                     </div>
 
                     <div className="max-h-60 overflow-y-auto border border-gray-100 rounded-lg divide-y divide-gray-50">
                         {isLoadingJobs ? (
                             <div className="p-10 flex justify-center">
-                                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                                <Loader2 className="h-6 w-6 animate-spin text-[#F38820]" />
                             </div>
                         ) : filteredJobs.length > 0 ? (
                             filteredJobs.map((job) => (
@@ -242,7 +242,7 @@ export const AddJobModal = ({ isOpen, onClose, onAddJob, onAddJobsFromService, s
                                         size="sm"
                                         variant="outline"
                                         onClick={() => onAddJob(job.id)}
-                                        className="group hover:bg-blue-600 hover:text-white hover:border-blue-600"
+                                        className="group hover:bg-[#F38820] hover:text-white hover:border-[#F38820]"
                                     >
                                         <Plus className="h-4 w-4 mr-1 transition-transform group-active:scale-95" />
                                         Thêm

@@ -227,11 +227,11 @@ export const MePage = () => {
                 <div className="flex items-center gap-6">
                     {/* Avatar upload */}
                     <label className="relative group cursor-pointer shrink-0">
-                        <div className="w-24 h-24 rounded-full overflow-hidden shadow-2xl shadow-blue-100 ring-8 ring-blue-50 relative">
+                        <div className="w-24 h-24 rounded-full overflow-hidden shadow-xl shadow-orange-100/60 ring-8 ring-orange-50/80 border border-orange-200/60 relative">
                             {avatarPreview ? (
                                 <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
-                                <div className="w-full h-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-4xl">
+                                <div className="w-full h-full bg-orange-100 text-[#F38820] flex items-center justify-center font-black text-4xl">
                                     {initials}
                                 </div>
                             )}
@@ -252,7 +252,7 @@ export const MePage = () => {
                     <div>
                         <div className="flex items-center gap-3 mb-2">
                             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{user.fullName || 'Người dùng'}</h1>
-                            <div className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-[10px] font-black uppercase">{user.role}</div>
+                            <div className="px-3 py-1 bg-orange-50 text-[#F38820] border border-orange-200/80 rounded-full text-[10px] font-black uppercase">{user.role}</div>
                         </div>
                         <p className="text-sm text-gray-400">Nhấp vào ảnh đại diện để thay đổi</p>
                     </div>

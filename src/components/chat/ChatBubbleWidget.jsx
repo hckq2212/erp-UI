@@ -18,6 +18,17 @@ export function ChatBubbleWidget() {
     const { data: currentUser } = useGetMeQuery();
     const currentUserId = currentUser?.id;
 
+    const {
+        rooms = [],
+        activeRoom,
+        setActiveRoom: selectRoom,
+        onlineUsers = [],
+        unreadCounts = {},
+        fetchRooms,
+        createDM,
+        isConnected
+    } = useChatStore();
+
     // Chỉ kết nối socket và fetch rooms khi widget thực sự được người dùng bấm mở
     useEffect(() => {
         if (isChatPage || !isOpen) return;

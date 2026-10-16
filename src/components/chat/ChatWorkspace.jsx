@@ -1,8 +1,11 @@
-import React, { useRef, useEffect, useLayoutEffect } from "react";
-import { Phone, Video, Info, Users as UsersIcon, Plus } from "lucide-react";
+import React, { useRef, useEffect, useLayoutEffect, useCallback, useState } from "react";
+import { Phone, Video, Info, Users as UsersIcon, Plus, Pin, ChevronRight } from "lucide-react";
 import { ChatMessageItem } from "./ChatMessageItem";
 import { ChatInputWithAutocomplete } from "./ChatInputWithAutocomplete";
+import { RoomAvatar } from "./RoomAvatar";
+import { PinnedMessagesModal } from "./PinnedMessagesModal";
 import { useChatStore } from "../../store/useChatStore";
+import { useGetUsersQuery } from "../../api/users";
 
 export function ChatWorkspace({
     activeRoom,
@@ -18,39 +21,105 @@ export function ChatWorkspace({
     showInfo = false,
     onToggleInfo
 }) {
-    const { fetchMoreMessages, loadingMoreMessages, hasMoreMessages } = useChatStore();
+    const {
+        fetchMoreMessages,
+        loadingMoreMessages,
+        hasMoreMessages,
+        pinnedMessagesByRoom
+    } = useChatStore();
+
+    const [showPinnedModal, setShowPinnedModal] = useState(false);
     const scrollContainerRef = useRef(null);
+    const messagesEndRef = useRef(null);
     const prevScrollHeightRef = useRef(0);
     const prevMessagesLengthRef = useRef(0);
     const hasScrolledToBottomForRoomRef = useRef(null);
 
+    const pinnedList = (activeRoom?.id && pinnedMessagesByRoom[activeRoom.id]) || [];
+    const latestPinned = pinnedList.length > 0 ? pinnedList[pinnedList.length - 1] : null;
+
+    const handleJumpToMessage = useCallback((messageId) => {
+        if (!messageId) return;
+        const element = document.getElementById(`chat-msg-${messageId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
+            const bubbleTarget = element.querySelector('[data-chat-bubble="true"]') || element;
+            bubbleTarget.classList.add("ring-2", "ring-[#F38820]", "ring-offset-2", "scale-[1.02]", "transition-all", "duration-200");
+            setTimeout(() => {
+                bubbleTarget.classList.remove("ring-2", "ring-[#F38820]", "ring-offset-2", "scale-[1.02]");
+            }, 2000);
+        }
+    }, []);
+
+    // Listen to custom jump event from ChatInfoSidebar or other modals
+    useEffect(() => {
+        const handleCustomJump = (e) => {
+            if (e.detail?.messageId) {
+                handleJumpToMessage(e.detail.messageId);
+            }
+        };
+        window.addEventListener("chat:jump_to_message", handleCustomJump);
+        return () => window.removeEventListener("chat:jump_to_message", handleCustomJump);
+    }, [handleJumpToMessage]);
+
+    const scrollToBottom = useCallback((behavior = "auto") => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior, block: "end" });
+        } else if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+        }
+    }, []);
+
+    // Reset scroll tracker when active room changes
+    useEffect(() => {
+        hasScrolledToBottomForRoomRef.current = null;
+    }, [activeRoom?.id]);
+
     // Initial load: scroll to bottom when room messages finish loading
     useEffect(() => {
-        if (activeRoom && !loadingMessages) {
-            if (hasScrolledToBottomForRoomRef.current !== activeRoom.id) {
+        if (!activeRoom || loadingMessages) return;
+
+        if (hasScrolledToBottomForRoomRef.current !== activeRoom.id) {
+            if (messages.length > 0 || !loadingMessages) {
+                scrollToBottom("instant");
+                hasScrolledToBottomForRoomRef.current = activeRoom.id;
+                prevMessagesLengthRef.current = messages.length;
                 if (scrollContainerRef.current) {
-                    const container = scrollContainerRef.current;
-                    container.scrollTop = container.scrollHeight;
-                    hasScrolledToBottomForRoomRef.current = activeRoom.id;
-                    prevMessagesLengthRef.current = messages.length;
-                    prevScrollHeightRef.current = container.scrollHeight;
+                    prevScrollHeightRef.current = scrollContainerRef.current.scrollHeight;
                 }
+                // Double-check after render paint
+                requestAnimationFrame(() => scrollToBottom("instant"));
+                setTimeout(() => scrollToBottom("instant"), 80);
+                setTimeout(() => scrollToBottom("instant"), 250);
             }
         }
-    }, [activeRoom, loadingMessages, messages.length]);
+    }, [activeRoom?.id, loadingMessages, messages.length, scrollToBottom]);
 
     // Handle auto-scroll on new messages at the bottom
     useEffect(() => {
         if (!scrollContainerRef.current || messages.length === 0) return;
         const container = scrollContainerRef.current;
-        const isNearBottom = container.scrollHeight - container.clientHeight - container.scrollTop < 150;
+        const isNearBottom = container.scrollHeight - container.clientHeight - container.scrollTop < 250;
         const lastMessage = messages[messages.length - 1];
-        const isMyMessage = lastMessage?.senderId === selfUserId;
+        const isMyMessage = Boolean(selfUserId && (String(lastMessage?.senderId) === String(selfUserId) || String(lastMessage?.sender?.id) === String(selfUserId)));
 
-        if (isMyMessage || isNearBottom) {
+        if (isMyMessage || isNearBottom || hasScrolledToBottomForRoomRef.current !== activeRoom?.id) {
+            scrollToBottom("smooth");
+            if (hasScrolledToBottomForRoomRef.current !== activeRoom?.id) {
+                hasScrolledToBottomForRoomRef.current = activeRoom?.id;
+            }
+        }
+    }, [messages, selfUserId, activeRoom?.id, scrollToBottom]);
+
+    // Image/Media load event: if images finish loading and user was at bottom, stay at bottom!
+    const handleMediaLoad = useCallback(() => {
+        if (!scrollContainerRef.current) return;
+        const container = scrollContainerRef.current;
+        const isNearBottom = container.scrollHeight - container.clientHeight - container.scrollTop < 350;
+        if (isNearBottom || hasScrolledToBottomForRoomRef.current !== activeRoom?.id) {
             container.scrollTop = container.scrollHeight;
         }
-    }, [messages, selfUserId]);
+    }, [activeRoom?.id]);
 
     // Scroll Anchoring: adjust scrollTop when older messages are prepended
     useLayoutEffect(() => {
@@ -83,8 +152,17 @@ export function ChatWorkspace({
             await fetchMoreMessages();
         }
     };
+    const { data: usersData } = useGetUsersQuery();
+    const allUsers = Array.isArray(usersData?.data) ? usersData.data : (Array.isArray(usersData) ? usersData : []);
+
     const getOtherParticipant = (room) => {
-        return room.participants?.find(p => p.userId !== selfUserId)?.user;
+        if (!room) return null;
+        const participant = room.participants?.find(p => p.userId !== selfUserId);
+        if (participant?.user) return participant.user;
+        if (participant?.userId) {
+            return allUsers.find(u => u.id === participant.userId) || null;
+        }
+        return null;
     };
 
     const getTypingText = () => {
@@ -122,11 +200,15 @@ export function ChatWorkspace({
             <div className="px-6 py-3.5 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="relative">
-                        <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-bold text-sm text-[#F38820]">
-                            {activeRoom.isGroup ? <UsersIcon className="w-4 h-4" /> : getRoomName(activeRoom)[0].toUpperCase()}
-                        </div>
+                        <RoomAvatar
+                            room={activeRoom}
+                            user={otherUser}
+                            selfUserId={selfUserId}
+                            allUsers={allUsers}
+                            size="md"
+                        />
                         {isOnline && (
-                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border border-white rounded-full" />
+                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border border-white rounded-full z-20" />
                         )}
                     </div>
                     <div className="flex flex-col">
@@ -174,10 +256,61 @@ export function ChatWorkspace({
                 </div>
             </div>
 
+            {/* Top Pinned Messages Banner */}
+            {pinnedList.length > 0 && latestPinned && (
+                <div
+                    onClick={() => handleJumpToMessage(latestPinned.id)}
+                    className="px-6 py-2 bg-orange-50/70 border-b border-orange-100/90 flex items-center justify-between gap-3 text-xs text-slate-800 cursor-pointer hover:bg-orange-100/70 transition-colors shrink-0 select-none shadow-2xs group"
+                >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className="w-5 h-5 rounded-full bg-orange-100 text-[#F38820] flex items-center justify-center shrink-0">
+                            <Pin className="w-3 h-3 fill-current" />
+                        </div>
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            <span className="font-bold text-slate-900 shrink-0">
+                                {latestPinned.sender?.fullName || latestPinned.sender?.username || "Thành viên"}:
+                            </span>
+                            <span className="truncate text-slate-600">
+                                {latestPinned.isRecalled
+                                    ? "[Tin nhắn đã được thu hồi]"
+                                    : (latestPinned.content || (latestPinned.attachments?.length > 0 ? "[Tệp đính kèm]" : ""))}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                        {pinnedList.length > 1 && (
+                            <span className="text-[11px] font-semibold text-[#F38820] bg-white px-2 py-0.5 rounded-full border border-orange-200">
+                                {pinnedList.length} tin đã ghim
+                            </span>
+                        )}
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowPinnedModal(true);
+                            }}
+                            className="text-[#F38820] hover:text-orange-700 font-medium flex items-center gap-0.5 text-xs hover:underline cursor-pointer"
+                        >
+                            <span>Xem tất cả</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Pinned Messages Modal */}
+            <PinnedMessagesModal
+                isOpen={showPinnedModal}
+                onClose={() => setShowPinnedModal(false)}
+                onJumpToMessage={handleJumpToMessage}
+            />
+
             {/* Messages Area */}
             <div
                 ref={scrollContainerRef}
                 onScroll={handleScroll}
+                onLoadCapture={handleMediaLoad}
                 className="flex-1 overflow-y-auto px-6 py-4 flex flex-col bg-white"
             >
                 {loadingMoreMessages && (
@@ -198,15 +331,17 @@ export function ChatWorkspace({
                         const prevMsg = idx > 0 ? messages[idx - 1] : null;
                         const nextMsg = idx < messages.length - 1 ? messages[idx + 1] : null;
 
-                        const isConsecutive = prevMsg && prevMsg.senderId === msg.senderId;
+                        const isConsecutive = prevMsg && String(prevMsg.senderId) === String(msg.senderId);
                         const showSenderName = !isConsecutive;
-                        const showAvatar = !nextMsg || nextMsg.senderId !== msg.senderId;
+                        const showAvatar = !nextMsg || String(nextMsg.senderId) !== String(msg.senderId);
+                        const isMe = Boolean(selfUserId && (String(msg.senderId) === String(selfUserId) || String(msg.sender?.id) === String(selfUserId)));
 
                         return (
                             <ChatMessageItem
                                 key={msg.id}
                                 message={msg}
-                                isMe={msg.senderId === selfUserId}
+                                isMe={isMe}
+                                selfUserId={selfUserId}
                                 isConsecutive={isConsecutive}
                                 showSenderName={showSenderName}
                                 showAvatar={showAvatar}
@@ -214,6 +349,8 @@ export function ChatWorkspace({
                         );
                     })
                 )}
+                {/* Cuộn tới điểm cuối cùng */}
+                <div ref={messagesEndRef} className="h-0 w-0 shrink-0" />
             </div>
 
             {/* Typing indicators */}
@@ -228,6 +365,7 @@ export function ChatWorkspace({
                 <ChatInputWithAutocomplete
                     onSendMessage={onSendMessage}
                     onTyping={onTyping}
+                    room={activeRoom}
                 />
             </div>
         </div>

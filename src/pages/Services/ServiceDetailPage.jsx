@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useMemo } from 'react';
 import { useGetServiceQuery, useAddJobMutation, useRemoveJobMutation } from '../../api/services';
 import { formatCurrency } from '../../utils/format';
-import { ArrowLeft, Briefcase, List, Trash2, Plus, Edit, Undo2, Save } from 'lucide-react';
+import { ArrowLeft, Briefcase, List, Trash2, Plus, Edit, Undo2, Save, Bot, Coins, Check } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { AddJobModal } from './AddJobModal';
 import { toast } from 'react-toastify';
@@ -15,7 +15,7 @@ export const ServiceDetailPage = () => {
     const navigate = useNavigate();
     const [isAddJobModalOpen, setIsAddJobModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState({ name: '', code: '', unit: '', description: '' });
+    const [editForm, setEditForm] = useState({ name: '', code: '', unit: '', description: '', isAI: false, isBudget: false });
 
     const [draft, setDraft] = useState({});
 
@@ -124,7 +124,9 @@ export const ServiceDetailPage = () => {
                 name: service.name,
                 code: service.code || '',
                 unit: service.unit || '',
-                description: service.description || ''
+                description: service.description || '',
+                isAI: Boolean(service.isAI),
+                isBudget: service.isBudget === true,
             });
         }
         setIsEditing(!isEditing);
@@ -135,7 +137,9 @@ export const ServiceDetailPage = () => {
             const cleanedForm = {
                 ...editForm,
                 code: editForm.code.trim(),
-                description: editForm.description ? editForm.description.trim() : ''
+                description: editForm.description ? editForm.description.trim() : '',
+                isAI: Boolean(editForm.isAI),
+                isBudget: Boolean(editForm.isBudget),
             };
             await updateService({ id, ...cleanedForm }).unwrap();
             toast.success('Cập nhật thông tin thành công');
@@ -160,7 +164,7 @@ export const ServiceDetailPage = () => {
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#F38820]"></div>
                 <p className="text-gray-500 font-medium animate-pulse">Đang tải thông tin dịch vụ...</p>
             </div>
         );
@@ -189,7 +193,19 @@ export const ServiceDetailPage = () => {
                         <ArrowLeft className="h-6 w-6 text-gray-500" />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{service.name}</h1>
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{service.name}</h1>
+                            {service.isAI && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-50 text-[#F38820] border border-orange-200">
+                                    <Bot className="h-3.5 w-3.5 text-[#F38820]" /> Dịch vụ AI
+                                </span>
+                            )}
+                            {service.isBudget && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-50 text-[#F38820] border border-orange-200">
+                                    <Coins className="h-3.5 w-3.5 text-[#F38820]" /> Cho phép nhập ngân sách
+                                </span>
+                            )}
+                        </div>
                         <p className="text-gray-500 text-sm mt-1">Chi tiết thông tin dịch vụ và các hạng mục đi kèm</p>
                     </div>
                 </div>
@@ -208,7 +224,7 @@ export const ServiceDetailPage = () => {
                                 <Button
                                     variant="outline"
                                     onClick={handleToggleEdit}
-                                    className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
+                                    className="bg-white border-orange-200 text-gray-700 hover:bg-gray-50 shadow-sm"
                                 >
                                     Hủy
                                 </Button>
@@ -218,7 +234,7 @@ export const ServiceDetailPage = () => {
                                 <Button
                                     variant="secondary"
                                     onClick={handleToggleEdit}
-                                    className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
+                                    className="bg-white border-orange-200 text-gray-700 hover:bg-gray-50 shadow-sm"
                                 >
                                     <Edit className="h-4 w-4 mr-2" />
                                     Chỉnh sửa
@@ -240,9 +256,9 @@ export const ServiceDetailPage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Basic Info Card */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-6">
                         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                            <Briefcase className="h-5 w-5 text-blue-600" />
+                            <Briefcase className="h-5 w-5 text-[#F38820]" />
                             Thông tin chung
                         </h2>
                         <div className="space-y-4">
@@ -253,10 +269,10 @@ export const ServiceDetailPage = () => {
                                         type="text"
                                         value={editForm.name}
                                         onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                                        className="w-full mt-1 px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/10 text-lg font-bold text-blue-900"
+                                        className="w-full mt-1 px-3 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-[#F38820] focus:border-[#F38820] outline-none focus:outline-none bg-orange-50/10 text-lg font-bold text-gray-900"
                                     />
                                 ) : (
-                                    <p className="text-lg font-bold text-blue-600">{service.name}</p>
+                                    <p className="text-lg font-bold text-[#F38820]">{service.name}</p>
                                 )}
                             </div>
                             <div>
@@ -266,11 +282,11 @@ export const ServiceDetailPage = () => {
                                         type="text"
                                         value={editForm.code}
                                         onChange={(e) => setEditForm(prev => ({ ...prev, code: e.target.value }))}
-                                        className="w-full mt-1 px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/10 text-md font-bold text-blue-900"
+                                        className="w-full mt-1 px-3 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-[#F38820] focus:border-[#F38820] outline-none focus:outline-none bg-orange-50/10 text-md font-bold text-gray-900"
                                         placeholder="Ví dụ: VID"
                                     />
                                 ) : (
-                                    <p className="text-md font-mono font-bold text-blue-600">{service.code || '---'}</p>
+                                    <p className="text-md font-mono font-bold text-[#F38820]">{service.code || '---'}</p>
                                 )}
                             </div>
                             <div>
@@ -280,16 +296,69 @@ export const ServiceDetailPage = () => {
                                         type="text"
                                         value={editForm.unit}
                                         onChange={(e) => setEditForm(prev => ({ ...prev, unit: e.target.value }))}
-                                        className="w-full mt-1 px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/10 text-md font-bold text-blue-900"
+                                        className="w-full mt-1 px-3 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-[#F38820] focus:border-[#F38820] outline-none focus:outline-none bg-orange-50/10 text-md font-bold text-gray-900"
                                         placeholder="Ví dụ: Ngày, Gói..."
                                     />
                                 ) : (
-                                    <p className="text-md font-bold text-blue-600">{service.unit || '---'}</p>
+                                    <p className="text-md font-bold text-[#F38820]">{service.unit || '---'}</p>
                                 )}
                             </div>
                             <div>
                                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Giá vốn</label>
-                                <p className="text-md font-bold text-blue-600">{formatCurrency(service.costPrice)}</p>
+                                <p className="text-md font-bold text-[#F38820]">{formatCurrency(service.costPrice)}</p>
+                            </div>
+                            <div>
+                                <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Cấu hình & Phân loại</label>
+                                {isEditing ? (
+                                    <div className="space-y-2 mt-2">
+                                        <label className="flex items-center gap-3 rounded-lg border border-orange-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-orange-50/40 cursor-pointer transition-colors select-none">
+                                            <div className={`w-4 h-4 rounded flex items-center justify-center transition-all shrink-0 ${editForm.isAI ? 'bg-[#F38820] border border-[#F38820]' : 'border border-orange-300 bg-white'}`}>
+                                                {editForm.isAI && <Check className="w-3 h-3 stroke-[3] text-white" />}
+                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                checked={editForm.isAI}
+                                                onChange={(e) => setEditForm(prev => ({ ...prev, isAI: e.target.checked }))}
+                                                className="sr-only"
+                                            />
+                                            <span className="flex items-center gap-1.5 text-xs text-gray-800">
+                                                <Bot className="h-4 w-4 text-[#F38820]" /> Dịch vụ liên quan đến AI
+                                            </span>
+                                        </label>
+                                        <label className="flex items-center gap-3 rounded-lg border border-orange-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-orange-50/40 cursor-pointer transition-colors select-none">
+                                            <div className={`w-4 h-4 rounded flex items-center justify-center transition-all shrink-0 ${editForm.isBudget ? 'bg-[#F38820] border border-[#F38820]' : 'border border-orange-300 bg-white'}`}>
+                                                {editForm.isBudget && <Check className="w-3 h-3 stroke-[3] text-white" />}
+                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                checked={editForm.isBudget}
+                                                onChange={(e) => setEditForm(prev => ({ ...prev, isBudget: e.target.checked }))}
+                                                className="sr-only"
+                                            />
+                                            <span className="flex items-center gap-1.5 text-xs text-gray-800">
+                                                <Coins className="h-4 w-4 text-[#F38820]" /> Cho phép nhập ngân sách
+                                            </span>
+                                        </label>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {service.isAI && (
+                                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-50 text-[#F38820] border border-orange-200 shadow-sm">
+                                                <Bot className="h-3.5 w-3.5 text-[#F38820]" />
+                                                Dịch vụ AI
+                                            </span>
+                                        )}
+                                        {service.isBudget && (
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-50 text-[#F38820] border border-orange-200 shadow-sm">
+                                                <Coins className="h-3.5 w-3.5 text-[#F38820]" />
+                                                Cho phép nhập ngân sách
+                                            </span>
+                                        )}
+                                        {!service.isAI && !service.isBudget && (
+                                            <span className="text-xs text-gray-400 italic py-0.5">Dịch vụ tiêu chuẩn (Không AI / Không ngân sách)</span>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Mô tả</label>
@@ -298,11 +367,11 @@ export const ServiceDetailPage = () => {
                                         value={editForm.description}
                                         onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
                                         rows={4}
-                                        className="w-full mt-1 px-3 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/10 text-md font-bold text-blue-900"
+                                        className="w-full mt-1 px-3 py-2 border border-orange-200 rounded-lg focus:ring-2 focus:ring-[#F38820] focus:border-[#F38820] outline-none focus:outline-none bg-orange-50/10 text-md font-medium text-gray-900"
                                         placeholder="Nhập mô tả..."
                                     />
                                 ) : (
-                                    <p className="text-md font-bold text-blue-600 whitespace-pre-wrap">{service.description || 'Không có mô tả'}</p>
+                                    <p className="text-md font-medium text-gray-800 whitespace-pre-wrap">{service.description || 'Không có mô tả'}</p>
                                 )}
                             </div>
                         </div>
@@ -311,12 +380,12 @@ export const ServiceDetailPage = () => {
 
                 {/* Jobs List */}
                 <div className="lg:col-span-2">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                    <div className="bg-white rounded-2xl shadow-sm border border-orange-100 overflow-hidden">
+                        <div className="p-6 border-b border-orange-100 flex justify-between items-center">
                             <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                                <List className="h-5 w-5 text-green-600" />
+                                <List className="h-5 w-5 text-[#F38820]" />
                                 Hạng mục công việc
-                                <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-semibold">
+                                <span className="px-2 py-0.5 rounded-full bg-orange-50 text-[#F38820] border border-orange-200 text-xs font-semibold">
                                     {service.serviceJobs?.length || 0}
                                 </span>
                             </h2>
@@ -326,9 +395,9 @@ export const ServiceDetailPage = () => {
                             </Button>
                         </div>
                         {(service.serviceJobs?.length || 0) > 0 && (
-                            <div className="px-6 py-3 bg-gray-50/60 border-b border-gray-100 flex flex-wrap gap-x-8 gap-y-1 text-xs text-gray-500">
+                            <div className="px-6 py-3 bg-gray-50/60 border-b border-orange-100 flex flex-wrap gap-x-8 gap-y-1 text-xs text-gray-500">
                                 <span>Đầu ra: <b className="text-gray-800">{service.serviceJobs.filter(sj => jobValue(sj, 'isOutput')).length}</b></span>
-                                <span>Tổng giá vốn hạng mục: <b className="text-blue-600">{formatCurrency(summary.total)}</b></span>
+                                <span>Tổng giá vốn hạng mục: <b className="text-[#F38820]">{formatCurrency(summary.total)}</b></span>
                             </div>
                         )}
                         {dirtyCount > 0 && (
@@ -347,9 +416,10 @@ export const ServiceDetailPage = () => {
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="bg-gray-50 border-b border-gray-100">
+                                    <tr className="bg-gray-50 border-b border-orange-100">
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Mã</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Tên hạng mục</th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Đơn vị</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Số lượng</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Đầu ra</th>
                                         <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Giá vốn</th>
@@ -366,11 +436,14 @@ export const ServiceDetailPage = () => {
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={() => navigate(`/jobs/${sj.jobId}`)}
-                                                        className="text-gray-700 hover:text-blue-600 hover:underline text-left"
+                                                        className="text-gray-700 hover:text-[#F38820] hover:underline text-left font-medium"
                                                     >
                                                         {sj.job?.name}
                                                     </button>
                                                 </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-600 font-medium">
+                                                {sj.job?.unit || '---'}
                                             </td>
                                             <td className="px-6 py-4 text-sm">
                                                 <input
@@ -382,26 +455,30 @@ export const ServiceDetailPage = () => {
                                                         const q = parseInt(e.target.value, 10);
                                                         if (!Number.isNaN(q) && q >= 1) setDraftValue(sj, 'quantity', q);
                                                     }}
-                                                    className="w-16 px-2 py-1 border rounded focus:ring-1 focus:ring-blue-500 outline-none"
+                                                    className="w-16 px-2 py-1 border border-gray-200 rounded focus:ring-1 focus:ring-[#F38820] focus:border-[#F38820] outline-none text-center font-medium"
                                                 />
-                                                {sj.job?.unit && <span className="ml-2 text-xs text-gray-500">{sj.job.unit}</span>}
                                             </td>
                                             <td className="px-6 py-4 text-sm">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={Boolean(jobValue(sj, 'isOutput'))}
-                                                    onChange={(e) => setDraftValue(sj, 'isOutput', e.target.checked)}
-                                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                                />
+                                                <label className="inline-flex items-center cursor-pointer select-none">
+                                                    <div className={`w-4 h-4 rounded flex items-center justify-center transition-all ${jobValue(sj, 'isOutput') ? 'bg-[#F38820] border border-[#F38820]' : 'border border-gray-300 bg-white'}`}>
+                                                        {Boolean(jobValue(sj, 'isOutput')) && <Check className="w-3 h-3 stroke-[3] text-white" />}
+                                                    </div>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={Boolean(jobValue(sj, 'isOutput'))}
+                                                        onChange={(e) => setDraftValue(sj, 'isOutput', e.target.checked)}
+                                                        className="sr-only"
+                                                    />
+                                                </label>
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-blue-600 font-medium">
+                                            <td className="px-6 py-4 text-sm text-[#F38820] font-bold">
                                                 {formatCurrency((sj.job?.costPrice || 0) * jobValue(sj, 'quantity'))}
                                                 <div className="text-[10px] text-gray-400 font-normal">
                                                     {formatCurrency(sj.job?.costPrice)} / {sj.job?.unit || 'đơn vị'}
                                                 </div>
                                                 <div className="mt-1 flex items-center gap-1.5" title="Tỷ trọng trong tổng giá vốn hạng mục">
                                                     <div className="h-1 w-16 bg-gray-100 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-blue-400" style={{ width: `${summary.byId[sj.id] || 0}%` }} />
+                                                        <div className="h-full bg-[#F38820]" style={{ width: `${summary.byId[sj.id] || 0}%` }} />
                                                     </div>
                                                     <span className="text-[10px] text-gray-400 font-normal">{summary.byId[sj.id] || 0}%</span>
                                                 </div>
@@ -419,7 +496,7 @@ export const ServiceDetailPage = () => {
                                     ))}
                                     {(!service.serviceJobs || service.serviceJobs.length === 0) && (
                                         <tr>
-                                            <td colSpan="6" className="px-6 py-10 text-center text-gray-500">
+                                            <td colSpan="7" className="px-6 py-10 text-center text-gray-500">
                                                 Chưa có hạng mục công việc nào cho dịch vụ này
                                             </td>
                                         </tr>
