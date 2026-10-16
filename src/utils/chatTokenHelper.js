@@ -2,13 +2,11 @@ export const buildTaskToken = (taskId, displayCode) => `#{${taskId}:${displayCod
 
 export const buildUserToken = (userId, displayName) => `@{${userId}:${displayName}}`;
 
+export const buildAllToken = (displayName = "Tất cả mọi người") => `@{all:${displayName}}`;
+
 export const parseChatTokens = (content) => {
     if (!content || typeof content !== 'string') return [];
 
-    // Regex match 3 patterns:
-    // 1. New user token: @{userId:DisplayName}
-    // 2. New task token: #{taskId:DisplayCode}
-    // 3. Legacy task token: @{TaskCode}
     const tokenRegex = /(@\{([A-Za-z0-9_-]+):([^}]+)\})|(#{([A-Za-z0-9_-]+):([^}]+)})|(@\{([A-Za-z0-9_-]+)\})/g;
 
     const parts = [];
@@ -25,9 +23,10 @@ export const parseChatTokens = (content) => {
         }
 
         if (match[1]) {
-            // New user token @{userId:DisplayName}
+            // New user token @{userId:DisplayName} hoặc @{all:Tất cả mọi người}
+            const isAll = match[2] === "all";
             parts.push({
-                type: 'user',
+                type: isAll ? "all" : "user",
                 id: match[2],
                 display: match[3]
             });
@@ -63,6 +62,7 @@ export const stripChatTokens = (content) => {
     if (!content || typeof content !== "string") return "";
     const segments = parseChatTokens(content);
     return segments.map(seg => {
+        if (seg.type === "all") return `@${seg.display}`;
         if (seg.type === "user") return `@${seg.display}`;
         if (seg.type === "task") return `#${seg.display}`;
         if (seg.type === "legacy-task") return `#${seg.code}`;
@@ -107,4 +107,26 @@ export const formatMessagePreview = (message, options = {}) => {
     }
 
     return previewText;
+};
+
+export const parseSafeChatDate = (dateStr) => {
+    if (!dateStr) return null;
+    if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+    let str = String(dateStr).trim();
+    // Nếu chuỗi có định dạng ISO không có timezone indicator (Z hoặc offset +/-hh:mm), chuẩn hóa thêm 'Z' để Date hiểu là UTC
+    if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}/.test(str) && !/[Zz]|[+-]\d{2}:?\d{2}$/.test(str)) {
+        str = str.replace(" ", "T") + "Z";
+    }
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? null : d;
+};
+
+export const formatChatTime = (dateStr) => {
+    try {
+        const d = parseSafeChatDate(dateStr);
+        if (!d) return "";
+        return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+    } catch {
+        return "";
+    }
 };
