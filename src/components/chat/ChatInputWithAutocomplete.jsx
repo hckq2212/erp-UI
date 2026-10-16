@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, Suspense, lazy } from "react";
 import {
     Image,
     Mic,
@@ -7,40 +7,42 @@ import {
     Smile,
     CheckSquare,
     User,
+    Users,
     FolderKanban,
     ChevronRight,
     ArrowLeft,
     X,
     Loader2,
-    Paperclip
+    Paperclip,
+    UploadCloud,
+    FileText,
+    Pencil,
+    Reply
 } from "lucide-react";
+import { useChatStore } from "../../store/useChatStore";
 import { useGetUsersQuery } from "../../api/users";
 import { useGetTasksQuery, useGetTasksByProjectQuery } from "../../api/tasks";
 import { useGetProjectsQuery } from "../../api/projects";
 import { buildTaskToken, buildUserToken } from "../../utils/chatTokenHelper";
 import { uploadToCloudinary } from "../../utils/cloudinary";
+import { toast } from "react-toastify";
+import {
+    validateChatFile,
+    CHAT_FILE_ACCEPT,
+    CHAT_IMAGE_ACCEPT
+} from "../../utils/chatFileValidation";
 
-// Danh mục Emoji phổ biến chuẩn Messenger
-const EMOJI_CATEGORIES = [
-    {
-        name: "Phổ biến",
-        emojis: ["👍", "❤️", "😂", "🥰", "🔥", "🎉", "👏", "😮", "😢", "😎", "🤔", "🚀", "💼", "✅", "❌", "💡", "💯", "🙏"]
-    },
-    {
-        name: "Cảm xúc",
-        emojis: ["😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😊", "😇", "🙂", "😉", "😍", "😘", "😋", "🤪", "🤩", "🥳", "😏", "🥺", "😭", "😤", "😡", "😱", "😴"]
-    },
-    {
-        name: "Cử chỉ",
-        emojis: ["👍", "👎", "👌", "✌️", "🤞", "🤟", "🤘", "🤙", "👈", "👉", "👆", "👇", "✋", "👋", "👏", "🙌", "🤝", "🙏", "💪"]
-    },
-    {
-        name: "Biểu tượng & Công việc",
-        emojis: ["❤️", "🧡", "💛", "💚", "💙", "💜", "💔", "💯", "✨", "⭐", "🌟", "💥", "💼", "📁", "📋", "📌", "📎", "⏰", "⏳", "💻", "📱", "🎯", "🏆"]
-    }
-];
+// Lazy load emoji-picker-react để giữ bundle size ban đầu 0KB
+const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
 export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
+    const {
+        editingMessage,
+        setEditingMessage,
+        editMessage,
+        replyingToMessage,
+        setReplyingToMessage
+    } = useChatStore();
     const [hasContent, setHasContent] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [triggerType, setTriggerType] = useState(null); // 'TASK' | 'USER' | null
@@ -59,11 +61,14 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
 
     // Emoji picker
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [activeEmojiTab, setActiveEmojiTab] = useState(0);
 
     // Ghi âm tin nhắn thoại (Voice message)
     const [isRecording, setIsRecording] = useState(false);
     const [recordingSeconds, setRecordingSeconds] = useState(0);
+
+    // Kéo thả tệp từ máy tính (Drag & Drop)
+    const [isDragging, setIsDragging] = useState(false);
+    const dragCounterRef = useRef(0);
 
     const editorRef = useRef(null);
     const suggestionsRef = useRef(null);
@@ -241,7 +246,30 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
                 }
             });
 
-            return Array.from(userMap.values()).slice(0, 15);
+            const usersList = Array.from(userMap.values()).slice(0, 15);
+
+            // Tùy chọn đặc biệt: Tag tất cả mọi người (@all / @everyone / @mọi người)
+            const allOption = {
+                id: "all",
+                isAll: true,
+                fullName: "Tất cả mọi người",
+                username: "all",
+                subtitle: "Thông báo cho tất cả thành viên trong nhóm"
+            };
+
+            const matchesAll = !qLower ||
+                "tất cả mọi người".includes(qLower) ||
+                "tat ca".includes(qLower) ||
+                "all".includes(qLower) ||
+                "everyone".includes(qLower) ||
+                "mọi người".includes(qLower) ||
+                "moi nguoi".includes(qLower);
+
+            if (matchesAll) {
+                return [...usersList, allOption];
+            }
+
+            return usersList;
         }
 
         return [];
@@ -269,7 +297,7 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
     const checkHasContent = () => {
         if (!editorRef.current) return false;
         const text = editorRef.current.textContent?.trim() || "";
-        const hasChips = editorRef.current.querySelector(".inline-mention-user, .inline-mention-task") !== null;
+        const hasChips = editorRef.current.querySelector(".inline-mention-user, .inline-mention-task, .inline-mention-all") !== null;
         return text.length > 0 || hasChips;
     };
 
@@ -388,6 +416,12 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
             chip.dataset.id = item.id;
             chip.dataset.code = item.code;
             chip.innerText = `#${item.code}`;
+        } else if (item.isAll || item.id === "all") {
+            chip.className = "inline-mention-all inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-orange-100 text-[#F38820] font-bold text-[13px] mx-1 select-none align-baseline cursor-default border border-orange-300 shadow-2xs";
+            chip.dataset.type = "user";
+            chip.dataset.id = "all";
+            chip.dataset.name = "Tất cả mọi người";
+            chip.innerText = "@Tất cả mọi người";
         } else {
             const displayName = item.fullName || item.username || "Thành viên";
             chip.className = "inline-mention-user inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold text-[13px] mx-1 select-none align-baseline cursor-default border border-blue-200 shadow-2xs";
@@ -485,66 +519,102 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
         insertMentionChip(triggerType, item);
     };
 
-    // 3. XỬ LÝ CHỌN VÀ TẢI TỆP / HÌNH ẢNH (Nút + và Nút Ảnh)
-    const handleFileSelect = async (e) => {
-        const files = Array.from(e.target.files || []);
-        if (files.length === 0) return;
-        e.target.value = null;
+    // 3. XỬ LÝ CHỌN VÀ TẢI TỆP / HÌNH ẢNH (Nút +, Nút Ảnh, Kéo thả & Ctrl+V)
+    const processIncomingFiles = async (files) => {
+        if (!files || files.length === 0) return;
+
+        // 1. Kiểm tra từng file qua bộ lọc validateChatFile (15MB, định dạng cho phép)
+        const validFiles = [];
+        for (const file of files) {
+            const result = validateChatFile(file);
+            if (!result.valid) {
+                toast.error(result.error);
+            } else {
+                validFiles.push(file);
+            }
+        }
+
+        if (validFiles.length === 0) return;
 
         setIsUploadingAttachment(true);
         try {
-            for (const file of files) {
+            for (const file of validFiles) {
                 const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-                const uploadRes = await uploadToCloudinary(file, "GETVINI/ERP/chat/attachments");
+                const isImg = file.type?.startsWith("image/") || /\.(jpg|jpeg|png|webp|gif)$/i.test(file.name || "");
+                const folder = isImg ? "GETVINI/ERP/chat/images" : "GETVINI/ERP/chat/attachments";
+                const uploadRes = await uploadToCloudinary(file, folder);
                 const url = uploadRes?.url || uploadRes?.secure_url;
                 if (url) {
                     setPendingAttachments(prev => [
                         ...prev,
                         {
                             id: tempId,
-                            name: file.name,
+                            name: file.name || (isImg ? "Hình ảnh" : "Tệp đính kèm"),
                             size: file.size,
-                            type: file.type?.startsWith("image/") ? "image" : "file",
+                            type: isImg ? "image" : "file",
                             url
                         }
                     ]);
                 }
             }
         } catch (err) {
-            console.error("Lỗi khi tải tệp:", err);
+            console.error("Lỗi khi tải tệp/hình ảnh:", err);
+            toast.error("Có lỗi xảy ra khi tải tệp lên máy chủ.");
         } finally {
             setIsUploadingAttachment(false);
         }
+    };
+
+    const handleFileSelect = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+        e.target.value = null;
+        await processIncomingFiles(files);
     };
 
     const handleImageSelect = async (e) => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
         e.target.value = null;
+        await processIncomingFiles(files);
+    };
 
-        setIsUploadingAttachment(true);
-        try {
-            for (const file of files) {
-                const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-                const uploadRes = await uploadToCloudinary(file, "GETVINI/ERP/chat/images");
-                const url = uploadRes?.url || uploadRes?.secure_url;
-                if (url) {
-                    setPendingAttachments(prev => [
-                        ...prev,
-                        {
-                            id: tempId,
-                            name: file.name,
-                            size: file.size,
-                            type: "image",
-                            url
-                        }
-                    ]);
-                }
-            }
-        } catch (err) {
-            console.error("Lỗi khi tải hình ảnh:", err);
-        } finally {
-            setIsUploadingAttachment(false);
+    // Kéo thả tệp từ Windows Explorer
+    const handleDragEnter = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounterRef.current += 1;
+        if (e.dataTransfer?.items && e.dataTransfer.items.length > 0) {
+            setIsDragging(true);
+        }
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = "copy";
+        if (!isDragging) setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounterRef.current -= 1;
+        if (dragCounterRef.current <= 0) {
+            dragCounterRef.current = 0;
+            setIsDragging(false);
+        }
+    };
+
+    const handleDrop = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounterRef.current = 0;
+        setIsDragging(false);
+
+        const files = Array.from(e.dataTransfer?.files || []);
+        if (files.length > 0) {
+            await processIncomingFiles(files);
         }
     };
 
@@ -681,6 +751,14 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
 
         if (e.key === "Escape") {
             e.preventDefault();
+            if (editingMessage) {
+                cancelEditing();
+                return;
+            }
+            if (replyingToMessage) {
+                cancelReplying();
+                return;
+            }
             setShowSuggestions(false);
             setShowEmojiPicker(false);
             setTriggerType(null);
@@ -695,6 +773,42 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
         }
     };
 
+    // Khi editingMessage thay đổi -> điền nội dung vào editor và focus
+    useEffect(() => {
+        if (editingMessage && editorRef.current) {
+            editorRef.current.innerText = editingMessage.content || "";
+            setHasContent(Boolean(editingMessage.content?.trim()));
+            editorRef.current.focus();
+            try {
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.selectNodeContents(editorRef.current);
+                range.collapse(false);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } catch (err) {}
+        }
+    }, [editingMessage]);
+
+    // Khi replyingToMessage thay đổi -> focus vào editor
+    useEffect(() => {
+        if (replyingToMessage && editorRef.current) {
+            editorRef.current.focus();
+        }
+    }, [replyingToMessage]);
+
+    const cancelEditing = () => {
+        setEditingMessage(null);
+        if (editorRef.current) {
+            editorRef.current.innerHTML = "";
+            setHasContent(false);
+        }
+    };
+
+    const cancelReplying = () => {
+        setReplyingToMessage(null);
+    };
+
     const handleSubmit = () => {
         if (isUploadingAttachment) return;
         const editor = editorRef.current;
@@ -704,7 +818,18 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
         if (!finalContent && pendingAttachments.length === 0) return;
 
         const contentToSend = finalContent || "";
+
+        if (editingMessage) {
+            if (!contentToSend.trim()) return;
+            editMessage(room?.id, editingMessage.id, contentToSend.trim());
+            cancelEditing();
+            return;
+        }
+
         onSendMessage(contentToSend, pendingAttachments);
+        if (replyingToMessage) {
+            cancelReplying();
+        }
 
         editor.innerHTML = "";
         setPendingAttachments([]);
@@ -718,9 +843,47 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
         if (typingTimeout) clearTimeout(typingTimeout);
     };
 
-    const handlePaste = (e) => {
+    const handlePaste = async (e) => {
+        const clipboardData = e.clipboardData;
+        if (!clipboardData) return;
+
+        // 1. Kiểm tra xem có tệp hoặc hình ảnh trong clipboard không
+        const files = [];
+
+        // Kiểm tra clipboardData.files (khi copy file từ Windows Explorer hoặc ảnh từ app khác)
+        if (clipboardData.files && clipboardData.files.length > 0) {
+            for (let i = 0; i < clipboardData.files.length; i++) {
+                files.push(clipboardData.files[i]);
+            }
+        }
+
+        // Kiểm tra clipboardData.items (chụp ảnh màn hình Snipping Tool Win+Shift+S / PrintScreen / copy từ web)
+        if (files.length === 0 && clipboardData.items && clipboardData.items.length > 0) {
+            for (let i = 0; i < clipboardData.items.length; i++) {
+                const item = clipboardData.items[i];
+                if (item.kind === "file") {
+                    const file = item.getAsFile();
+                    if (file) {
+                        const isUnnamed = !file.name || file.name === "image.png" || file.name === "blob";
+                        const namedFile = isUnnamed
+                            ? new File([file], `screenshot_${Date.now()}.png`, { type: file.type || "image/png" })
+                            : file;
+                        files.push(namedFile);
+                    }
+                }
+            }
+        }
+
+        // Nếu có tệp/ảnh trong clipboard -> Ngăn dán text/html và tải ảnh lên danh sách đính kèm
+        if (files.length > 0) {
+            e.preventDefault();
+            await processIncomingFiles(files);
+            return;
+        }
+
+        // 2. Nếu là văn bản thuần -> Dán dưới dạng plain text an toàn
         e.preventDefault();
-        const text = e.clipboardData?.getData("text/plain") || "";
+        const text = clipboardData.getData("text/plain") || "";
         if (text) {
             document.execCommand("insertText", false, text);
             handleInput();
@@ -743,11 +906,33 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
     const canSend = (hasContent || pendingAttachments.length > 0) && !isUploadingAttachment;
 
     return (
-        <div className="relative w-full flex flex-col bg-white px-3 py-2 border-t border-gray-100">
+        <div
+            className={`relative w-full flex flex-col bg-white px-3 py-2 border-t border-gray-100 transition-all ${
+                isDragging ? "bg-orange-50/70 ring-2 ring-dashed ring-[#F38820]" : ""
+            }`}
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+        >
+            {/* Visual drop overlay when dragging files over input */}
+            {isDragging && (
+                <div className="absolute inset-0 bg-orange-50/95 border-2 border-dashed border-[#F38820] rounded-xl z-50 flex flex-col items-center justify-center gap-1.5 pointer-events-none animate-fade-in backdrop-blur-2xs shadow-lg">
+                    <UploadCloud className="w-8 h-8 text-[#F38820] animate-bounce" />
+                    <span className="text-xs font-bold text-[#F38820]">
+                        Thả tệp hoặc hình ảnh vào đây để gửi
+                    </span>
+                    <span className="text-[10px] text-gray-500 font-sans">
+                        Hỗ trợ tối đa 15MB (Ảnh, PDF, Excel, Word, Zip, v.v.)
+                    </span>
+                </div>
+            )}
+
             {/* Hidden file & image inputs */}
             <input
                 ref={fileInputRef}
                 type="file"
+                accept={CHAT_FILE_ACCEPT}
                 multiple
                 className="hidden"
                 onChange={handleFileSelect}
@@ -755,7 +940,7 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
             <input
                 ref={imageInputRef}
                 type="file"
-                accept="image/*"
+                accept={CHAT_IMAGE_ACCEPT}
                 multiple
                 className="hidden"
                 onChange={handleImageSelect}
@@ -763,48 +948,105 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
 
             {/* Dải xem trước tệp và hình ảnh đang chờ gửi (Pending Attachments Bar) */}
             {(pendingAttachments.length > 0 || isUploadingAttachment) && (
-                <div className="flex items-center gap-2 px-2 py-1.5 mb-1.5 bg-gray-50 border border-gray-200/60 rounded-xl overflow-x-auto animate-fade-in">
-                    {pendingAttachments.map(att => (
-                        <div
-                            key={att.id}
-                            className="relative shrink-0 group border border-gray-200 rounded-lg overflow-hidden bg-white shadow-2xs"
-                        >
-                            {att.type === "image" ? (
-                                <div className="w-14 h-14 relative">
-                                    <img
-                                        src={att.url}
-                                        alt={att.name}
-                                        className="w-full h-full object-cover"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemovePendingAttachment(att.id)}
-                                        className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] shadow-xs cursor-pointer hover:bg-red-600"
-                                        title="Xóa ảnh"
-                                    >
-                                        <X className="w-2.5 h-2.5 stroke-[3]" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-1.5 px-2 py-1.5 max-w-[180px]">
-                                    <Paperclip className="w-3.5 h-3.5 text-[#F38820] shrink-0" />
-                                    <span className="text-xs font-mono text-slate-700 truncate" title={att.name}>
-                                        {att.name}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemovePendingAttachment(att.id)}
-                                        className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer ml-1 shrink-0"
-                                        title="Xóa tệp"
-                                    >
-                                        <X className="w-3 h-3 stroke-[2.5]" />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                <div className="flex items-center gap-2.5 px-3 py-2 mb-2 bg-[#fdfbf9] border border-orange-200/80 rounded-2xl overflow-x-auto animate-fade-in shadow-2xs">
+                    {pendingAttachments.map(att => {
+                        const getBadge = (name = "") => {
+                            const ext = name.split(".").pop()?.toLowerCase() || "";
+                            switch (ext) {
+                                case "pdf":
+                                    return { label: "PDF", bg: "#EF4444" };
+                                case "doc":
+                                case "docx":
+                                    return { label: "DOC", bg: "#2563EB" };
+                                case "xls":
+                                case "xlsx":
+                                case "csv":
+                                    return { label: "XLS", bg: "#10B981" };
+                                case "ppt":
+                                case "pptx":
+                                    return { label: "PPT", bg: "#F59E0B" };
+                                case "zip":
+                                case "rar":
+                                case "7z":
+                                case "tar":
+                                case "gz":
+                                    return { label: "ZIP", bg: "#8B5CF6" };
+                                case "txt":
+                                case "log":
+                                case "md":
+                                    return { label: "TXT", bg: "#64748B" };
+                                default:
+                                    return { label: ext ? ext.slice(0, 4).toUpperCase() : "FILE", bg: "#64748B" };
+                            }
+                        };
+
+                        const formatSize = (bytes) => {
+                            if (!bytes || isNaN(bytes)) return "";
+                            if (bytes < 1024) return `${bytes} B`;
+                            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+                            return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+                        };
+
+                        const badge = getBadge(att.name);
+
+                        return (
+                            <div
+                                key={att.id}
+                                className="relative shrink-0 group border border-gray-200/90 hover:border-orange-300 rounded-xl overflow-hidden bg-white shadow-2xs transition-all"
+                            >
+                                {att.type === "image" ? (
+                                    <div className="w-16 h-16 relative">
+                                        <img
+                                            src={att.url}
+                                            alt={att.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemovePendingAttachment(att.id)}
+                                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 hover:bg-red-500 text-white flex items-center justify-center text-xs transition-colors cursor-pointer shadow-xs"
+                                            title="Xóa ảnh"
+                                        >
+                                            <X className="w-3 h-3 stroke-[2.5]" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2.5 px-3 py-2 min-w-[210px] max-w-[290px]">
+                                        {/* File Badge Icon */}
+                                        <div
+                                            className="w-9 h-10 rounded-lg flex flex-col items-center justify-center font-black text-[10px] text-white shrink-0 shadow-2xs relative"
+                                            style={{ backgroundColor: badge.bg }}
+                                        >
+                                            <FileText className="w-4 h-4 opacity-90 mb-0.5" />
+                                            <span className="leading-none tracking-tight">{badge.label}</span>
+                                        </div>
+
+                                        {/* File Info */}
+                                        <div className="flex-1 min-w-0 pr-1">
+                                            <p className="text-[12.5px] font-semibold text-slate-800 truncate leading-snug font-sans" title={att.name}>
+                                                {att.name}
+                                            </p>
+                                            <p className="text-[11px] text-gray-500 font-sans mt-0.5">
+                                                {formatSize(att.size) || "Tệp đính kèm"}
+                                            </p>
+                                        </div>
+
+                                        {/* Remove Button */}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemovePendingAttachment(att.id)}
+                                            className="w-6 h-6 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center transition-all cursor-pointer shrink-0"
+                                            title="Xóa tệp"
+                                        >
+                                            <X className="w-3.5 h-3.5 stroke-[2]" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                     {isUploadingAttachment && (
-                        <div className="flex items-center gap-1.5 px-3 py-2 text-xs text-gray-500 font-medium">
+                        <div className="flex items-center gap-2 px-3 py-2 text-xs text-orange-600 font-medium bg-orange-50/80 rounded-xl border border-orange-200/60 shrink-0">
                             <Loader2 className="w-4 h-4 text-[#F38820] animate-spin" />
                             <span>Đang tải lên...</span>
                         </div>
@@ -812,52 +1054,31 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
                 </div>
             )}
 
-            {/* Popup chọn Emoji chuẩn Messenger */}
+            {/* Popup chọn Emoji chuẩn bằng emoji-picker-react (Lazy Loaded) */}
             {showEmojiPicker && (
                 <div
                     ref={emojiPickerRef}
-                    className="absolute right-4 bottom-full mb-2 w-80 bg-white border border-gray-200 shadow-2xl rounded-2xl z-50 overflow-hidden flex flex-col animate-fade-in"
+                    className="absolute right-4 bottom-full mb-2 z-50 shadow-2xl rounded-2xl overflow-hidden border border-gray-200 animate-fade-in bg-white"
                 >
-                    {/* Header Emoji tabs */}
-                    <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between text-xs font-bold text-gray-700">
-                        <div className="flex items-center gap-1">
-                            {EMOJI_CATEGORIES.map((cat, idx) => (
-                                <button
-                                    key={cat.name}
-                                    type="button"
-                                    onClick={() => setActiveEmojiTab(idx)}
-                                    className={`px-2 py-1 rounded-lg text-xs transition-colors cursor-pointer ${
-                                        activeEmojiTab === idx
-                                            ? "bg-orange-100 text-[#F38820] font-bold"
-                                            : "text-gray-500 hover:bg-gray-200/60"
-                                    }`}
-                                >
-                                    {cat.name}
-                                </button>
-                            ))}
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setShowEmojiPicker(false)}
-                            className="p-1 rounded-full text-gray-400 hover:text-gray-600 cursor-pointer"
-                        >
-                            <X className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-
-                    {/* Emoji Grid */}
-                    <div className="p-3 max-h-56 overflow-y-auto grid grid-cols-7 gap-1 text-xl select-none">
-                        {EMOJI_CATEGORIES[activeEmojiTab].emojis.map((emoji, idx) => (
-                            <button
-                                key={idx}
-                                type="button"
-                                onClick={() => handleInsertEmoji(emoji)}
-                                className="w-8 h-8 flex items-center justify-center hover:bg-orange-50 rounded-lg transition-transform hover:scale-125 cursor-pointer"
-                            >
-                                {emoji}
-                            </button>
-                        ))}
-                    </div>
+                    <Suspense
+                        fallback={
+                            <div className="w-[340px] h-[400px] flex flex-col items-center justify-center gap-2 bg-white rounded-2xl">
+                                <Loader2 className="w-6 h-6 animate-spin text-[#F38820]" />
+                                <span className="text-xs text-gray-400 font-medium">Đang tải biểu cảm...</span>
+                            </div>
+                        }
+                    >
+                        <EmojiPicker
+                            onEmojiClick={(emojiData) => handleInsertEmoji(emojiData.emoji)}
+                            autoFocusSearch={false}
+                            searchPlaceHolder="Tìm kiếm biểu cảm..."
+                            width={340}
+                            height={400}
+                            previewConfig={{ showPreview: false }}
+                            lazyLoadEmojis={true}
+                            theme="light"
+                        />
+                    </Suspense>
                 </div>
             )}
 
@@ -1039,7 +1260,41 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
                                     );
                                 }
 
-                                // 3. Item là USER
+                                // 3. Item là USER (bao gồm cả tùy chọn đặc biệt: @Tất cả mọi người)
+                                if (item.isAll) {
+                                    return (
+                                        <button
+                                            key="user-all"
+                                            type="button"
+                                            data-index={idx}
+                                            onClick={() => handleSelectSuggestion(item)}
+                                            className={`w-full text-left px-3.5 py-2.5 text-xs flex items-center gap-2.5 transition-colors cursor-pointer border-b border-orange-100/70 ${
+                                                isSelected ? "bg-orange-50 text-[#F38820]" : "text-slate-800 hover:bg-orange-50/40"
+                                            }`}
+                                        >
+                                            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#F38820] to-orange-400 text-white flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-2xs">
+                                                <Users className="w-4 h-4 text-white" />
+                                            </div>
+                                            <div className="flex flex-col min-w-0 flex-1">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="font-bold text-slate-900 text-xs truncate flex items-center gap-1.5">
+                                                        <span>Tất cả mọi người</span>
+                                                        <span className="text-[10px] text-orange-600 font-mono font-bold bg-orange-100 px-1.5 py-0.2 rounded-full border border-orange-200">
+                                                            @all
+                                                        </span>
+                                                    </span>
+                                                    <span className="text-[9px] px-1.5 py-0.2 bg-orange-100 text-[#F38820] rounded font-bold border border-orange-200">
+                                                        Cả nhóm
+                                                    </span>
+                                                </div>
+                                                <span className="text-[10px] text-gray-500 truncate mt-0.5">
+                                                    Thông báo cho tất cả thành viên trong nhóm
+                                                </span>
+                                            </div>
+                                        </button>
+                                    );
+                                }
+
                                 const displayName = item.fullName || item.username || "Thành viên";
                                 const initial = displayName[0]?.toUpperCase() || "U";
                                 return (
@@ -1085,6 +1340,63 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
                             })
                         )}
                     </div>
+                </div>
+            )}
+
+            {/* Thanh trạng thái Đang chỉnh sửa tin nhắn */}
+            {editingMessage && (
+                <div className="px-4 py-2 bg-orange-50/90 border-t border-orange-200/80 flex items-center justify-between text-xs text-slate-700 animate-in fade-in select-none rounded-t-xl mb-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-5 h-5 rounded-full bg-orange-100 text-[#F38820] flex items-center justify-center shrink-0">
+                            <Pencil className="w-3 h-3" />
+                        </div>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-bold text-[#F38820] shrink-0">Chỉnh sửa tin nhắn:</span>
+                            <span className="truncate text-slate-600 max-w-[280px] sm:max-w-[450px]">
+                                {editingMessage.content}
+                            </span>
+                            <span className="text-[11px] text-gray-400 shrink-0">
+                                (tối đa 15 phút)
+                            </span>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={cancelEditing}
+                        className="p-1 rounded-full hover:bg-orange-100 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+                        title="Hủy chỉnh sửa (Esc)"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+
+            {/* Thanh trạng thái Đang trả lời tin nhắn */}
+            {replyingToMessage && !editingMessage && (
+                <div className="px-4 py-2 bg-orange-50/90 border-t border-orange-200/80 flex items-center justify-between text-xs text-slate-700 animate-in fade-in select-none rounded-t-xl mb-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-5 h-5 rounded-full bg-orange-100 text-[#F38820] flex items-center justify-center shrink-0">
+                            <Reply className="w-3 h-3" />
+                        </div>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-bold text-[#F38820] shrink-0">
+                                Đang trả lời {replyingToMessage.sender?.fullName || replyingToMessage.sender?.username || "thành viên"}:
+                            </span>
+                            <span className="truncate text-slate-600 max-w-[280px] sm:max-w-[450px]">
+                                {replyingToMessage.isRecalled
+                                    ? "[Tin nhắn đã được thu hồi]"
+                                    : (replyingToMessage.content || (replyingToMessage.attachments?.length > 0 ? "[Tệp đính kèm]" : ""))}
+                            </span>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={cancelReplying}
+                        className="p-1 rounded-full hover:bg-orange-100 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+                        title="Hủy trả lời (Esc)"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
                 </div>
             )}
 
@@ -1163,7 +1475,7 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
                             onInput={handleInput}
                             onKeyDown={handleKeyDown}
                             onPaste={handlePaste}
-                            data-placeholder={room?.isGroup ? "Aa (@ để tag thành viên, # để tag công việc)" : "Aa (# để tag công việc)"}
+                            data-placeholder={room?.isGroup ? "Aa (@ để tag thành viên hoặc @all, # để tag công việc)" : "Aa (# để tag công việc)"}
                             className="chat-messenger-editor flex-1 min-w-0 max-h-32 overflow-y-auto outline-none text-[15px] leading-snug text-slate-800 font-sans cursor-text whitespace-pre-wrap break-words"
                             style={{ minHeight: "22px" }}
                         />
