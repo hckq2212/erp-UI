@@ -27,8 +27,8 @@ export function ChatBubbleRoom() {
         scrollToBottom();
     }, [messages, typingUsers]);
 
-    const handleSendMessage = (content) => {
-        sendMessage(content);
+    const handleSendMessage = (content, attachments = []) => {
+        sendMessage(content, attachments);
     };
 
     const handleTyping = (isTyping) => {
@@ -83,6 +83,7 @@ export function ChatBubbleRoom() {
             <ChatInputWithAutocomplete
                 onSendMessage={handleSendMessage}
                 onTyping={handleTyping}
+                room={activeRoom}
             />
         </div>
     );

@@ -2,7 +2,9 @@ import React, { useRef, useEffect, useLayoutEffect } from "react";
 import { Phone, Video, Info, Users as UsersIcon, Plus } from "lucide-react";
 import { ChatMessageItem } from "./ChatMessageItem";
 import { ChatInputWithAutocomplete } from "./ChatInputWithAutocomplete";
+import { RoomAvatar } from "./RoomAvatar";
 import { useChatStore } from "../../store/useChatStore";
+import { useGetUsersQuery } from "../../api/users";
 
 export function ChatWorkspace({
     activeRoom,
@@ -83,8 +85,17 @@ export function ChatWorkspace({
             await fetchMoreMessages();
         }
     };
+    const { data: usersData } = useGetUsersQuery();
+    const allUsers = Array.isArray(usersData?.data) ? usersData.data : (Array.isArray(usersData) ? usersData : []);
+
     const getOtherParticipant = (room) => {
-        return room.participants?.find(p => p.userId !== selfUserId)?.user;
+        if (!room) return null;
+        const participant = room.participants?.find(p => p.userId !== selfUserId);
+        if (participant?.user) return participant.user;
+        if (participant?.userId) {
+            return allUsers.find(u => u.id === participant.userId) || null;
+        }
+        return null;
     };
 
     const getTypingText = () => {
@@ -122,11 +133,15 @@ export function ChatWorkspace({
             <div className="px-6 py-3.5 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="relative">
-                        <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-bold text-sm text-[#F38820]">
-                            {activeRoom.isGroup ? <UsersIcon className="w-4 h-4" /> : getRoomName(activeRoom)[0].toUpperCase()}
-                        </div>
+                        <RoomAvatar
+                            room={activeRoom}
+                            user={otherUser}
+                            selfUserId={selfUserId}
+                            allUsers={allUsers}
+                            size="md"
+                        />
                         {isOnline && (
-                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border border-white rounded-full" />
+                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border border-white rounded-full z-20" />
                         )}
                     </div>
                     <div className="flex flex-col">
@@ -228,6 +243,7 @@ export function ChatWorkspace({
                 <ChatInputWithAutocomplete
                     onSendMessage={onSendMessage}
                     onTyping={onTyping}
+                    room={activeRoom}
                 />
             </div>
         </div>

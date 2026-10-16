@@ -3,8 +3,7 @@ import { io } from "socket.io-client";
 import axios from "axios";
 import { API_ORIGIN, BASE_URL } from "./api";
 
-const configuredSocketUrl = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
-const SOCKET_URL = configuredSocketUrl || API_ORIGIN;
+const SOCKET_URL = API_ORIGIN;
 
 const chatAxios = axios.create({
     baseURL: BASE_URL,
@@ -28,14 +27,33 @@ export const useChatStore = create((set, get) => ({
     unreadRooms: {}, // roomId -> boolean
     unreadCounts: {}, // roomId -> number
 
-    applyReceivedMessage: (message) => {
+    applyReceivedMessage: (message, tempId = null) => {
         const { activeRoom, messages, rooms, selfUserId: currentSelfUserId, unreadRooms, unreadCounts } = get();
 
         if (activeRoom && String(activeRoom.id) === String(message.roomId)) {
-            const exists = messages.some((item) => String(item.id) === String(message.id));
-            if (!exists) {
-                set({ messages: [...messages, message] });
+            let nextMessages = [...messages];
+            if (tempId) {
+                const tempIndex = nextMessages.findIndex(m => m.id === tempId);
+                if (tempIndex !== -1) {
+                    nextMessages[tempIndex] = message;
+                } else if (!nextMessages.some(m => String(m.id) === String(message.id))) {
+                    nextMessages.push(message);
+                }
+            } else {
+                const exists = nextMessages.some(m => String(m.id) === String(message.id));
+                if (!exists) {
+                    // Nếu là tin nhắn từ chính mình nhận lại qua WebSocket, thay thế tin nhắn optimistic
+                    const tempMatchIdx = nextMessages.findIndex(
+                        m => m.isOptimistic && String(m.senderId) === String(message.senderId) && m.content === message.content
+                    );
+                    if (tempMatchIdx !== -1) {
+                        nextMessages[tempMatchIdx] = message;
+                    } else {
+                        nextMessages.push(message);
+                    }
+                }
             }
+            set({ messages: nextMessages });
         }
 
         const roomExists = rooms.some(room => String(room.id) === String(message.roomId));
@@ -49,7 +67,7 @@ export const useChatStore = create((set, get) => ({
                 return {
                     ...room,
                     latestMessage: message,
-                    updatedAt: new Date().toISOString()
+                    updatedAt: message.createdAt || new Date().toISOString()
                 };
             }
             return room;
@@ -159,7 +177,9 @@ export const useChatStore = create((set, get) => ({
 
     // Fetch rooms from backend REST API
     fetchRooms: async () => {
-        set({ loadingRooms: true });
+        if (get().rooms.length === 0) {
+            set({ loadingRooms: true });
+        }
         try {
             const response = await chatAxios.get("/chat-rooms");
             // Sort by newest updatedAt first
@@ -262,59 +282,88 @@ export const useChatStore = create((set, get) => ({
         }
     },
 
-    // Send a message via WebSockets
-    sendMessage: async (content, attachments = []) => {
-        const { socket, activeRoom } = get();
-        const trimmed = content?.trim();
-        if (!activeRoom || !trimmed) return;
+    // Send a message via WebSockets with instant Optimistic Update (0ms delay)
+    sendMessage: async (content, attachments = [], senderUser = null) => {
+        const { socket, activeRoom, messages, selfUserId } = get();
+        const trimmed = (content || "").trim();
+        const hasAttachments = attachments && attachments.length > 0;
+        if (!activeRoom || (!trimmed && !hasAttachments)) return;
 
-        const sendViaRest = async () => {
-            const response = await chatAxios.post(`/chat-rooms/${activeRoom.id}/messages`, {
-                content: trimmed,
-                attachments
-            });
-            if (response.data) {
-                get().applyReceivedMessage(response.data);
-            }
-            return response.data;
+        // 1. OPTIMISTIC UPDATE: Hiển thị ngay lập tức trên UI (0ms delay)
+        const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        const optimisticMessage = {
+            id: tempId,
+            roomId: activeRoom.id,
+            senderId: selfUserId,
+            sender: senderUser || (activeRoom.participants?.find(p => (p.userId || p.user?.id) === selfUserId)?.user) || { id: selfUserId },
+            content: trimmed,
+            attachments: attachments || [],
+            createdAt: new Date().toISOString(),
+            isOptimistic: true
         };
 
-        if (!socket) {
-            return sendViaRest();
-        }
+        // Đẩy tin nhắn vào danh sách hiện tại
+        set({ messages: [...messages, optimisticMessage] });
 
-        if (!socket.connected) {
-            socket.connect();
-            await new Promise((resolve) => {
-                const done = () => resolve(null);
-                socket.once("connect", done);
-                setTimeout(done, 1500);
-            });
-        }
+        // Cập nhật ngay preview tin nhắn gần nhất trên Sidebar
+        const { rooms } = get();
+        const updatedRooms = rooms.map(room => {
+            if (String(room.id) === String(activeRoom.id)) {
+                return {
+                    ...room,
+                    latestMessage: optimisticMessage,
+                    updatedAt: optimisticMessage.createdAt
+                };
+            }
+            return room;
+        });
+        const getRoomTime = (room) => room.latestMessage?.createdAt || room.updatedAt || room.createdAt || 0;
+        const sortedRooms = [...updatedRooms].sort((a, b) => new Date(getRoomTime(b)).getTime() - new Date(getRoomTime(a)).getTime());
+        set({ rooms: sortedRooms });
 
-        if (!socket.connected) {
-            return sendViaRest();
-        }
+        // 2. GỬI TIN NHẮN (Ưu tiên WebSocket tức thời, nếu không thì gọi REST)
+        const sendViaRest = async () => {
+            try {
+                const response = await chatAxios.post(`/chat-rooms/${activeRoom.id}/messages`, {
+                    content: trimmed,
+                    attachments
+                });
+                if (response.data) {
+                    get().applyReceivedMessage(response.data, tempId);
+                }
+                return response.data;
+            } catch (error) {
+                console.error("Error sending message via REST:", error);
+                set(state => ({
+                    messages: state.messages.map(m => m.id === tempId ? { ...m, isError: true, isOptimistic: false } : m)
+                }));
+                return null;
+            }
+        };
 
-        return new Promise((resolve) => {
-            socket.timeout(5000).emit("send_message", {
-                roomId: activeRoom.id,
-                content: trimmed,
-                attachments
-            }, async (error, response) => {
-                if (error || !response?.ok) {
-                    try {
+        // Nếu socket đang kết nối, phát ngay lập tức
+        if (socket && socket.connected) {
+            return new Promise((resolve) => {
+                socket.timeout(3000).emit("send_message", {
+                    roomId: activeRoom.id,
+                    content: trimmed,
+                    attachments
+                }, async (error, response) => {
+                    if (error || !response?.ok) {
                         const fallbackMessage = await sendViaRest();
                         resolve(fallbackMessage);
-                    } catch (fallbackError) {
-                        console.error("Error sending message:", fallbackError);
-                        resolve(null);
+                        return;
                     }
-                    return;
-                }
-                resolve(response.message);
+                    if (response?.message) {
+                        get().applyReceivedMessage(response.message, tempId);
+                    }
+                    resolve(response?.message);
+                });
             });
-        });
+        }
+
+        // Nếu socket chưa kết nối, gọi REST ngay lập tức mà không chờ timeout
+        return sendViaRest();
     },
 
     // Emit typing events
@@ -337,31 +386,34 @@ export const useChatStore = create((set, get) => ({
                 recipientId
             });
 
-            // Re-fetch rooms
+            // Re-fetch rooms to load fully enriched relations
             await get().fetchRooms();
 
-            // Find and select the created room
-            const createdRoom = response.data;
-            get().selectRoom(createdRoom);
-            return createdRoom;
+            // Find and select the created room with full participants/users
+            const createdRoomId = response.data?.id;
+            const freshRoom = get().rooms.find(r => r.id === createdRoomId) || response.data;
+            get().selectRoom(freshRoom);
+            return freshRoom;
         } catch (error) {
             console.error("Error creating DM:", error);
         }
     },
 
     // Create a new Group room
-    createGroup: async (name, participantIds) => {
+    createGroup: async (name, participantIds, avatarUrl) => {
         try {
             const response = await chatAxios.post("/chat-rooms", {
                 isGroup: true,
                 name,
-                participantIds
+                participantIds,
+                avatarUrl
             });
 
             await get().fetchRooms();
-            const createdRoom = response.data;
-            get().selectRoom(createdRoom);
-            return createdRoom;
+            const createdRoomId = response.data?.id;
+            const freshRoom = get().rooms.find(r => r.id === createdRoomId) || response.data;
+            get().selectRoom(freshRoom);
+            return freshRoom;
         } catch (error) {
             console.error("Error creating group:", error);
         }
@@ -388,6 +440,58 @@ export const useChatStore = create((set, get) => ({
             await get().fetchRooms();
         } catch (error) {
             console.error("Error adding members:", error);
+        }
+    },
+
+    // Update participant role (ADMIN, DEPUTY, MEMBER)
+    updateParticipantRole: async (roomId, targetUserId, role) => {
+        try {
+            const response = await chatAxios.patch(`/chat-rooms/${roomId}/participants/${targetUserId}/role`, {
+                role
+            });
+
+            const { activeRoom } = get();
+            if (activeRoom && activeRoom.id === roomId) {
+                set({
+                    activeRoom: {
+                        ...activeRoom,
+                        participants: response.data
+                    }
+                });
+            }
+
+            await get().fetchRooms();
+            return { success: true };
+        } catch (error) {
+            console.error("Error updating participant role:", error);
+            const msg = error.response?.data?.message || "Không thể cập nhật vai trò thành viên";
+            alert(msg);
+            return { success: false, error: msg };
+        }
+    },
+
+    // Remove participant from group
+    removeParticipant: async (roomId, targetUserId) => {
+        try {
+            const response = await chatAxios.delete(`/chat-rooms/${roomId}/participants/${targetUserId}`);
+
+            const { activeRoom } = get();
+            if (activeRoom && activeRoom.id === roomId) {
+                set({
+                    activeRoom: {
+                        ...activeRoom,
+                        participants: response.data
+                    }
+                });
+            }
+
+            await get().fetchRooms();
+            return { success: true };
+        } catch (error) {
+            console.error("Error removing participant:", error);
+            const msg = error.response?.data?.message || "Không thể xóa thành viên";
+            alert(msg);
+            return { success: false, error: msg };
         }
     }
 }));
