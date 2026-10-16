@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from "react";
 import { X, Search, Check, Users as UsersIcon, Camera, Loader2 } from "lucide-react";
 import { uploadToCloudinary } from "../../utils/cloudinary";
+import { AvatarCropModal } from "../common/AvatarCropModal";
 
 export function ChatGroupModal({
     isOpen,
@@ -15,6 +16,7 @@ export function ChatGroupModal({
     const [searchTerm, setSearchTerm] = useState("");
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(null);
+    const [cropFile, setCropFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
 
     const fileInputRef = useRef(null);
@@ -57,9 +59,14 @@ export function ChatGroupModal({
     const handleAvatarSelect = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        setAvatarFile(file);
-        setAvatarPreview(URL.createObjectURL(file));
+        setCropFile(file);
         e.target.value = null;
+    };
+
+    const handleCropComplete = (croppedFile) => {
+        setAvatarFile(croppedFile);
+        setAvatarPreview(URL.createObjectURL(croppedFile));
+        setCropFile(null);
     };
 
     const handleRemoveAvatar = (e) => {
@@ -93,6 +100,7 @@ export function ChatGroupModal({
         setSearchTerm("");
         setAvatarFile(null);
         setAvatarPreview(null);
+        setCropFile(null);
         setIsUploading(false);
         onClose();
     };
@@ -406,6 +414,17 @@ export function ChatGroupModal({
                     </div>
                 </div>
             </div>
+
+            {/* Modal cắt ảnh đại diện nhóm mới */}
+            {cropFile && (
+                <AvatarCropModal
+                    isOpen={Boolean(cropFile)}
+                    imageFile={cropFile}
+                    title="Cắt ảnh đại diện nhóm mới"
+                    onClose={() => setCropFile(null)}
+                    onCropComplete={handleCropComplete}
+                />
+            )}
         </div>
     );
 }

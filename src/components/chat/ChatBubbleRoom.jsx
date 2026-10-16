@@ -65,7 +65,8 @@ export function ChatBubbleRoom() {
                         <ChatMessageItem
                             key={msg.id}
                             message={msg}
-                            isMe={msg.senderId === selfUserId}
+                            isMe={Boolean(selfUserId && (String(msg.senderId) === String(selfUserId) || String(msg.sender?.id) === String(selfUserId)))}
+                            selfUserId={selfUserId}
                         />
                     ))
                 )}

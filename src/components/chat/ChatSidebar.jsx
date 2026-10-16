@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Pin, BellOff } from "lucide-react";
 import { useGetUsersQuery } from "../../api/users";
 import { useChatStore } from "../../store/useChatStore";
 import { RoomAvatar } from "./RoomAvatar";
@@ -16,7 +16,7 @@ export function ChatSidebar({
     getRoomName
 }) {
     const [searchTerm, setSearchTerm] = useState("");
-    const { createDM, unreadRooms } = useChatStore();
+    const { createDM, unreadRooms, unreadCounts } = useChatStore();
 
     // Fetch system users to initiate new DMs
     const { data: usersData } = useGetUsersQuery();
@@ -45,11 +45,11 @@ export function ChatSidebar({
         setSearchTerm("");
     };
 
-    // 1. Gather all active conversation rooms (Only group chats or DM rooms with at least 1 message)
+    // 1. Gather all active conversation rooms (Group chats, or DM rooms that have messages OR are pinned)
     const activeRoomsList = rooms
         .filter(room => {
             if (room.isGroup) return true;
-            return Boolean(room.latestMessage);
+            return Boolean(room.latestMessage || room.isPinned);
         })
         .map(room => {
             const otherUser = getOtherParticipant(room);
@@ -66,17 +66,23 @@ export function ChatSidebar({
                 }),
                 latestMessageTime: room.latestMessage?.createdAt || room.updatedAt || room.createdAt || 0,
                 isGroup: room.isGroup,
+                isPinned: Boolean(room.isPinned),
+                isMuted: Boolean(room.isMuted),
                 online: !room.isGroup && onlineUsers.includes(otherUser?.id)
             };
         })
-        .sort((a, b) => new Date(b.latestMessageTime).getTime() - new Date(a.latestMessageTime).getTime());
+        .sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            return new Date(b.latestMessageTime).getTime() - new Date(a.latestMessageTime).getTime();
+        });
 
-    // 2. Gather other system users that do NOT have active conversations with messages yet
+    // 2. Gather other system users that do NOT have active conversations with messages/pinned status yet
     const newContactsList = allUsers
         .filter(user => {
             if (user.id === selfUserId) return false;
 
-            // Only filter out if there is already an active conversation with messages
+            // Filter out if already in activeRoomsList (including pinned rooms without messages)
             const hasActiveConversation = activeRoomsList.some(item =>
                 !item.isGroup && item.room?.participants?.some(p => p.userId === user.id)
             );
@@ -95,8 +101,12 @@ export function ChatSidebar({
         // Sort A-Z by name
         .sort((a, b) => a.name.localeCompare(b.name, "vi"));
 
-    // 3. Merge them into a single, unified list
-    const unifiedList = [...activeRoomsList, ...newContactsList];
+    // 3. Merge them into a single, unified list with pinned rooms strictly on top
+    const unifiedList = [...activeRoomsList, ...newContactsList].sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return 0;
+    });
 
     // 4. Apply search filtering across the entire unified list
     const filteredItems = unifiedList.filter(item =>
@@ -123,7 +133,7 @@ export function ChatSidebar({
                     <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <input
                         type="text"
-                        placeholder="Tìm kiếm trên Messenger"
+                        placeholder="Tìm kiếm"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="no-focus-ring bg-transparent !border-0 !outline-none text-sm text-slate-800 placeholder-gray-500 w-full !shadow-none"
@@ -143,7 +153,8 @@ export function ChatSidebar({
                             ? activeRoom?.id === item.room.id
                             : activeRoom?.participants?.some(p => p.userId === item.id) && !activeRoom.isGroup;
 
-                        const isUnread = item.type === "room" && unreadRooms[item.id];
+                        const unreadCount = item.type === "room" ? Number(unreadCounts?.[item.id] ?? item.room?.unreadCount ?? 0) : 0;
+                        const isUnread = unreadCount > 0 || (item.type === "room" && (Boolean(unreadRooms?.[item.id]) || Boolean(item.room?.unread)));
 
                         return (
                             <button
@@ -168,14 +179,22 @@ export function ChatSidebar({
                                 </div>
                                 <div className="flex-1 min-w-0 flex flex-row items-center justify-between gap-2">
                                     <div className="flex-1 min-w-0 flex flex-col">
-                                        <span className={`text-[14px] truncate ${isActive
-                                            ? "text-[#F38820] font-bold"
-                                            : isUnread
-                                                ? "text-[#050505] font-black"
-                                                : "text-[#050505] font-semibold"
-                                            }`}>
-                                            {item.name}
-                                        </span>
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <span className={`text-[14px] truncate ${isActive
+                                                ? "text-[#F38820] font-bold"
+                                                : isUnread
+                                                    ? "text-[#050505] font-black"
+                                                    : "text-[#050505] font-semibold"
+                                                }`}>
+                                                {item.name}
+                                            </span>
+                                            {item.isPinned && (
+                                                <Pin className="w-3.5 h-3.5 text-[#F38820] fill-current shrink-0" title="Đã ghim" />
+                                            )}
+                                            {item.isMuted && (
+                                                <BellOff className="w-3.5 h-3.5 text-gray-400 shrink-0" title="Đã tắt thông báo" />
+                                            )}
+                                        </div>
                                         <span className={`text-[12px] truncate mt-0.5 ${isUnread
                                             ? "text-slate-950 font-bold"
                                             : "text-gray-550"
@@ -184,9 +203,13 @@ export function ChatSidebar({
                                         </span>
                                     </div>
 
-                                    {isUnread && (
+                                    {unreadCount > 0 ? (
+                                        <span className="min-w-[18px] h-4.5 px-1.5 flex items-center justify-center text-[10px] font-black text-white bg-red-500 rounded-full shadow-xs shrink-0 animate-in zoom-in-75">
+                                            {unreadCount > 99 ? '99+' : unreadCount}
+                                        </span>
+                                    ) : isUnread ? (
                                         <span className="w-2.5 h-2.5 bg-[#F38820] rounded-full flex-shrink-0" />
-                                    )}
+                                    ) : null}
                                 </div>
                             </button>
                         );
