@@ -34,7 +34,6 @@ export function ChatPage() {
         loadingRooms,
         loadingMessages
     } = useChatStore();
-
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [showAddMembersModal, setShowAddMembersModal] = useState(false);
     const [systemUsers, setSystemUsers] = useState([]);
@@ -57,7 +56,7 @@ export function ChatPage() {
         loadSystemUsers();
 
         return () => {
-            disconnectSocket();
+            selectRoom(null);
         };
     }, []);
 
@@ -138,7 +137,13 @@ export function ChatPage() {
         };
 
         window.addEventListener("chat:open_user_profile", handleOpenProfile);
-        return () => window.removeEventListener("chat:open_user_profile", handleOpenProfile);
+        const handleOpenAddMembers = () => setShowAddMembersModal(true);
+        window.addEventListener("chat:open_add_members", handleOpenAddMembers);
+
+        return () => {
+            window.removeEventListener("chat:open_user_profile", handleOpenProfile);
+            window.removeEventListener("chat:open_add_members", handleOpenAddMembers);
+        };
     }, [activeRoom?.participants, allUsers, systemUsers]);
 
     // Quyền của chính người dùng hiện tại trong activeRoom
@@ -216,6 +221,7 @@ export function ChatPage() {
                     onlineUsers={onlineUsers}
                     getRoomName={getRoomName}
                     onClose={() => setShowInfoSidebar(false)}
+                    onAddMembersClick={() => setShowAddMembersModal(true)}
                 />
             )}
 

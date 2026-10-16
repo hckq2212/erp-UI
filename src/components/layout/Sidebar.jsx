@@ -5,13 +5,19 @@ import { ChevronDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useGetMeQuery } from '../../api/auth';
 import { MENU_ITEMS as menuItems } from '../../config/routes.config';
-
+import { useChatStore } from '../../store/useChatStore';
 
 const SidebarComponent = ({ isCollapsed }) => {
   const location = useLocation();
   const { data: me } = useGetMeQuery();
   const [collapsedFlyout, setCollapsedFlyout] = useState(null);
   const [hoveredTooltip, setHoveredTooltip] = useState(null);
+
+  // Lấy số lượng tin nhắn chưa đọc từ useChatStore
+  const unreadCounts = useChatStore((state) => state.unreadCounts);
+  const chatUnreadCount = useMemo(() => {
+    return Object.values(unreadCounts || {}).reduce((sum, count) => sum + Number(count || 0), 0);
+  }, [unreadCounts]);
 
   const handleMouseEnter = (label, event) => {
     if (!isCollapsed) return;
@@ -277,6 +283,9 @@ const SidebarComponent = ({ isCollapsed }) => {
           }
 
           const isActive = location.pathname === item.path;
+          const isChatItem = item.path === '/chat';
+          const showChatBadge = isChatItem && chatUnreadCount > 0;
+
           return (
             <Link
               key={item.path}
@@ -289,19 +298,35 @@ const SidebarComponent = ({ isCollapsed }) => {
                 isActive
                   ? 'bg-orange-50 text-[#F38820] shadow-sm'
                   : 'text-slate-600 hover:bg-orange-50/60 hover:text-[#F38820]',
-                isCollapsed ? 'justify-center' : ''
+                isCollapsed ? 'justify-center' : 'justify-between'
               )}
             >
-              <item.icon className={cn(
-                'h-5 w-5 transition-all shrink-0',
-                isActive ? 'text-[#F38820]' : 'text-slate-400 group-hover:text-[#F38820]',
-                isCollapsed ? 'mr-0' : 'mr-3',
-              )} />
-              {!isCollapsed && (
-                <span className="truncate transition-opacity duration-300 opacity-100">
-                  {item.label}
+              <div className="flex items-center min-w-0">
+                <div className="relative shrink-0 flex items-center justify-center">
+                  <item.icon className={cn(
+                    'h-5 w-5 transition-all shrink-0',
+                    isActive ? 'text-[#F38820]' : 'text-slate-400 group-hover:text-[#F38820]',
+                    isCollapsed ? 'mr-0' : 'mr-3',
+                  )} />
+                  {isCollapsed && showChatBadge && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 flex items-center justify-center text-[10px] font-black text-white bg-red-500 rounded-full ring-2 ring-white animate-in zoom-in-75 shadow-xs">
+                      {chatUnreadCount > 9 ? '9+' : chatUnreadCount}
+                    </span>
+                  )}
+                </div>
+                {!isCollapsed && (
+                  <span className="truncate transition-opacity duration-300 opacity-100">
+                    {item.label}
+                  </span>
+                )}
+              </div>
+
+              {!isCollapsed && showChatBadge && (
+                <span className="min-w-[18px] h-4 px-1.5 flex items-center justify-center text-[10px] font-black text-white bg-red-500 rounded-full shadow-xs shrink-0 animate-in zoom-in-75">
+                  {chatUnreadCount > 99 ? '99+' : chatUnreadCount}
                 </span>
               )}
+
               {isCollapsed && isActive && (
                 <div
                   className="absolute left-0 w-1 h-6 bg-[#F38820] rounded-r-full shadow-[0_0_8px_rgba(243,136,32,0.4)]"
