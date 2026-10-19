@@ -8,7 +8,7 @@ import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { SessionExpiredModal } from './components/auth/SessionExpiredModal';
 import { ROUTE_PERMISSIONS } from './config/routes.config';
-import { selectSessionExpired } from './store/authSlice';
+import { selectSessionExpired, selectIsAuthenticated } from './store/authSlice';
 import { hasSessionMarker } from './utils/authSession';
 
 const RoleRoute = ({ path, element }) => {
@@ -86,6 +86,7 @@ const RouteLoadingFallback = () => (
 
 function AppContent() {
   const sessionExpired = useSelector(selectSessionExpired);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const pathname = globalThis.location?.pathname || '/';
   const shouldCheckSession = hasSessionMarker() && !sessionExpired && pathname !== '/login';
 
@@ -186,7 +187,7 @@ function AppContent() {
       </Suspense>
 
       <SessionExpiredModal />
-      <ChatBubbleWidget />
+      {isAuthenticated && <ChatBubbleWidget />}
     </>
   );
 }

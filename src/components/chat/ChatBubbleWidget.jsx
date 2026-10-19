@@ -11,14 +11,16 @@ import {
     Search,
     X,
     UserPlus,
-    ArrowLeft
+    ArrowLeft,
+    Pin,
+    BellOff
 } from "lucide-react";
+import { formatMessagePreview } from "../../utils/chatTokenHelper";
 
 export function ChatBubbleWidget() {
     const location = useLocation();
     const isChatPage = location.pathname === "/chat";
 
-    const [isOpen, setIsOpen] = useState(false);
     const [showUserList, setShowUserList] = useState(false);
     const [roomSearch, setRoomSearch] = useState("");
 
@@ -33,7 +35,9 @@ export function ChatBubbleWidget() {
         unreadCounts = {},
         fetchRooms,
         createDM,
-        isConnected
+        isConnected,
+        isBubbleOpen,
+        setIsBubbleOpen
     } = useChatStore();
 
     // Query danh sách người dùng từ RTK Query (chuẩn hệ thống ERP)
@@ -52,8 +56,8 @@ export function ChatBubbleWidget() {
     }, [isChatPage, currentUserId]);
 
     const handleToggleWidget = () => {
-        const nextState = !isOpen;
-        setIsOpen(nextState);
+        const nextState = !isBubbleOpen;
+        setIsBubbleOpen(nextState);
         if (nextState) {
             fetchRooms();
         }
@@ -64,11 +68,28 @@ export function ChatBubbleWidget() {
         setShowUserList(false);
     };
 
+    const getOtherParticipant = (room) => {
+        if (!room) return null;
+        const participant = room.participants?.find(p => p.userId !== currentUserId);
+        if (participant?.user) return participant.user;
+        if (participant?.userId) {
+            return systemUsers.find(u => u.id === participant.userId) || null;
+        }
+        return null;
+    };
+
     const getRoomName = (room) => {
         if (!room) return "";
-        if (room.isGroup) return room.name || "Nhóm";
+        if (room.isGroup) return room.name || "Nhóm trò chuyện";
         const otherParticipant = room.participants?.find(p => p.userId !== currentUserId);
-        return otherParticipant?.user?.fullName || otherParticipant?.user?.username || "Cuộc trò chuyện";
+        if (otherParticipant?.user?.fullName) {
+            return otherParticipant.user.fullName;
+        }
+        if (otherParticipant?.userId) {
+            const foundUser = systemUsers.find(u => u.id === otherParticipant.userId);
+            if (foundUser?.fullName) return foundUser.fullName;
+        }
+        return "Cuộc trò chuyện";
     };
 
     const isUserOnline = (room) => {
@@ -77,40 +98,105 @@ export function ChatBubbleWidget() {
         return onlineUsers.includes(otherParticipant?.userId);
     };
 
-    const filteredRooms = useMemo(() => {
-        const term = roomSearch.trim().toLowerCase();
-        if (!term) return rooms;
-        return rooms.filter((room) =>
-            getRoomName(room).toLowerCase().includes(term)
-        );
-    }, [rooms, roomSearch, currentUserId]);
+    const activeRoomsList = useMemo(() => {
+        return rooms
+            .filter(room => {
+                if (room.isGroup) return true;
+                return Boolean(room.latestMessage || room.isPinned);
+            })
+            .map(room => {
+                const otherUser = getOtherParticipant(room);
+                return {
+                    type: "room",
+                    id: room.id,
+                    room: room,
+                    name: getRoomName(room),
+                    avatarUrl: !room.isGroup ? otherUser?.avatarUrl : (room.avatarUrl || null),
+                    latestMessage: formatMessagePreview(room.latestMessage, {
+                        isGroup: room.isGroup,
+                        selfUserId: currentUserId,
+                        allUsers: systemUsers
+                    }),
+                    latestMessageTime: room.latestMessage?.createdAt || room.updatedAt || room.createdAt || 0,
+                    isGroup: room.isGroup,
+                    isPinned: Boolean(room.isPinned),
+                    isMuted: Boolean(room.isMuted),
+                    online: !room.isGroup && onlineUsers.includes(otherUser?.id)
+                };
+            })
+            .sort((a, b) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                return new Date(b.latestMessageTime).getTime() - new Date(a.latestMessageTime).getTime();
+            });
+    }, [rooms, currentUserId, systemUsers, onlineUsers]);
 
-    const filteredUsers = useMemo(() => {
-        const term = roomSearch.trim().toLowerCase();
-        return systemUsers.filter((u) => {
-            if (u.id === currentUserId) return false;
-            if (!term) return true;
-            return (
-                (u.fullName || "").toLowerCase().includes(term) ||
-                (u.username || "").toLowerCase().includes(term) ||
-                (u.phoneNumber || "").includes(term)
-            );
+    const newContactsList = useMemo(() => {
+        return systemUsers
+            .filter(user => {
+                if (user.id === currentUserId) return false;
+                const hasActiveConversation = activeRoomsList.some(item =>
+                    !item.isGroup && item.room?.participants?.some(p => p.userId === user.id)
+                );
+                return !hasActiveConversation;
+            })
+            .map(user => ({
+                type: "user",
+                id: user.id,
+                user: user,
+                name: user.fullName || "Thành viên",
+                avatarUrl: user.avatarUrl,
+                latestMessage: "Chưa có tin nhắn",
+                isGroup: false,
+                online: onlineUsers.includes(user.id)
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name, "vi"));
+    }, [systemUsers, currentUserId, activeRoomsList, onlineUsers]);
+
+    const unifiedList = useMemo(() => {
+        return [...activeRoomsList, ...newContactsList].sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            return 0;
         });
-    }, [systemUsers, currentUserId, roomSearch]);
+    }, [activeRoomsList, newContactsList]);
+
+    const filteredItems = useMemo(() => {
+        const term = roomSearch.trim().toLowerCase();
+        if (!term) return unifiedList;
+        return unifiedList.filter(item =>
+            item.name.toLowerCase().includes(term)
+        );
+    }, [unifiedList, roomSearch]);
+
+    const handleItemClick = async (item) => {
+        if (item.type === "room") {
+            selectRoom(item.room);
+        } else {
+            const existingRoom = rooms.find(room =>
+                !room.isGroup && room.participants?.some(p => p.userId === item.id)
+            );
+            if (existingRoom) {
+                selectRoom(existingRoom);
+            } else {
+                await createDM(item.id);
+            }
+        }
+    };
 
     const totalUnread = useMemo(() => {
         return Object.values(unreadCounts || {}).reduce((sum, value) => sum + Number(value || 0), 0);
     }, [unreadCounts]);
 
-    // Không render widget khi đang ở trang Chat toàn màn hình
-    if (isChatPage) {
+    // Không render widget khi chưa đăng nhập hoặc đang ở trang Chat toàn màn hình
+    if (isChatPage || !currentUserId) {
         return null;
     }
 
     return (
         <div className="fixed bottom-6 right-6 z-[9990] font-sans flex flex-col items-end pointer-events-auto">
             {/* Chat Panel Box */}
-            {isOpen && (
+            {isBubbleOpen && (
                 <div className="w-[calc(100vw-32px)] max-w-[420px] h-[580px] max-h-[calc(100vh-100px)] bg-white border border-slate-200 shadow-2xl flex flex-col mb-3 overflow-hidden rounded-2xl animate-in fade-in zoom-in-95 duration-150">
                     {/* Header */}
                     <div className="h-[60px] bg-white border-b border-slate-100 px-3.5 py-2 flex items-center justify-between shadow-xs z-10 shrink-0">
@@ -272,7 +358,7 @@ export function ChatBubbleWidget() {
                                     <input
                                         value={roomSearch}
                                         onChange={(event) => setRoomSearch(event.target.value)}
-                                        placeholder="Tìm cuộc trò chuyện..."
+                                        placeholder="Tìm kiếm"
                                         className="min-w-0 flex-1 bg-transparent outline-none text-xs text-slate-800 placeholder-slate-400"
                                     />
                                     {roomSearch && (
@@ -287,35 +373,50 @@ export function ChatBubbleWidget() {
                                 </div>
                             </div>
 
-                            {/* Rooms List */}
+                            {/* Rooms & Contacts Unified List */}
                             <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
-                                {filteredRooms.length === 0 ? (
+                                {filteredItems.length === 0 ? (
                                     <div className="p-8 text-center text-xs text-slate-400">
                                         Không tìm thấy cuộc trò chuyện nào
                                     </div>
                                 ) : (
-                                    filteredRooms.map((room) => {
-                                        const unreadCount = Number(unreadCounts?.[room.id] || 0);
+                                    filteredItems.map((item) => {
+                                        const isRoom = item.type === "room";
+                                        const unreadCount = isRoom ? Number(unreadCounts?.[item.id] || item.room?.unreadCount || 0) : 0;
                                         const hasUnread = unreadCount > 0;
                                         return (
                                             <button
-                                                key={room.id}
-                                                onClick={() => selectRoom(room)}
+                                                key={item.type + "-" + item.id}
+                                                onClick={() => handleItemClick(item)}
                                                 className={`w-full px-3.5 py-3 flex items-center gap-3 hover:bg-orange-50/40 text-left transition-colors cursor-pointer ${
                                                     hasUnread ? "bg-orange-50/20" : ""
                                                 }`}
                                             >
                                                 <div className="relative shrink-0">
-                                                    <RoomAvatar room={room} selfUserId={currentUserId} size="sm" />
-                                                    {isUserOnline(room) && (
+                                                    <RoomAvatar
+                                                        room={item.room}
+                                                        user={item.user}
+                                                        selfUserId={currentUserId}
+                                                        allUsers={systemUsers}
+                                                        size="sm"
+                                                    />
+                                                    {item.online && (
                                                         <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full ring-1 ring-white" />
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0 flex flex-col">
                                                     <div className="flex justify-between items-baseline gap-1.5">
-                                                        <span className={`text-xs truncate ${hasUnread ? "font-bold text-slate-950" : "font-medium text-slate-800"}`}>
-                                                            {getRoomName(room)}
-                                                        </span>
+                                                        <div className="flex items-center gap-1.5 min-w-0">
+                                                            <span className={`text-xs truncate ${hasUnread ? "font-bold text-slate-950" : "font-medium text-slate-800"}`}>
+                                                                {item.name}
+                                                            </span>
+                                                            {item.isPinned && (
+                                                                <Pin className="w-3 h-3 text-[#F38820] fill-current shrink-0" title="Đã ghim" />
+                                                            )}
+                                                            {item.isMuted && (
+                                                                <BellOff className="w-3 h-3 text-gray-400 shrink-0" title="Đã tắt thông báo" />
+                                                            )}
+                                                        </div>
                                                         {hasUnread && (
                                                             <span className="min-w-4.5 h-4.5 px-1.5 rounded-full bg-[#F38820] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
                                                                 {unreadCount > 99 ? "99+" : unreadCount}
@@ -323,9 +424,7 @@ export function ChatBubbleWidget() {
                                                         )}
                                                     </div>
                                                     <span className={`text-[11px] truncate mt-0.5 ${hasUnread ? "text-slate-900 font-semibold" : "text-slate-500"}`}>
-                                                        {room.latestMessage?.isRecalled
-                                                            ? "[Tin nhắn đã được thu hồi]"
-                                                            : (room.latestMessage?.content || (room.latestMessage?.attachments?.length ? "[Tệp đính kèm]" : "Chưa có tin nhắn"))}
+                                                        {item.latestMessage}
                                                     </span>
                                                 </div>
                                             </button>
@@ -342,14 +441,14 @@ export function ChatBubbleWidget() {
             <button
                 onClick={handleToggleWidget}
                 className="relative w-12 h-12 bg-[#F38820] text-white hover:bg-[#d97616] shadow-xl hover:shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 select-none rounded-full cursor-pointer"
-                title={isOpen ? "Thu nhỏ tin nhắn" : "Mở tin nhắn"}
+                title={isBubbleOpen ? "Thu nhỏ tin nhắn" : "Mở tin nhắn"}
             >
-                {totalUnread > 0 && !isOpen && (
+                {totalUnread > 0 && !isBubbleOpen && (
                     <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1.5 rounded-full bg-red-600 text-white text-[10px] font-bold border-2 border-white flex items-center justify-center shadow-sm animate-pulse">
                         {totalUnread > 99 ? "99+" : totalUnread}
                     </span>
                 )}
-                {isOpen ? (
+                {isBubbleOpen ? (
                     <ChevronDown className="w-6 h-6 stroke-[2.5]" />
                 ) : (
                     <MessageCircle className="w-6 h-6 stroke-[2.2]" />
