@@ -3,7 +3,7 @@
   "main": "src/worker.js",
   "compatibility_date": "2025-01-01",
   "vars": {
-    "API_ORIGIN": "https://erp-sno3.onrender.com"
+    "API_ORIGIN": "https://erp-z63c.onrender.com"
   },
   "assets": {
     "directory": "./dist",
