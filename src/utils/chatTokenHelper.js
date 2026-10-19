@@ -70,10 +70,81 @@ export const stripChatTokens = (content) => {
     }).join("");
 };
 
+export const formatSystemMessage = (message, selfUserId) => {
+    if (!message) return "";
+    const meta = message.systemMetadata || {};
+    const action = meta.action;
+    const actorId = meta.actorId || message.senderId || message.sender?.id;
+    const isActorMe = selfUserId && String(actorId) === String(selfUserId);
+    const actorName = isActorMe ? "Bạn" : (meta.actorName || message.sender?.fullName || message.sender?.username || "Ai đó");
+
+    switch (action) {
+        case "CREATE_GROUP":
+            return isActorMe ? "Bạn đã tạo nhóm chat." : `${actorName} đã tạo nhóm chat.`;
+
+        case "ADD_MEMBER": {
+            const targetIds = meta.targetIds || (meta.targetId ? [meta.targetId] : []);
+            const targetNames = meta.targetNames || (meta.targetName ? [meta.targetName] : []);
+
+            const formattedTargets = targetNames.map((name, idx) => {
+                const tid = targetIds[idx];
+                if (selfUserId && String(tid) === String(selfUserId)) {
+                    return "bạn";
+                }
+                return name;
+            });
+
+            const targetsText = formattedTargets.length > 0 ? formattedTargets.join(", ") : "thành viên mới";
+            return `${actorName} đã thêm ${targetsText} vào nhóm.`;
+        }
+
+        case "SET_ADMIN": {
+            const isTargetMe = selfUserId && String(meta.targetId) === String(selfUserId);
+            const targetName = isTargetMe ? "bạn" : (meta.targetName || "thành viên");
+            return `${actorName} đã thêm ${targetName} làm quản trị viên nhóm.`;
+        }
+
+        case "REMOVE_ADMIN": {
+            const isTargetMe = selfUserId && String(meta.targetId) === String(selfUserId);
+            const targetName = isTargetMe ? "bạn" : (meta.targetName || "thành viên");
+            return `${actorName} đã gỡ quyền quản trị viên của ${targetName}.`;
+        }
+
+        case "REMOVE_MEMBER": {
+            const isTargetMe = selfUserId && String(meta.targetId) === String(selfUserId);
+            const targetName = isTargetMe ? "bạn" : (meta.targetName || "thành viên");
+            return `${actorName} đã xóa ${targetName} khỏi nhóm.`;
+        }
+
+        case "LEAVE_GROUP":
+            return isActorMe ? "Bạn đã rời khỏi nhóm." : `${actorName} đã rời khỏi nhóm.`;
+
+        case "RENAME_GROUP":
+            return `${actorName} đã đổi tên nhóm thành "${meta.newName || ""}".`;
+
+        case "CHANGE_AVATAR":
+            return `${actorName} đã đổi ảnh đại diện nhóm.`;
+
+        case "PIN_MESSAGE":
+            return isActorMe ? "Bạn đã ghim một tin nhắn." : `${actorName} đã ghim một tin nhắn.`;
+
+        case "UNPIN_MESSAGE":
+            return isActorMe ? "Bạn đã bỏ ghim một tin nhắn." : `${actorName} đã bỏ ghim một tin nhắn.`;
+
+        default:
+            return message.content || "";
+    }
+};
+
 export const formatMessagePreview = (message, options = {}) => {
     if (!message) return "Chưa có tin nhắn";
 
     const { isGroup = false, selfUserId = null, allUsers = [] } = options;
+
+    if (message.isSystem) {
+        return formatSystemMessage(message, selfUserId);
+    }
+
     const content = message.content || "";
     let previewText = "";
 

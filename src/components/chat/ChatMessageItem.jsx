@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Folder, Download, Smile, Pin, PinOff, Forward, RotateCcw, Pencil, Reply, MoreVertical } from "lucide-react";
-import { parseChatTokens, formatChatTime } from "../../utils/chatTokenHelper";
+import { parseChatTokens, formatChatTime, formatSystemMessage } from "../../utils/chatTokenHelper";
 import { DocumentPreviewModal } from "../common/DocumentPreviewModal";
 import { downloadFile } from "../../utils/fileDetector";
 import { useChatStore } from "../../store/useChatStore";
@@ -405,6 +405,38 @@ export function ChatMessageItem({
         if (message.isRecalled) return false;
         return isSender;
     }, [message.isRecalled, isSender]);
+
+    if (message?.isSystem) {
+        const text = formatSystemMessage(message, selfUserId);
+        const isPinAction = message.systemMetadata?.action === "PIN_MESSAGE";
+        const targetMessageId = message.systemMetadata?.pinnedMessageId;
+
+        const handleJumpToMessage = () => {
+            if (!targetMessageId) return;
+            window.dispatchEvent(
+                new CustomEvent("chat:jump_to_message", {
+                    detail: { messageId: targetMessageId }
+                })
+            );
+        };
+
+        return (
+            <div
+                id={`chat-msg-${message.id}`}
+                className="flex flex-col items-center justify-center my-2.5 px-4 w-full select-none"
+            >
+                <div
+                    onClick={isPinAction && targetMessageId ? handleJumpToMessage : undefined}
+                    className={`inline-flex items-center gap-1.5 text-[13px] text-slate-500 font-medium text-center max-w-[85%] leading-relaxed ${
+                        isPinAction && targetMessageId ? "cursor-pointer hover:text-[#F38820] transition-colors" : ""
+                    }`}
+                >
+                    {isPinAction && <Pin className="w-3.5 h-3.5 text-[#F38820] shrink-0" />}
+                    <span>{text}</span>
+                </div>
+            </div>
+        );
+    }
 
     const handleLegacyTagClick = (taskCode) => {
         navigate(`/tasks?q=${encodeURIComponent(taskCode)}`);
