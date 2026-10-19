@@ -18,6 +18,8 @@ const jobInfoSchema = z.object({
     costPrice: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     vinicoin: z.string().transform((val) => val.replace(/[^0-9,.]/g, '')).optional().default('0'),
     timeToComplete: z.string().transform((val) => val.replace(/[^0-9.]/g, '')).optional().default('0'),
+    description: z.string().max(5000, 'Mô tả công việc không được vượt quá 5000 ký tự').optional().default(''),
+    sampleDocumentUrl: z.string().trim().max(2048, 'Link tài liệu mẫu không được vượt quá 2048 ký tự').refine((val) => !val || /^https?:\/\/\S+$/i.test(val), 'Link tài liệu mẫu phải bắt đầu bằng http:// hoặc https://').optional().default(''),
     level: z.enum(['A', 'B', 'C']).default('A'),
     responsibleRole: z.enum([
         'CONTENT_CREATOR',
@@ -54,6 +56,8 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
             costPrice: '',
             vinicoin: '',
             timeToComplete: '',
+            description: '',
+            sampleDocumentUrl: '',
             level: 'A',
             responsibleRole: '',
             isBriefVideo: false,
@@ -72,6 +76,8 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
                 costPrice: String(Number(job.costPrice ?? 0)),
                 vinicoin: String(job.vinicoin || '0'),
                 timeToComplete: String(job.timeToComplete || '0'),
+                description: job.description || '',
+                sampleDocumentUrl: job.sampleDocumentUrl || '',
                 level: job.level || 'A',
                 responsibleRole: job.responsibleRole || '',
                 isBriefVideo: Boolean(job.isBriefVideo),
@@ -223,6 +229,28 @@ export const EditJobInfoModal = ({ isOpen, onClose, job }) => {
                         </select>
                         {errors.responsibleRole && (
                             <p className="mt-1 text-sm text-red-600 font-medium">{errors.responsibleRole.message}</p>
+                        )}
+                    </div>
+                    <div className="md:col-span-2">
+                        <Input
+                            label="Tài liệu mẫu (Link)"
+                            {...register('sampleDocumentUrl')}
+                            error={errors.sampleDocumentUrl?.message}
+                            placeholder="https://..."
+                        />
+                    </div>
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Mô tả công việc
+                        </label>
+                        <textarea
+                            {...register('description')}
+                            rows={4}
+                            placeholder="Mô tả chi tiết nội dung công việc..."
+                            className="block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm resize-y"
+                        />
+                        {errors.description && (
+                            <p className="mt-1 text-sm text-red-600 font-medium">{errors.description.message}</p>
                         )}
                     </div>
                 </div>

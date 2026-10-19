@@ -15,7 +15,9 @@ import {
     Calendar,
     ExternalLink,
     Pencil,
-    Clock
+    Clock,
+    FileText,
+    Link2
 
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
@@ -149,6 +151,36 @@ export const JobDetailPage = () => {
                     <div>
                         <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Thời gian hoàn thành dự kiến</p>
                         <p className="text-xl font-bold text-gray-900">{job?.timeToComplete || 0} giờ</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-50 flex items-center gap-2 bg-gray-50/30">
+                    <FileText className="w-5 h-5 text-orange-500" />
+                    <h2 className="font-bold text-gray-900">Mô tả công việc</h2>
+                </div>
+                <div className="p-6 space-y-4">
+                    {job.description ? (
+                        <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{job.description}</p>
+                    ) : (
+                        <p className="text-sm text-gray-400 italic">Chưa có mô tả công việc.</p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-gray-100">
+                        <Link2 className="w-4 h-4 text-blue-500" />
+                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Tài liệu mẫu:</span>
+                        {job.sampleDocumentUrl ? (
+                            <a
+                                href={job.sampleDocumentUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-semibold text-blue-600 hover:underline break-all"
+                            >
+                                {job.sampleDocumentUrl}
+                            </a>
+                        ) : (
+                            <span className="text-sm text-gray-400 italic">Chưa có tài liệu mẫu</span>
+                        )}
                     </div>
                 </div>
             </div>
