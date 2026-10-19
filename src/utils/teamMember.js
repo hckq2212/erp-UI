@@ -7,6 +7,7 @@ export const getTeamMemberRoles = (member) => {
   return member?.role ? [member.role] : [];
 };
 
+
 export const hasTeamMemberRole = (member, role) =>
   getTeamMemberRoles(member).includes(role);
 
