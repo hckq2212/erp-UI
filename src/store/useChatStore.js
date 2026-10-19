@@ -4,9 +4,6 @@ import axios from "axios";
 import { API_ORIGIN, BASE_URL } from "./api";
 import { playMessageNotificationSound, showDesktopNotification } from "../utils/chatNotificationSound";
 
-// Khi deploy lên Vercel, SOCKET_URL phải là cùng origin với FE
-// để Vercel rewrite `/socket.io/*` → backend (Render).
-// Trong dev, dùng localhost:3000 thông qua API_ORIGIN.
 const SOCKET_URL = import.meta.env.DEV ? API_ORIGIN : (globalThis.location?.origin || API_ORIGIN);
 
 const chatAxios = axios.create({
