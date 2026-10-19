@@ -186,7 +186,7 @@ function AppContent() {
       </Suspense>
 
       <SessionExpiredModal />
-      {/* <ChatBubbleWidget /> */}
+      <ChatBubbleWidget />
     </>
   );
 }
