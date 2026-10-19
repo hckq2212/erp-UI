@@ -70,7 +70,7 @@ export function ForwardMessageModal({ isOpen, onClose, message, messageToForward
 
     return createPortal(
         <div
-            className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150 select-none"
+            className="fixed inset-0 z-[10000] bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150 select-none"
             onClick={onClose}
         >
             <div
