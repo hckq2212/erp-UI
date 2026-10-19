@@ -9,7 +9,7 @@
             "destination": "https://erp-z63c.onrender.com/socket.io/:path*"
         },
         {
-            "source": "/((?!api/).*)",
+            "source": "/((?!api|socket\\.io).*)",
             "destination": "/index.html"
         }
     ]

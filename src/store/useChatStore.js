@@ -4,7 +4,10 @@ import axios from "axios";
 import { API_ORIGIN, BASE_URL } from "./api";
 import { playMessageNotificationSound, showDesktopNotification } from "../utils/chatNotificationSound";
 
-const SOCKET_URL = API_ORIGIN;
+// Khi deploy lên Vercel, SOCKET_URL phải là cùng origin với FE
+// để Vercel rewrite `/socket.io/*` → backend (Render).
+// Trong dev, dùng localhost:3000 thông qua API_ORIGIN.
+const SOCKET_URL = import.meta.env.DEV ? API_ORIGIN : (globalThis.location?.origin || API_ORIGIN);
 
 const chatAxios = axios.create({
     baseURL: BASE_URL,
@@ -153,15 +156,18 @@ export const useChatStore = create((set, get) => ({
         set({ selfUserId });
 
         // Create socket connection with authentication credentials
+        // ⚠️ transports: ["websocket"] only — bắt buộc khi deploy lên Vercel.
+        // Nếu dùng "polling", Vercel sẽ route mỗi request polling tới các
+        // serverless instance khác nhau → handshake error & reconnect loop.
         const newSocket = io(SOCKET_URL, {
             auth: { token },
-            transports: ["websocket", "polling"],
+            transports: ["websocket"],
             withCredentials: true,
             reconnection: true,
             reconnectionAttempts: Infinity,
-            reconnectionDelay: 500,
-            reconnectionDelayMax: 5000,
-            timeout: 10000
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 30000,
+            timeout: 20000
         });
 
         newSocket.on("connect", () => {
