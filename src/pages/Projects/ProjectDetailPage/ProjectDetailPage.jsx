@@ -4,6 +4,7 @@ import { hasTeamMemberRole } from '../../../utils/teamMember';
 import {
   ArrowLeft, CalendarPlus, CheckCircle, RefreshCw, UserPlus,
   PauseCircle, Archive, PlayCircle, AlertTriangle, Clock,
+  Wallet, Receipt, PiggyBank, TrendingUp,
 } from 'lucide-react';
 import {
   useGetProjectQuery,
@@ -12,6 +13,7 @@ import {
   useSyncProjectServiceJobsMutation,
   useResumeProjectMutation,
 } from '../../../api/projects';
+import { useGetProjectBudgetSummaryQuery } from '../../../api/paymentRequests';
 import { PROJECT_MANAGEMENT_ROLES, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS, USER_ROLE } from '../../../utils/enums';
 import {
   PROJECT_STATUS as PAUSE_STATUS,
@@ -46,7 +48,208 @@ const serviceSummaryCollator = new Intl.Collator('vi', { numeric: true, sensitiv
 const getContractServiceName = (service) => service.name || service.service?.name || `Dịch vụ #${service.id}`;
 const getContractServiceKey = (service) => service.serviceId || service.service?.id || getContractServiceName(service);
 
-const ServiceExecutionSummary = ({ services = [], title = 'Thống kê dịch vụ' }) => {
+export const ProjectFinanceWidget = ({ budgetSummary, isLoading }) => {
+  const totalBudget = budgetSummary?.totalProjectBudget || 0;
+  const totalSpent = budgetSummary?.totalProjectSpent || 0;
+  const remaining = budgetSummary?.remainingProjectBudget ?? (totalBudget - totalSpent);
+  const percentage = budgetSummary?.disbursementPercentage || (totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 1000) / 10 : 0);
+  const isOverBudget = remaining < 0;
+
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm animate-pulse">
+        <div className="h-6 w-56 bg-slate-200 rounded-lg mb-4" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="h-24 bg-slate-100 rounded-xl" />
+          <div className="h-24 bg-slate-100 rounded-xl" />
+          <div className="h-24 bg-slate-100 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+      {/* Header Widget */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4 mb-4">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#F38820] to-amber-500 text-white shadow-md shadow-orange-500/20">
+            <Wallet className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-sm font-bold text-gray-900 tracking-tight truncate">
+              Tổng quan Tài chính & Ngân sách
+            </h2>
+            <p className="text-[11px] font-medium text-slate-400 truncate">
+              Đối soát Hợp đồng dịch vụ và Đề nghị thanh toán
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+          <span className={cn(
+            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold shadow-xs border",
+            isOverBudget 
+              ? "bg-rose-50 text-rose-700 border-rose-200" 
+              : "bg-emerald-50 text-emerald-700 border-emerald-200/80"
+          )}>
+            <span className="relative flex h-2 w-2">
+              <span className={cn(
+                "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
+                isOverBudget ? "bg-rose-400" : "bg-emerald-400"
+              )} />
+              <span className={cn(
+                "relative inline-flex rounded-full h-2 w-2",
+                isOverBudget ? "bg-rose-500" : "bg-emerald-500"
+              )} />
+            </span>
+            {isOverBudget ? "Vượt ngân sách" : "Trong định mức"}
+          </span>
+        </div>
+      </div>
+
+      {/* 3 Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* 1. Tổng ngân sách */}
+        <div className="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 via-white to-blue-50/30 p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-blue-200">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 truncate">
+              Ngân sách HĐ
+            </span>
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 border border-blue-100 shadow-xs">
+              <Wallet className="h-3.5 w-3.5" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-1">
+            <span className="text-lg xl:text-xl font-black tracking-tight text-slate-900 truncate">
+              {formatNumber(totalBudget)}
+            </span>
+            <span className="text-[10px] font-bold text-slate-400 shrink-0">VNĐ</span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-medium text-slate-500">
+            <span className="truncate">Định mức</span>
+            <span className="font-bold text-blue-600 shrink-0">100%</span>
+          </div>
+        </div>
+
+        {/* 2. Tổng thực chi */}
+        <div className="group relative overflow-hidden rounded-xl border border-orange-200/80 bg-gradient-to-br from-orange-50/40 via-white to-amber-50/30 p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-orange-300">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 truncate">
+              Thực chi (ĐNTT)
+            </span>
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#F38820] to-amber-500 text-white shadow-sm shadow-orange-500/20">
+              <Receipt className="h-3.5 w-3.5" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-1">
+            <span className="text-lg xl:text-xl font-black tracking-tight text-[#F38820] truncate">
+              {formatNumber(totalSpent)}
+            </span>
+            <span className="text-[10px] font-bold text-amber-600/70 shrink-0">VNĐ</span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-orange-100/60 flex items-center justify-between text-[10px] font-medium text-amber-800/80">
+            <span className="truncate">Đã duyệt</span>
+            <span className="font-extrabold text-[#F38820] shrink-0">{percentage}%</span>
+          </div>
+        </div>
+
+        {/* 3. Ngân sách còn lại */}
+        <div className={cn(
+          "group relative overflow-hidden rounded-xl border p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
+          isOverBudget
+            ? "border-rose-200/80 bg-gradient-to-br from-rose-50/40 via-white to-red-50/30 hover:border-rose-300"
+            : "border-emerald-200/80 bg-gradient-to-br from-emerald-50/40 via-white to-teal-50/30 hover:border-emerald-300"
+        )}>
+          <div className="flex items-center justify-between gap-1">
+            <span className={cn(
+              "text-[10px] font-black uppercase tracking-wider truncate",
+              isOverBudget ? "text-rose-800" : "text-emerald-800"
+            )}>
+              Còn lại
+            </span>
+            <div className={cn(
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border shadow-xs",
+              isOverBudget
+                ? "bg-rose-50 text-rose-600 border-rose-100"
+                : "bg-emerald-50 text-emerald-600 border-emerald-100"
+            )}>
+              <PiggyBank className="h-3.5 w-3.5" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-1">
+            <span className={cn(
+              "text-lg xl:text-xl font-black tracking-tight truncate",
+              isOverBudget ? "text-rose-600" : "text-emerald-700"
+            )}>
+              {formatNumber(remaining)}
+            </span>
+            <span className={cn(
+              "text-[10px] font-bold shrink-0",
+              isOverBudget ? "text-rose-500" : "text-emerald-600/70"
+            )}>VNĐ</span>
+          </div>
+          <div className={cn(
+            "mt-2 pt-2 border-t flex items-center justify-between text-[10px] font-medium",
+            isOverBudget ? "border-rose-100/60 text-rose-700" : "border-emerald-100/60 text-emerald-800/80"
+          )}>
+            <span className="truncate">{isOverBudget ? "Vượt" : "Khả dụng"}</span>
+            <span className={cn(
+              "font-extrabold shrink-0",
+              isOverBudget ? "text-rose-600" : "text-emerald-700"
+            )}>
+              {isOverBudget 
+                ? `+${formatNumber(Math.abs(remaining))} VNĐ` 
+                : `${totalBudget > 0 ? Math.round((remaining / totalBudget) * 1000) / 10 : 0}%`}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress bar % giải ngân hiện đại */}
+      <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/70 p-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-2">
+          <div className="flex items-center gap-1.5">
+            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#F38820]/10 text-[#F38820]">
+              <TrendingUp className="h-3 w-3" />
+            </div>
+            <span className="text-[11px] font-bold text-slate-700">Tỷ lệ giải ngân:</span>
+            <span className={cn(
+              "text-xs font-black",
+              isOverBudget ? "text-rose-600" : percentage > 80 ? "text-amber-600" : "text-[#F38820]"
+            )}>
+              {percentage}%
+            </span>
+          </div>
+          <div className="text-[11px] font-medium text-slate-500 truncate">
+            Đã chi: <span className="font-extrabold text-slate-800">{formatNumber(totalSpent)} VNĐ</span> / <span className="text-slate-600">{formatNumber(totalBudget)} VNĐ</span>
+          </div>
+        </div>
+
+        <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-slate-200/80 shadow-inner">
+          <div
+            className={cn(
+              "h-full rounded-full transition-all duration-700 ease-out shadow-xs",
+              isOverBudget
+                ? "bg-gradient-to-r from-rose-500 to-red-600"
+                : percentage > 80
+                ? "bg-gradient-to-r from-amber-500 to-orange-500"
+                : "bg-gradient-to-r from-[#F38820] via-amber-400 to-[#F38820]"
+            )}
+            style={{ width: `${Math.min(Math.max(percentage, totalSpent > 0 ? 1.5 : 0), 100)}%` }}
+          />
+        </div>
+
+        <div className="mt-1.5 flex items-center justify-between text-[10px] font-bold text-slate-400">
+          <span>0 VNĐ</span>
+          <span>Mốc 50%</span>
+          <span>Hạn mức: {formatNumber(totalBudget)} VNĐ</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ServiceExecutionSummary = ({ services = [], budgetSummary = null, title = 'Thống kê dịch vụ' }) => {
   const rows = useMemo(() => {
     const grouped = new Map();
 
@@ -59,6 +262,8 @@ const ServiceExecutionSummary = ({ services = [], title = 'Thống kê dịch v�
         active: 0,
         accepted: 0,
         budget: 0,
+        spent: 0,
+        remaining: 0,
       };
 
       existing.quantity += 1;
@@ -72,16 +277,30 @@ const ServiceExecutionSummary = ({ services = [], title = 'Thống kê dịch v�
       grouped.set(key, existing);
     });
 
+    const serviceBudgets = budgetSummary?.serviceBudgets || [];
+    grouped.forEach((row) => {
+      let spent = 0;
+      serviceBudgets.forEach((sb) => {
+        const matchesKey = sb.serviceId && (sb.serviceId === row.key);
+        const matchesName = sb.serviceName && row.name && (sb.serviceName.trim().toLowerCase() === row.name.trim().toLowerCase());
+        if (matchesKey || matchesName) {
+          spent += Number(sb.spent || 0);
+        }
+      });
+      row.spent = spent;
+      row.remaining = row.budget - spent;
+    });
+
     return Array.from(grouped.values()).sort((first, second) =>
       serviceSummaryCollator.compare(first.name, second.name)
     );
-  }, [services]);
+  }, [services, budgetSummary]);
 
   return (
     <div className="overflow-hidden rounded-[1.5rem] border border-slate-100 bg-white shadow-sm">
       <div className="border-b border-slate-100 px-5 py-4">
         <p className="text-sm font-extrabold text-slate-900">{title}</p>
-        <p className="mt-1 text-xs font-medium text-slate-400">Tổng hợp theo từng contract service khác nhau</p>
+        <p className="mt-1 text-xs font-medium text-slate-400">Tổng hợp ngân sách, thực chi và tiến độ từng dịch vụ</p>
       </div>
 
       {rows.length === 0 ? (
@@ -90,28 +309,48 @@ const ServiceExecutionSummary = ({ services = [], title = 'Thống kê dịch v�
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-left">
+          <table className="w-full min-w-[680px] text-left">
             <thead className="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
               <tr>
                 <th className="px-5 py-3">Tên dịch vụ</th>
-                <th className="px-4 py-3 text-center">Ngân sách</th>
-                <th className="px-4 py-3 text-center">Số lượng</th>
-                <th className="px-4 py-3 text-center">Đang thực thi</th>
-                <th className="px-4 py-3 text-center">Đã nghiệm thu</th>
+                <th className="px-3 py-3 text-center">Ngân sách</th>
+                <th className="px-3 py-3 text-center">Đã chi</th>
+                <th className="px-3 py-3 text-center">Còn lại</th>
+                <th className="px-3 py-3 text-center">Số lượng</th>
+                <th className="px-3 py-3 text-center">Đang thực thi</th>
+                <th className="px-3 py-3 text-center">Đã nghiệm thu</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {rows.map((row) => (
-                <tr key={row.key} className="text-sm">
-                  <td className="px-5 py-3 font-bold text-slate-800">{row.name}</td>
-                  <td className="px-4 py-3 text-center font-bold text-blue-600">
-                    {formatNumber(row.budget)} VNĐ
-                  </td>
-                  <td className="px-4 py-3 text-center font-extrabold text-slate-700">{row.quantity}</td>
-                  <td className="px-4 py-3 text-center font-extrabold text-blue-700">{row.active}</td>
-                  <td className="px-4 py-3 text-center font-extrabold text-emerald-700">{row.accepted}</td>
-                </tr>
-              ))}
+              {rows.map((row) => {
+                const isOver = row.remaining < 0;
+                return (
+                  <tr key={row.key} className="text-sm hover:bg-slate-50/50 transition-colors">
+                    <td className="px-5 py-3 font-bold text-slate-800">{row.name}</td>
+                    <td className="px-3 py-3 text-center font-bold text-blue-600">
+                      {formatNumber(row.budget)}
+                    </td>
+                    <td className="px-3 py-3 text-center font-bold text-[#F38820]">
+                      {formatNumber(row.spent)}
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className={cn(
+                        "inline-block px-2.5 py-0.5 rounded-lg text-xs font-extrabold",
+                        isOver
+                          ? "bg-rose-50 text-rose-700 border border-rose-200"
+                          : row.remaining > 0
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : "text-slate-500"
+                      )}>
+                        {formatNumber(row.remaining)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-center font-extrabold text-slate-700">{row.quantity}</td>
+                    <td className="px-3 py-3 text-center font-extrabold text-blue-700">{row.active}</td>
+                    <td className="px-3 py-3 text-center font-extrabold text-emerald-700">{row.accepted}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -124,6 +363,7 @@ export const ProjectDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: project, isLoading, error } = useGetProjectQuery(id);
+  const { data: budgetSummary, isLoading: isLoadingBudget } = useGetProjectBudgetSummaryQuery(id, { skip: !id });
   const { data: pmUsers = [] } = useGetUsersQuery({ role: 'PM' });
   const [assignProject, { isLoading: isAssigningProject }] = useAssignProjectMutation();
   const [confirmProject, { isLoading: isConfirming }] = useConfirmProjectMutation();
@@ -156,8 +396,8 @@ export const ProjectDetailPage = () => {
   const showCloseDirect = canCloseDirect(project, user);
   const showRequestClose = canRequestClose(project, user);
   const daysLeft = daysUntilAutoClose(project);
-  const inReminderWindow = isInReminderWindow(daysLeft);
-  const isOnHold = project?.status === PAUSE_STATUS.ON_HOLD;
+  const inReminderWindow = isInReminderWindow(daysLeft)
+  const isOnHold = project?.status === PAUSE_STATUS.ON_HOLD || Boolean(project?.isOnHold);
   const isClosed = ['COMPLETED', 'CANCELLED'].includes(project?.status);
   const isPendingPauseApproval = project?.status === PAUSE_STATUS.PENDING_PAUSE_APPROVAL;
   const showPauseTab = isOnHold || isPendingPauseApproval
@@ -548,12 +788,15 @@ export const ProjectDetailPage = () => {
       </div>
 
       {activeTab === 'MAIN' && (
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <div className="space-y-6">
-            <ProjectInfo project={project} formatDate={formatDate} />
-          </div>
-          <div className="space-y-6">
-            <TeamInfo team={project.team} isOnHold={isOnHold} isClosed={isClosed} project={project} />
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div className="space-y-6">
+              <ProjectInfo project={project} formatDate={formatDate} />
+            </div>
+            <div className="space-y-6">
+              <ProjectFinanceWidget budgetSummary={budgetSummary} isLoading={isLoadingBudget} />
+              <TeamInfo team={project.team} isOnHold={isOnHold} isClosed={isClosed} project={project} />
+            </div>
           </div>
         </div>
       )}
@@ -562,9 +805,15 @@ export const ProjectDetailPage = () => {
         <div className="space-y-8">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
             <TaskStatistics tasks={displayedTasks} />
-            <ServiceExecutionSummary services={project.contract?.services || []} />
+            <ServiceExecutionSummary services={project.contract?.services || []} budgetSummary={budgetSummary} />
           </div>
-          <TaskTable tasks={displayedTasks} project={project} className="min-w-[2000px]" />
+          <TaskTable
+            tasks={displayedTasks}
+            project={project}
+            isClosed={isClosed}
+            isOnHold={isOnHold}
+            className="min-w-[2000px]"
+          />
         </div>
       )}
 
@@ -574,6 +823,8 @@ export const ProjectDetailPage = () => {
           <TaskTable
             tasks={myTasks}
             project={project}
+            isClosed={isClosed}
+            isOnHold={isOnHold}
             bulkAction="start"
             emptyMessage="Bạn chưa được phân công công việc nào trong dự án này"
           />
@@ -581,7 +832,14 @@ export const ProjectDetailPage = () => {
       )}
 
       {activeTab === 'SERVICES' && isCoreMember && (
-        <ContractInfo contract={project.contract} projectId={project.id} project={project} />
+        <ContractInfo
+          contract={project.contract}
+          projectId={project.id}
+          project={project}
+          budgetSummary={budgetSummary}
+          isClosed={isClosed}
+          isOnHold={isOnHold}
+        />
       )}
 
       {activeTab === 'EXTRA' && (

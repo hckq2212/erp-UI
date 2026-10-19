@@ -1,9 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Minus, Plus, Check, RotateCw, Loader2 } from 'lucide-react';
+import { X, Minus, Plus, Check, RotateCw, RefreshCw, Loader2 } from 'lucide-react';
 
 const CROP_DIAMETER = 260;
 
-export const AvatarCropModal = ({ isOpen, imageFile, onClose, onCropComplete }) => {
+export const AvatarCropModal = ({
+    isOpen,
+    imageFile,
+    title = "Chỉnh sửa ảnh đại diện",
+    onClose,
+    onCropComplete
+}) => {
     const [imageSrc, setImageSrc] = useState(null);
     const [zoom, setZoom] = useState(1);
     const [rotation, setRotation] = useState(0);
@@ -109,6 +115,12 @@ export const AvatarCropModal = ({ isOpen, imageFile, onClose, onCropComplete }) 
         setRotation((prev) => (prev + 90) % 360);
     };
 
+    const handleReset = () => {
+        setZoom(1);
+        setRotation(0);
+        setPan({ x: 0, y: 0 });
+    };
+
     // Tạo ảnh đã cắt bằng Canvas
     const handleConfirm = () => {
         if (!imgRef.current || isProcessing) return;
@@ -171,7 +183,7 @@ export const AvatarCropModal = ({ isOpen, imageFile, onClose, onCropComplete }) 
             <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-100">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                    <h3 className="text-base font-black text-gray-900 tracking-tight">Chỉnh sửa ảnh đại diện</h3>
+                    <h3 className="text-base font-black text-gray-900 tracking-tight">{title}</h3>
                     <button
                         type="button"
                         onClick={onClose}
@@ -258,10 +270,18 @@ export const AvatarCropModal = ({ isOpen, imageFile, onClose, onCropComplete }) 
                         <button
                             type="button"
                             onClick={handleRotate}
-                            className="p-2 ml-1 text-gray-500 hover:text-orange-600 hover:bg-white rounded-xl border border-gray-200 shadow-sm transition-all"
+                            className="p-2 ml-1 text-gray-500 hover:text-orange-600 hover:bg-white rounded-xl border border-gray-200 shadow-sm transition-all cursor-pointer"
                             title="Xoay ảnh 90°"
                         >
                             <RotateCw className="w-4 h-4" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleReset}
+                            className="p-2 text-gray-500 hover:text-orange-600 hover:bg-white rounded-xl border border-gray-200 shadow-sm transition-all cursor-pointer"
+                            title="Đặt lại vị trí ban đầu"
+                        >
+                            <RefreshCw className="w-4 h-4" />
                         </button>
                     </div>
                     <p className="text-[11px] text-gray-400 text-center font-medium">
@@ -302,3 +322,5 @@ export const AvatarCropModal = ({ isOpen, imageFile, onClose, onCropComplete }) 
         </div>
     );
 };
+
+export default AvatarCropModal;

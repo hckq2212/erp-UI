@@ -56,9 +56,7 @@ export const OpportunityDetailPage = () => {
     quotations.filter(q => q.status === 'DRAFT' || q.status === 'PENDING_APPROVAL').length,
     [quotations]
   );
-  console.log(draftCount);
-  console.log(opportunity?.status);
-
+  
   const showBadge = (opportunity?.status === 'PENDING_QUOTE_APPROVAL' || opportunity?.status === 'QUOTATION_DRAFTING') && draftCount > 0;
   const canEditRejected = !!opportunity && (
     currentUser?.role === 'ADMIN' || (!!opportunity.createdBy && currentUser?.id === opportunity.createdBy.id)

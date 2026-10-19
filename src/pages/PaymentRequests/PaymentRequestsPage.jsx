@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-    Search, Plus, Wallet, RefreshCw, ArrowUp, ArrowDown, ArrowUpDown, X, Briefcase, ClipboardList, Calendar, DollarSign,
+    Search, Plus, Wallet, RefreshCw, ArrowUp, ArrowDown, ArrowUpDown, X, Briefcase, ClipboardList, Calendar, DollarSign, Zap, Receipt,
 } from 'lucide-react';
 import {
     useGetPaymentRequestsQuery,
@@ -19,17 +19,17 @@ import { PaymentRequestCharts } from '../../components/paymentRequests/PaymentRe
 import { StatusBadge } from '../../components/paymentRequests/PaymentRequestParts';
 import {
     TYPE_LABELS, APPROVAL_LABELS, PAYMENT_LABELS, APPROVAL_TONE, PAYMENT_TONE,
+    SETTLEMENT_LABELS, SETTLEMENT_TONE,
     fmtDate, inputCls, btnPrimary,
 } from '../../components/paymentRequests/paymentRequestConfig';
 
-// Các vai trò xem được toàn bộ yêu cầu thanh toán (khớp FULL_VISIBILITY_ROLES ở backend) —
-// chỉ nhóm này mới có đủ dữ liệu tổng quan để biểu đồ có ý nghĩa.
 const CHART_VISIBLE_ROLES = ['ADMIN_SALE', 'BOD', 'ADMIN'];
 
 const TYPE_TABS = [
     { value: 'ALL', label: 'Tất cả' },
     { value: 'PROJECT', label: 'Theo dự án' },
     { value: 'OTHER_WORK', label: 'Công việc khác' },
+    { value: 'ADVANCE', label: 'Tạm ứng' },
 ];
 
 const selectCls = cn(inputCls, 'w-auto min-w-[10rem] py-2');
@@ -55,15 +55,13 @@ export const PaymentRequestsPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { id: idParam } = useParams();
-    // Nguồn sự thật cho request đang mở là URL (/payment-requests/:id), không phải state
-    // cục bộ, để link thông báo redirect đúng trang và F5/điều hướng giữa các thông báo
-    // luôn load lại đúng yêu cầu thanh toán tương ứng.
     const selectedId = idParam || null;
 
     const [search, setSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState('ALL');
     const [approvalFilter, setApprovalFilter] = useState('ALL');
     const [paymentFilter, setPaymentFilter] = useState('ALL');
+    const [settlementFilter, setSettlementFilter] = useState('ALL');
     const [projectFilter, setProjectFilter] = useState('ALL');
     const [dateField, setDateField] = useState('dueDate');
     const [fromDate, setFromDate] = useState('');
@@ -82,6 +80,7 @@ export const PaymentRequestsPage = () => {
         if (typeFilter !== 'ALL') params.type = typeFilter;
         if (approvalFilter !== 'ALL') params.approvalStatus = approvalFilter;
         if (paymentFilter !== 'ALL') params.paymentStatus = paymentFilter;
+        if (settlementFilter !== 'ALL') params.settlementStatus = settlementFilter;
         if (projectFilter !== 'ALL') params.projectId = projectFilter;
         if (dateField) params.dateField = dateField;
         if (fromDate) params.fromDate = fromDate;
@@ -89,7 +88,7 @@ export const PaymentRequestsPage = () => {
         if (minAmount) params.minAmount = minAmount;
         if (maxAmount) params.maxAmount = maxAmount;
         return params;
-    }, [search, typeFilter, approvalFilter, paymentFilter, projectFilter, dateField, fromDate, toDate, minAmount, maxAmount, sortBy, sortOrder]);
+    }, [search, typeFilter, approvalFilter, paymentFilter, settlementFilter, projectFilter, dateField, fromDate, toDate, minAmount, maxAmount, sortBy, sortOrder]);
 
     const { data: requests = [], isLoading, isFetching, refetch } = useGetPaymentRequestsQuery(queryParams, { refetchOnMountOrArgChange: true });
     // Danh sách không phụ thuộc bộ lọc, dùng cho thẻ tổng hợp phía trên.
@@ -102,7 +101,7 @@ export const PaymentRequestsPage = () => {
         refetchOnMountOrArgChange: true,
     });
     const { data: projectsResponse } = useGetProjectsQuery({ limit: 1000 });
-    const projects = projectsResponse?.data || [];
+    const projects = useMemo(() => projectsResponse?.data || [], [projectsResponse?.data]);
 
     const [createPaymentRequest, { isLoading: isCreating }] = useCreatePaymentRequestMutation();
 
@@ -165,13 +164,14 @@ export const PaymentRequestsPage = () => {
     }, [selectedId, isSelectedError, selectedRequest, navigate]);
 
     const hasActiveFilter =
-        search.trim() || typeFilter !== 'ALL' || approvalFilter !== 'ALL' || paymentFilter !== 'ALL' || projectFilter !== 'ALL' || fromDate || toDate || minAmount || maxAmount;
+        search.trim() || typeFilter !== 'ALL' || approvalFilter !== 'ALL' || paymentFilter !== 'ALL' || settlementFilter !== 'ALL' || projectFilter !== 'ALL' || fromDate || toDate || minAmount || maxAmount;
 
     const resetFilters = () => {
         setSearch('');
         setTypeFilter('ALL');
         setApprovalFilter('ALL');
         setPaymentFilter('ALL');
+        setSettlementFilter('ALL');
         setProjectFilter('ALL');
         setDateField('dueDate');
         setFromDate('');
@@ -194,24 +194,24 @@ export const PaymentRequestsPage = () => {
                 </button>
             </div>
 
-            {/* 3 Thẻ chỉ số tổng nợ (Dynamic & Tương tác) */}
-            <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+            {/* 4 Thẻ chỉ số tổng nợ (Dynamic & Tương tác) */}
+            <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
                 <button
                     type='button'
                     onClick={() => setTypeFilter('ALL')}
                     className={cn(
                         'flex items-center gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:shadow-md',
                         typeFilter === 'ALL'
-                            ? 'border-orange-400 ring-2 ring-orange-200'
-                            : 'border-orange-100 hover:border-orange-300'
+                            ? 'border-[#F38820] ring-2 ring-orange-200'
+                            : 'border-gray-100 hover:border-orange-300'
                     )}
                 >
-                    <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600'>
+                    <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-[#F38820]'>
                         <Wallet size={22} />
                     </div>
                     <div className='min-w-0 flex-1'>
                         <p className='text-xs font-semibold uppercase tracking-wider text-stone-500'>Tổng nợ (Tất cả)</p>
-                        <p className='truncate text-xl font-bold text-stone-800 sm:text-2xl'>
+                        <p className='truncate text-xl font-bold text-[#F38820] sm:text-2xl'>
                             {formatCurrency(totalDebtData?.totalDebt || 0) || '0 VNĐ'}
                         </p>
                         <p className='text-[11px] text-stone-400'>Đã duyệt, chưa thanh toán</p>
@@ -261,13 +261,35 @@ export const PaymentRequestsPage = () => {
                         <p className='text-[11px] text-stone-400'>Công việc độc lập</p>
                     </div>
                 </button>
+
+                <button
+                    type='button'
+                    onClick={() => setTypeFilter('ADVANCE')}
+                    className={cn(
+                        'flex items-center gap-4 rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:shadow-md',
+                        typeFilter === 'ADVANCE'
+                            ? 'border-purple-400 ring-2 ring-purple-200'
+                            : 'border-stone-100 hover:border-purple-300'
+                    )}
+                >
+                    <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-600'>
+                        <Receipt size={22} />
+                    </div>
+                    <div className='min-w-0 flex-1'>
+                        <p className='text-xs font-semibold uppercase tracking-wider text-stone-500'>Nợ tạm ứng</p>
+                        <p className='truncate text-xl font-bold text-purple-700 sm:text-2xl'>
+                            {formatCurrency(totalDebtData?.advanceDebt || 0) || '0 VNĐ'}
+                        </p>
+                        <p className='text-[11px] text-stone-400'>Tạm ứng sản xuất</p>
+                    </div>
+                </button>
             </div>
 
             {/* Biểu đồ tổng quan: chỉ dành cho Admin Sale/BOD/Admin — các vai trò xem toàn bộ yêu cầu */}
             {canSeeCharts && <PaymentRequestCharts requests={allRequests} projectNameById={projectNameById} />}
 
             {/* Bộ lọc */}
-            <div className='space-y-3 rounded-2xl border border-orange-100 bg-white p-4 shadow-sm'>
+            <div className='space-y-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm'>
                 <div className='flex flex-wrap items-center gap-3'>
                     <div className='relative min-w-[16rem] flex-1'>
                         <Search size={16} className='absolute left-3 top-1/2 -translate-y-1/2 text-stone-400' />
@@ -297,8 +319,8 @@ export const PaymentRequestsPage = () => {
                             className={cn(
                                 'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition',
                                 typeFilter === value
-                                    ? 'border-orange-500 bg-orange-500 text-white shadow-sm'
-                                    : 'border-stone-200 bg-white text-stone-600 hover:border-orange-300 hover:text-orange-700'
+                                    ? 'border-gray-500 bg-orange-500 text-white shadow-sm'
+                                    : 'border-stone-200 bg-white text-stone-600 hover:border-gray-300 hover:text-orange-700'
                             )}
                         >
                             {Icon && <Icon size={14} />}
@@ -316,6 +338,13 @@ export const PaymentRequestsPage = () => {
                     <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className={selectCls}>
                         <option value='ALL'>Tất cả trạng thái thanh toán</option>
                         {Object.entries(PAYMENT_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    </select>
+
+                    <select value={settlementFilter} onChange={(e) => setSettlementFilter(e.target.value)} className={selectCls}>
+                        <option value='ALL'>Tất cả hoàn ứng</option>
+                        {Object.entries(SETTLEMENT_LABELS)
+                            .filter(([k]) => k !== 'NOT_APPLICABLE')
+                            .map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
 
                     <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} className={selectCls}>
@@ -345,7 +374,7 @@ export const PaymentRequestsPage = () => {
                         <select
                             value={dateField}
                             onChange={(e) => setDateField(e.target.value)}
-                            className='rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-orange-400'
+                            className='rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-gray-400'
                         >
                             <option value='dueDate'>Hạn thanh toán</option>
                             <option value='createdAt'>Ngày tạo</option>
@@ -354,14 +383,14 @@ export const PaymentRequestsPage = () => {
                             type='date'
                             value={fromDate}
                             onChange={(e) => setFromDate(e.target.value)}
-                            className='rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-orange-400'
+                            className='rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-gray-400'
                         />
                         <span className='text-stone-400'>-</span>
                         <input
                             type='date'
                             value={toDate}
                             onChange={(e) => setToDate(e.target.value)}
-                            className='rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-orange-400'
+                            className='rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-gray-400'
                         />
                     </div>
 
@@ -376,7 +405,7 @@ export const PaymentRequestsPage = () => {
                             placeholder='Từ'
                             value={minAmount}
                             onChange={(e) => setMinAmount(e.target.value)}
-                            className='w-28 rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-orange-400'
+                            className='w-28 rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-gray-400'
                         />
                         <span className='text-stone-400'>-</span>
                         <input
@@ -384,14 +413,14 @@ export const PaymentRequestsPage = () => {
                             placeholder='Đến'
                             value={maxAmount}
                             onChange={(e) => setMaxAmount(e.target.value)}
-                            className='w-28 rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-orange-400'
+                            className='w-28 rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-700 outline-none focus:border-gray-400'
                         />
                     </div>
                 </div>
             </div>
 
             {/* Bảng */}
-            <div className='overflow-x-auto rounded-2xl border border-orange-100 bg-white shadow-sm'>
+            <div className='overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm'>
                 <table className='min-w-full text-sm'>
                     <thead className='bg-orange-50/70 text-left text-xs uppercase tracking-wide text-stone-500'>
                         <tr>
@@ -431,31 +460,77 @@ export const PaymentRequestsPage = () => {
                                         highlight ? 'bg-orange-50/80 hover:bg-orange-100/70' : 'hover:bg-orange-50/40'
                                     )}
                                 >
-                                    <td className={cn('max-w-sm border-l-4 px-4 py-3', highlight ? 'border-orange-500' : 'border-transparent')}>
-                                        {highlight && (
-                                            <span className='mb-1 inline-block rounded-md bg-white px-1.5 py-0.5 text-[11px] font-semibold text-orange-600 ring-1 ring-orange-300'>
-                                                {r.approvalStatus === 'DRAFT' ? 'Cần gửi duyệt' : 'Cần bổ sung'}
-                                            </span>
-                                        )}
+                                    <td className={cn('max-w-sm border-l-4 px-4 py-3', highlight ? 'border-gray-500' : 'border-transparent')}>
+                                        <div className='flex flex-wrap items-center gap-1 mb-1'>
+                                            {highlight && (
+                                                <span className='inline-block rounded-md bg-white px-1.5 py-0.5 text-[11px] font-semibold text-orange-600 ring-1 ring-orange-300'>
+                                                    {r.approvalStatus === 'DRAFT' ? 'Cần gửi duyệt' : 'Cần bổ sung'}
+                                                </span>
+                                            )}
+                                            {r.isUrgent && (
+                                                <span className='inline-flex items-center gap-0.5 rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-800 ring-1 ring-amber-300'>
+                                                    <Zap size={11} className='fill-amber-600 text-amber-600' /> GẤP
+                                                </span>
+                                            )}
+                                            {r.type === 'ADVANCE' && (
+                                                <span className='inline-flex items-center gap-0.5 rounded-md bg-purple-50 px-1.5 py-0.5 text-[11px] font-bold text-purple-700 ring-1 ring-purple-200'>
+                                                    Tạm ứng
+                                                </span>
+                                            )}
+                                            {r.isOverdue && (
+                                                <span className='inline-flex items-center gap-0.5 rounded-md bg-red-100 px-1.5 py-0.5 text-[11px] font-bold text-red-700 ring-1 ring-red-200'>
+                                                    Quá hạn
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className='line-clamp-2 font-medium text-stone-800'>{r.content}</p>
                                         <p className='mt-0.5 truncate text-xs text-stone-500'>
-                                            {[TYPE_LABELS[r.type] || r.type, vendorName && `Vendor: ${vendorName}`, taskName && `Việc: ${taskName}`].filter(Boolean).join(' · ')}
+                                            {[
+                                                TYPE_LABELS[r.type] || r.type,
+                                                vendorName && `Vendor: ${vendorName}`,
+                                                taskName && `Việc: ${taskName}`
+                                            ].filter(Boolean).join(' · ')}
                                         </p>
                                     </td>
                                     <td className='px-4 py-3 text-stone-600'>
                                         {r.project?.name || projectNameById.get(String(r.projectId)) || '-'}
                                     </td>
                                     <td className={cn('whitespace-nowrap px-4 py-3 font-semibold', highlight ? 'text-orange-700' : 'text-stone-800')}>
-                                        {formatCurrency(r.amount)}
+                                        <div>{formatCurrency(r.amount)}</div>
+                                        {Number(r.paidAmount) > 0 && Number(r.paidAmount) < Number(r.amount) && (
+                                            <div className='text-[11px] text-blue-600 font-normal'>
+                                                Đã chi: {formatCurrency(r.paidAmount)} ({Math.round((Number(r.paidAmount) / Number(r.amount)) * 100)}%)
+                                            </div>
+                                        )}
+                                        {r.type === 'ADVANCE' && r.settlementStatus === 'SETTLED' && Number(r.settlementDifference) > 0 && (
+                                            <div className='text-[11px] text-amber-600 font-normal'>
+                                                Chi bù: +{formatCurrency(r.settlementDifference)}
+                                            </div>
+                                        )}
+                                        {r.type === 'ADVANCE' && r.settlementStatus === 'SETTLED' && Number(r.settlementDifference) < 0 && (
+                                            <div className='text-[11px] text-emerald-600 font-normal'>
+                                                Thu hồi: -{formatCurrency(Math.abs(Number(r.settlementDifference)))}
+                                            </div>
+                                        )}
                                     </td>
-                                    <td className={cn('whitespace-nowrap px-4 py-3', r.paymentStatus === 'OVERDUE' ? 'font-medium text-red-600' : 'text-stone-600')}>
+                                    <td className={cn('whitespace-nowrap px-4 py-3', r.isOverdue || r.paymentStatus === 'OVERDUE' ? 'font-medium text-red-600' : 'text-stone-600')}>
                                         {fmtDate(r.confirmedDueDate || r.dueDate)}
                                     </td>
                                     <td className='px-4 py-3'>
                                         <StatusBadge label={APPROVAL_LABELS[r.approvalStatus] || r.approvalStatus} tone={APPROVAL_TONE[r.approvalStatus]} />
                                     </td>
                                     <td className='px-4 py-3'>
-                                        <StatusBadge label={PAYMENT_LABELS[r.paymentStatus] || r.paymentStatus} tone={PAYMENT_TONE[r.paymentStatus]} />
+                                        <div className='space-y-1'>
+                                            <StatusBadge label={PAYMENT_LABELS[r.paymentStatus] || r.paymentStatus} tone={PAYMENT_TONE[r.paymentStatus]} />
+                                            {r.type === 'ADVANCE' &&
+                                                !['CANCELLED', 'REJECTED'].includes(r.approvalStatus) &&
+                                                r.settlementStatus &&
+                                                r.settlementStatus !== 'NOT_APPLICABLE' && (
+                                                <div>
+                                                    <StatusBadge label={SETTLEMENT_LABELS[r.settlementStatus] || r.settlementStatus} tone={SETTLEMENT_TONE[r.settlementStatus]} />
+                                                </div>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className='whitespace-nowrap px-4 py-3 text-stone-500'>{fmtDate(r.createdAt)}</td>
                                 </tr>

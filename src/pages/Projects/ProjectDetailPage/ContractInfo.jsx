@@ -16,6 +16,9 @@ import {
     Send,
     AlertTriangle,
     X,
+    Wallet,
+    Receipt,
+    PiggyBank,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { CreateAcceptanceModal } from './CreateAcceptanceModal';
@@ -329,7 +332,7 @@ const ServiceDetails = ({ serviceTasks, results, feedback, onOpenTask, canSeeAll
     </div>
 );
 
-export const ContractInfo = ({ contract, projectId, project }) => {
+export const ContractInfo = ({ contract, projectId, project, budgetSummary = null, isClosed: propIsClosed, isOnHold: propIsOnHold }) => {
     const navigate = useNavigate();
     const [isAcceptanceModalOpen, setIsAcceptanceModalOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -342,6 +345,24 @@ export const ContractInfo = ({ contract, projectId, project }) => {
     const totalBudget = useMemo(() => {
         return services.reduce((sum, item) => sum + Number(item.budget || 0), 0);
     }, [services]);
+
+    const serviceBudgets = useMemo(() => budgetSummary?.serviceBudgets || [], [budgetSummary]);
+    const getServiceSpendInfo = (item) => {
+        const csId = item.id;
+        const csServiceId = item.serviceId || item.service?.id;
+        const name = (item.name || item.service?.name || '').trim().toLowerCase();
+        let spent = 0;
+        serviceBudgets.forEach((sb) => {
+            if ((sb.contractServiceId && sb.contractServiceId === csId) ||
+                (sb.serviceId && csServiceId && sb.serviceId === csServiceId) ||
+                (sb.serviceName && sb.serviceName.trim().toLowerCase() === name)) {
+                spent += Number(sb.spent || 0);
+            }
+        });
+        const budget = Number(item.budget || 0);
+        return { spent, remaining: budget - spent };
+    };
+
     const user = useSelector(selectCurrentUser);
     const currentUserId = getCurrentUserId(user);
 
@@ -351,14 +372,14 @@ export const ContractInfo = ({ contract, projectId, project }) => {
     const isProjectManager = isSameUser(projectManagerMember?.user?.id, currentUserId) ||
         isSameUser(project?.projectManager?.id, currentUserId) ||
         Boolean(project?.team?.members?.some((m) => hasTeamMemberRole(m, 'PROJECT_MANAGER') && isSameUser(m.user?.id, currentUserId)));
-    const isClosed = ['COMPLETED', 'CANCELLED'].includes(project?.status);
-    const isOnHold = project?.status === 'ON_HOLD' || Boolean(project?.isOnHold);
+    const isClosed = propIsClosed ?? ['COMPLETED', 'CANCELLED'].includes(project?.status);
+    const isOnHold = propIsOnHold ?? (project?.status === 'ON_HOLD' || Boolean(project?.isOnHold));
     const isAdminOrBOD = ['ADMIN', 'BOD'].includes(user?.role);
     const canSeeAllTasks = isAdminOrBOD || isProjectLead || isProjectManager;
-    // Team Lead/ACCOUNT can inspect all project tasks, but acceptance submission
-    // is reserved for project managers and management roles.
-    const canSendAcceptance = isAdminOrBOD || isProjectManager || user?.role === 'ADMIN_SALE';
-    const canEditServiceNickname = canSeeAllTasks;
+    // Khi dự án tạm dừng (ON_HOLD) hoặc đã đóng (COMPLETED/CANCELLED),
+    // toàn bộ chức năng gửi nghiệm thu và chỉnh sửa nickname dịch vụ đều bị khóa.
+    const canSendAcceptance = !isClosed && !isOnHold && (isAdminOrBOD || isProjectManager || user?.role === 'ADMIN_SALE');
+    const canEditServiceNickname = !isClosed && !isOnHold && canSeeAllTasks;
 
     const projectTasksMap = useMemo(() => {
         const map = new Map();
@@ -448,6 +469,14 @@ export const ContractInfo = ({ contract, projectId, project }) => {
     };
 
     const startEditServiceNickname = (service) => {
+        if (isClosed) {
+            toast.warning('Dự án đã đóng hoặc hoàn tất, không thể sửa tên dịch vụ.');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể sửa tên dịch vụ.');
+            return;
+        }
         setEditingServiceId(service.id);
         setNicknameDraft(service.nickname || '');
     };
@@ -458,6 +487,14 @@ export const ContractInfo = ({ contract, projectId, project }) => {
     };
 
     const saveServiceNickname = async (service) => {
+        if (isClosed) {
+            toast.warning('Dự án đã đóng hoặc hoàn tất, không thể sửa tên dịch vụ.');
+            return;
+        }
+        if (isOnHold) {
+            toast.warning('Dự án đang tạm dừng, không thể sửa tên dịch vụ.');
+            return;
+        }
         try {
             await updateContractServiceNickname({
                 id: service.id,
@@ -477,6 +514,35 @@ export const ContractInfo = ({ contract, projectId, project }) => {
     return (
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <div className="space-y-6">
+                {/* Banner trạng thái Read-Only khi Dự án Tạm dừng hoặc Đã đóng */}
+                {isOnHold && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 flex items-start gap-3 shadow-xs">
+                        <div className="w-9 h-9 rounded-lg bg-amber-500 flex items-center justify-center shrink-0 text-white shadow-xs">
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="font-bold text-amber-900 text-sm">Dự án đang tạm dừng (ON_HOLD)</p>
+                            <p className="mt-0.5 text-xs text-amber-800 font-medium">
+                                Toàn bộ chức năng gửi nghiệm thu và chỉnh sửa dịch vụ tạm khóa ở chế độ <b>Chỉ đọc (Read-only)</b> cho đến khi dự án được mở lại.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {isClosed && (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-4 flex items-start gap-3 shadow-xs">
+                        <div className="w-9 h-9 rounded-lg bg-slate-500 flex items-center justify-center shrink-0 text-white shadow-xs">
+                            <AlertTriangle className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="font-bold text-slate-900 text-sm">Dự án đã đóng hoặc hoàn tất ({project?.status})</p>
+                            <p className="mt-0.5 text-xs text-slate-600 font-medium">
+                                Hạng mục dịch vụ và kết quả đang được lưu trữ ở chế độ <b>Chỉ đọc (Read-only)</b>. Không thể gửi thêm nghiệm thu hoặc chỉnh sửa.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div className="flex items-start gap-3">
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
@@ -488,6 +554,21 @@ export const ContractInfo = ({ contract, projectId, project }) => {
                                 <span className="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
                                     Tổng ngân sách: {formatNumber(totalBudget)} VNĐ
                                 </span>
+                                {budgetSummary && (
+                                    <>
+                                        <span className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-[#F38820]">
+                                            Đã chi: {formatNumber(budgetSummary.totalProjectSpent || 0)} VNĐ
+                                        </span>
+                                        <span className={cn(
+                                            "inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-bold",
+                                            (budgetSummary.remainingProjectBudget ?? (totalBudget - (budgetSummary.totalProjectSpent || 0))) < 0
+                                                ? "border-rose-200 bg-rose-50 text-rose-700"
+                                                : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                        )}>
+                                            Còn lại: {formatNumber(budgetSummary.remainingProjectBudget ?? (totalBudget - (budgetSummary.totalProjectSpent || 0)))} VNĐ
+                                        </span>
+                                    </>
+                                )}
                             </div>
                             <p className="mt-1 text-sm text-gray-500">Xem nhanh trạng thái nghiệm thu, tiến độ công việc và kết quả theo từng gói.</p>
                         </div>
@@ -580,6 +661,7 @@ export const ContractInfo = ({ contract, projectId, project }) => {
                                                 const serviceTasks = canSeeAllTasks
                                                     ? enrichedTasks
                                                     : enrichedTasks.filter(isUserTask);
+                                                const itemSpendInfo = getServiceSpendInfo(item);
                                                 const results = Array.isArray(item.results) ? item.results : [];
                                                 const serviceCode = getServiceCode(item);
                                                 const serviceName = getServiceName(item);
@@ -637,20 +719,52 @@ export const ContractInfo = ({ contract, projectId, project }) => {
                                                                             </button>
                                                                         )}
                                                                     </div>
-                                                                    <div className="mt-1 flex flex-wrap gap-2 text-xs font-semibold text-gray-400">
+                                                                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-gray-400">
                                                                         <span>
                                                                             {canSeeAllTasks
                                                                                 ? `${serviceTasks.length} công việc`
                                                                                 : `${serviceTasks.length} công việc của bạn`}
                                                                         </span>
-                                                                        <span className={Number(item.budget || 0) > 0 ? "font-bold text-blue-600" : ""}>
-                                                                            Ngân sách: {formatNumber(item.budget || 0)} VNĐ
-                                                                        </span>
+                                                                        <span>•</span>
                                                                         <span>{results.length} kết quả</span>
                                                                         {item.nickname?.trim() && originalServiceName && (
-                                                                            <span title={originalServiceName}>Gốc: {originalServiceName}</span>
+                                                                            <>
+                                                                                <span>•</span>
+                                                                                <span title={originalServiceName} className="italic text-slate-400">Gốc: {originalServiceName}</span>
+                                                                            </>
                                                                         )}
                                                                     </div>
+
+                                                                    {/* Hàng chỉ số tài chính dịch vụ */}
+                                                                    <div className="mt-2.5 flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                                                                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50/70 px-2.5 py-1 text-xs font-semibold text-blue-800">
+                                                                            <Wallet className="h-3.5 w-3.5 text-blue-600" />
+                                                                            <span>Ngân sách:</span>
+                                                                            <b className="font-bold text-blue-900">{formatNumber(item.budget || 0)} VNĐ</b>
+                                                                        </span>
+                                                                        {budgetSummary && (
+                                                                            <span className="inline-flex items-center gap-1.5 rounded-lg border border-orange-100 bg-orange-50/70 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                                                                                <Receipt className="h-3.5 w-3.5 text-[#F38820]" />
+                                                                                <span>Đã chi:</span>
+                                                                                <b className="font-bold text-[#F38820]">{formatNumber(itemSpendInfo.spent)} VNĐ</b>
+                                                                            </span>
+                                                                        )}
+                                                                        {budgetSummary && Number(item.budget || 0) > 0 && (
+                                                                            <span className={cn(
+                                                                                "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold",
+                                                                                itemSpendInfo.remaining < 0
+                                                                                    ? "border-rose-200 bg-rose-50 text-rose-800"
+                                                                                    : "border-emerald-200 bg-emerald-50 text-emerald-800"
+                                                                            )}>
+                                                                                <PiggyBank className={cn("h-3.5 w-3.5", itemSpendInfo.remaining < 0 ? "text-rose-600" : "text-emerald-600")} />
+                                                                                <span>Còn lại:</span>
+                                                                                <b className={cn("font-bold", itemSpendInfo.remaining < 0 ? "text-rose-700" : "text-emerald-700")}>
+                                                                                    {formatNumber(itemSpendInfo.remaining)} VNĐ
+                                                                                </b>
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    
                                                                 </div>
                                                             </div>
 

@@ -62,6 +62,104 @@ const sortRoles = (roles) => [...roles].sort(
     (a, b) => ROLE_DISPLAY_ORDER.indexOf(a) - ROLE_DISPLAY_ORDER.indexOf(b)
 );
 
+const memberSelectStyles = {
+    control: (base, state) => ({
+        ...base,
+        minHeight: '38px',
+        backgroundColor: '#FFFFFF',
+        borderColor: state.isFocused ? '#F38820' : '#E5E7EB',
+        borderRadius: '0.5rem',
+        boxShadow: state.isFocused ? '0 0 0 2px rgba(243, 136, 32, 0.2)' : 'none',
+        '&:hover': {
+            borderColor: state.isFocused ? '#F38820' : '#D1D5DB'
+        },
+        fontSize: '0.875rem',
+        cursor: 'pointer',
+        transition: 'all 0.15s ease'
+    }),
+    valueContainer: (base) => ({
+        ...base,
+        padding: '2px 10px'
+    }),
+    input: (base) => ({
+        ...base,
+        margin: 0,
+        padding: 0,
+        color: '#1F2937',
+        fontSize: '0.875rem'
+    }),
+    placeholder: (base) => ({
+        ...base,
+        color: '#9CA3AF',
+        fontSize: '0.875rem'
+    }),
+    singleValue: (base) => ({
+        ...base,
+        color: '#1F2937',
+        fontSize: '0.875rem',
+        fontWeight: 500
+    }),
+    indicatorSeparator: () => ({ display: 'none' }),
+    dropdownIndicator: (base, state) => ({
+        ...base,
+        color: state.isFocused ? '#F38820' : '#9CA3AF',
+        padding: '4px 8px',
+        '&:hover': {
+            color: '#F38820'
+        }
+    }),
+    clearIndicator: (base) => ({
+        ...base,
+        color: '#9CA3AF',
+        padding: '4px 8px',
+        cursor: 'pointer',
+        '&:hover': {
+            color: '#EF4444'
+        }
+    }),
+    menuPortal: (base) => ({
+        ...base,
+        zIndex: 9999
+    }),
+    menu: (base) => ({
+        ...base,
+        zIndex: 9999,
+        borderRadius: '0.5rem',
+        overflow: 'hidden',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        border: '1px solid #E5E7EB'
+    }),
+    menuList: (base) => ({
+        ...base,
+        maxHeight: '260px',
+        padding: '4px'
+    }),
+    groupHeading: (base) => ({
+        ...base,
+        fontSize: '0.75rem',
+        fontWeight: 700,
+        color: '#EA580C',
+        textTransform: 'uppercase',
+        padding: '6px 12px 2px',
+        letterSpacing: '0.05em'
+    }),
+    option: (base, state) => ({
+        ...base,
+        fontSize: '0.875rem',
+        borderRadius: '0.375rem',
+        padding: '8px 12px',
+        margin: '1px 0',
+        cursor: 'pointer',
+        backgroundColor: state.isSelected ? '#FFF7ED' : state.isFocused ? '#FFF7ED' : 'transparent',
+        color: state.isSelected || state.isFocused ? '#F38820' : '#374151',
+        fontWeight: state.isSelected ? 600 : 400,
+        ':active': {
+            backgroundColor: '#FFEDD5',
+            color: '#C2410C'
+        }
+    })
+};
+
 const WorkloadBadge = ({ workload }) => {
     const displayPercent = getWorkloadDisplayPercent(workload);
 
@@ -489,7 +587,7 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-fit">
             <div className="flex items-center gap-2 mb-4">
-                <Users className="w-5 h-5 text-purple-600" />
+                <Users className="w-5 h-5 text-orange-500" />
                 <h2 className="font-semibold text-gray-900">Đội thực hiện</h2>
             </div>
 
@@ -562,7 +660,7 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
             <div className="space-y-4">
                 <div>
                     <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Tên đội</p>
-                    <p className="text-sm font-semibold text-purple-700">{team.name}</p>
+                    <p className="text-sm font-semibold text-orange-600">{team.name}</p>
                 </div>
 
                 <div>
@@ -593,7 +691,7 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
                                             <button
                                                 type="button"
                                                 onClick={() => isEditing ? setEditingUserId('') : openRoleEditor(group)}
-                                                className="shrink-0 rounded-lg border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-700 hover:bg-purple-100"
+                                                className="shrink-0 rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-700 hover:bg-orange-100 transition-colors"
                                             >
                                                 {isEditing ? 'Đóng' : 'Cập nhật vai trò'}
                                             </button>
@@ -610,15 +708,15 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
                                         )}
                                     </div>
                                     {isEditing && (
-                                        <div className="mt-2 rounded-lg border border-purple-100 bg-purple-50/40 p-3">
+                                        <div className="mt-2 rounded-lg border border-orange-100 bg-orange-50/40 p-3">
                                             <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
                                                 {editableRoleOptions.map(role => (
-                                                    <label key={role} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-white">
+                                                    <label key={role} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-orange-50/60 transition-colors">
                                                         <input
                                                             type="checkbox"
                                                             checked={draftRoles.includes(role)}
                                                             onChange={() => toggleDraftRole(role)}
-                                                            className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                                            className="h-4 w-4 rounded border-gray-300 text-orange-500 accent-[#F38820] focus:ring-orange-400"
                                                         />
                                                         <span>{TEAM_MEMBER_ROLE_LABELS[role] || role}</span>
                                                     </label>
@@ -636,7 +734,7 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
                                                     type="button"
                                                     onClick={() => handleUpdateRoles(group.userId)}
                                                     disabled={draftRoles.length === 0 || isUpdatingRoles}
-                                                    className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-bold text-white disabled:bg-gray-300"
+                                                    className="rounded-lg bg-orange-500 hover:bg-orange-600 px-3 py-1.5 text-xs font-bold text-white disabled:bg-gray-300 shadow-sm transition-colors"
                                                 >
                                                     Lưu vai trò
                                                 </button>
@@ -650,8 +748,8 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
                 </div>
 
                 {canAddMember && (
-                    <div className="rounded-xl border border-dashed border-purple-200 bg-purple-50/40 p-3">
-                        <p className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-700">Thêm nhân sự</p>
+                    <div className="rounded-xl border border-dashed border-orange-200 bg-orange-50/40 p-3">
+                        <p className="mb-2 text-xs font-bold uppercase tracking-wider text-orange-600">Thêm nhân sự</p>
                         <div className="space-y-2">
                             <Select
                                 aria-label="Tìm và chọn nhân sự"
@@ -664,17 +762,20 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
                                 isClearable
                                 className="text-sm"
                                 classNamePrefix="project-member-select"
+                                styles={memberSelectStyles}
+                                menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                menuPosition="fixed"
                             />
-                            <div className="rounded-lg border border-purple-100 bg-white p-2">
+                            <div className="rounded-lg border border-orange-100 bg-white p-2">
                                 <p className="mb-2 text-xs font-semibold text-gray-500">Chọn một hoặc nhiều vai trò</p>
                                 <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
                                     {availableRolesForSelectedUser.map((role) => (
-                                        <label key={role} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-purple-50">
+                                        <label key={role} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-orange-50 transition-colors">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedRoles.includes(role)}
                                                 onChange={() => toggleSelectedRole(role)}
-                                                className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                                                className="h-4 w-4 rounded border-gray-300 text-orange-500 accent-[#F38820] focus:ring-orange-400"
                                             />
                                             <span>{TEAM_MEMBER_ROLE_LABELS[role] || role}</span>
                                         </label>
@@ -685,7 +786,7 @@ export const TeamInfo = ({ team, isOnHold = false, isClosed = false, project }) 
                                 type="button"
                                 onClick={handleAddMember}
                                 disabled={!selectedUserId || selectedRoles.length === 0 || isAdding}
-                                className="flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-sm font-bold text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                                className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-3 py-2 text-sm font-bold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-300 shadow-sm"
                             >
                                 <Plus className="h-4 w-4" />
                                 Thêm vào đội

@@ -9,10 +9,12 @@ import { DocumentPreviewModal } from '../../components/common/DocumentPreviewMod
 import {
     X, Upload, FileText, Download, Eye, Loader2,
     ArrowLeft, CheckCircle, Mail, Phone, User,
-    Link2, ExternalLink, Calendar
+    Link2, ExternalLink, Calendar, MessageSquare
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { formatDateToDDMMYYYY } from '../../utils/format';
+import { useGetMeQuery } from '../../api/auth';
+import { useChatStore } from '../../store/useChatStore';
 
 const MAX_CONTRACT_FILES = 1;
 const MAX_CONTRACT_FILE_SIZE = 10 * 1024 * 1024;
@@ -41,6 +43,42 @@ export const UserDetailPage = () => {
     const navigate = useNavigate();
     const { data: user, isLoading, error } = useGetUserQuery(id);
     const [updateUserLaborContracts, { isLoading: isSavingContracts }] = useUpdateUserLaborContractsMutation();
+
+    // Chat navigation state & actions
+    const { data: currentUser } = useGetMeQuery();
+    const { rooms, selectRoom, createDM, fetchRooms } = useChatStore();
+    const [isStartingChat, setIsStartingChat] = useState(false);
+
+    const isSelf = currentUser?.id === user?.id;
+    const isUserLocked = user?.isLocked || (user?.account && !user?.account?.isActive);
+
+    const handleStartChat = async () => {
+        if (!user?.id || isSelf || isUserLocked) return;
+        setIsStartingChat(true);
+        try {
+            let currentRooms = rooms;
+            if (currentRooms.length === 0) {
+                await fetchRooms();
+                currentRooms = useChatStore.getState().rooms;
+            }
+
+            const existingDM = currentRooms.find(
+                room => !room.isGroup && room.participants?.some(p => (p.userId || p.user?.id) === user.id)
+            );
+
+            if (existingDM) {
+                selectRoom(existingDM);
+            } else {
+                await createDM(user.id);
+            }
+            navigate('/chat');
+        } catch (err) {
+            console.error("Error opening chat with user:", err);
+            navigate('/chat');
+        } finally {
+            setIsStartingChat(false);
+        }
+    };
 
     // File handling state
     const [isUploading, setIsUploading] = useState(false);
@@ -219,13 +257,13 @@ export const UserDetailPage = () => {
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                         {/* ... existing profile card content ... */}
-                        <div className="p-8 text-center bg-gradient-to-b from-blue-50 to-white pt-10">
-                            <div className="w-24 h-24 rounded-full overflow-hidden mx-auto shadow-xl shadow-blue-100 ring-4 ring-blue-50 mb-6">
+                        <div className="p-8 text-center bg-gradient-to-b from-orange-50/40 to-white pt-10">
+                            <div className="w-24 h-24 rounded-full overflow-hidden mx-auto shadow-xl shadow-orange-100/50 ring-4 ring-orange-50 border border-orange-200/60 mb-6">
                                 {user.avatarUrl ? (
                                     <img src={user.avatarUrl} alt={user.fullName} className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full bg-blue-600 text-white flex items-center justify-center font-black text-4xl">
-                                        {user.fullName?.[0]}
+                                    <div className="w-full h-full bg-orange-100 text-[#F38820] flex items-center justify-center font-black text-4xl">
+                                        {(user.fullName?.[0] || 'U').toUpperCase()}
                                     </div>
                                 )}
                             </div>
@@ -235,6 +273,40 @@ export const UserDetailPage = () => {
                                 USER_ROLE_COLORS[user.account?.role] || 'bg-gray-50 text-gray-700 border-gray-100'
                             )}>
                                 {USER_ROLE[user.account?.role] || user.account?.role}
+                            </div>
+
+                            {/* Action Button: Nhắn tin (nếu là đồng nghiệp) hoặc Chỉnh sửa hồ sơ (nếu là chính mình) */}
+                            <div className="mt-5 max-w-[220px] mx-auto">
+                                {!isSelf ? (
+                                    <button
+                                        type="button"
+                                        onClick={handleStartChat}
+                                        disabled={isStartingChat || isUserLocked}
+                                        className={cn(
+                                            "w-full py-2.5 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-sm active:scale-98 cursor-pointer",
+                                            isUserLocked
+                                                ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
+                                                : "bg-[#F38820] hover:bg-[#d97616] text-white shadow-orange-200"
+                                        )}
+                                        title={isUserLocked ? "Tài khoản nhân sự này đang bị khóa" : "Nhắn tin trao đổi công việc"}
+                                    >
+                                        {isStartingChat ? (
+                                            <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                        ) : (
+                                            <MessageSquare className="w-4 h-4" />
+                                        )}
+                                        <span>{isUserLocked ? "Tài khoản bị khóa" : "Nhắn tin"}</span>
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate('/me')}
+                                        className="w-full py-2.5 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 bg-orange-50 hover:bg-orange-100 text-[#F38820] border border-orange-200 transition-all shadow-2xs active:scale-98 cursor-pointer"
+                                    >
+                                        <User className="w-4 h-4" />
+                                        <span>Chỉnh sửa hồ sơ</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
 

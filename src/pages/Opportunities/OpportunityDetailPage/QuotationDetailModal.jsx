@@ -175,7 +175,7 @@ export const QuotationDetailModal = ({
                   <div className="text-right">
                     <p className="text-sm text-purple-700">Tổng giá trị</p>
                     <p className="text-2xl font-bold text-purple-900">
-                      {formatNumber(quotation.totalAmount)} VNĐ
+                      {formatNumber(quotation.totalWithVat)} VNĐ
                     </p>
                   </div>
                 </div>

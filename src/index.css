@@ -156,3 +156,48 @@ div[class*="__option"][class*="--is-selected"]:active {
   background-color: #FED7AA !important;
   color: #9A3412 !important;
 }
+
+/* input outline-none focus:outline-none */
+@layer base {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [id^="react-select-"], .no-focus-ring),
+  textarea:not(.no-focus-ring),
+  select:not(.no-focus-ring) {
+    outline: none;
+  }
+
+  input:not([type="checkbox"], [type="radio"], [type="range"], [id^="react-select-"], .no-focus-ring):focus,
+  textarea:not(.no-focus-ring):focus,
+  select:not(.no-focus-ring):focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgb(243 136 32 / 0.25);
+  }
+
+  .no-focus-ring,
+  .no-focus-ring:focus,
+  .no-focus-ring:focus-visible {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Input bên trong React-Select: không vẽ viền/ring */
+  input[id^="react-select-"] {
+    outline: none;
+    box-shadow: none;
+  }
+
+  input[type="checkbox"]:focus-visible,
+  input[type="radio"]:focus-visible,
+  input[type="range"]:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.chat-messenger-editor:empty:before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  pointer-events: none;
+  display: block;
+}

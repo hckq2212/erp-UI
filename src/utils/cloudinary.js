@@ -2,6 +2,30 @@ import axios from 'axios';
 import { BASE_URL } from '../store/api';
 
 /**
+ * Chuẩn hóa tên file: loại bỏ dấu tiếng Việt, ký tự đặc biệt, thay khoảng trắng bằng dấu gạch dưới
+ * @param {string} originalName 
+ * @returns {string} Tên file an toàn
+ */
+export const sanitizeFileName = (originalName) => {
+    if (!originalName || typeof originalName !== 'string') return `file_${Date.now()}`;
+
+    const lastDotIndex = originalName.lastIndexOf('.');
+    const ext = lastDotIndex !== -1 ? originalName.slice(lastDotIndex + 1).toLowerCase() : '';
+    const baseName = lastDotIndex !== -1 ? originalName.slice(0, lastDotIndex) : originalName;
+
+    const safeBase = baseName
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[đĐ]/g, (c) => (c === 'đ' ? 'd' : 'D'))
+        .replace(/[^a-zA-Z0-9_-]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+    const finalBase = safeBase || `file_${Date.now()}`;
+    return ext ? `${finalBase}.${ext}` : finalBase;
+};
+
+/**
  * Upload a file directly to Cloudinary from the client side
  * 
  * @param {File} file - The file object to upload
@@ -11,22 +35,26 @@ import { BASE_URL } from '../store/api';
  */
 export const uploadToCloudinary = async (file, folder = 'GETVINI/ERP/others', onProgress) => {
     try {
+        const sanitizedFileName = sanitizeFileName(file.name);
+        const fileToUpload = new File([file], sanitizedFileName, { type: file.type });
+
         // 1. Get signature from our backend
         const response = await axios.get(`${BASE_URL}/cloudinary/signature`, {
-            params: { folder },
+            params: { folder, use_filename: true },
             withCredentials: true // Required to send auth cookies to the backend
         });
 
         const { signature, timestamp, api_key, cloud_name, folder: signedFolder } = response.data;
-        console.log('Cloudinary Config received:', { cloud_name, api_key, timestamp, folder: signedFolder });
 
         // 2. Prepare Form Data for Cloudinary
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', fileToUpload, sanitizedFileName);
         formData.append('signature', signature);
         formData.append('timestamp', timestamp);
         formData.append('api_key', api_key);
         formData.append('folder', signedFolder);
+        formData.append('use_filename', 'true');
+
 
         // 3. Upload to Cloudinary
         const uploadResponse = await axios.post(
@@ -48,7 +76,8 @@ export const uploadToCloudinary = async (file, folder = 'GETVINI/ERP/others', on
         // Return standardized metadata
         return {
             type: 'FILE',
-            name: file.name,
+            name: sanitizedFileName,
+            originalName: file.name,
             url: result.secure_url,
             publicId: result.public_id,
             size: result.bytes,

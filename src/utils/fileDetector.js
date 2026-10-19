@@ -372,3 +372,52 @@ export const getFileMeta = (fileType) => {
       };
   }
 };
+
+/**
+ * Tải tệp xuống máy tính người dùng một cách chắc chắn:
+ * - Đối với Cloudinary / CDN: Tạo link blob cục bộ (Local Blob URL) để vượt qua giới hạn cross-origin download của trình duyệt
+ * - Fallback thêm fl_attachment vào Cloudinary URL nếu blob fetch bị chặn
+ */
+export async function downloadFile(url, fileName = "download") {
+    if (!url) return;
+
+    // 1. Chuẩn hóa tên file sạch
+    const cleanFileName = fileName ? fileName.replace(/[<>:"/\\|?*]/g, "_") : "download";
+
+    // 2. Thử tải qua Blob URL (hoạt động 100% trên Chrome, Edge, Safari, Firefox cho cross-origin có CORS)
+    try {
+        const response = await fetch(url, { mode: "cors" });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = blobUrl;
+        a.download = cleanFileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 2000);
+        return true;
+    } catch (err) {
+        console.warn("Direct blob download failed, falling back to direct URL with attachment flag:", err);
+    }
+
+    // 3. Fallback cho Cloudinary: chèn fl_attachment để Cloudinary trả về header Content-Disposition: attachment
+    let fallbackUrl = url;
+    if (url.includes("cloudinary.com") && url.includes("/upload/")) {
+        const attachmentParam = `fl_attachment:${encodeURIComponent(cleanFileName)}/`;
+        fallbackUrl = url.replace("/upload/", `/upload/${attachmentParam}`);
+    }
+
+    const a = document.createElement("a");
+    a.style.display = "none";
+    a.href = fallbackUrl;
+    a.download = cleanFileName;
+    a.target = "_blank";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}

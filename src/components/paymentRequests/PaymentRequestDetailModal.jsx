@@ -2,23 +2,31 @@ import { useRef, useState } from 'react';
 import {
     Upload, Image as ImageIcon, File as FileIcon, Loader2, Trash2, History, AlertCircle,
     Wallet, Store, Check, Paperclip, ExternalLink, Ban, Landmark, Info, Printer,
+    Zap, FileText, FileSignature, Receipt, ClipboardList, ShieldCheck,
+    AlertTriangle, Layers, ArrowDownLeft
 } from 'lucide-react';
 import {
     useReviewPaymentRequestMutation,
     useBodDecidePaymentRequestMutation,
-    usePayPaymentRequestMutation,
     useCancelPaymentRequestMutation,
     useUpdatePaymentRequestMutation,
     useSubmitPaymentRequestMutation,
     useSupplementPaymentRequestMutation,
     useUploadPaymentRequestInvoiceFileMutation,
+    useAddSettlementFilesPaymentRequestMutation,
+    useGetServiceBudgetQuery,
 } from '../../api/paymentRequests';
 import { formatCurrency } from '../../utils/format';
 import { cn } from '../../utils/cn';
 import { ModalShell, ModalHeader, StatusBadge, AmountInput } from './PaymentRequestParts';
 import { CashVoucherModal } from './CashVoucherModal';
+import { PaymentDisbursementModal } from './PaymentDisbursementModal';
+import { PaymentSettlementModal } from './PaymentSettlementModal';
+import { PaymentSettlementReviewModal } from './PaymentSettlementReviewModal';
+import { ServiceBudgetBox } from './ServiceBudgetBox';
 import {
     APPROVAL_LABELS, APPROVAL_TONE, PAYMENT_LABELS, PAYMENT_TONE,
+    SETTLEMENT_LABELS, SETTLEMENT_TONE,
     TYPE_LABELS, isVendorRequest, fmtDate, inputCls, labelCls,
     btnPrimary, btnSecondary, btnWarnOutline, btnDangerOutline,
 } from './paymentRequestConfig';
@@ -29,7 +37,12 @@ const canPay = (role) => ['BOD', 'ADMIN', 'ADMIN_SALE'].includes(role);
 const canCancelApproved = (role) => ['BOD', 'ADMIN'].includes(role);
 
 const MAX_FILE_MB = 15;
-const ACCEPTED_TYPES = ['image/', 'application/pdf'];
+const ACCEPTED_TYPES = [
+    'image/',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+];
 
 const HISTORY_ACTION_LABELS = {
     CREATED: 'Tạo yêu cầu',
@@ -38,6 +51,10 @@ const HISTORY_ACTION_LABELS = {
     REVIEWED: 'Admin Sale duyệt',
     BOD_DECISION: 'BOD quyết định',
     PAID: 'Đã chi tiền',
+    PAID_INSTALLMENT: 'Chi tiền (Đợt)',
+    SUBMIT_SETTLEMENT: 'Nộp quyết toán hoàn ứng',
+    APPROVE_SETTLEMENT: 'Duyệt quyết toán',
+    REJECT_SETTLEMENT: 'Yêu cầu làm lại quyết toán',
     CANCELLED: 'Đã hủy',
 };
 
@@ -47,7 +64,7 @@ const Section = ({ title, icon: Icon, children, tone = 'plain' }) => (
     <section
         className={cn(
             'rounded-xl border p-4',
-            tone === 'action' ? 'border-orange-200 bg-orange-50/60' : 'border-stone-200 bg-white'
+            tone === 'action' ? 'border-gray-200 bg-orange-50/60' : 'border-stone-200 bg-white'
         )}
     >
         <h3 className='mb-3 flex items-center gap-2 text-sm font-semibold text-stone-800'>
@@ -121,28 +138,55 @@ const ProgressSteps = ({ request }) => {
     );
 };
 
-const FileLinks = ({ files, icon: Icon, tone }) =>
-    files.map((f, idx) => (
-        <a
-            key={`${f.url}-${idx}`}
-            href={f.url}
-            target='_blank'
-            rel='noreferrer'
-            className='group flex items-center gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 transition hover:border-orange-300 hover:bg-orange-50/50'
-        >
-            <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-md', tone)}>
-                <Icon size={15} />
-            </span>
-            <span className='min-w-0 flex-1 truncate text-sm text-stone-700'>{f.name || 'Tệp đính kèm'}</span>
-            <ExternalLink size={14} className='shrink-0 text-stone-300 group-hover:text-orange-500' />
-        </a>
-    ));
+const FileLinks = ({ files, icon: DefaultIcon, tone: defaultTone }) =>
+    files.map((f, idx) => {
+        const isDoc = Boolean(f.name?.match(/\.(doc|docx)$/i) || f.fileType === 'DOC');
+        const isPdf = Boolean(f.name?.match(/\.pdf$/i) || f.fileType === 'PDF');
+        const Icon = DefaultIcon || (isPdf ? FileIcon : (isDoc ? FileText : ImageIcon));
+        const tone = defaultTone || (isPdf ? 'bg-red-100 text-red-600' : (isDoc ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'));
+
+        if (!f.url) {
+            return (
+                <div
+                    key={`${f.publicId || idx}-${idx}`}
+                    className='group flex items-center gap-3 rounded-lg border border-stone-200 bg-stone-50/50 px-3 py-2 text-stone-500'
+                >
+                    <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-md', tone)}>
+                        <Icon size={15} />
+                    </span>
+                    <div className='min-w-0 flex-1'>
+                        <p className='truncate text-sm font-medium text-stone-700'>{f.name || 'Tệp đính kèm'}</p>
+                        <p className='text-[10px] text-stone-400'>Tài liệu chưa có liên kết trực tuyến</p>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <a
+                key={`${f.url || f.publicId || idx}-${idx}`}
+                href={f.url}
+                target='_blank'
+                rel='noreferrer'
+                className='group flex items-center gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 transition hover:border-gray-300 hover:bg-orange-50/50'
+            >
+                <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-md', tone)}>
+                    <Icon size={15} />
+                </span>
+                <div className='min-w-0 flex-1'>
+                    <p className='truncate text-sm font-medium text-stone-700'>{f.name || 'Tệp đính kèm'}</p>
+                    {f.size ? <p className='text-[10px] text-stone-400'>{(f.size / 1024).toFixed(0)} KB</p> : null}
+                </div>
+                <ExternalLink size={14} className='shrink-0 text-stone-300 group-hover:text-orange-500' />
+            </a>
+        );
+    });
 
 const RequestHistory = ({ history }) => {
     if (!history || history.length === 0) return null;
     return (
         <Section title='Lịch sử' icon={History}>
-            <ol className='relative space-y-4 border-l-2 border-orange-100 pl-5'>
+            <ol className='relative space-y-4 border-l-2 border-gray-100 pl-5'>
                 {[...history].reverse().map((h, idx) => (
                     <li key={idx} className='relative'>
                         <span className='absolute -left-[27px] top-1 h-3 w-3 rounded-full border-2 border-white bg-orange-400 ring-1 ring-orange-200' />
@@ -210,9 +254,9 @@ const SupplementSection = ({ request, onDone }) => {
     const handleFilesSelected = async (fileList) => {
         const files = Array.from(fileList || []);
         for (const file of files) {
-            const isAccepted = ACCEPTED_TYPES.some((t) => file.type.startsWith(t));
+            const isAccepted = ACCEPTED_TYPES.some((t) => file.type.startsWith(t)) || Boolean(file.name.match(/\.(docx?|pdf|jpe?g|png|webp)$/i));
             if (!isAccepted) {
-                setError(`File "${file.name}" không phải ảnh hoặc PDF`);
+                setError(`File "${file.name}" không hợp lệ (hỗ trợ Ảnh, PDF hoặc Word .doc/.docx)`);
                 continue;
             }
             if (file.size > MAX_FILE_MB * 1024 * 1024) {
@@ -242,7 +286,7 @@ const SupplementSection = ({ request, onDone }) => {
             return;
         }
         if (isUploadingFiles) {
-            setError('Vui lòng đợi file hóa đơn tải lên xong');
+            setError('Vui lòng đợi file tải lên xong');
             return;
         }
         const readyFiles = newFiles.filter((f) => !f.uploading);
@@ -254,7 +298,7 @@ const SupplementSection = ({ request, onDone }) => {
                 dueDate,
                 note: note.trim() || undefined,
                 addInvoiceImages: readyFiles.filter((f) => f.fileType === 'IMAGE'),
-                addInvoicePdfs: readyFiles.filter((f) => f.fileType === 'PDF'),
+                addInvoicePdfs: readyFiles.filter((f) => f.fileType !== 'IMAGE'),
             }).unwrap();
             onDone?.();
         } catch (err) {
@@ -267,17 +311,17 @@ const SupplementSection = ({ request, onDone }) => {
             <div className='space-y-3'>
                 <RequestFields {...{ content, setContent, amount, setAmount, dueDate, setDueDate }} />
                 <div>
-                    <label className={labelCls}>Đính kèm hoá đơn bổ sung (nếu có)</label>
+                    <label className={labelCls}>Đính kèm tài liệu / chứng từ bổ sung (nếu có)</label>
                     <div
                         onClick={() => fileInputRef.current?.click()}
-                        className='flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-orange-200 bg-white px-4 py-4 text-center hover:border-orange-400 hover:bg-orange-50'
+                        className='flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-200 bg-white px-4 py-4 text-center hover:border-gray-400 hover:bg-orange-50'
                     >
                         <Upload size={18} className='text-orange-400' />
-                        <p className='text-xs text-stone-500'><span className='font-semibold text-orange-600'>Chọn file</span> để bổ sung</p>
+                        <p className='text-xs text-stone-500'><span className='font-semibold text-orange-600'>Chọn file</span> để bổ sung (Word, PDF, Ảnh)</p>
                         <input
                             ref={fileInputRef}
                             type='file'
-                            accept='image/*,application/pdf'
+                            accept='image/*,application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                             multiple
                             onChange={(e) => { handleFilesSelected(e.target.files); e.target.value = ''; }}
                             className='hidden'
@@ -376,20 +420,59 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
     const [note, setNote] = useState('');
     const [bodReason, setBodReason] = useState('');
     const [confirmedDueDate, setConfirmedDueDate] = useState(request.confirmedDueDate || request.dueDate || '');
-    const [paymentProofFiles, setPaymentProofFiles] = useState([]);
-    const [paymentMethod, setPaymentMethod] = useState(request.paymentMethod || 'BANK_TRANSFER');
     const [cashVoucherInfo, setCashVoucherInfo] = useState(request.cashVoucherInfo || null);
     const [isCashVoucherModalOpen, setIsCashVoucherModalOpen] = useState(false);
+    const [isDisbursementModalOpen, setIsDisbursementModalOpen] = useState(false);
+    const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
+    const [isReviewSettlementModalOpen, setIsReviewSettlementModalOpen] = useState(false);
     const [cancelReason, setCancelReason] = useState('');
     const [error, setError] = useState('');
-    const paymentProofInputRef = useRef(null);
 
     const [review, { isLoading: isReviewing }] = useReviewPaymentRequestMutation();
     const [bodDecide, { isLoading: isDeciding }] = useBodDecidePaymentRequestMutation();
-    const [pay, { isLoading: isPaying }] = usePayPaymentRequestMutation();
     const [cancelRequest, { isLoading: isCancelling }] = useCancelPaymentRequestMutation();
     const [updateRequest] = useUpdatePaymentRequestMutation();
-    const [uploadPaymentProofFile] = useUploadPaymentRequestInvoiceFileMutation();
+    const [uploadInvoiceFile] = useUploadPaymentRequestInvoiceFileMutation();
+    const [addSettlementFiles, { isLoading: isAddingSettlementFiles }] = useAddSettlementFilesPaymentRequestMutation();
+    const [isUploadingRefundProof, setIsUploadingRefundProof] = useState(false);
+    const [refundUploadError, setRefundUploadError] = useState('');
+
+    const handleDirectUploadRefundProof = async (fileList) => {
+        const files = Array.from(fileList || []);
+        if (!files.length) return;
+        setIsUploadingRefundProof(true);
+        setRefundUploadError('');
+
+        try {
+            const uploadedList = [];
+            for (const file of files) {
+                const isAccepted = ACCEPTED_TYPES.some((t) => file.type.startsWith(t)) || Boolean(file.name.match(/\.(docx?|pdf|jpe?g|png|webp)$/i));
+                if (!isAccepted) {
+                    throw new Error(`File "${file.name}" không hợp lệ (hỗ trợ Ảnh, PDF hoặc Word)`);
+                }
+                if (file.size > MAX_FILE_MB * 1024 * 1024) {
+                    throw new Error(`File "${file.name}" vượt quá ${MAX_FILE_MB}MB`);
+                }
+                const uploaded = await uploadInvoiceFile(file).unwrap();
+                uploadedList.push({
+                    ...uploaded,
+                    name: file.name,
+                    originalName: file.name,
+                    docType: 'REFUND_PROOF',
+                    fileType: file.name.match(/\.pdf$/i) ? 'PDF' : 'IMAGE'
+                });
+            }
+
+            await addSettlementFiles({
+                id: request.id,
+                files: uploadedList
+            }).unwrap();
+        } catch (err) {
+            setRefundUploadError(err?.data?.message || err?.message || 'Có lỗi xảy ra khi tải lên minh chứng hoàn ứng');
+        } finally {
+            setIsUploadingRefundProof(false);
+        }
+    };
 
     const handleSaveCashVoucher = async (info) => {
         setError('');
@@ -404,67 +487,6 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
         } catch (err) {
             setError(err?.data?.message || 'Có lỗi xảy ra khi lưu thông tin phiếu chi');
         }
-    };
-
-    const isUploadingPaymentProofs = paymentProofFiles.some((f) => f.uploading);
-
-    const isUploadDisabled = paymentMethod === 'CASH' && !cashVoucherInfo;
-
-    const handleUploadBoxClick = () => {
-        if (isUploadDisabled) {
-            setError('Vui lòng lập Phiếu chi tiền mặt (Mẫu 02-TT) ở trên trước khi chọn file minh chứng');
-            return;
-        }
-        paymentProofInputRef.current?.click();
-    };
-
-    const handlePaymentProofFilesSelected = async (fileList) => {
-        if (isUploadDisabled) {
-            setError('Vui lòng lập Phiếu chi tiền mặt (Mẫu 02-TT) ở trên trước khi chọn file minh chứng');
-            return;
-        }
-        const files = Array.from(fileList || []);
-        for (const file of files) {
-            const isAccepted = ACCEPTED_TYPES.some((t) => file.type.startsWith(t));
-            if (!isAccepted) {
-                setError(`File "${file.name}" không phải ảnh hoặc PDF`);
-                continue;
-            }
-            if (file.size > MAX_FILE_MB * 1024 * 1024) {
-                setError(`File "${file.name}" vượt quá ${MAX_FILE_MB}MB`);
-                continue;
-            }
-            const tempId = `${file.name}-${Date.now()}`;
-            setPaymentProofFiles((prev) => [...prev, { name: file.name, size: file.size, uploading: true, tempId }]);
-            try {
-                const uploaded = await uploadPaymentProofFile(file).unwrap();
-                setPaymentProofFiles((prev) => prev.map((f) => (f.tempId === tempId ? { ...uploaded, uploading: false } : f)));
-            } catch (err) {
-                setPaymentProofFiles((prev) => prev.filter((f) => f.tempId !== tempId));
-                setError(err?.data?.message || `Tải file "${file.name}" thất bại`);
-            }
-        }
-    };
-
-    const handleRemovePaymentProofFile = (target) => {
-        setPaymentProofFiles((prev) => prev.filter((f) => (f.publicId || f.url) !== (target.publicId || target.url)));
-    };
-
-    const handlePay = () => {
-        if (paymentMethod === 'CASH' && !cashVoucherInfo) {
-            setError('Vui lòng lập Phiếu chi tiền mặt (Mẫu 02-TT) trước khi xác nhận đã chi');
-            return;
-        }
-        if (isUploadingPaymentProofs) {
-            setError('Vui lòng đợi file minh chứng tải lên xong');
-            return;
-        }
-        const readyProofs = paymentProofFiles.filter((f) => !f.uploading);
-        if (readyProofs.length === 0) {
-            setError('Vui lòng tải lên ảnh/PDF minh chứng đã chi tiền');
-            return;
-        }
-        run(() => pay({ id: request.id, paymentMethod, cashVoucherInfo, paymentProofs: readyProofs }).unwrap());
     };
 
     // Sau khi thao tác thành công thì đóng modal (đồng nhất với Gửi duyệt / Bổ sung),
@@ -497,6 +519,16 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
 
     const isVendor = isVendorRequest(request);
     const isRequester = currentUserId === request.requesterId;
+    const targetProjectId = request.projectId || request.project?.id;
+    const targetTaskId = request.taskId || request.task?.id;
+    const isProjectBased = request.type === 'PROJECT' || request.type === 'ADVANCE';
+    const hasProjectBudgetBox = Boolean(isProjectBased && targetProjectId && targetTaskId);
+
+    const { data: budgetInfo, isFetching: isLoadingBudget } = useGetServiceBudgetQuery(
+        { projectId: targetProjectId, taskId: targetTaskId, excludeRequestId: request.id },
+        { skip: !targetProjectId || !targetTaskId || !isProjectBased }
+    );
+
     const invoiceImages = request.invoiceImages || [];
     const invoicePdfs = request.invoicePdfs || [];
     const isTerminal = ['REJECTED', 'CANCELLED'].includes(request.approvalStatus);
@@ -531,16 +563,32 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                         <Store size={12} /> Thuê vendor
                     </span>
                 )}
+                {request.isUrgent && (
+                    <span className='inline-flex items-center gap-1 rounded-md bg-amber-100 text-amber-800 px-2 py-1 text-xs font-bold ring-1 ring-amber-300'>
+                        <Zap size={12} className='fill-amber-600 text-amber-600' /> GẤP (Chi sau quay)
+                    </span>
+                )}
                 <StatusBadge label={APPROVAL_LABELS[request.approvalStatus] || request.approvalStatus} tone={APPROVAL_TONE[request.approvalStatus]} />
                 {request.approvalStatus === 'APPROVED' && (
                     <StatusBadge label={PAYMENT_LABELS[request.paymentStatus] || request.paymentStatus} tone={PAYMENT_TONE[request.paymentStatus]} />
+                )}
+                {request.type === 'ADVANCE' &&
+                    !['CANCELLED', 'REJECTED'].includes(request.approvalStatus) &&
+                    request.settlementStatus &&
+                    request.settlementStatus !== 'NOT_APPLICABLE' && (
+                    <StatusBadge label={SETTLEMENT_LABELS[request.settlementStatus] || request.settlementStatus} tone={SETTLEMENT_TONE[request.settlementStatus]} />
+                )}
+                {request.isOverdue && (
+                    <span className='inline-flex items-center gap-1 rounded-md bg-red-100 text-red-700 px-2 py-0.5 text-xs font-bold ring-1 ring-red-300'>
+                        ⚠️ Quá hạn
+                    </span>
                 )}
             </ModalHeader>
 
             <div className='flex-1 space-y-4 overflow-y-auto bg-stone-50/50 px-5 py-5 sm:px-6'>
                 {/* Banner nổi bật cho công việc phát sinh chi phí */}
                 {isVendor && (
-                    <div className='overflow-hidden rounded-xl border border-l-4 border-orange-200 border-l-orange-400 bg-orange-50 text-stone-800'>
+                    <div className='overflow-hidden rounded-xl border border-l-4 border-gray-200 border-l-orange-400 bg-orange-50 text-stone-800'>
                         <div className='flex items-start gap-3 px-4 py-3.5'>
                             <span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600'>
                                 <Store size={18} />
@@ -574,7 +622,7 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
 
                 {/* Số tiền + hạn */}
                 <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
-                    <div className='rounded-xl border border-orange-100 bg-white p-4'>
+                    <div className='rounded-xl border border-gray-100 bg-white p-4'>
                         <p className='text-xs text-stone-400'>Số tiền yêu cầu</p>
                         <p className='mt-1 text-2xl font-bold tracking-tight text-orange-600'>{formatCurrency(request.amount)}</p>
                     </div>
@@ -628,17 +676,434 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                             <span className='font-semibold'>Lý do BOD:</span> {request.bodDecisionReason}
                         </p>
                     )}
+                    {/* Hiển thị lý do giải trình khi lố giá (nếu không có đối soát công việc nhưng có giải trình) */}
+                    {(!isProjectBased || !targetTaskId) && request.overBudgetReason && (
+                        <div className='mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs'>
+                            <div className='flex items-center gap-1.5 font-bold text-red-800 mb-1'>
+                                <AlertTriangle size={14} className='text-red-600 shrink-0' />
+                                <span>Lý do chi vượt ngân sách (Người tạo giải trình):</span>
+                            </div>
+                            <p className='whitespace-pre-line font-medium text-red-900'>{request.overBudgetReason}</p>
+                        </div>
+                    )}
                 </Section>
 
-                {/* Hóa đơn */}
-                {(invoiceImages.length > 0 || invoicePdfs.length > 0) && (
-                    <Section title={`Hóa đơn đính kèm (${invoiceImages.length + invoicePdfs.length})`} icon={Paperclip}>
-                        <div className='space-y-2'>
-                            <FileLinks files={invoiceImages} icon={ImageIcon} tone='bg-orange-100 text-orange-600' />
-                            <FileLinks files={invoicePdfs} icon={FileIcon} tone='bg-red-100 text-red-600' />
+                {/* Khối Đối soát ngân sách dịch vụ dự án (Hạng mục & Tổng nhóm dịch vụ hợp đồng) cho Sale & BOD kiểm tra */}
+                {hasProjectBudgetBox && (
+                    <Section title='Đối soát ngân sách dịch vụ dự án' icon={Layers}>
+                        <ServiceBudgetBox
+                            budgetInfo={budgetInfo}
+                            isLoading={isLoadingBudget}
+                            amount={request.amount}
+                            overBudgetReason={request.overBudgetReason}
+                            readOnly={true}
+                            isInSection={true}
+                        />
+                    </Section>
+                )}
+
+                {/* Tiến độ giải ngân & Các đợt chi */}
+                {(request.approvalStatus === 'APPROVED' || Number(request.paidAmount) > 0) && (
+                    <Section title='Tiến độ giải ngân & Các đợt chi' icon={Landmark}>
+                        <div className='space-y-3'>
+                            <div className='grid grid-cols-3 gap-2 text-center text-xs'>
+                                <div className='rounded-lg bg-stone-50 p-2.5 border border-stone-200/80'>
+                                    <span className='text-stone-400 block text-[11px]'>Tổng số tiền</span>
+                                    <span className='font-bold text-stone-900 mt-0.5 block'>{formatCurrency(request.amount)}</span>
+                                </div>
+                                <div className='rounded-lg bg-emerald-50/50 p-2.5 border border-emerald-200/80'>
+                                    <span className='text-emerald-700 block text-[11px] font-medium'>Đã chi</span>
+                                    <span className='font-bold text-emerald-700 mt-0.5 block'>
+                                        {formatCurrency(request.paidAmount || 0)}
+                                    </span>
+                                </div>
+                                <div className='rounded-lg bg-orange-50/50 p-2.5 border border-gray-200/80'>
+                                    <span className='text-orange-700 block text-[11px] font-medium'>Còn lại</span>
+                                    <span className='font-bold text-orange-700 mt-0.5 block'>
+                                        {formatCurrency(Math.max(0, Number(request.amount) - Number(request.paidAmount || 0)))}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Progress bar */}
+                            {(() => {
+                                const total = Number(request.amount) || 0;
+                                const paid = Number(request.paidAmount) || 0;
+                                const diff = Number(request.settlementDifference) || 0;
+                                const isSettledOver = request.settlementStatus === 'SETTLED' && diff > 0;
+                                const pct = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+                                return (
+                                    <div className='space-y-1'>
+                                        <div className='flex justify-between text-[11px] text-stone-500'>
+                                            <span>
+                                                {isSettledOver
+                                                    ? `Đã chi đủ 100% tạm ứng + Chi bù ${formatCurrency(diff)}`
+                                                    : `Tiến độ giải ngân: ${pct}%`}
+                                            </span>
+                                            <span className='font-semibold'>{pct}%</span>
+                                        </div>
+                                        <div className='h-2 w-full rounded-full bg-stone-100 overflow-hidden'>
+                                            <div
+                                                className='h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all'
+                                                style={{ width: `${pct}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Danh sách các đợt chi */}
+                            {Array.isArray(request.paymentTransactions) && request.paymentTransactions.length > 0 && (
+                                <div className='space-y-1.5 pt-1'>
+                                    <span className='text-xs font-semibold text-stone-600 block'>
+                                        Lịch sử các đợt chi ({request.paymentTransactions.length} đợt):
+                                    </span>
+                                    {request.paymentTransactions.map((tx, idx) => (
+                                        <div key={tx.id || idx} className='rounded-lg bg-stone-50 p-2.5 border border-stone-200/80 text-xs flex items-center justify-between'>
+                                            <div>
+                                                <div className='flex items-center gap-1.5 font-bold text-stone-800'>
+                                                    <span>Đợt {idx + 1}: {formatCurrency(tx.amount)}</span>
+                                                    <span className='text-[10px] text-stone-400 font-normal'>
+                                                        ({tx.paymentMethod === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'})
+                                                    </span>
+                                                </div>
+                                                <p className='text-[11px] text-stone-500 mt-0.5'>
+                                                    {tx.payerName ? `${tx.payerName} · ` : ''}
+                                                    {tx.paidAt ? fmtDate(tx.paidAt) : ''}
+                                                    {tx.note ? ` · ${tx.note}` : ''}
+                                                </p>
+                                            </div>
+                                            {Array.isArray(tx.proofFiles) && tx.proofFiles.length > 0 && (
+                                                <div className='flex items-center gap-1'>
+                                                    {tx.proofFiles.map((pf, pIdx) => (
+                                                        <a
+                                                            key={pf.url || pIdx}
+                                                            href={pf.url}
+                                                            target='_blank'
+                                                            rel='noopener noreferrer'
+                                                            className='text-[11px] text-orange-600 hover:underline flex items-center gap-0.5 bg-orange-50 px-2 py-0.5 rounded'
+                                                        >
+                                                            UNC {pIdx + 1} <ExternalLink size={10} />
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Nút hành động Chi tiền theo đợt cho Kế toán */}
+                            {request.approvalStatus === 'APPROVED' && !isPaid && canPay(currentUserRole) && (
+                                <div className='pt-2'>
+                                    <button
+                                        type='button'
+                                        onClick={() => setIsDisbursementModalOpen(true)}
+                                        className={btnPrimary}
+                                    >
+                                        <Landmark size={15} /> Thực hiện chi tiền / Chi theo đợt ({formatCurrency(Math.max(0, Number(request.amount) - Number(request.paidAmount || 0)))})
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </Section>
                 )}
+
+                {/* Khối Quyết toán hoàn ứng (dành cho Tạm ứng sản xuất) */}
+                {request.type === 'ADVANCE' && !['CANCELLED', 'REJECTED'].includes(request.approvalStatus) && (
+                    <Section title='Quyết toán hoàn ứng sản xuất' icon={Receipt} tone='action'>
+                        <div className='space-y-3 text-xs'>
+                            <div className='grid grid-cols-2 gap-2'>
+                                <div className='rounded-lg bg-white p-2.5 border border-stone-200'>
+                                    <span className='text-stone-400 block text-[11px]'>Trạng thái hoàn ứng</span>
+                                    <div className='mt-1'>
+                                        <StatusBadge
+                                            label={SETTLEMENT_LABELS[request.settlementStatus] || request.settlementStatus}
+                                            tone={SETTLEMENT_TONE[request.settlementStatus]}
+                                        />
+                                    </div>
+                                </div>
+                                <div className='rounded-lg bg-white p-2.5 border border-stone-200'>
+                                    <span className='text-stone-400 block text-[11px]'>Hạn hoàn ứng dự kiến</span>
+                                    <span className='font-semibold text-stone-800 mt-1 block'>
+                                        {request.settlementDueDate ? fmtDate(request.settlementDueDate) : 'Chưa thiết lập'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Khi đã nộp quyết toán hoặc đã hoàn ứng */}
+                            {['SETTLEMENT_SUBMITTED', 'SETTLED'].includes(request.settlementStatus) && (
+                                <div className='rounded-lg bg-white p-3 border border-gray-200 space-y-2'>
+                                    <div className='grid grid-cols-2 gap-2 text-center'>
+                                        <div className='rounded bg-stone-50 p-2'>
+                                            <span className='text-stone-400 block text-[11px]'>Thực chi thực tế</span>
+                                            <span className='font-bold text-stone-900'>{formatCurrency(request.settledAmount)}</span>
+                                        </div>
+                                        <div className='rounded bg-stone-50 p-2'>
+                                            <span className='text-stone-400 block text-[11px]'>Chênh lệch</span>
+                                            <span className={cn(
+                                                'font-bold',
+                                                Number(request.settlementDifference) > 0 && 'text-amber-600',
+                                                Number(request.settlementDifference) < 0 && 'text-indigo-600',
+                                                Number(request.settlementDifference) === 0 && 'text-emerald-600'
+                                            )}>
+                                                {Number(request.settlementDifference) > 0 && `Chi bù +${formatCurrency(request.settlementDifference)}`}
+                                                {Number(request.settlementDifference) < 0 && `Thu hồi -${formatCurrency(Math.abs(Number(request.settlementDifference)))}`}
+                                                {Number(request.settlementDifference) === 0 && 'Khớp 100%'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {(() => {
+                                        const allSettlementFiles = Array.isArray(request.settlementFiles) ? request.settlementFiles : [];
+                                        const accountantReviewFiles = allSettlementFiles.filter((f) =>
+                                            ['REFUND_RECEIPT', 'REIMBURSEMENT_PROOF', 'SETTLEMENT_REVIEW_PROOF'].includes(f.docType)
+                                        );
+                                        const expenseFiles = allSettlementFiles.filter((f) =>
+                                            !['REFUND_PROOF', 'REFUND_RECEIPT', 'REIMBURSEMENT_PROOF', 'SETTLEMENT_REVIEW_PROOF'].includes(f.docType)
+                                        );
+                                        const refundProofFiles = allSettlementFiles.filter((f) => f.docType === 'REFUND_PROOF');
+                                        const isRefundExpected = Number(request.settlementDifference) < 0;
+
+                                        return (
+                                            <>
+                                                {expenseFiles.length > 0 ? (
+                                                    <div className='pt-1'>
+                                                        <span className='text-[11px] font-semibold text-stone-600 block mb-1'>
+                                                            Chứng từ quyết toán chi phí ({expenseFiles.length} file):
+                                                        </span>
+                                                        <FileLinks files={expenseFiles} />
+                                                    </div>
+                                                ) : Number(request.settledAmount || 0) > 0 && (
+                                                    <div className='pt-1'>
+                                                        <p className='text-[11px] text-amber-800 bg-amber-50 p-2 rounded border border-amber-200'>
+                                                            ⚠️ Chưa có chứng từ chi phí thực tế do nhân sự nộp.
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {/* Khối Minh chứng hoàn ứng (Khi có hoàn trả tiền thừa hoặc có file đính kèm) */}
+                                                {(isRefundExpected || refundProofFiles.length > 0) && (
+                                                    <div className='mt-2 rounded-lg border border-indigo-200 bg-indigo-50/40 p-2.5 space-y-2'>
+                                                        <div className='flex items-center justify-between'>
+                                                            <span className='text-[11px] font-bold text-indigo-950 flex items-center gap-1.5'>
+                                                                <ArrowDownLeft size={13} className='text-indigo-600' />
+                                                                Minh chứng hoàn tiền thừa về quỹ ({refundProofFiles.length} file):
+                                                            </span>
+                                                            {refundProofFiles.length > 0 ? (
+                                                                <span className='rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800'>
+                                                                    ✓ Đã có bill hoàn ứng
+                                                                </span>
+                                                            ) : (
+                                                                <span className='rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800'>
+                                                                    ⚠️ Thiếu minh chứng
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        {refundProofFiles.length > 0 ? (
+                                                            <div className='space-y-1.5'>
+                                                                <FileLinks files={refundProofFiles} tone='bg-indigo-100 text-indigo-700' />
+                                                            </div>
+                                                        ) : (
+                                                            <p className='text-[11px] text-amber-800 bg-amber-50/80 p-2 rounded border border-amber-200/70'>
+                                                                ⚠️ Chưa có minh chứng chuyển khoản hoàn ứng. Nhân sự cần nộp lại <strong>{formatCurrency(Math.abs(Number(request.settlementDifference)))}</strong> về quỹ công ty.
+                                                            </p>
+                                                        )}
+
+                                                        {/* Nút bổ sung minh chứng hoàn ứng nhanh */}
+                                                        {['SETTLEMENT_SUBMITTED', 'SETTLED', 'WAITING_SETTLEMENT'].includes(request.settlementStatus) && (
+                                                            <div className='pt-1 flex items-center justify-between gap-2 border-t border-indigo-100'>
+                                                                <span className='text-[10px] text-stone-500'>
+                                                                    {refundProofFiles.length > 0 ? 'Cần bổ sung thêm bill chuyển khoản?' : 'Đã chuyển tiền hoàn ứng về tài khoản công ty?'}
+                                                                </span>
+                                                                <label className='inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-700 bg-white border border-indigo-300 rounded px-2.5 py-1 hover:bg-indigo-50 cursor-pointer shadow-2xs transition'>
+                                                                    {isUploadingRefundProof ? <Loader2 size={12} className='animate-spin' /> : <Upload size={12} />}
+                                                                    <span>{refundProofFiles.length > 0 ? 'Bổ sung thêm bill' : 'Tải lên minh chứng hoàn ứng'}</span>
+                                                                    <input
+                                                                        type='file'
+                                                                        accept='image/*,application/pdf'
+                                                                        multiple
+                                                                        disabled={isUploadingRefundProof}
+                                                                        onChange={(e) => { handleDirectUploadRefundProof(e.target.files); e.target.value = ''; }}
+                                                                        className='hidden'
+                                                                    />
+                                                                </label>
+                                                            </div>
+                                                        )}
+
+                                                        {refundUploadError && (
+                                                            <p className='text-[11px] text-red-600 bg-red-50 p-1.5 rounded border border-red-200'>
+                                                                {refundUploadError}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* Khối Minh chứng xét duyệt của Kế toán */}
+                                                {accountantReviewFiles.length > 0 && (
+                                                    <div className='mt-2 rounded-lg border border-orange-200 bg-orange-50/30 p-2.5 space-y-1.5'>
+                                                        <span className='text-[11px] font-bold text-orange-950 flex items-center gap-1.5'>
+                                                            <ShieldCheck size={13} className='text-orange-600' />
+                                                            Minh chứng đối soát / phê duyệt của Kế toán ({accountantReviewFiles.length} file):
+                                                        </span>
+                                                        <FileLinks files={accountantReviewFiles} tone='bg-orange-100 text-orange-800' />
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+
+                                    {request.settlementNote && (
+                                        <p className='text-[11px] text-stone-600 bg-stone-50 p-2 rounded'>
+                                            <span className='font-semibold'>Ghi chú:</span> {request.settlementNote}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Các nút hành động Quyết toán */}
+                            <div className='pt-1 flex flex-wrap gap-2'>
+                                {request.settlementStatus === 'WAITING_SETTLEMENT' && isRequester && (
+                                    <button
+                                        type='button'
+                                        onClick={() => setIsSettlementModalOpen(true)}
+                                        className={btnPrimary}
+                                    >
+                                        <Receipt size={14} /> Nộp hồ sơ quyết toán hoàn ứng
+                                    </button>
+                                )}
+
+                                {request.settlementStatus === 'SETTLEMENT_SUBMITTED' && canPay(currentUserRole) && !isRequester && (
+                                    <button
+                                        type='button'
+                                        onClick={() => setIsReviewSettlementModalOpen(true)}
+                                        className={btnPrimary}
+                                    >
+                                        <ShieldCheck size={14} /> Xét duyệt quyết toán hoàn ứng
+                                    </button>
+                                )}
+
+                                {request.settlementStatus === 'SETTLEMENT_SUBMITTED' && isRequester && (
+                                    <p className='text-xs text-amber-700 bg-amber-50 rounded-lg p-2.5 border border-amber-200'>
+                                        ⏳ Hồ sơ quyết toán đã được nộp thành công và đang chờ Kế toán đối soát phê duyệt.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </Section>
+                )}
+
+                {/* Hồ sơ chứng từ đính kèm (Phân loại theo quy chuẩn Getvini) */}
+                {(() => {
+                    const allDocs = [...(invoiceImages || []), ...(invoicePdfs || [])];
+                    if (allDocs.length === 0) return null;
+
+                    const laborContracts = allDocs.filter((f) => f.docType === 'LABOR_CONTRACT');
+                    const acceptanceMinutes = allDocs.filter((f) => f.docType === 'ACCEPTANCE_MINUTE');
+                    const addendums = allDocs.filter((f) => f.docType === 'ADDENDUM');
+                    const vatInvoices = allDocs.filter((f) => f.docType === 'VAT_INVOICE');
+                    const paymentRequestDocs = allDocs.filter((f) => f.docType === 'PAYMENT_REQUEST_DOC');
+                    const otherInvoices = allDocs.filter((f) => f.docType === 'OTHER_INVOICE');
+                    const otherDocs = allDocs.filter((f) => !f.docType);
+
+                    const hasGrouped = laborContracts.length > 0 || acceptanceMinutes.length > 0 || addendums.length > 0 || vatInvoices.length > 0 || paymentRequestDocs.length > 0 || otherInvoices.length > 0;
+
+                    return (
+                        <Section title={`Hồ sơ chứng từ đính kèm (${allDocs.length})`} icon={Paperclip}>
+                            {hasGrouped ? (
+                                <div className='space-y-3.5'>
+                                    {laborContracts.length > 0 && (
+                                        <div>
+                                            <p className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-stone-700'>
+                                                <FileSignature size={14} className='text-orange-500' />
+                                                1. Hợp đồng khoán việc ({laborContracts.length})
+                                            </p>
+                                            <div className='space-y-1.5'>
+                                                <FileLinks files={laborContracts} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {acceptanceMinutes.length > 0 && (
+                                        <div>
+                                            <p className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-stone-700'>
+                                                <ClipboardList size={14} className='text-orange-500' />
+                                                2. Biên bản nghiệm thu ({acceptanceMinutes.length})
+                                            </p>
+                                            <div className='space-y-1.5'>
+                                                <FileLinks files={acceptanceMinutes} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {addendums.length > 0 && (
+                                        <div>
+                                            <p className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-stone-700'>
+                                                <FileText size={14} className='text-orange-500' />
+                                                3. Phụ lục phát sinh ({addendums.length})
+                                            </p>
+                                            <div className='space-y-1.5'>
+                                                <FileLinks files={addendums} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {vatInvoices.length > 0 && (
+                                        <div>
+                                            <p className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-stone-700'>
+                                                <Receipt size={14} className='text-orange-500' />
+                                                4. Hóa đơn VAT ({vatInvoices.length})
+                                            </p>
+                                            <div className='space-y-1.5'>
+                                                <FileLinks files={vatInvoices} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {paymentRequestDocs.length > 0 && (
+                                        <div>
+                                            <p className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-stone-700'>
+                                                <FileText size={14} className='text-orange-500' />
+                                                5. Giấy đề nghị thanh toán ({paymentRequestDocs.length})
+                                            </p>
+                                            <div className='space-y-1.5'>
+                                                <FileLinks files={paymentRequestDocs} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {otherInvoices.length > 0 && (
+                                        <div>
+                                            <p className='mb-1.5 flex items-center gap-1.5 text-xs font-bold text-stone-700'>
+                                                <Receipt size={14} className='text-orange-500' />
+                                                6. Các hóa đơn khác ({otherInvoices.length})
+                                            </p>
+                                            <div className='space-y-1.5'>
+                                                <FileLinks files={otherInvoices} />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {otherDocs.length > 0 && (
+                                        <div>
+                                            <p className='mb-1.5 text-xs font-bold text-stone-700'>
+                                                Chứng từ khác ({otherDocs.length})
+                                            </p>
+                                            <div className='space-y-1.5'>
+                                                <FileLinks files={otherDocs} />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className='space-y-2'>
+                                    <FileLinks files={allDocs} />
+                                </div>
+                            )}
+                        </Section>
+                    );
+                })()}
 
                 {/* Thông tin đã chi */}
                 {isPaid && (
@@ -650,7 +1115,7 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                             </InfoItem>
                         </dl>
                         {(request.cashVoucherInfo || cashVoucherInfo) && (
-                            <div className='mt-3 rounded-lg border border-orange-200 bg-orange-50/40 p-3'>
+                            <div className='mt-3 rounded-lg border border-gray-200 bg-orange-50/40 p-3'>
                                 <div className='flex items-center justify-between'>
                                     <div>
                                         <p className='text-xs font-semibold text-orange-900'>Phiếu chi tiền mặt #{request.cashVoucherInfo?.voucherNo || cashVoucherInfo?.voucherNo}</p>
@@ -661,7 +1126,7 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                                     <button
                                         type='button'
                                         onClick={() => setIsCashVoucherModalOpen(true)}
-                                        className='inline-flex items-center gap-1.5 rounded-md border border-orange-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-orange-700 hover:bg-orange-100'
+                                        className='inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-orange-700 hover:bg-orange-100'
                                     >
                                         <Printer size={13} /> Xem / In lại Phiếu Chi
                                     </button>
@@ -689,6 +1154,24 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                 {request.approvalStatus === 'PENDING_REVIEWER' && canReview(currentUserRole) && (
                     <Section title='Admin Sale duyệt' tone='action'>
                         <div className='space-y-3'>
+                            {request.overBudgetReason && (
+                                hasProjectBudgetBox ? (
+                                    <div className='flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 font-medium'>
+                                        <AlertTriangle size={15} className='text-amber-600 shrink-0' />
+                                        <span>Yêu cầu chi vượt ngân sách (đã kèm lý do giải trình ở mục đối soát phía trên).</span>
+                                    </div>
+                                ) : (
+                                    <div className='flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800'>
+                                        <AlertTriangle size={16} className='text-red-600 shrink-0 mt-0.5' />
+                                        <div>
+                                            <p className='font-bold text-red-900'>Cảnh báo: Yêu cầu chi có giải trình vượt ngân sách!</p>
+                                            <p className='mt-1 text-red-800 font-medium whitespace-pre-line'>
+                                                <span className='font-semibold underline'>Giải trình từ người tạo:</span> {request.overBudgetReason}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )
+                            )}
                             <textarea
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
@@ -727,6 +1210,24 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                 {request.approvalStatus === 'PENDING_BOD' && canBodDecide(currentUserRole) && (
                     <Section title='BOD xác nhận' tone='action'>
                         <div className='space-y-3'>
+                            {request.overBudgetReason && (
+                                hasProjectBudgetBox ? (
+                                    <div className='flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 font-medium'>
+                                        <AlertTriangle size={15} className='text-amber-600 shrink-0' />
+                                        <span>Yêu cầu chi vượt ngân sách (đã kèm lý do giải trình ở mục đối soát phía trên).</span>
+                                    </div>
+                                ) : (
+                                    <div className='flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800'>
+                                        <AlertTriangle size={16} className='text-red-600 shrink-0 mt-0.5' />
+                                        <div>
+                                            <p className='font-bold text-red-900'>Cảnh báo: Yêu cầu chi có giải trình vượt ngân sách!</p>
+                                            <p className='mt-1 text-red-800 font-medium whitespace-pre-line'>
+                                                <span className='font-semibold underline'>Giải trình từ người tạo:</span> {request.overBudgetReason}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )
+                            )}
                             <div>
                                 <label className={labelCls}>Xác nhận lại thời hạn thanh toán</label>
                                 <input type='date' value={confirmedDueDate} onChange={(e) => setConfirmedDueDate(e.target.value)} className={inputCls} />
@@ -768,123 +1269,25 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
 
                 {request.approvalStatus === 'APPROVED' && !isPaid && canPay(currentUserRole) && (
                     <Section title='Chi tiền' icon={Landmark} tone='action'>
-                        <div className='space-y-4'>
+                        <div className='flex items-center justify-between p-3.5 bg-orange-50/70 border border-gray-200 rounded-xl'>
                             <div>
-                                <label className={labelCls}>Hình thức chi tiền <span className='text-red-500'>*</span></label>
-                                <div className='grid grid-cols-2 gap-3 mt-1'>
-                                    <label className={cn('flex cursor-pointer items-center justify-center gap-2 rounded-lg border p-3 text-xs font-semibold transition', paymentMethod === 'BANK_TRANSFER' ? 'border-orange-500 bg-orange-50 text-orange-700 ring-1 ring-orange-400' : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50')}>
-                                        <input
-                                            type='radio'
-                                            name='paymentMethod'
-                                            value='BANK_TRANSFER'
-                                            checked={paymentMethod === 'BANK_TRANSFER'}
-                                            onChange={() => setPaymentMethod('BANK_TRANSFER')}
-                                            className='hidden'
-                                        />
-                                        💳 Chuyển khoản (Ủy nhiệm chi)
-                                    </label>
-                                    <label className={cn('flex cursor-pointer items-center justify-center gap-2 rounded-lg border p-3 text-xs font-semibold transition', paymentMethod === 'CASH' ? 'border-orange-500 bg-orange-50 text-orange-700 ring-1 ring-orange-400' : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50')}>
-                                        <input
-                                            type='radio'
-                                            name='paymentMethod'
-                                            value='CASH'
-                                            checked={paymentMethod === 'CASH'}
-                                            onChange={() => setPaymentMethod('CASH')}
-                                            className='hidden'
-                                        />
-                                        💵 Tiền mặt (Phiếu chi)
-                                    </label>
-                                </div>
-                            </div>
-
-                            {paymentMethod === 'CASH' && (
-                                <div className='rounded-lg border border-orange-200 bg-orange-50/50 p-3.5 space-y-2'>
-                                    <div className='flex items-center justify-between'>
-                                        <div>
-                                            <p className='text-xs font-semibold text-orange-900'>Phiếu chi tiền mặt (Mẫu 02 - TT)</p>
-                                            {cashVoucherInfo ? (
-                                                <p className='text-xs text-stone-600 mt-0.5'>
-                                                    Số phiếu: <strong className='text-orange-700'>{cashVoucherInfo.voucherNo}</strong> · TK Nợ <strong>{cashVoucherInfo.debitAccount}</strong> / Có <strong>{cashVoucherInfo.creditAccount}</strong>
-                                                </p>
-                                            ) : (
-                                                <p className='text-xs text-stone-500 mt-0.5'>Chưa lập phiếu chi tiền mặt. Vui lòng lập phiếu chi và in ra lấy chữ ký.</p>
-                                            )}
-                                        </div>
-                                        <button
-                                            type='button'
-                                            onClick={() => setIsCashVoucherModalOpen(true)}
-                                            className='inline-flex items-center gap-1.5 rounded-md bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-orange-600'
-                                        >
-                                            <Printer size={13} />
-                                            {cashVoucherInfo ? 'Xem / Sửa / In lại Phiếu Chi' : 'Lập & In Phiếu Chi (02-TT)'}
-                                        </button>
-                                    </div>
-                                    {cashVoucherInfo && (
-                                        <p className='text-[11px] text-stone-600 bg-white/80 rounded p-2 border border-orange-100'>
-                                            Người nhận: <strong>{cashVoucherInfo.receiverName}</strong> — Số tiền bằng chữ: <em>"{cashVoucherInfo.amountInWords}"</em>
-                                        </p>
+                                <p className='text-xs font-bold text-orange-900'>Yêu cầu đã được phê duyệt, sẵn sàng giải ngân</p>
+                                <p className='text-xs text-stone-600 mt-0.5'>
+                                    Số tiền còn lại cần chi: <strong className='text-orange-700'>{formatCurrency(Math.max(0, Number(request.amount) - Number(request.paidAmount || 0)))}</strong>
+                                    {Number(request.paidAmount) > 0 && (
+                                        <span className='ml-2 text-stone-500'>
+                                            (Đã chi: {formatCurrency(request.paidAmount)})
+                                        </span>
                                     )}
-                                </div>
-                            )}
-
-                            <div>
-                                <label className={labelCls}>
-                                    Minh chứng đã chi ({paymentMethod === 'CASH' ? 'ảnh/scan Phiếu chi đã ký + chứng từ gốc' : 'ảnh/PDF UNC'}, bắt buộc)
-                                </label>
-                                <div
-                                    onClick={handleUploadBoxClick}
-                                    className={cn(
-                                        'flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed px-4 py-4 text-center transition',
-                                        isUploadDisabled
-                                            ? 'cursor-not-allowed border-stone-300 bg-stone-100/70 text-stone-400 opacity-80'
-                                            : 'cursor-pointer border-orange-200 bg-white hover:border-orange-400 hover:bg-orange-50'
-                                    )}
-                                >
-                                    <Upload size={18} className={isUploadDisabled ? 'text-stone-400' : 'text-orange-400'} />
-                                    {isUploadDisabled ? (
-                                        <p className='text-xs font-medium text-stone-500'>
-                                            🔒 Vui lòng bấm <span className='font-semibold text-orange-600'>'Lập & In Phiếu Chi (02-TT)'</span> ở trên trước khi chọn file minh chứng
-                                        </p>
-                                    ) : (
-                                        <p className='text-xs text-stone-500'>
-                                            <span className='font-semibold text-orange-600'>Chọn file</span> minh chứng thanh toán
-                                        </p>
-                                    )}
-                                    <input
-                                        ref={paymentProofInputRef}
-                                        type='file'
-                                        accept='image/*,application/pdf'
-                                        disabled={isUploadDisabled}
-                                        multiple
-                                        onChange={(e) => { handlePaymentProofFilesSelected(e.target.files); e.target.value = ''; }}
-                                        className='hidden'
-                                    />
-                                </div>
-                                {paymentProofFiles.length > 0 && (
-                                    <div className='mt-2 space-y-2'>
-                                        {paymentProofFiles.map((f) => (
-                                            <div key={f.publicId || f.url || f.tempId} className='flex items-center gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2'>
-                                                <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-md', f.fileType === 'PDF' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600')}>
-                                                    {f.fileType === 'PDF' ? <FileIcon size={14} /> : <ImageIcon size={14} />}
-                                                </div>
-                                                <p className='min-w-0 flex-1 truncate text-xs font-medium text-stone-700'>{f.name}</p>
-                                                {f.uploading ? <Loader2 size={14} className='animate-spin text-stone-400' /> : (
-                                                    <button type='button' onClick={() => handleRemovePaymentProofFile(f)} className='text-stone-400 hover:text-red-600'>
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                </p>
                             </div>
                             <button
-                                disabled={isPaying || isUploadingPaymentProofs}
-                                onClick={handlePay}
+                                type='button'
+                                onClick={() => setIsDisbursementModalOpen(true)}
                                 className={btnPrimary}
                             >
-                                {(isPaying || isUploadingPaymentProofs) && <Loader2 size={15} className='animate-spin' />}
-                                Xác nhận đã chi
+                                <Landmark size={15} />
+                                Chi tiền ngay
                             </button>
                         </div>
                     </Section>
@@ -924,6 +1327,39 @@ export const PaymentRequestDetailModal = ({ request, currentUserRole, currentUse
                     initialVoucherInfo={cashVoucherInfo}
                     onSave={handleSaveCashVoucher}
                     onClose={() => setIsCashVoucherModalOpen(false)}
+                />
+            )}
+
+            {isDisbursementModalOpen && (
+                <PaymentDisbursementModal
+                    request={request}
+                    onClose={() => setIsDisbursementModalOpen(false)}
+                    onSuccess={() => {
+                        setIsDisbursementModalOpen(false);
+                        onClose?.();
+                    }}
+                />
+            )}
+
+            {isSettlementModalOpen && (
+                <PaymentSettlementModal
+                    request={request}
+                    onClose={() => setIsSettlementModalOpen(false)}
+                    onSuccess={() => {
+                        setIsSettlementModalOpen(false);
+                        onClose?.();
+                    }}
+                />
+            )}
+
+            {isReviewSettlementModalOpen && (
+                <PaymentSettlementReviewModal
+                    request={request}
+                    onClose={() => setIsReviewSettlementModalOpen(false)}
+                    onSuccess={() => {
+                        setIsReviewSettlementModalOpen(false);
+                        onClose?.();
+                    }}
                 />
             )}
         </ModalShell>

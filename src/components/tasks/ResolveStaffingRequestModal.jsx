@@ -17,6 +17,95 @@ import { getTeamMemberRoles } from '../../utils/teamMember';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 
+const memberSelectStyles = {
+    control: (base, state) => ({
+        ...base,
+        minHeight: '38px',
+        backgroundColor: '#FFFFFF',
+        borderColor: state.isFocused ? '#F38820' : '#E5E7EB',
+        borderRadius: '0.5rem',
+        boxShadow: state.isFocused ? '0 0 0 2px rgba(243, 136, 32, 0.2)' : 'none',
+        '&:hover': {
+            borderColor: state.isFocused ? '#F38820' : '#D1D5DB'
+        },
+        fontSize: '0.875rem',
+        cursor: 'pointer',
+        transition: 'all 0.15s ease'
+    }),
+    valueContainer: (base) => ({
+        ...base,
+        padding: '2px 10px'
+    }),
+    input: (base) => ({
+        ...base,
+        margin: 0,
+        padding: 0,
+        color: '#1F2937',
+        fontSize: '0.875rem'
+    }),
+    placeholder: (base) => ({
+        ...base,
+        color: '#9CA3AF',
+        fontSize: '0.875rem'
+    }),
+    singleValue: (base) => ({
+        ...base,
+        color: '#1F2937',
+        fontSize: '0.875rem',
+        fontWeight: 500
+    }),
+    indicatorSeparator: () => ({ display: 'none' }),
+    dropdownIndicator: (base, state) => ({
+        ...base,
+        color: state.isFocused ? '#F38820' : '#9CA3AF',
+        padding: '4px 8px',
+        '&:hover': {
+            color: '#F38820'
+        }
+    }),
+    clearIndicator: (base) => ({
+        ...base,
+        color: '#9CA3AF',
+        padding: '4px 8px',
+        cursor: 'pointer',
+        '&:hover': {
+            color: '#EF4444'
+        }
+    }),
+    menuPortal: (base) => ({
+        ...base,
+        zIndex: 9999
+    }),
+    menu: (base) => ({
+        ...base,
+        zIndex: 9999,
+        borderRadius: '0.5rem',
+        overflow: 'hidden',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        border: '1px solid #E5E7EB'
+    }),
+    menuList: (base) => ({
+        ...base,
+        maxHeight: '260px',
+        padding: '4px'
+    }),
+    option: (base, state) => ({
+        ...base,
+        fontSize: '0.875rem',
+        borderRadius: '0.375rem',
+        padding: '8px 12px',
+        margin: '1px 0',
+        cursor: 'pointer',
+        backgroundColor: state.isSelected ? '#FFF7ED' : state.isFocused ? '#FFF7ED' : 'transparent',
+        color: state.isSelected || state.isFocused ? '#F38820' : '#374151',
+        fontWeight: state.isSelected ? 600 : 400,
+        ':active': {
+            backgroundColor: '#FFEDD5',
+            color: '#C2410C'
+        }
+    })
+};
+
 const prioritizeLeadRole = (roles) => [
     TEAM_MEMBER_ROLE.ACCOUNT,
     ...roles.filter(role => role !== TEAM_MEMBER_ROLE.ACCOUNT),
@@ -220,6 +309,9 @@ export const ResolveStaffingRequestModal = ({
                                 isClearable
                                 className="text-sm"
                                 classNamePrefix="project-member-select"
+                                styles={memberSelectStyles}
+                                menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                menuPosition="fixed"
                             />
                         </div>
                         <div>
@@ -237,7 +329,7 @@ export const ResolveStaffingRequestModal = ({
                                                     type="checkbox"
                                                     checked={selectedRoles.includes(role)}
                                                     onChange={() => toggleSelectedRole(role)}
-                                                    className="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400"
+                                                    className="h-4 w-4 rounded border-gray-300 text-orange-500 accent-[#F38820] focus:ring-orange-400"
                                                 />
                                                 <span>{TEAM_MEMBER_ROLE_LABELS[role] || role}</span>
                                             </label>

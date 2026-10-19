@@ -172,7 +172,7 @@ function AppContent() {
             <Route path="/create-video-motion-control" element={<CreateVideoMotionControlPage />} />
             <Route path="/library-video-ai" element={<LibraryVideoAiPage />} />
             <Route path="/settings" element={<RoleRoute path="/settings" element={<SettingsPage />} />} />
-            {/* <Route path="/chat" element={<ChatPage />} /> */}
+            <Route path="/chat" element={<ChatPage />} />
           </Route>
 
           {/* =========================
@@ -186,7 +186,7 @@ function AppContent() {
       </Suspense>
 
       <SessionExpiredModal />
-      {/* <ChatBubbleWidget /> */}
+      <ChatBubbleWidget />
     </>
   );
 }

@@ -21,6 +21,7 @@ import {
   Wallet,
   FileCheck,
   Receipt,
+  MessageSquare,
 } from 'lucide-react';
 
 /**
@@ -89,6 +90,7 @@ export const MENU_ITEMS = [
   { path: '/customers', icon: Users, label: 'Khách Hàng', roles: ROUTE_PERMISSIONS['/customers'] },
   { path: '/projects', icon: FolderOpenDotIcon, label: 'Dự Án' },
   { path: '/tasks', icon: CheckSquare, label: 'Công Việc' },
+  { path: '/chat', icon: MessageSquare, label: 'Trò Chuyện' },
   { path: '/acceptance', icon: CheckCircle2, label: 'Nghiệm thu', roles: ROUTE_PERMISSIONS['/acceptance'] },
   { path: '/payment-requests', icon: Wallet, label: 'Yêu cầu thanh toán' },
   {
