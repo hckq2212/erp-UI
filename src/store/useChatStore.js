@@ -4,7 +4,7 @@ import axios from "axios";
 import { API_ORIGIN, BASE_URL } from "./api";
 import { playMessageNotificationSound, showDesktopNotification } from "../utils/chatNotificationSound";
 
-const SOCKET_URL = import.meta.env.DEV ? API_ORIGIN : (globalThis.location?.origin || API_ORIGIN);
+const SOCKET_URL = API_ORIGIN;
 
 const chatAxios = axios.create({
     baseURL: BASE_URL,
@@ -42,6 +42,37 @@ export const useChatStore = create((set, get) => ({
     replyingToMessage: null, // message currently being replied to
     setReplyingToMessage: (message) => set({ replyingToMessage: message, editingMessage: null }),
 
+    isBubbleOpen: false,
+    setIsBubbleOpen: (isOpen) => {
+        const { activeRoom, unreadRooms, unreadCounts, rooms } = get();
+        if (isOpen && activeRoom) {
+            const newUnread = { ...unreadRooms };
+            const newUnreadCounts = { ...unreadCounts };
+            newUnread[activeRoom.id] = false;
+            newUnreadCounts[activeRoom.id] = 0;
+
+            chatAxios.post(`/chat-rooms/${activeRoom.id}/read`).catch(err => {
+                console.error("Failed to mark room as read on server:", err);
+            });
+
+            const updatedRooms = rooms.map(r => {
+                if (String(r.id) === String(activeRoom.id)) {
+                    return { ...r, unread: false, unreadCount: 0 };
+                }
+                return r;
+            });
+
+            set({
+                isBubbleOpen: isOpen,
+                rooms: updatedRooms,
+                unreadRooms: newUnread,
+                unreadCounts: newUnreadCounts
+            });
+        } else {
+            set({ isBubbleOpen: isOpen });
+        }
+    },
+
     applyReceivedMessage: (message, tempId = null) => {
         const { activeRoom, messages, rooms, selfUserId: currentSelfUserId, unreadRooms, unreadCounts } = get();
 
@@ -78,8 +109,13 @@ export const useChatStore = create((set, get) => ({
         }
 
         const isFromOther = String(message.senderId) !== String(currentSelfUserId);
-        const isCurrentActiveRoom = activeRoom && String(activeRoom.id) === String(message.roomId);
-        const isUnread = isFromOther && !isCurrentActiveRoom;
+        const isChatPage = typeof window !== "undefined" && window.location.pathname.startsWith("/chat");
+        const { isBubbleOpen } = get();
+        // Chỉ coi là đang trực tiếp xem phòng chat nếu:
+        // 1. Đang ở trang /chat toàn màn hình VÀ activeRoom là phòng này
+        // 2. HOẶC đang mở cửa sổ bong bóng (isBubbleOpen === true) VÀ activeRoom là phòng này
+        const isViewingActiveRoom = (isChatPage || isBubbleOpen) && activeRoom && String(activeRoom.id) === String(message.roomId);
+        const isUnread = isFromOther && !isViewingActiveRoom;
         const newUnread = { ...unreadRooms };
         const newUnreadCounts = { ...unreadCounts };
 
@@ -110,12 +146,12 @@ export const useChatStore = create((set, get) => ({
         // Phát âm thanh và thông báo Desktop nếu tin nhắn từ người khác và phòng không bị Mute
         if (isFromOther && !isMuted) {
             // 1. Âm thanh "Ting": Phát âm lượng chuẩn khi không ở phòng này hoặc tab ẩn, phát nhỏ hơn nếu đang ở trong phòng
-            const volume = isCurrentActiveRoom ? 0.12 : 0.25;
+            const volume = isViewingActiveRoom ? 0.12 : 0.25;
             playMessageNotificationSound(volume);
 
-            // 2. Desktop Notification: Khi tab bị thu nhỏ hoặc ở tab trình duyệt khác
+            // 2. Desktop Notification: Khi tab bị thu nhỏ hoặc không đang xem trực tiếp phòng chat
             const isTabHidden = typeof document !== "undefined" && document.visibilityState === "hidden";
-            if (isTabHidden || !isCurrentActiveRoom) {
+            if (isTabHidden || !isViewingActiveRoom) {
                 const senderName = message.sender?.fullName || message.sender?.username || "Ai đó";
                 const roomTitle = targetRoom?.isGroup ? targetRoom.name : senderName;
                 const bodyText = targetRoom?.isGroup
@@ -152,13 +188,9 @@ export const useChatStore = create((set, get) => ({
 
         set({ selfUserId });
 
-        // Create socket connection with authentication credentials
-        // ⚠️ transports: ["websocket"] only — bắt buộc khi deploy lên Vercel.
-        // Nếu dùng "polling", Vercel sẽ route mỗi request polling tới các
-        // serverless instance khác nhau → handshake error & reconnect loop.
         const newSocket = io(SOCKET_URL, {
             auth: { token },
-            transports: ["websocket"],
+            transports: ["websocket","polling"],
             withCredentials: true,
             reconnection: true,
             reconnectionAttempts: Infinity,
