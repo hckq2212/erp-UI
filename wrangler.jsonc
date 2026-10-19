@@ -1,5 +1,5 @@
 {
-  "name": "erp-ui",
+  "name": "getvini-erp",
   "main": "src/worker.js",
   "compatibility_date": "2025-01-01",
   "vars": {
