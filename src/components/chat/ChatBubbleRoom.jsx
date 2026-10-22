@@ -2,13 +2,20 @@ import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from
 import { Pin, ChevronRight } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
 import { useGetMeQuery } from "../../api/auth";
+import { useGetUsersQuery } from "../../api/users";
 import { ChatMessageItem } from "./ChatMessageItem";
 import { ChatInputWithAutocomplete } from "./ChatInputWithAutocomplete";
 import { PinnedMessagesModal } from "./PinnedMessagesModal";
+import { GroupHeaderCard } from "./GroupHeaderCard";
+import { ChatRenameGroupModal } from "./ChatRenameGroupModal";
+import { ChatAddMembersModal } from "./ChatAddMembersModal";
 
 export function ChatBubbleRoom() {
     const { data: currentUser } = useGetMeQuery();
     const selfUserId = currentUser?.id;
+
+    const { data: usersData } = useGetUsersQuery();
+    const systemUsers = Array.isArray(usersData?.data) ? usersData.data : (Array.isArray(usersData) ? usersData : []);
 
     const {
         activeRoom,
@@ -20,15 +27,25 @@ export function ChatBubbleRoom() {
         fetchMoreMessages,
         loadingMoreMessages,
         hasMoreMessages,
-        pinnedMessagesByRoom
+        pinnedMessagesByRoom,
+        onlineUsers,
+        addMembersToGroup
     } = useChatStore();
 
     const [showPinnedModal, setShowPinnedModal] = useState(false);
+    const [showAddMembersModal, setShowAddMembersModal] = useState(false);
+    const [showRenameModal, setShowRenameModal] = useState(false);
     const scrollContainerRef = useRef(null);
     const messagesEndRef = useRef(null);
     const prevScrollHeightRef = useRef(0);
     const prevMessagesLengthRef = useRef(0);
     const hasScrolledToBottomForRoomRef = useRef(null);
+
+    const handleAddMembers = async (userIds) => {
+        if (!activeRoom) return;
+        await addMembersToGroup(activeRoom.id, userIds);
+        setShowAddMembersModal(false);
+    };
 
     const pinnedList = (activeRoom?.id && pinnedMessagesByRoom[activeRoom.id]) || [];
     const latestPinned = pinnedList.length > 0 ? pinnedList[pinnedList.length - 1] : null;
@@ -209,6 +226,24 @@ export function ChatBubbleRoom() {
                 onJumpToMessage={handleJumpToMessage}
             />
 
+            {/* Add Members Modal */}
+            <ChatAddMembersModal
+                isOpen={showAddMembersModal}
+                onClose={() => setShowAddMembersModal(false)}
+                activeRoom={activeRoom}
+                systemUsers={systemUsers}
+                selfUserId={selfUserId}
+                onlineUsers={onlineUsers}
+                onAddMembers={handleAddMembers}
+            />
+
+            {/* Rename Group Modal */}
+            <ChatRenameGroupModal
+                isOpen={showRenameModal}
+                onClose={() => setShowRenameModal(false)}
+                activeRoom={activeRoom}
+            />
+
             {/* Messages Thread Pane */}
             <div
                 ref={scrollContainerRef}
@@ -219,6 +254,15 @@ export function ChatBubbleRoom() {
                     <div className="text-center py-1 text-[11px] text-slate-400 font-mono animate-pulse">
                         ĐANG TẢI TIN CŨ HƠN...
                     </div>
+                )}
+                {/* Group Header Card at the top of group message history */}
+                {activeRoom?.isGroup && !hasMoreMessages && !loadingMessages && (
+                    <GroupHeaderCard
+                        activeRoom={activeRoom}
+                        selfUserId={selfUserId}
+                        onAddMembersClick={() => setShowAddMembersModal(true)}
+                        onRenameClick={() => setShowRenameModal(true)}
+                    />
                 )}
                 {loadingMessages ? (
                     <div className="flex-1 flex items-center justify-center text-xs text-slate-400 font-mono">

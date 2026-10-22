@@ -5,13 +5,13 @@ import { useGetMeQuery } from "../../api/auth";
 import { useGetUsersQuery } from "../../api/users";
 import { ChatBubbleRoom } from "./ChatBubbleRoom";
 import { RoomAvatar } from "./RoomAvatar";
+import { ChatGroupModal } from "./ChatGroupModal";
 import {
     ChevronDown,
     MessageCircle,
     Search,
     X,
-    UserPlus,
-    ArrowLeft,
+    Users,
     Pin,
     BellOff
 } from "lucide-react";
@@ -21,7 +21,7 @@ export function ChatBubbleWidget() {
     const location = useLocation();
     const isChatPage = location.pathname === "/chat";
 
-    const [showUserList, setShowUserList] = useState(false);
+    const [showGroupModal, setShowGroupModal] = useState(false);
     const [roomSearch, setRoomSearch] = useState("");
 
     const { data: currentUser } = useGetMeQuery();
@@ -35,13 +35,14 @@ export function ChatBubbleWidget() {
         unreadCounts = {},
         fetchRooms,
         createDM,
+        createGroup,
         isConnected,
         isBubbleOpen,
         setIsBubbleOpen
     } = useChatStore();
 
     // Query danh sách người dùng từ RTK Query (chuẩn hệ thống ERP)
-    const { data: usersData, isLoading: loadingUsers } = useGetUsersQuery();
+    const { data: usersData } = useGetUsersQuery();
     const systemUsers = useMemo(() => {
         return Array.isArray(usersData?.data) ? usersData.data : (Array.isArray(usersData) ? usersData : []);
     }, [usersData]);
@@ -188,6 +189,14 @@ export function ChatBubbleWidget() {
         return Object.values(unreadCounts || {}).reduce((sum, value) => sum + Number(value || 0), 0);
     }, [unreadCounts]);
 
+    const handleCreateGroup = async (name, userIds, avatarUrl) => {
+        const newRoom = await createGroup(name, userIds, avatarUrl);
+        setShowGroupModal(false);
+        if (newRoom) {
+            selectRoom(newRoom);
+        }
+    };
+
     // Không render widget khi chưa đăng nhập hoặc đang ở trang Chat toàn màn hình
     if (isChatPage || !currentUserId) {
         return null;
@@ -228,19 +237,6 @@ export function ChatBubbleWidget() {
                                     </span>
                                 </div>
                             </div>
-                        ) : showUserList ? (
-                            <div className="flex items-center gap-2 min-w-0">
-                                <button
-                                    onClick={() => setShowUserList(false)}
-                                    className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-[#F38820] hover:bg-orange-50 rounded-full transition-colors cursor-pointer"
-                                    title="Quay lại"
-                                >
-                                    <ArrowLeft className="w-5 h-5" />
-                                </button>
-                                <span className="font-bold text-sm text-slate-800">
-                                    Tin nhắn mới
-                                </span>
-                            </div>
                         ) : (
                             <div className="flex items-center gap-2 min-w-0">
                                 <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? "bg-green-500 animate-pulse" : "bg-slate-300"}`} />
@@ -251,17 +247,14 @@ export function ChatBubbleWidget() {
                         )}
 
                         <div className="flex items-center gap-1 text-slate-500">
-                            {!activeRoom && !showUserList && (
+                            {!activeRoom && (
                                 <button
                                     type="button"
-                                    onClick={() => {
-                                        setShowUserList(true);
-                                        setRoomSearch("");
-                                    }}
+                                    onClick={() => setShowGroupModal(true)}
                                     className="w-8 h-8 flex items-center justify-center hover:bg-orange-50 hover:text-[#F38820] rounded-full transition-colors cursor-pointer"
-                                    title="Tin nhắn mới"
+                                    title="Tạo nhóm mới"
                                 >
-                                    <UserPlus className="w-4 h-4" />
+                                    <Users className="w-4.5 h-4.5" />
                                 </button>
                             )}
                             <button
@@ -277,77 +270,6 @@ export function ChatBubbleWidget() {
                     {/* Active Conversation Room Pane */}
                     {activeRoom ? (
                         <ChatBubbleRoom />
-                    ) : showUserList ? (
-                        /* User Directory for DMs */
-                        <div className="flex-1 flex flex-col bg-white overflow-hidden min-h-0">
-                            {/* Search bar */}
-                            <div className="p-3 border-b border-gray-100 bg-gray-50/50 shrink-0">
-                                <div className="h-9 rounded-full bg-white border border-gray-200 px-3 flex items-center gap-2 shadow-2xs">
-                                    <Search className="w-4 h-4 text-slate-400 shrink-0" />
-                                    <input
-                                        value={roomSearch}
-                                        onChange={(e) => setRoomSearch(e.target.value)}
-                                        placeholder="Tìm nhân viên để nhắn tin..."
-                                        className="min-w-0 flex-1 bg-transparent outline-none text-xs text-slate-800 placeholder-slate-400"
-                                    />
-                                    {roomSearch && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setRoomSearch("")}
-                                            className="text-slate-400 hover:text-slate-600"
-                                        >
-                                            <X className="w-3.5 h-3.5" />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
-                                {loadingUsers ? (
-                                    <div className="p-6 text-center text-xs text-slate-400">
-                                        Đang tải danh sách nhân sự...
-                                    </div>
-                                ) : filteredUsers.length === 0 ? (
-                                    <div className="p-6 text-center text-xs text-slate-400">
-                                        Không tìm thấy nhân sự phù hợp
-                                    </div>
-                                ) : (
-                                    filteredUsers.map((user) => {
-                                        const isOnline = onlineUsers.includes(user.id);
-                                        return (
-                                            <button
-                                                key={user.id}
-                                                onClick={() => handleStartDM(user.id)}
-                                                className="w-full px-4 py-3 flex items-center justify-between hover:bg-orange-50/40 text-left transition-colors cursor-pointer group"
-                                            >
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="relative shrink-0">
-                                                        <div className="w-8 h-8 rounded-full bg-orange-100 text-[#F38820] flex items-center justify-center font-bold text-xs border border-orange-200/60">
-                                                            {user.fullName ? user.fullName[0].toUpperCase() : "U"}
-                                                        </div>
-                                                        {isOnline && (
-                                                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
-                                                        )}
-                                                    </div>
-                                                    <div className="flex flex-col min-w-0">
-                                                        <span className="text-xs font-semibold text-slate-800 group-hover:text-[#F38820] truncate transition-colors">
-                                                            {user.fullName}
-                                                        </span>
-                                                        <span className="text-[10px] text-slate-400 truncate">
-                                                            {user.phoneNumber || user.email || "Nhân viên"}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                {isOnline && (
-                                                    <span className="text-[10px] text-green-600 font-medium shrink-0 ml-2">
-                                                        Online
-                                                    </span>
-                                                )}
-                                            </button>
-                                        );
-                                    })
-                                )}
-                            </div>
-                        </div>
                     ) : (
                         /* Rooms Sidebar List */
                         <div className="flex-1 flex flex-col bg-white overflow-hidden min-h-0">
@@ -454,6 +376,18 @@ export function ChatBubbleWidget() {
                     <MessageCircle className="w-6 h-6 stroke-[2.2]" />
                 )}
             </button>
+
+            {/* Modal tạo nhóm mới */}
+            {showGroupModal && (
+                <ChatGroupModal
+                    isOpen={showGroupModal}
+                    onClose={() => setShowGroupModal(false)}
+                    systemUsers={systemUsers}
+                    selfUserId={currentUserId}
+                    onlineUsers={onlineUsers}
+                    onCreateGroup={handleCreateGroup}
+                />
+            )}
         </div>
     );
 }

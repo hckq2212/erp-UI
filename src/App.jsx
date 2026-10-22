@@ -187,7 +187,7 @@ function AppContent() {
       </Suspense>
 
       <SessionExpiredModal />
-      {isAuthenticated && <ChatBubbleWidget />}
+      {/* {isAuthenticated && <ChatBubbleWidget />} */}
     </>
   );
 }

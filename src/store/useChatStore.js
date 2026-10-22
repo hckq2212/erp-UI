@@ -336,6 +336,18 @@ export const useChatStore = create((set, get) => ({
             });
         });
 
+        newSocket.on("room_added", () => {
+            get().fetchRooms();
+        });
+
+        newSocket.on("room_removed", ({ roomId } = {}) => {
+            const { activeRoom } = get();
+            if (activeRoom && String(activeRoom.id) === String(roomId)) {
+                set({ activeRoom: null, messages: [] });
+            }
+            get().fetchRooms();
+        });
+
         set({ socket: newSocket });
     },
 

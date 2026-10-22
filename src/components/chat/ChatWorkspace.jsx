@@ -4,6 +4,8 @@ import { ChatMessageItem } from "./ChatMessageItem";
 import { ChatInputWithAutocomplete } from "./ChatInputWithAutocomplete";
 import { RoomAvatar } from "./RoomAvatar";
 import { PinnedMessagesModal } from "./PinnedMessagesModal";
+import { GroupHeaderCard } from "./GroupHeaderCard";
+import { ChatRenameGroupModal } from "./ChatRenameGroupModal";
 import { useChatStore } from "../../store/useChatStore";
 import { useGetUsersQuery } from "../../api/users";
 
@@ -29,6 +31,7 @@ export function ChatWorkspace({
     } = useChatStore();
 
     const [showPinnedModal, setShowPinnedModal] = useState(false);
+    const [showRenameModal, setShowRenameModal] = useState(false);
     const scrollContainerRef = useRef(null);
     const messagesEndRef = useRef(null);
     const prevScrollHeightRef = useRef(0);
@@ -306,6 +309,13 @@ export function ChatWorkspace({
                 onJumpToMessage={handleJumpToMessage}
             />
 
+            {/* Rename Group Modal */}
+            <ChatRenameGroupModal
+                isOpen={showRenameModal}
+                onClose={() => setShowRenameModal(false)}
+                activeRoom={activeRoom}
+            />
+
             {/* Messages Area */}
             <div
                 ref={scrollContainerRef}
@@ -317,6 +327,15 @@ export function ChatWorkspace({
                     <div className="text-center py-2 text-xs text-slate-400 font-mono animate-pulse">
                         ĐANG TẢI TIN NHẮN CŨ HƠN...
                     </div>
+                )}
+                {/* Group Header Card at the top of group message history */}
+                {activeRoom?.isGroup && !hasMoreMessages && !loadingMessages && (
+                    <GroupHeaderCard
+                        activeRoom={activeRoom}
+                        selfUserId={selfUserId}
+                        onAddMembersClick={onAddMembersClick}
+                        onRenameClick={() => setShowRenameModal(true)}
+                    />
                 )}
                 {loadingMessages ? (
                     <div className="flex-1 flex items-center justify-center text-xs text-slate-400 font-mono animate-pulse">
