@@ -15,7 +15,7 @@ export const fetchTaxInfo = async (taxId) => {
   }
 
   try {
-    const response = await fetch(`https://api.vietqr.io/v2/business/${cleanTaxId}`);
+    const response = await fetch(`https://api.xinvoice.vn/gdt-api/tax-payer/${cleanTaxId}`);
     if (!response.ok) {
       return null;
     }
