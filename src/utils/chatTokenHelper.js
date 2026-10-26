@@ -70,6 +70,28 @@ export const stripChatTokens = (content) => {
     }).join("");
 };
 
+export const formatReplyPreview = (message) => {
+    if (!message) return "...";
+    if (message.isRecalled) return "[Tin nhắn đã được thu hồi]";
+    const stripped = stripChatTokens(message.content).trim();
+    if (stripped) return stripped;
+    if (message.attachments && message.attachments.length > 0) {
+        const first = message.attachments[0];
+        const isImg =
+            first.type === "image" ||
+            first.type?.includes("image") ||
+            /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(first.url || "");
+        const isAudio =
+            first.type === "audio" ||
+            first.type?.includes("audio") ||
+            /\.(webm|mp3|wav|ogg|m4a)($|\?)/i.test(first.url || "");
+        if (isImg) return "[Hình ảnh]";
+        if (isAudio) return "[Tin nhắn thoại]";
+        return `[Tệp: ${first.name || first.originalName || "Tệp đính kèm"}]`;
+    }
+    return "...";
+};
+
 export const formatSystemMessage = (message, selfUserId) => {
     if (!message) return "";
     const meta = message.systemMetadata || {};

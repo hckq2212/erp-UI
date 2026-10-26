@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, Pin, PinOff, ArrowUpRight, MessageSquare, Image, FileText } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
-import { formatChatTime } from "../../utils/chatTokenHelper";
+import { formatChatTime, formatReplyPreview } from "../../utils/chatTokenHelper";
 
 export function PinnedMessagesModal({ isOpen, onClose, onJumpToMessage }) {
     const { activeRoom, pinnedMessagesByRoom, pinMessage, fetchPinnedMessages, selfUserId } = useChatStore();
@@ -146,25 +146,7 @@ export function PinnedMessagesModal({ isOpen, onClose, onJumpToMessage }) {
 
                                     {/* Preview Nội dung tin nhắn */}
                                     <div className="mt-2 text-[13px] text-slate-700 font-sans line-clamp-3 pl-9">
-                                        {msg.content ? (
-                                            <span>{msg.content}</span>
-                                        ) : hasAttachments ? (
-                                            <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-                                                {isImg ? (
-                                                    <>
-                                                        <Image className="w-3.5 h-3.5 text-blue-500" />
-                                                        <span>[Hình ảnh] {firstAttachment?.name || ""}</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <FileText className="w-3.5 h-3.5 text-orange-500" />
-                                                        <span>[Tệp đính kèm] {firstAttachment?.name || ""}</span>
-                                                    </>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <span className="italic text-gray-400">Không có nội dung văn bản</span>
-                                        )}
+                                        <span>{formatReplyPreview(msg)}</span>
                                     </div>
                                 </div>
                             );

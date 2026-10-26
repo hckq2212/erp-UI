@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Folder, Download, Smile, Pin, PinOff, Forward, RotateCcw, Pencil, Reply, MoreVertical } from "lucide-react";
-import { parseChatTokens, formatChatTime, formatSystemMessage } from "../../utils/chatTokenHelper";
+import { parseChatTokens, formatReplyPreview, formatChatTime, formatSystemMessage } from "../../utils/chatTokenHelper";
 import { DocumentPreviewModal } from "../common/DocumentPreviewModal";
 import { downloadFile } from "../../utils/fileDetector";
 import { useChatStore } from "../../store/useChatStore";
@@ -826,7 +826,7 @@ export function ChatMessageItem({
                                         title="Bấm để cuộn tới tin nhắn gốc"
                                     >
                                         <span className="truncate">
-                                            {message.replyTo.content || (message.replyTo.attachments?.length > 0 ? "[Tệp đính kèm]" : "...")}
+                                            {formatReplyPreview(message.replyTo)}
                                         </span>
                                     </div>
                                 )}
@@ -1074,7 +1074,7 @@ export function ChatMessageItem({
                                             title="Bấm để cuộn tới tin nhắn gốc"
                                         >
                                             <span className="truncate">
-                                                {message.replyTo.content || (message.replyTo.attachments?.length > 0 ? "[Tệp đính kèm]" : "...")}
+                                                {formatReplyPreview(message.replyTo)}
                                             </span>
                                         </div>
                                     )}

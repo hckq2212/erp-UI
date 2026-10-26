@@ -8,6 +8,7 @@ import { GroupHeaderCard } from "./GroupHeaderCard";
 import { ChatRenameGroupModal } from "./ChatRenameGroupModal";
 import { useChatStore } from "../../store/useChatStore";
 import { useGetUsersQuery } from "../../api/users";
+import { formatReplyPreview } from "../../utils/chatTokenHelper";
 
 export function ChatWorkspace({
     activeRoom,
@@ -274,9 +275,7 @@ export function ChatWorkspace({
                                 {latestPinned.sender?.fullName || latestPinned.sender?.username || "Thành viên"}:
                             </span>
                             <span className="truncate text-slate-600">
-                                {latestPinned.isRecalled
-                                    ? "[Tin nhắn đã được thu hồi]"
-                                    : (latestPinned.content || (latestPinned.attachments?.length > 0 ? "[Tệp đính kèm]" : ""))}
+                                {formatReplyPreview(latestPinned)}
                             </span>
                         </div>
                     </div>

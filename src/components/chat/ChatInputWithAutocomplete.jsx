@@ -23,7 +23,7 @@ import { useChatStore } from "../../store/useChatStore";
 import { useGetUsersQuery } from "../../api/users";
 import { useGetTasksQuery, useGetTasksByProjectQuery } from "../../api/tasks";
 import { useGetProjectsQuery } from "../../api/projects";
-import { buildTaskToken, buildUserToken } from "../../utils/chatTokenHelper";
+import { buildTaskToken, buildUserToken, stripChatTokens, formatReplyPreview } from "../../utils/chatTokenHelper";
 import { uploadToCloudinary } from "../../utils/cloudinary";
 import { toast } from "react-toastify";
 import {
@@ -1353,7 +1353,7 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
                         <div className="flex items-center gap-1.5 min-w-0">
                             <span className="font-bold text-[#F38820] shrink-0">Chỉnh sửa tin nhắn:</span>
                             <span className="truncate text-slate-600 max-w-[280px] sm:max-w-[450px]">
-                                {editingMessage.content}
+                                {stripChatTokens(editingMessage.content)}
                             </span>
                             <span className="text-[11px] text-gray-400 shrink-0">
                                 (tối đa 15 phút)
@@ -1383,9 +1383,7 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
                                 Đang trả lời {replyingToMessage.sender?.fullName || replyingToMessage.sender?.username || "thành viên"}:
                             </span>
                             <span className="truncate text-slate-600 max-w-[280px] sm:max-w-[450px]">
-                                {replyingToMessage.isRecalled
-                                    ? "[Tin nhắn đã được thu hồi]"
-                                    : (replyingToMessage.content || (replyingToMessage.attachments?.length > 0 ? "[Tệp đính kèm]" : ""))}
+                                {formatReplyPreview(replyingToMessage)}
                             </span>
                         </div>
                     </div>

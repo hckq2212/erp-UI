@@ -104,7 +104,7 @@ export const ProjectInfo = ({ project, formatDate, navigate, contractId }) => {
           </div>
           <div>
             <label className="text-sm font-medium text-gray-500">Account</label>
-            <p className="mt-1 text-sm font-semibold text-gray-700">{project.team?.teamLead?.fullName || 'PM chưa chọn lead'}</p>
+            <p className="mt-1 text-sm font-semibold text-gray-700">{project.team?.teamLead?.fullName || 'PM chưa chọn Account'}</p>
           </div>
         </div>
       </div>
