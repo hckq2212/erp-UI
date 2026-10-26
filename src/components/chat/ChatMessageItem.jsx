@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Folder, Download, Smile, Pin, PinOff, Forward, RotateCcw, Pencil, Reply, MoreVertical } from "lucide-react";
+import { Folder, Download, Smile, Pin, PinOff, Forward, RotateCcw, Pencil, Reply, MoreVertical, Mic } from "lucide-react";
 import { parseChatTokens, formatReplyPreview, formatChatTime, formatSystemMessage } from "../../utils/chatTokenHelper";
 import { DocumentPreviewModal } from "../common/DocumentPreviewModal";
 import { downloadFile } from "../../utils/fileDetector";
 import { useChatStore } from "../../store/useChatStore";
 import { MessageReactionsModal } from "./MessageReactionsModal";
 import { ForwardMessageModal } from "./ForwardMessageModal";
+import { VoiceMessagePlayer } from "./VoiceMessagePlayer";
 
 const REACTION_OPTIONS = [
     { emoji: "👍", label: "Thích" },
@@ -552,18 +553,43 @@ export function ChatMessageItem({
     const senderName = message.sender?.fullName || message.sender?.username || "Thành viên";
     const initial = senderName[0]?.toUpperCase() || "T";
 
+    const isImageFile = (f) => {
+        if (!f) return false;
+        return (
+            f.type === "image" ||
+            f.type?.startsWith("image/") ||
+            /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(f.url || "") ||
+            /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(f.name || "")
+        );
+    };
+
+    const isAudioFile = (f) => {
+        if (!f) return false;
+        return (
+            f.type === "audio" ||
+            f.type?.includes("audio") ||
+            f.name?.startsWith("Tin nhắn thoại") ||
+            f.name?.includes("voice_") ||
+            /\.(webm|mp3|wav|ogg|m4a|aac|3gp|3gpp|amr)($|\?)/i.test(f.url || "") ||
+            /\.(webm|mp3|wav|ogg|m4a|aac|3gp|3gpp|amr)($|\?)/i.test(f.name || "")
+        );
+    };
+
     const hasAttachments = Boolean(!message.isRecalled && message.attachments && message.attachments.length > 0);
+    const hasAudioAttachment = Boolean(hasAttachments && message.attachments.some(isAudioFile));
     const rawContent = (message.content || "").trim();
-    const isPlaceholderText = rawContent === "[Hình ảnh]" || rawContent === "[Tệp đính kèm]";
+    const isPlaceholderText =
+        rawContent === "[Hình ảnh]" ||
+        rawContent === "[Tệp đính kèm]" ||
+        rawContent === "🎤 [Tin nhắn thoại]" ||
+        rawContent === "[Tin nhắn thoại]";
     const hasText = Boolean(rawContent && (!hasAttachments || !isPlaceholderText));
     const tokens = parseChatTokens(rawContent);
     const isSingleTagOnly = tokens.length === 1 && (tokens[0].type === "user" || tokens[0].type === "task" || tokens[0].type === "legacy-task");
     const hasFileAttachment = Boolean(
-        message.attachments?.some(
-            (f) => f.type === "file" || (!/\.(jpg|jpeg|png|webp|gif|webm|mp3|wav|ogg|m4a)($|\?)/i.test(f.url || ""))
-        )
+        message.attachments?.some((f) => !isImageFile(f) && !isAudioFile(f))
     );
-    const showHoverTime = hasText || !hasFileAttachment;
+    const showHoverTime = hasText || hasAudioAttachment || !hasFileAttachment;
 
     const handleReactionSelect = (emoji) => {
         setShowPicker(false);
@@ -833,9 +859,9 @@ export function ChatMessageItem({
 
                                 <div
                                     data-chat-bubble="true"
-                                    className={`relative z-10 rounded-[18px] text-[15px] font-sans leading-snug max-w-full ${
-                                        hasText
-                                            ? `${isSingleTagOnly ? "px-2.5 py-1.5" : "px-3.5 py-2"} bg-[#F38820] text-white shadow-sm whitespace-pre-wrap`
+                                    className={`relative z-10 rounded-[22px] text-[15px] font-sans leading-snug max-w-full ${
+                                        hasText || hasAudioAttachment
+                                            ? `${isSingleTagOnly ? "px-2.5 py-1.5" : (hasAudioAttachment && !hasText) ? "p-1.5" : "px-3.5 py-2.5"} bg-[#F38820] text-white shadow-sm whitespace-pre-wrap`
                                             : "bg-transparent shadow-none p-0"
                                     }`}
                                 >
@@ -855,8 +881,8 @@ export function ChatMessageItem({
                                     {hasAttachments && (
                                         <div className={`flex flex-col gap-2 ${hasText ? "mt-2 border-t border-white/20 pt-2" : ""}`}>
                                             {message.attachments.map((file, idx) => {
-                                                const isImg = file.type === "image" || /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(file.url || "");
-                                                const isAudio = file.type === "audio" || /\.(webm|mp3|wav|ogg|m4a)($|\?)/i.test(file.url || "");
+                                                const isImg = isImageFile(file);
+                                                const isAudio = isAudioFile(file);
 
                                                 if (isImg) {
                                                     return (
@@ -878,12 +904,12 @@ export function ChatMessageItem({
 
                                                 if (isAudio) {
                                                     return (
-                                                        <div key={idx} className="flex flex-col gap-1 py-1">
-                                                            <span className="text-[10px] text-white/90 font-medium">
-                                                                🎤 {file.name || "Tin nhắn thoại"}
-                                                            </span>
-                                                            <audio controls src={file.url} className="max-w-[240px] h-8 rounded-full" />
-                                                        </div>
+                                                        <VoiceMessagePlayer
+                                                            key={idx}
+                                                            src={file.url}
+                                                            fileName={file.name}
+                                                            isMe={true}
+                                                        />
                                                     );
                                                 }
 
@@ -1081,9 +1107,9 @@ export function ChatMessageItem({
 
                                     <div
                                         data-chat-bubble="true"
-                                        className={`relative z-10 rounded-[18px] text-[15px] font-sans leading-snug max-w-full ${
-                                            hasText
-                                                ? `${isSingleTagOnly ? "px-2.5 py-1.5" : "px-3.5 py-2"} bg-[#f0f2f5] text-slate-900 shadow-sm whitespace-pre-wrap`
+                                        className={`relative z-10 rounded-[22px] text-[15px] font-sans leading-snug max-w-full ${
+                                            hasText || hasAudioAttachment
+                                                ? `${isSingleTagOnly ? "px-2.5 py-1.5" : (hasAudioAttachment && !hasText) ? "p-1.5" : "px-3.5 py-2.5"} bg-[#f0f2f5] text-slate-900 shadow-sm whitespace-pre-wrap`
                                                 : "bg-transparent shadow-none p-0"
                                         }`}
                                     >
@@ -1103,8 +1129,8 @@ export function ChatMessageItem({
                                         {hasAttachments && (
                                             <div className={`flex flex-col gap-2 ${hasText ? "mt-2 border-t border-gray-200/60 pt-2" : ""}`}>
                                                 {message.attachments.map((file, idx) => {
-                                                    const isImg = file.type === "image" || /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(file.url || "");
-                                                    const isAudio = file.type === "audio" || /\.(webm|mp3|wav|ogg|m4a)($|\?)/i.test(file.url || "");
+                                                    const isImg = isImageFile(file);
+                                                    const isAudio = isAudioFile(file);
 
                                                     if (isImg) {
                                                         return (
@@ -1126,12 +1152,12 @@ export function ChatMessageItem({
 
                                                     if (isAudio) {
                                                         return (
-                                                            <div key={idx} className="flex flex-col gap-1 py-1">
-                                                                <span className="text-[10px] text-gray-500 font-medium">
-                                                                    🎤 {file.name || "Tin nhắn thoại"}
-                                                                </span>
-                                                                <audio controls src={file.url} className="max-w-[240px] h-8 rounded-full" />
-                                                            </div>
+                                                            <VoiceMessagePlayer
+                                                                key={idx}
+                                                                src={file.url}
+                                                                fileName={file.name}
+                                                                isMe={false}
+                                                            />
                                                         );
                                                     }
 

@@ -240,8 +240,14 @@ export function ChatInfoSidebar({
         (messages || []).forEach(msg => {
             if (!msg.attachments || !Array.isArray(msg.attachments)) return;
             msg.attachments.forEach((att, idx) => {
-                const isImg = att.type === "image" || /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(att.url || "");
-                const isAudio = att.type === "audio" || /\.(webm|mp3|wav|ogg|m4a)($|\?)/i.test(att.url || "");
+                const isImg = att.type === "image" || att.type?.startsWith("image/") || /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(att.url || "") || /\.(jpg|jpeg|png|webp|gif)($|\?)/i.test(att.name || "");
+                const isAudio =
+                    att.type === "audio" ||
+                    att.type?.includes("audio") ||
+                    att.name?.startsWith("Tin nhắn thoại") ||
+                    att.name?.includes("voice_") ||
+                    /\.(webm|mp3|wav|ogg|m4a|aac|3gp|3gpp|amr)($|\?)/i.test(att.url || "") ||
+                    /\.(webm|mp3|wav|ogg|m4a|aac|3gp|3gpp|amr)($|\?)/i.test(att.name || "");
 
                 if (isImg) {
                     media.push({
