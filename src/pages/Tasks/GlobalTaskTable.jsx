@@ -2,13 +2,15 @@ import { memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, User, Briefcase, ChevronRight, Clock, AlertCircle, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { PROJECT_MANAGEMENT_ROLES, TASK_STATUS_LABELS, TASK_STATUS_COLORS } from '../../utils/enums';
+import { PROJECT_MANAGEMENT_ROLES } from '../../utils/enums';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../../components/ui/Pagination';
 import { formatDateTime } from '../../utils/format';
 import { useGetMeQuery } from '../../api/auth';
 import { InlineTaskNickname } from '../../components/tasks/InlineTaskNickname';
 import { getCurrentUserId, isSameUser } from '../../utils/authUser';
+import { StatusBadge } from '../../components/ui/StatusBadge';
+import { Button } from '../../components/ui/Button';
 
 const GlobalTaskRow = memo(({
     task,
@@ -20,13 +22,13 @@ const GlobalTaskRow = memo(({
         <tr
             className={cn(
                 "transition-all group cursor-pointer",
-                task.isExtra ? "bg-amber-50/50 hover:bg-amber-50 border-l-4 border-l-amber-400" : "hover:bg-blue-50/30"
+                task.isExtra ? "bg-amber-50/50 hover:bg-amber-50 border-l-4 border-l-amber-400" : "hover:bg-orange-50/20"
             )}
             onClick={() => onNavigate(task.id)}
         >
             <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex flex-col whitespace-nowrap">
-                    <span className="text-md font-bold text-blue-600 font-medium whitespace-nowrap">{task.code}</span>
+                    <span className="text-md font-bold text-primary-action font-medium whitespace-nowrap">{task.code}</span>
                 </div>
             </td>
             <td className="px-6 py-4 whitespace-nowrap">
@@ -74,17 +76,12 @@ const GlobalTaskRow = memo(({
                 </div>
             </td>}
             <td className="px-6 py-4 text-center whitespace-nowrap min-w-[170px]">
-                <span className={cn(
-                    "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap inline-flex items-center justify-center shrink-0 shadow-2xs",
-                    TASK_STATUS_COLORS[task.status] || "bg-gray-100 text-gray-600"
-                )}>
-                    {TASK_STATUS_LABELS[task.status] || task.status}
-                </span>
+                <StatusBadge domain="task" status={task.status} />
             </td>
             {!compact && <td className="px-6 py-4 text-right whitespace-nowrap">
-                <button className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all font-bold text-xs whitespace-nowrap inline-flex items-center justify-center shrink-0 shadow-xs">
+                <Button variant="primary" size="sm">
                     Xem chi tiết
-                </button>
+                </Button>
             </td>}
         </tr>
     );

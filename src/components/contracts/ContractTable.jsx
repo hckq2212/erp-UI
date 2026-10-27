@@ -3,7 +3,9 @@ import { cn } from '../../utils/cn';
 import { useNavigate } from 'react-router-dom';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../ui/Pagination';
-import { CONTRACT_STATUS_COLORS, CONTRACT_STATUS_LABELS } from '../../utils/enums';
+import { StatusBadge } from '../ui/StatusBadge';
+import { Button } from '../ui/Button';
+import { formatVND } from '../../utils/format';
 
 export const ContractTable = ({
     contracts = [],
@@ -56,8 +58,8 @@ export const ContractTable = ({
     const getSortIcon = (key) => {
         if (sortConfig?.key !== key) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-30" />;
         return sortConfig.direction === 'ascending'
-            ? <ArrowUp className="w-3 h-3 ml-1 text-blue-600" />
-            : <ArrowDown className="w-3 h-3 ml-1 text-blue-600" />;
+            ? <ArrowUp className="w-3 h-3 ml-1 text-primary-action" />
+            : <ArrowDown className="w-3 h-3 ml-1 text-primary-action" />;
     };
 
     const renderSortableHeader = (label, sortKey, align = 'left') => (
@@ -94,16 +96,18 @@ export const ContractTable = ({
                             <tr key={contract.id} className="hover:bg-gray-50 transition-colors">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{contract.contractCode ?? contract.code}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{contract.customer?.name ?? contract.customerName}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{Number(contract.sellingPrice || contract.selling_price || contract.sellingPrice).toLocaleString('vi-VN')} VNĐ</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{formatVND(contract.sellingPrice ?? contract.selling_price)}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={cn("px-2 inline-flex text-xs leading-5 font-semibold rounded-full", CONTRACT_STATUS_COLORS[contract.status])}>
-                                        {CONTRACT_STATUS_LABELS[contract.status]}
-                                    </span>
+                                    <StatusBadge domain="contract" status={contract.status} />
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button onClick={() => navigate(`/contracts/${contract.id}`)} className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold px-4">
+                                    <Button
+                                        variant="primary"
+                                        size="sm"
+                                        onClick={() => navigate(`/contracts/${contract.id}`)}
+                                    >
                                         Xem chi tiết
-                                    </button>
+                                    </Button>
                                 </td>
                             </tr>
                         ))}

@@ -29,9 +29,9 @@ const compactVnd = (value) => {
 };
 
 const ChartCard = ({ title, children }) => (
-    <div className='rounded-2xl border border-orange-100 bg-white p-5 shadow-sm'>
+    <div className='rounded-2xl border border-orange-100 bg-white p-5 shadow-sm min-w-0'>
         <p className='mb-3 text-sm font-semibold text-stone-700'>{title}</p>
-        <div className='h-64 w-full'>{children}</div>
+        <div className='h-64 w-full min-w-0'>{children}</div>
     </div>
 );
 
@@ -84,7 +84,7 @@ export const PaymentRequestCharts = ({ requests, projectNameById }) => {
     return (
         <div className='grid grid-cols-1 gap-4 lg:grid-cols-3'>
             <ChartCard title='Tỷ lệ yêu cầu theo trạng thái duyệt'>
-                <ResponsiveContainer width='100%' height='100%'>
+                <ResponsiveContainer width='100%' height='100%' minWidth={0} minHeight={0}>
                     <PieChart>
                         <Pie data={statusData} dataKey='value' nameKey='name' innerRadius={45} outerRadius={75} paddingAngle={2}>
                             {statusData.map((entry) => (
@@ -98,7 +98,7 @@ export const PaymentRequestCharts = ({ requests, projectNameById }) => {
             </ChartCard>
 
             <ChartCard title='Top dự án theo chi phí phát sinh (chưa hủy/từ chối)'>
-                <ResponsiveContainer width='100%' height='100%'>
+                <ResponsiveContainer width='100%' height='100%' minWidth={0} minHeight={0}>
                     <BarChart data={topProjects} layout='vertical' margin={{ left: 8, right: 16 }}>
                         <CartesianGrid strokeDasharray='3 3' horizontal={false} />
                         <XAxis type='number' tickFormatter={compactVnd} tick={{ fontSize: 11 }} />
@@ -110,7 +110,7 @@ export const PaymentRequestCharts = ({ requests, projectNameById }) => {
             </ChartCard>
 
             <ChartCard title='Chi phí phát sinh theo tháng (6 tháng gần nhất)'>
-                <ResponsiveContainer width='100%' height='100%'>
+                <ResponsiveContainer width='100%' height='100%' minWidth={0} minHeight={0}>
                     <BarChart data={monthlyTrend}>
                         <CartesianGrid strokeDasharray='3 3' vertical={false} />
                         <XAxis dataKey='key' tick={{ fontSize: 11 }} />

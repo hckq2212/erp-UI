@@ -139,7 +139,7 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJ
     label: service.name,
   }));
   return (
-    <div className={`space-y-3 p-3 rounded-xl border ${isUnselected ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
+    <div className={`space-y-3 p-3 rounded-xl border ${isUnselected ? 'bg-red-50 border-red-200' : 'bg-orange-50/40 border-orange-200/80'}`}>
       <div className="flex flex-wrap items-end gap-3">
         <div className={`flex-1 rounded-lg ${isUnselected ? 'ring-2 ring-red-400' : ''}`}>
           <Select
@@ -159,11 +159,11 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJ
           value={item.quantity}
           onChange={(e) => onServiceChange(index, 'quantity', e.target.value)}
           min={1}
-          className="w-20 px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-center transition-all"
+          className="w-20 px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-[#F38820] bg-white text-center transition-all"
         />
         <div className="w-40 text-right">
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Giá vốn</p>
-          <p className="mt-1 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-bold text-gray-800">
+          <p className="mt-1 rounded-lg border border-orange-200 bg-white px-3 py-2.5 text-sm font-bold text-[#D97010]">
             {formatNumber(lineCost)} VNĐ
           </p>
         </div>
@@ -177,7 +177,7 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJ
             value={formatNumber(item.budget)}
             onChange={(e) => onServiceChange(index, 'budget', e.target.value)}
             placeholder="Ngân sách"
-            className="mt-1 w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-right text-sm font-medium normal-case tracking-normal transition-all"
+            className="mt-1 w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-[#F38820] bg-white text-right text-sm font-medium normal-case tracking-normal transition-all"
           />
         </label>
         <button type="button" onClick={() => onRemove(index)} className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all">
@@ -185,11 +185,11 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJ
         </button>
       </div>
       {jobs.length > 0 && (
-        <div className="border-t border-gray-200 pt-2">
+        <div className="border-t border-orange-100 pt-2">
           <button
             type="button"
             onClick={() => setIsJobsOpen(previous => !previous)}
-            className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 transition-colors hover:text-indigo-800"
+            className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-orange-800 transition-colors hover:text-orange-950"
             aria-expanded={isJobsOpen}
           >
             <ChevronDown className={`h-4 w-4 transition-transform ${isJobsOpen ? 'rotate-180' : ''}`} />
@@ -199,9 +199,9 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJ
           {isJobsOpen && (
             <div className="mt-3 space-y-2">
               {jobs.map(job => (
-                <div key={job.jobId} className="space-y-2 rounded-lg border border-gray-200 bg-white p-3">
+                <div key={job.jobId} className="space-y-2 rounded-lg border border-orange-100 bg-orange-50/30 p-3">
                   <div className="flex items-start justify-between gap-3">
-                    <p className="text-sm font-medium text-gray-800">{job.name}</p>
+                    <p className="text-sm font-medium text-orange-950">{job.name}</p>
                     <div className="shrink-0 text-right text-xs text-gray-500">
                       <p>{job.quantity || 1} {job.unit}</p>
                       <p>{formatNumber(job.costPrice || 0)} VNĐ</p>
@@ -215,7 +215,7 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJ
                           type="checkbox"
                           checked={Boolean(job.included)}
                           onChange={(e) => onJobIncludedChange(index, job.jobId, e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 accent-blue-600"
+                          className="h-4 w-4 rounded border-gray-300 accent-[#F38820]"
                         />
                         Thêm hạng mục video demo này
                       </label>
@@ -226,7 +226,7 @@ const ServiceItem = memo(({ item, index, availableServices, onServiceChange, onJ
                             value={job.briefVideo || ''}
                             onChange={(e) => onJobBriefChange(index, job.jobId, e.target.value)}
                             rows={3}
-                            className="w-full resize-y rounded-lg border-2 border-gray-200 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            className="w-full resize-y rounded-lg border-2 border-orange-200 bg-white px-4 py-3 text-sm focus:border-[#F38820] focus:outline-none focus:ring-2 focus:ring-orange-500/20"
                             placeholder="Nhập brief khách hàng để thực hiện video AI demo..."
                           />
                         </div>
@@ -322,29 +322,29 @@ const PackageItem = memo(({
   const packageCost = getPackageCostWithBudget(pkg, availableServices);
 
   return (
-    <div className="bg-blue-50/40 border-2 border-blue-100 rounded-2xl p-5 space-y-4">
+    <div className="bg-orange-50/40 border-2 border-orange-100 rounded-2xl p-5 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="font-bold text-blue-900">
+          <h4 className="font-bold text-orange-950">
             {pkg.name || 'Gói dịch vụ'}
           </h4>
-          <p className="text-[10px] font-black uppercase tracking-wider text-blue-600 opacity-70">
+          <p className="text-[10px] font-black uppercase tracking-wider text-[#D97010]">
             Gói dịch vụ
           </p>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="hidden text-right sm:block">
-            <p className="text-[10px] font-black uppercase tracking-wider text-blue-500">Giá vốn gói</p>
-            <p className="text-sm font-bold text-blue-950">{formatNumber(packageCost)} VNĐ</p>
+            <p className="text-[10px] font-black uppercase tracking-wider text-orange-700">Giá vốn gói</p>
+            <p className="text-sm font-bold text-[#9A3412]">{formatNumber(packageCost)} VNĐ</p>
           </div>
 
-          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm">
+          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-orange-200 shadow-sm">
             <span className="text-xs text-gray-500">SL</span>
             <input
               type="number"
               min="1"
-              className="w-12 text-center font-bold text-blue-900 bg-transparent outline-none"
+              className="w-12 text-center font-bold text-orange-950 bg-transparent outline-none"
               value={pkg.quantity || 1}
               onChange={(e) => onQuantityChange(index, e.target.value)}
             />
@@ -361,7 +361,7 @@ const PackageItem = memo(({
       </div>
 
       {pkg.description && (
-        <p className="text-sm text-gray-500 bg-white/70 rounded-xl px-3 py-2">
+        <p className="text-sm text-gray-600 bg-white/70 rounded-xl px-3 py-2">
           {pkg.description}
         </p>
       )}
@@ -372,7 +372,7 @@ const PackageItem = memo(({
           <button
             type="button"
             onClick={() => setIsServicesOpen(prev => !prev)}
-            className="flex items-center gap-2 text-xs font-bold text-blue-700 uppercase tracking-widest hover:text-blue-900 transition-colors"
+            className="flex items-center gap-2 text-xs font-bold text-orange-800 uppercase tracking-widest hover:text-orange-950 transition-colors"
             aria-expanded={isServicesOpen}
           >
             <ChevronDown className={`w-4 h-4 transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
@@ -383,7 +383,7 @@ const PackageItem = memo(({
             <button
               type="button"
               onClick={() => onAddService(index)}
-              className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-all"
+              className="text-[#9A3412] hover:text-[#7C2D12] text-sm font-semibold flex items-center gap-1 bg-[#FFF7ED] hover:bg-[#FFE295] border border-[#FDCB9E] px-3 py-1.5 rounded-lg transition-all"
             >
               <Plus className="w-4 h-4" />
               Thêm dịch vụ
@@ -405,7 +405,7 @@ const PackageItem = memo(({
           return (
             <div
               key={`${index}-${serviceIndex}`}
-              className="bg-white border border-blue-100 rounded-xl p-3 space-y-3"
+              className="bg-white border border-orange-100 rounded-xl p-3 space-y-3"
             >
               <div className="flex flex-wrap items-end gap-3">
                 <div className="flex-1 text-sm">
@@ -441,11 +441,11 @@ const PackageItem = memo(({
                       e.target.value
                     )
                   }
-                  className="w-20 px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-center"
+                  className="w-20 px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-[#F38820] bg-white text-center"
                 />
                 <div className="w-40 text-right">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Giá vốn</p>
-                  <p className="mt-1 rounded-lg border border-gray-200 bg-blue-50/40 px-3 py-2.5 text-sm font-bold text-blue-950">
+                  <p className="mt-1 rounded-lg border border-orange-200 bg-orange-50/60 px-3 py-2.5 text-sm font-bold text-orange-950">
                     {formatNumber(lineCost)} VNĐ
                   </p>
                 </div>
@@ -465,7 +465,7 @@ const PackageItem = memo(({
                       )
                     }
                     placeholder="Ngân sách"
-                    className="mt-1 w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white text-right text-sm font-medium normal-case tracking-normal"
+                    className="mt-1 w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-[#F38820] bg-white text-right text-sm font-medium normal-case tracking-normal"
                   />
                 </label>
 
@@ -479,14 +479,14 @@ const PackageItem = memo(({
               </div>
 
               {jobs.length > 0 && (
-                <div className="border-t border-blue-100 pt-2">
+                <div className="border-t border-orange-100 pt-2">
                   <button
                     type="button"
                     onClick={() => setExpandedServiceJobs(previous => ({
                       ...previous,
                       [serviceJobsKey]: !previous[serviceJobsKey]
                     }))}
-                    className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-blue-700 transition-colors hover:text-blue-900"
+                    className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-orange-800 transition-colors hover:text-orange-950"
                     aria-expanded={isJobsOpen}
                   >
                     <ChevronDown className={`h-4 w-4 transition-transform ${isJobsOpen ? 'rotate-180' : ''}`} />
@@ -496,9 +496,9 @@ const PackageItem = memo(({
                   {isJobsOpen && (
                     <div className="mt-3 space-y-2">
                       {jobs.map(job => (
-                        <div key={job.jobId} className="space-y-2 rounded-lg border border-blue-100 bg-blue-50/30 p-3">
+                        <div key={job.jobId} className="space-y-2 rounded-lg border border-orange-100 bg-orange-50/30 p-3">
                           <div className="flex items-start justify-between gap-3">
-                            <p className="text-sm font-medium text-blue-950">{job.name}</p>
+                            <p className="text-sm font-medium text-orange-950">{job.name}</p>
                             <div className="shrink-0 text-right text-xs text-gray-500">
                               <p>{job.quantity || 1} {job.unit}</p>
                               <p>{formatNumber(job.costPrice || 0)} VNĐ</p>
@@ -507,7 +507,7 @@ const PackageItem = memo(({
 
                           {job.isBriefVideo && (
                             <>
-                              <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-blue-900">
+                              <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-orange-900">
                                 <input
                                   type="checkbox"
                                   checked={Boolean(job.included)}
@@ -522,14 +522,14 @@ const PackageItem = memo(({
                                       }
                                     )
                                   }
-                                  className="h-4 w-4 rounded border-blue-200 accent-blue-600"
+                                  className="h-4 w-4 rounded border-orange-200 accent-[#F38820]"
                                 />
                                 Thêm hạng mục video demo này
                               </label>
 
                               {job.included && (
                                 <div>
-                                  <label className="mb-1 block text-sm font-medium text-blue-900">
+                                  <label className="mb-1 block text-sm font-medium text-orange-900">
                                     Brief cho {job.name} *
                                   </label>
                                   <textarea
@@ -546,7 +546,7 @@ const PackageItem = memo(({
                                       )
                                     }
                                     rows={3}
-                                    className="w-full resize-y rounded-lg border-2 border-blue-100 bg-white px-4 py-3 text-sm focus:border-blue-500 focus:outline-none"
+                                    className="w-full resize-y rounded-lg border-2 border-orange-200 bg-white px-4 py-3 text-sm focus:border-[#F38820] focus:outline-none"
                                     placeholder="Nhập brief khách hàng để thực hiện video AI demo..."
                                   />
                                 </div>
@@ -564,7 +564,7 @@ const PackageItem = memo(({
         })}
 
         {isServicesOpen && (!pkg.services || pkg.services.length === 0) && (
-          <p className="text-sm text-gray-400 italic text-center py-3 bg-white/70 rounded-xl border border-dashed border-blue-200">
+          <p className="text-sm text-gray-400 italic text-center py-3 bg-white/70 rounded-xl border border-dashed border-orange-200">
             Gói này chưa có dịch vụ
           </p>
         )}
@@ -1399,11 +1399,11 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
         {/* Modal */}
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
           {/* Header */}
-          <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5 flex items-center justify-between z-10">
+          <div className="sticky top-0 bg-gradient-to-r from-[#F38820] to-[#E0720B] px-6 py-5 flex items-center justify-between z-10 shadow-sm">
             <div className="flex items-center gap-3">
               <div>
                 <h2 className="text-xl font-bold text-white">{isEditMode ? 'Chỉnh Sửa Cơ Hội' : initialData ? 'Tạo Cơ Hội Tương Tự' : 'Tạo Cơ Hội Mới'}</h2>
-                <p className="text-blue-100 text-sm">Điền thông tin chi tiết của cơ hội </p>
+                <p className="text-orange-100 text-sm">Điền thông tin chi tiết của cơ hội </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -1741,14 +1741,14 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
               <div ref={setFieldRef('services')} className="space-y-5">
                 <div className="flex items-center justify-between pb-2 border-b border-gray-200">
                   <div className="flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-indigo-600" />
+                    <Briefcase className="w-5 h-5 text-[#F38820]" />
                     <h3 className="font-semibold text-gray-900">Dịch vụ đề xuất</h3>
                   </div>
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={addPackage}
-                      className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-all"
+                      className="text-[#9A3412] hover:text-[#7C2D12] text-sm font-semibold flex items-center gap-1 bg-[#FFF7ED] hover:bg-[#FFE295] border border-[#FDCB9E] px-3 py-1.5 rounded-lg transition-all"
                     >
                       <Plus className="w-4 h-4" />
                       Gói dịch vụ
@@ -1764,8 +1764,8 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
                     {selectedPackages.map((pkg, index) => (
                       <div key={index} className="space-y-3">
                         {!pkg.servicePackageId ? (
-                          <div className="flex items-center gap-3 p-3 rounded-xl border bg-blue-50/30 border-blue-100">
-                            <div className="flex-1 text-sm font-bold text-blue-900">
+                          <div className="flex items-center gap-3 p-3 rounded-xl border bg-orange-50/40 border-orange-200/80">
+                            <div className="flex-1 text-sm font-bold text-orange-950">
                               <Select
                                 instanceId={`service-package-${index}`}
                                 options={packageTemplates.map(template => ({ value: template.id, label: template.name }))}
@@ -1814,7 +1814,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
                     <button
                       type="button"
                       onClick={addService}
-                      className="text-indigo-600 hover:text-indigo-700 text-sm font-medium flex items-center gap-1 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-all"
+                      className="text-[#9A3412] hover:text-[#7C2D12] text-sm font-semibold flex items-center gap-1 bg-[#FFF7ED] hover:bg-[#FFE295] border border-[#FDCB9E] px-3 py-1.5 rounded-lg transition-all"
                     >
                       <Plus className="w-4 h-4" />
                       Dịch vụ lẻ
@@ -1848,14 +1848,14 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
                 {errors.services && <p className="text-sm text-red-500 flex items-center gap-1 mb-3"><span className="w-1 h-1 bg-red-500 rounded-full"></span>{errors.services}</p>}
 
                 {/* Total */}
-                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4 rounded-xl text-white">
+                <div className="bg-[#F38820] p-4 rounded-xl text-white shadow-sm">
                   <div className="flex justify-between items-center gap-4">
-                    <span className="font-medium">Tổng giá vốn của các dịch vụ đã chọn:</span>
-                    <span className="text-2xl font-bold">{totalValue.toLocaleString('vi-VN')} VNĐ</span>
+                    <span className="font-medium text-white/95">Tổng giá vốn của các dịch vụ đã chọn:</span>
+                    <span className="text-2xl font-bold text-white">{totalValue.toLocaleString('vi-VN')} VNĐ</span>
                   </div>
-                  <div className="mt-3 flex justify-between items-center gap-4 border-t border-white/20 pt-3">
-                    <span className="font-medium">Giá bán dự kiến (140% giá vốn):</span>
-                    <span className="text-2xl font-bold">{Math.round(expectedSellingValue).toLocaleString('vi-VN')} VNĐ</span>
+                  <div className="mt-3 flex justify-between items-center gap-4 border-t border-white/25 pt-3">
+                    <span className="font-medium text-white/95">Giá bán dự kiến (140% giá vốn):</span>
+                    <span className="text-2xl font-bold text-white">{Math.round(expectedSellingValue).toLocaleString('vi-VN')} VNĐ</span>
                   </div>
                 </div>
               </div>
@@ -1987,7 +1987,7 @@ export const OpportunityModal = ({ isOpen, onClose, onSuccess, initialData = nul
               <button
                 type="submit"
                 disabled={isLoading || isUploading}
-                className="flex-[2] bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 flex items-center justify-center gap-2"
+                className="flex-[2] bg-[#F38820] hover:bg-[#DB7414] active:bg-[#C96A10] text-white font-semibold py-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2"
               >
                 {isLoading || isUploading ? (
                   <>

@@ -5,14 +5,30 @@
   --color-surface-container: #fff1e6;
   --color-surface-container-lowest: #ffffff;
 
-  --color-primary: #F38820;
-  --color-primary-hover: #D97010;
-  --color-primary-active: #C25E09;
-  --color-primary-focus: #F38820;
-  --color-primary-50: #FFF7ED;
-  --color-primary-100: #FFEDD5;
-  --color-primary-200: #FED7AA;
-  --color-primary-300: #FDBA74;
+  /* Surface & Background */
+  --color-surface: #ffffff;
+  --color-surface-subtle: #ededed;
+  --color-background: #fafafa;
+
+  /* Primary Brand & Interactive Tokens */
+  --color-primary: #F38820;          /* Nền nút chính CTA - kết hợp on-primary #ffffff */
+  --color-primary-hover: #DB7414;    /* Hover nút chính */
+  --color-primary-pressed: #C96A10;  /* Pressed nút chính */
+  --color-primary-action: #F38820;   /* Cam thương hiệu cho text link, active tabs, viền focus input */
+  --color-primary-action-hover: #DB7414;
+  --color-primary-light: #fff8e0;
+  --color-primary-border: #e6d5a8;
+  --color-primary-soft: #fff0c2;
+  --color-primary-soft-hover: #ffe295;
+  --color-primary-soft-pressed: #ffd06a;
+  --color-primary-on-soft: #9A3412;
+  --color-primary-soft-border: #C2540A;
+  --color-primary-soft-border-pressed: #A84608;
+  --color-on-primary: #ffffff;
+  --color-primary-50: #fff8e0;
+  --color-primary-100: #fff0c2;
+  --color-primary-200: #ffe295;
+  --color-primary-300: #ffd06a;
   --color-primary-400: #FB923C;
   --color-primary-500: #F38820;
   --color-primary-600: #EA580C;
@@ -20,12 +36,48 @@
   --color-primary-800: #9A3412;
   --color-primary-900: #7C2D12;
 
+  /* Text & Border Tokens */
+  --color-text-primary: #1f1f1f;
+  --color-text-secondary: #4a4a4a;
+  --color-text-muted: #6a6a6a;
+  --color-border: #e5e5e5;
+  --color-border-control: #8a8a8a;
+  --color-disabled-bg: #e5e5e5;
+  --color-disabled-text: #a8a8a8;
+
+  /* Semantic Colors (Status & Alerts) */
+  --color-success: #10B981;
+  --color-success-strong: #047857;
+  --color-success-light: #ECFDF5;
+
+  --color-warning: #F59E0B;
+  --color-warning-strong: #B45309;
+  --color-warning-light: #FFFBEB;
+
+  --color-info: #3B82F6;
+  --color-info-strong: #1D4ED8;
+  --color-info-light: #EFF6FF;
+
+  --color-danger: #EF4444;
+  --color-danger-strong: #B91C1C;
+  --color-danger-light: #FEF2F2;
+
+  --color-neutral-strong: #4a4a4a;
+  --color-neutral-light: #ededed;
+  --color-overlay: rgba(31, 31, 31, 0.45);
+
+  /* Semantic Radius Tokens theo vai trò (Không ghi đè thang đo chuẩn sm/md/lg/xl của Tailwind) */
+  --radius-control: 12px;
+  --radius-card: 10px;
+  --radius-overlay: 14px;
+
   /* Global Brand Aliases */
   --color-brand: #F38820;
   --color-brand-hover: #D97010;
   --color-brand-light: #FFF7ED;
 
-  /* Map legacy blue palette to Getvini orange brand so existing blue classes render in theme color */
+  /* Legacy Compatibility: Map legacy blue palette to Getvini orange brand so unmigrated blue classes continue working.
+     WILL BE REMOVED after Phase 3 screen migration is 100% complete */
   --color-blue-50: #FFF7ED;
   --color-blue-100: #FFEDD5;
   --color-blue-200: #FED7AA;

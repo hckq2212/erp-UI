@@ -1,4 +1,58 @@
 import { format } from 'date-fns';
+import Decimal from 'decimal.js';
+
+
+/**
+ * Định dạng tiền tệ VND với dấu phân cách hàng nghìn (.) và khoảng trắng không ngắt (\u00A0) trước ký hiệu "₫".
+ * - Làm tròn nửa ra xa 0 (half-away-from-zero / Decimal.ROUND_HALF_UP) về số nguyên đồng (0 fraction digits).
+ * - Khử triệt để dấu âm -0.
+ * - Nhận chuỗi số decimal (TypeORM string) an toàn mà không ép qua Number() gây tràn số hay mất độ chính xác.
+ * - Hỗ trợ giá trị vượt Number.MAX_SAFE_INTEGER.
+ * @param {number|string|null|undefined} value
+ * @param {string} suffix
+ * @returns {string}
+ */
+export const formatVND = (value, suffix = '₫') => {
+  const space = suffix === '₫' ? '\u00A0' : ' ';
+  if (value === null || value === undefined || value === '') return `0${space}${suffix}`;
+
+  try {
+    let cleanStr = typeof value === 'string' ? value.trim() : String(value);
+    if (!cleanStr) return `0${space}${suffix}`;
+
+    // Chuẩn hóa chuỗi định dạng hỗn hợp (vd: "1.500.000,50" -> "1500000.50")
+    if (cleanStr.includes('.') && cleanStr.includes(',')) {
+      if (cleanStr.lastIndexOf(',') > cleanStr.lastIndexOf('.')) {
+        cleanStr = cleanStr.replace(/\./g, '').replace(',', '.');
+      } else {
+        cleanStr = cleanStr.replace(/,/g, '');
+      }
+    } else if (cleanStr.includes(',') && !cleanStr.includes('.')) {
+      cleanStr = cleanStr.replace(',', '.');
+    }
+
+    const d = new Decimal(cleanStr);
+    if (d.isNaN()) return `0${space}${suffix}`;
+
+    // Làm tròn nguyên đồng theo chuẩn half-away-from-zero
+    const rounded = d.toDecimalPlaces(0, Decimal.ROUND_HALF_UP);
+
+    // Khử dấu âm -0
+    if (rounded.isZero()) {
+      return `0${space}${suffix}`;
+    }
+
+    const isNegative = rounded.isNegative();
+    const absStr = rounded.abs().toFixed(0);
+    const formattedInt = absStr.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+    return `${isNegative ? '-' : ''}${formattedInt}${space}${suffix}`;
+  } catch {
+    return `0${space}${suffix}`;
+  }
+};
+
+export const formatVNDFull = (value) => formatVND(value, 'VNĐ');
 
 /**
  * Format number with thousand separators (Vietnamese format)

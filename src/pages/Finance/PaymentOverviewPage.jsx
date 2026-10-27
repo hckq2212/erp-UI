@@ -21,10 +21,10 @@ const compactMoney = (value) => {
 };
 
 const badgeClass = (status) => {
-  if (['APPROVED', 'PAID', 'COMPLETED', 'SIGNED', 'PROPOSAL_APPROVED'].includes(status)) return 'bg-[#e5eeff] text-[#006c49]';
-  if (['REJECTED', 'CANCELLED', 'PROPOSAL_REJECTED'].includes(status)) return 'bg-[#ffdad6] text-[#93000a]';
-  if (['PARTIAL', 'IN_PROGRESS'].includes(status)) return 'bg-[#ffdbca] text-[#9d4300]';
-  return 'bg-[#eff4ff] text-[#584237]';
+  if (['APPROVED', 'PAID', 'COMPLETED', 'SIGNED', 'PROPOSAL_APPROVED'].includes(status)) return 'bg-positive-light text-positive-strong';
+  if (['REJECTED', 'CANCELLED', 'PROPOSAL_REJECTED'].includes(status)) return 'bg-negative-light text-negative-strong';
+  if (['PARTIAL', 'IN_PROGRESS'].includes(status)) return 'bg-pending-light text-pending-strong';
+  return 'bg-neutral-light text-neutral-strong';
 };
 
 const StatusBadge = ({ status, children }) => (

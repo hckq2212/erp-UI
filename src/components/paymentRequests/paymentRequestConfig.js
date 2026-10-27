@@ -7,7 +7,7 @@ export const TYPE_LABELS = {
 };
 
 export const TYPE_TONE = {
-    PROJECT: 'bg-blue-50 text-blue-700 border-blue-200',
+    PROJECT: 'bg-active-light text-active-strong border-blue-200',
     ADVANCE: 'bg-orange-50 text-orange-700 border-gray-200',
     OTHER_WORK: 'bg-stone-50 text-stone-700 border-stone-200',
 };
@@ -54,7 +54,7 @@ export const PAYMENT_TONE = {
     WAITING: { badge: 'bg-stone-100 text-stone-600', dot: 'bg-stone-400' },
     DUE_SOON: { badge: 'bg-amber-50 text-amber-700', dot: 'bg-amber-400' },
     OVERDUE: { badge: 'bg-red-50 text-red-700', dot: 'bg-red-500' },
-    PARTIALLY_PAID: { badge: 'bg-blue-50 text-blue-700', dot: 'bg-blue-500' },
+    PARTIALLY_PAID: { badge: 'bg-active-light text-active-strong', dot: 'bg-active' },
     PAID: { badge: 'bg-emerald-50 text-emerald-700', dot: 'bg-emerald-500' },
     NOT_APPLICABLE: { badge: 'bg-stone-100 text-stone-400', dot: 'bg-stone-300' },
 };
@@ -63,7 +63,7 @@ export const SETTLEMENT_TONE = {
     NOT_APPLICABLE: { badge: 'bg-stone-100 text-stone-400', dot: 'bg-stone-300' },
     PENDING: { badge: 'bg-amber-50 text-amber-700', dot: 'bg-amber-500' },
     WAITING_SETTLEMENT: { badge: 'bg-purple-50 text-purple-700', dot: 'bg-purple-500' },
-    SETTLEMENT_SUBMITTED: { badge: 'bg-blue-50 text-blue-700', dot: 'bg-blue-500' },
+    SETTLEMENT_SUBMITTED: { badge: 'bg-active-light text-active-strong', dot: 'bg-active' },
     SETTLED: { badge: 'bg-emerald-50 text-emerald-700', dot: 'bg-emerald-500' },
 };
 

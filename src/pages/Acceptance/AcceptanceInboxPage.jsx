@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useGetAcceptanceRequestsQuery } from '../../api/acceptances';
-import { CheckCircle2, XCircle, Clock, Search, Filter, Eye, FileText, ChevronRight } from 'lucide-react';
+import { Search, Filter, Eye, FileText, ChevronRight } from 'lucide-react';
 import { AcceptanceReviewModal } from './AcceptanceReviewModal';
 import { formatDate } from '../../utils/format';
-import { ACCEPTANCE_APPROVER_ROLES, ACCEPTANCE_STATUS_LABELS, ACCEPTANCE_STATUS_COLORS } from '../../utils/enums';
+import { ACCEPTANCE_APPROVER_ROLES, ACCEPTANCE_STATUS_LABELS } from '../../utils/enums';
 import { useGetMeQuery } from '../../api/auth';
+import { StatusBadge } from '../../components/ui/StatusBadge';
 
 export const AcceptanceInboxPage = () => {
     const { data: currentUser } = useGetMeQuery();
@@ -13,20 +14,6 @@ export const AcceptanceInboxPage = () => {
     const requests = Array.isArray(requestsResult) ? requestsResult : (requestsResult?.data || []);
     const [selectedRequest, setSelectedRequest] = useState(null);
     const canApproveAcceptance = ACCEPTANCE_APPROVER_ROLES.includes(currentUser?.role);
-
-    const getStatusBadge = (status) => {
-        const icons = {
-            PENDING: <Clock className="w-3 h-3" />,
-            APPROVED: <CheckCircle2 className="w-3 h-3" />,
-            REJECTED: <XCircle className="w-3 h-3" />,
-        };
-
-        return (
-            <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${ACCEPTANCE_STATUS_COLORS[status] || 'bg-gray-50 text-gray-600 border-gray-100'}`}>
-                {icons[status] || null} {ACCEPTANCE_STATUS_LABELS[status] || status}
-            </span>
-        );
-    };
 
     return (
         <div className=" mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -117,7 +104,7 @@ export const AcceptanceInboxPage = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex justify-center">
-                                                {getStatusBadge(req.status)}
+                                                <StatusBadge domain="acceptance" status={req.status} />
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
@@ -126,7 +113,7 @@ export const AcceptanceInboxPage = () => {
                                             </p>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                                            <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-primary-action group-hover:translate-x-1 transition-all" />
                                         </td>
                                     </tr>
                                 ))

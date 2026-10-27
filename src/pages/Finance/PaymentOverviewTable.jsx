@@ -4,23 +4,27 @@ import {
   CalendarDays, CheckCircle, CheckCircle2, Clock, X, ShieldCheck, AlertCircle, ArrowUpRight,
   Paperclip
 } from 'lucide-react';
-import { formatCurrency, formatDateToDDMMYYYY } from '../../utils/format';
+import { formatVND, formatDateToDDMMYYYY } from '../../utils/format';
 import { CONTRACT_STATUS_LABELS, PROJECT_STATUS_LABELS, QUOTATION_STATUS_LABELS } from '../../utils/enums';
+import { StatusBadge as StandardStatusBadge } from '../../components/ui/StatusBadge';
 
-const currency = (value) => formatCurrency(Number(value || 0)).replace('VNĐ', '₫');
+const currency = (value) => formatVND(value);
 const paymentLabels = { UNPAID: 'Chưa thanh toán', PARTIAL: 'Thanh toán một phần', PAID: 'Đã thanh toán' };
 const debtLabels = { UNPAID: 'Chưa thu', PARTIAL: 'Thu một phần', PAID: 'Đã thu đủ', OVERDUE: 'Quá hạn', LOCKED: 'Đã khóa' };
 
-const StatusBadge = ({ status, children }) => {
-  const color = ['APPROVED', 'PAID', 'COMPLETED', 'SIGNED', 'PROPOSAL_APPROVED'].includes(status)
-    ? 'bg-[#e5eeff] text-[#006c49]'
+const StatusBadge = ({ status, domain, children }) => {
+  if (domain && status) {
+    return <StandardStatusBadge domain={domain} status={status} />;
+  }
+  const tone = ['APPROVED', 'PAID', 'COMPLETED', 'SIGNED', 'PROPOSAL_APPROVED'].includes(status)
+    ? 'bg-positive-light text-positive-strong'
     : ['REJECTED', 'CANCELLED', 'PROPOSAL_REJECTED', 'OVERDUE'].includes(status)
-      ? 'bg-[#ffdad6] text-[#93000a]'
+      ? 'bg-negative-light text-negative-strong'
       : ['PARTIAL', 'IN_PROGRESS'].includes(status)
-        ? 'bg-[#ffdbca] text-[#9d4300]'
-        : 'bg-[#eff4ff] text-[#584237]';
+        ? 'bg-pending-light text-pending-strong'
+        : 'bg-neutral-light text-neutral-strong';
   return (
-    <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold leading-tight ${color}`}>
+    <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold leading-tight ${tone}`}>
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
       {children}
     </span>
@@ -753,21 +757,15 @@ const PaymentOverviewRow = memo(({
           {currency(row.sellingPrice)}
         </td>
         <td className="px-3 py-3">
-          <StatusBadge status={row.quotationStatus}>
-            {QUOTATION_STATUS_LABELS[row.quotationStatus] || 'Chưa có báo giá'}
-          </StatusBadge>
+          <StatusBadge domain="quotation" status={row.quotationStatus} />
         </td>
         <td className="px-3 py-3">
-          <StatusBadge status={row.contractStatus}>
-            {CONTRACT_STATUS_LABELS[row.contractStatus] || row.contractStatus}
-          </StatusBadge>
+          <StatusBadge domain="contract" status={row.contractStatus} />
         </td>
         <td className="px-3 py-3">{row.projectManager || '—'}</td>
         <td className="px-3 py-3">{row.account || '—'}</td>
         <td className="px-3 py-3">
-          <StatusBadge status={row.projectStatus}>
-            {PROJECT_STATUS_LABELS[row.projectStatus] || 'Chưa triển khai'}
-          </StatusBadge>
+          <StatusBadge domain="project" status={row.projectStatus} />
         </td>
         <td className="px-3 py-3">
           {row.collectionMonth ? `Tháng ${new Date(row.collectionMonth).getMonth() + 1}` : '—'}

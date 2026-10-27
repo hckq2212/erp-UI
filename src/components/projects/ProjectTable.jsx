@@ -1,12 +1,10 @@
 import { Eye, Edit, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from '../../utils/enums';
 import { useNavigate } from 'react-router-dom';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../ui/Pagination';
-
-const getStatusColor = (status) => PROJECT_STATUS_COLORS[status] || 'bg-gray-100 text-gray-800';
-const getStatusLabel = (status) => PROJECT_STATUS_LABELS[status] || status;
+import { StatusBadge } from '../ui/StatusBadge';
+import { Button } from '../ui/Button';
 
 export const ProjectTable = ({
     projects = [],
@@ -58,8 +56,8 @@ export const ProjectTable = ({
     const getSortIcon = (key) => {
         if (sortConfig?.key !== key) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-30" />;
         return sortConfig.direction === 'ascending'
-            ? <ArrowUp className="w-3 h-3 ml-1 text-blue-600" />
-            : <ArrowDown className="w-3 h-3 ml-1 text-blue-600" />;
+            ? <ArrowUp className="w-3 h-3 ml-1 text-primary-action" />
+            : <ArrowDown className="w-3 h-3 ml-1 text-primary-action" />;
     };
 
     const renderSortableHeader = (label, sortKey, align = 'left') => (
@@ -94,21 +92,23 @@ export const ProjectTable = ({
                     <tbody className="bg-white divide-y divide-gray-200">
                         {paginatedProjects.map((project) => (
                             <tr key={project.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 cursor-pointer" onClick={() => onView(project)}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-action cursor-pointer" onClick={() => onView(project)}>
                                     {project.contract?.contractCode || 'N/A'}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">{project.name}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{project.team?.name || 'Chưa phân công'}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={cn("px-2 inline-flex text-[10px] font-bold uppercase rounded-full border leading-5", getStatusColor(project.status))}>
-                                        {getStatusLabel(project.status)}
-                                    </span>
+                                    <StatusBadge domain="project" status={project.status} />
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div className="flex justify-end space-x-2">
-                                        <button onClick={() => navigate(`/projects/${project.id}`)} className="text-white bg-blue-600 hover:bg-blue-700 px-4 py-1.5 rounded-xl font-bold transition-all shadow-sm">
+                                        <Button
+                                            variant="primary"
+                                            size="sm"
+                                            onClick={() => navigate(`/projects/${project.id}`)}
+                                        >
                                             Xem chi tiết
-                                        </button>
+                                        </Button>
                                     </div>
                                 </td>
                             </tr>

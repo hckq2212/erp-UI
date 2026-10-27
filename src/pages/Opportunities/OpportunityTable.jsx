@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { Edit, Eye, Phone, Mail, User, DollarSign, Briefcase, ArrowUp, ArrowDown, ArrowUpDown, Copy } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { OPPORTUNITY_STATUS_LABELS, OPPORTUNITY_STATUS_COLORS } from '../../utils/enums';
 import { useTableFeatures } from '../../hooks/useTableFeatures';
 import { Pagination } from '../../components/ui/Pagination';
-import { formatCurrency } from '../../utils/format';
+import { StatusBadge } from '../../components/ui/StatusBadge';
+import { Button } from '../../components/ui/Button';
+import { formatVND } from '../../utils/format';
 
 export const OpportunityTable = ({
     opportunities = [],
@@ -55,8 +56,8 @@ export const OpportunityTable = ({
     const getSortIcon = (key) => {
         if (sortConfig?.key !== key) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-30" />;
         return sortConfig.direction === 'ascending'
-            ? <ArrowUp className="w-3 h-3 ml-1 text-blue-600" />
-            : <ArrowDown className="w-3 h-3 ml-1 text-blue-600" />;
+            ? <ArrowUp className="w-3 h-3 ml-1 text-primary-action" />
+            : <ArrowDown className="w-3 h-3 ml-1 text-primary-action" />;
     };
 
     const renderSortableHeader = (label, sortKey, align = 'left') => (
@@ -90,14 +91,11 @@ export const OpportunityTable = ({
                     <tbody className="divide-y divide-gray-50 bg-white">
                         {paginatedOpportunities.length > 0 ? (
                             paginatedOpportunities.map((opp) => (
-                                <tr key={opp.id} className="hover:bg-blue-50/30 transition-all group">
+                                <tr key={opp.id} className="hover:bg-orange-50/20 transition-all group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            {/* <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-sm">
-                                                {opp.customer?.name?.charAt(0) || opp.leadName?.charAt(0) || <User className="w-4 h-4" />}
-                                            </div> */}
                                             <div>
-                                                <div className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                                <div className="text-sm font-bold text-gray-900 group-hover:text-primary-action transition-colors">
                                                     {opp.customer?.name || opp.leadName || '---'}
                                                 </div>
                                                 <div className="text-[10px] text-gray-400 font-medium">Tên cơ hội: {opp.opportunityCode}-{opp.name}</div>
@@ -107,7 +105,7 @@ export const OpportunityTable = ({
                                     <td className="px-6 py-4">
                                         <div className="space-y-1">
                                             <div className="flex items-center text-gray-600 gap-2">
-                                                <Phone className="w-3.5 h-3.5 text-blue-400" />
+                                                <Phone className="w-3.5 h-3.5 text-primary" />
                                                 <span className="font-medium">{opp.customer?.phone || opp.leadPhone || '---'}</span>
                                             </div>
                                             <div className="flex items-center text-gray-400 gap-2">
@@ -119,25 +117,21 @@ export const OpportunityTable = ({
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
                                             <DollarSign className="w-4 h-4" />
-                                            {formatCurrency(opp.expectedRevenue) || '0 VNĐ'}
+                                            {formatVND(opp.expectedRevenue) || '0 ₫'}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-center align-middle">
-                                        <span className={cn(
-                                            "w-[110px] h-10 px-3 inline-flex text-[10px] font-bold uppercase rounded-lg tracking-wider border items-center justify-center",
-                                            OPPORTUNITY_STATUS_COLORS[opp.status] || "bg-gray-100 text-gray-600"
-                                        )}>
-                                            {OPPORTUNITY_STATUS_LABELS[opp.status] || opp.status}
-                                        </span>
+                                        <StatusBadge domain="opportunity" status={opp.status} />
                                     </td>
                                     <td className="px-6 py-4 text-right align-middle">
                                         <div className="flex justify-end items-center gap-2">
-                                            <button
+                                            <Button
+                                                variant="primary"
+                                                size="sm"
                                                 onClick={() => navigate(`/opportunities/${opp.id}`)}
-                                                className="px-4 py-2 text-white bg-blue-600 rounded-xl transition-all font-bold whitespace-nowrap"
                                             >
                                                 Xem chi tiết
-                                            </button>
+                                            </Button>
                                             <button
                                                 onClick={() => opp.status !== 'QUOTATION_DRAFTING' && onDuplicate?.(opp)}
                                                 disabled={opp.status === 'QUOTATION_DRAFTING'}
@@ -146,7 +140,7 @@ export const OpportunityTable = ({
                                                     "p-2 rounded-xl transition-all font-bold whitespace-nowrap border",
                                                     opp.status === 'QUOTATION_DRAFTING'
                                                         ? "text-gray-300 border-gray-100 cursor-not-allowed"
-                                                        : "text-blue-600 border-blue-200 hover:bg-blue-50"
+                                                        : "text-primary-action border-orange-200 hover:bg-orange-50"
                                                 )}
                                             >
                                                 <Copy className="w-4 h-4" />

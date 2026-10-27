@@ -78,7 +78,7 @@ export const OpportunitiesPage = () => {
 
     if (isLoading) return (
         <div className="flex flex-col items-center justify-center py-32 gap-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-action"></div>
             <p className="text-gray-500 font-medium animate-pulse">Đang tải danh sách cơ hội...</p>
         </div>
     );
@@ -89,8 +89,12 @@ export const OpportunitiesPage = () => {
                 <div className="flex items-center space-x-6">
                     <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Quản Lý Cơ Hội</h1>
                 </div>
-                <Button onClick={() => { setDuplicateData(null); setIsModalOpen(true); }} className="shadow-lg shadow-blue-500/20">
-                    <Plus className="h-5 w-5 mr-2" />
+                <Button
+                    variant="primary"
+                    leadingIcon={Plus}
+                    onClick={() => { setDuplicateData(null); setIsModalOpen(true); }}
+                    className="shadow-sm"
+                >
                     Tạo Cơ Hội Mới
                 </Button>
             </div>

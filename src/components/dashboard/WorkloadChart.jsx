@@ -6,8 +6,8 @@ export const WorkloadChart = ({ data = [] }) => {
         <div className="h-full flex flex-col">
             <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4 text-center">Số task được nghiệm thu theo tháng</h3>
 
-            <div className="flex-1 w-full">
-                <ResponsiveContainer width="100%" height="100%">
+            <div className="flex-1 w-full min-w-0">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <BarChart data={data} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis

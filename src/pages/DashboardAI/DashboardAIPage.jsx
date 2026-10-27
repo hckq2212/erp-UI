@@ -311,8 +311,8 @@ export const DashboardAIPage = () => {
                 <span className="text-violet-600">● Video</span>
               </div>
             </div>
-            <div className="h-[340px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-[340px] w-full min-w-0">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <LineChart data={generations} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                   <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} />
@@ -326,13 +326,13 @@ export const DashboardAIPage = () => {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7 min-w-0">
             <div className="mb-7">
               <h2 className="text-lg font-black text-slate-900">Thống kê tiền đã dùng</h2>
               <p className="text-xs text-slate-500">Chi phí của các lượt tạo thành công theo ngày</p>
             </div>
-            <div className="h-[340px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-[340px] w-full min-w-0">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                 <AreaChart data={spending} margin={{ top: 10, right: 10, left: 8, bottom: 0 }}>
                   <defs>
                     <linearGradient id="aiSpendingGradient" x1="0" y1="0" x2="0" y2="1">
