@@ -15,9 +15,9 @@ export const FinancialInfo = ({ opportunity }) => {
             {formatNumber(opportunity.expectedRevenue)} <span className="text-sm font-normal">VNĐ</span>
           </p>
         </div>
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
-          <p className="text-sm text-blue-700 mb-1">Ngân sách dự kiến</p>
-          <p className="text-2xl font-bold text-blue-800">
+        <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-xl border border-orange-100">
+          <p className="text-sm text-orange-600 mb-1">Ngân sách dự kiến</p>
+          <p className="text-2xl font-bold text-orange-800">
             {formatNumber(opportunity.budget)} <span className="text-sm font-normal">VNĐ</span>
           </p>
         </div>
