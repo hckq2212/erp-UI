@@ -107,7 +107,7 @@ const JobPrices = ({ service, opportunityId, canEditPrices, canHandleDemo }) => 
                     <div className="mb-2 flex items-center justify-between gap-3">
                         <div>
                             <p className="text-sm font-medium text-gray-900">{job.name}</p>
-                            {job.briefVideo && <p className="mt-1 whitespace-pre-wrap text-xs text-blue-700">Brief: {job.briefVideo}</p>}
+                            {job.briefVideo && <p className="mt-1 whitespace-pre-wrap text-xs text-primary-900">Brief: {job.briefVideo}</p>}
                         </div>
                         {job.isBriefVideo && <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700">Không tính vào giá vốn báo giá</span>}
                     </div>
@@ -155,7 +155,7 @@ const JobPrices = ({ service, opportunityId, canEditPrices, canHandleDemo }) => 
                                             href={task.result.url}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="flex shrink-0 items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                                            className="flex shrink-0 items-center gap-1 text-xs font-semibold text-primary-900 hover:text-primary-800"
                                         >
                                             Mở video <ExternalLink className="h-3.5 w-3.5" />
                                         </a>
@@ -189,7 +189,7 @@ const JobPrices = ({ service, opportunityId, canEditPrices, canHandleDemo }) => 
             })}
             {editableJobs.length > 0 && canEnterCost && (
                 <div className="flex justify-end">
-                    <button type="button" onClick={save} disabled={isLoading || !canEnterCost} className="flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
+                    <button type="button" onClick={save} disabled={isLoading || !canEnterCost} className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
                         <Save className="h-4 w-4" /> {isLoading ? 'Đang lưu...' : 'Lưu giá vốn hạng mục'}
                     </button>
                 </div>
@@ -232,7 +232,7 @@ export const OpportunityServicesInfo = ({ opportunity, currentUser, onAddCustome
     return (
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <div className="mb-6 flex items-center gap-2">
-                <Package className="h-5 w-5 text-indigo-600" />
+                <Package className="h-5 w-5 text-primary" />
                 <h2 className="font-semibold text-gray-900">Dịch vụ & Gói dịch vụ</h2>
             </div>
             {!canEditPrices && hasServices && (
@@ -250,10 +250,10 @@ export const OpportunityServicesInfo = ({ opportunity, currentUser, onAddCustome
             )}
             <div className="space-y-6">
                 {packages.map(pkg => (
-                    <div key={pkg.id} className="rounded-xl border border-blue-100 bg-blue-50/40 p-4">
+                    <div key={pkg.id} className="rounded-xl border border-primary-100 bg-primary-50/40 p-4">
                         <div className="mb-4 flex items-center gap-3">
-                            <div className="rounded-lg bg-blue-600 p-2 text-white"><Briefcase className="h-4 w-4" /></div>
-                            <h3 className="font-bold text-blue-900">Gói: {pkg.name} <span className="ml-2 text-blue-500">x{pkg.quantity || 1}</span></h3>
+                            <div className="rounded-lg bg-primary p-2 text-white"><Briefcase className="h-4 w-4" /></div>
+                            <h3 className="font-bold text-primary-900">Gói: {pkg.name} <span className="ml-2 text-primary-900">x{pkg.quantity || 1}</span></h3>
                         </div>
                         <div className="space-y-3">{pkg.services?.map(service => <ServiceCard key={service.id} service={service} opportunityId={opportunity.id} canEditPrices={canEditPrices} canHandleDemo={canHandleDemo} packageQuantity={pkg.quantity} />)}</div>
                     </div>
