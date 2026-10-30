@@ -34,7 +34,6 @@ import { TeamInfo } from './TeamInfo';
 import { toast } from 'react-toastify';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../../store/authSlice';
-import { CreateMonthlyWorkModal } from './CreateMonthlyWorkModal';
 import { ExtraTasksSection } from './ExtraTasksSection';
 import { PauseProjectModal } from './PauseProjectModal';
 import { CloseProjectModal } from './CloseProjectModal';
@@ -369,7 +368,6 @@ export const ProjectDetailPage = () => {
   const [confirmProject, { isLoading: isConfirming }] = useConfirmProjectMutation();
   const [syncProjectServiceJobs, { isLoading: isSyncingServiceJobs }] = useSyncProjectServiceJobsMutation();
   const [resumeProject, { isLoading: isResuming }] = useResumeProjectMutation();
-  const [isMonthlyWorkModalOpen, setIsMonthlyWorkModalOpen] = useState(false);
   const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
   const [isPauseDirectModalOpen, setIsPauseDirectModalOpen] = useState(false);
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
@@ -433,7 +431,6 @@ export const ProjectDetailPage = () => {
   const isCoreMember = isSameUser(project?.team?.teamLead?.id, currentUserId) ||
     project?.team?.members?.some(m => isSameUser(m.user?.id, currentUserId)) ||
     PROJECT_MANAGEMENT_ROLES.includes(user?.role);
-  const canCreateProjectWork = user?.role === 'PM' || user?.role === 'ADMIN';
 
 
   const handleConfirm = async () => {
@@ -536,7 +533,7 @@ export const ProjectDetailPage = () => {
               <button
                 onClick={handleSyncServiceJobs}
                 disabled={isSyncingServiceJobs}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 shadow-sm transition-all active:scale-95 disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${isSyncingServiceJobs ? 'animate-spin' : ''}`} />
                 <span>{isSyncingServiceJobs ? 'Đang đồng bộ...' : 'Đồng bộ'}</span>
@@ -849,12 +846,6 @@ export const ProjectDetailPage = () => {
       {activeTab === 'PAUSE' && showPauseTab && (
         <PauseHistorySection projectId={project.id} currentUser={user} />
       )}
-
-      <CreateMonthlyWorkModal
-        isOpen={isMonthlyWorkModalOpen}
-        onClose={() => setIsMonthlyWorkModalOpen(false)}
-        projectId={project.id}
-      />
 
       {/* Modals tạm dừng / đóng dự án */}
       <PauseProjectModal

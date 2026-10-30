@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Decimal } from 'decimal.js';
 import { Calendar, Check, ChevronDown, ChevronRight, Eye, FileText, X, XCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { formatCurrency, formatNumber } from '../../../utils/format';
@@ -14,7 +15,6 @@ import {
     calculateProfitMargin as calculateSharedProfitMargin,
     normalizeServiceJobs,
     QuotationServicePricingTable,
-    roundToTenThousands as roundSharedPrice,
 } from '../../../components/quotations/QuotationServicePricingTable';
 
 const STATUS_LABELS = {
@@ -930,6 +930,7 @@ const ServiceAddendumDetailModal = ({
         setPriceType(PRICE_TYPES.CUSTOM);
         setPricingItems(sourceItems.map((item, index) => {
             const costPrice = Number(item.cost || 0);
+            const budget = Number(item.budget || 0);
             const selectedPrice = Number(item.sellingPrice || 0);
             const packageQuantity = Number(item.packageQuantity || 1);
             const quantity = Number(item.quantity || 1);
@@ -945,11 +946,12 @@ const ServiceAddendumDetailModal = ({
                 servicePackageId: item.servicePackageId,
                 unit: item.unit || '',
                 costPrice,
-                minPrice: roundSharedPrice(costPrice / 0.8),
-                recommendedPrice: roundSharedPrice(costPrice / 0.6),
+                budget,
+                minPrice: new Decimal(costPrice).plus(budget).div('0.8').div(10000).ceil().mul(10000).toNumber(),
+                recommendedPrice: new Decimal(costPrice).plus(budget).div('0.6').div(10000).ceil().mul(10000).toNumber(),
                 customPrice: selectedPrice,
                 selectedPrice,
-                profitMargin: calculateSharedProfitMargin(selectedPrice, costPrice),
+                profitMargin: calculateSharedProfitMargin(selectedPrice, costPrice, budget),
                 jobs: normalizeServiceJobs(item.jobs || []),
             };
         }));
@@ -958,7 +960,17 @@ const ServiceAddendumDetailModal = ({
     const selectedItemsForSubmit = pricingItems.map((item, index) => ({
         ...sourceItems[index],
         sellingPrice: Number(item.selectedPrice || 0),
+        budget: Number(item.budget || 0),
     }));
+
+    const submitPricing = (action) => {
+        if (isMutating) return;
+        if (selectedItemsForSubmit.some((item) => !Number.isSafeInteger(item.budget) || item.budget < 0)) {
+            toast.error('Ngân sách phải là số nguyên đồng không âm hợp lệ');
+            return;
+        }
+        action(selectedItemsForSubmit);
+    };
 
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4">
@@ -990,6 +1002,8 @@ const ServiceAddendumDetailModal = ({
                         setPriceType={setPriceType}
                         servicesById={servicesById}
                         mode={canEditPrices ? 'review' : 'readonly'}
+                        disabled={isMutating}
+                        customOnly
                         emptyMessage="Chưa có dịch vụ nào trong phụ lục."
                     />
 
@@ -1004,10 +1018,10 @@ const ServiceAddendumDetailModal = ({
 
                 <div className="flex flex-col gap-3 border-t border-gray-100 bg-gray-50/50 px-6 py-4 md:flex-row md:justify-end">
                     <button type="button" onClick={onClose} className="rounded-xl bg-white px-4 py-3 font-bold text-gray-700 shadow-sm hover:bg-gray-100">Đóng</button>
-                    {canResubmit && <button type="button" disabled={isMutating} onClick={() => onResubmit(selectedItemsForSubmit)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"><Check className="h-4 w-4" />Gửi lại</button>}
+                    {canResubmit && <button type="button" disabled={isMutating} onClick={() => submitPricing(onResubmit)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"><Check className="h-4 w-4" />Gửi lại</button>}
                     {canReview && <>
                         <button type="button" disabled={isMutating} onClick={canSaleReview ? onSaleReject : onBodReject} className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-50"><XCircle className="h-4 w-4" />Không duyệt</button>
-                        <button type="button" disabled={isMutating} onClick={canSaleReview ? () => onSaleApprove(selectedItemsForSubmit) : onBodApprove} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"><Check className="h-4 w-4" />Duyệt</button>
+                        <button type="button" disabled={isMutating} onClick={canSaleReview ? () => submitPricing(onSaleApprove) : onBodApprove} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"><Check className="h-4 w-4" />Duyệt</button>
                     </>}
                 </div>
             </div>

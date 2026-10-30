@@ -13,6 +13,7 @@ const getAddendumInvalidationTags = (result, id) => {
         addendum?.project?.id ? { type: 'Projects', id: addendum.project.id } : null,
         addendum?.project?.id ? { type: 'Projects', id: 'LIST' } : null,
         addendum?.project?.id ? { type: 'Tasks', id: 'LIST' } : null,
+        addendum?.project?.id ? { type: 'PaymentRequests', id: `PROJECT_BUDGET_${addendum.project.id}` } : null,
     ].filter(Boolean);
 };
 
