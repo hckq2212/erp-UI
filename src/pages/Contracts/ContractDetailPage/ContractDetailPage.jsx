@@ -20,7 +20,6 @@ import { FinancialInfo } from './FinancialInfo';
 import { ProposalManagement } from './ProposalManagement';
 import { ProjectInfo } from './ProjectInfo';
 import { MilestonesSection } from './MilestonesSection';
-import { AssessExtraTasks } from './AssessExtraTasks';
 import { ContractAddendums } from './ContractAddendums';
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS } from '../../../utils/enums';
 import { cn } from '../../../utils/cn';
@@ -228,8 +227,6 @@ export const ContractDetailPage = () => {
     );
   }
 
-  const extraTasks = project?.tasks?.filter(t => t.status === 'AWAITING_PRICING') || [];
-  const hasExtraTasks = extraTasks.length > 0;
   const addendums = contract.addendums || [];
   const hasAddendums = addendums.length > 0;
 
@@ -280,20 +277,6 @@ export const ContractDetailPage = () => {
         >
           Dịch vụ
         </button>
-        {hasExtraTasks && (
-          <button
-            onClick={() => setActiveTab('EXTRA')}
-            className={cn(
-              "flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all",
-              activeTab === 'EXTRA' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
-            )}
-          >
-            Công việc phát sinh
-            <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] animate-pulse">
-              {extraTasks.length}
-            </span>
-          </button>
-        )}
         {hasAddendums && (
           <button
             onClick={() => setActiveTab('ADDENDUM')}
@@ -356,16 +339,6 @@ export const ContractDetailPage = () => {
 
       {activeTab === 'SERVICES' && (
         <ContractServices contractServices={contract.services || []} />
-      )}
-
-      {activeTab === 'EXTRA' && (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Định giá công việc phát sinh</h2>
-            <p className="text-gray-500 text-sm">Xác nhận đơn giá hoặc chuyển thành công việc ghi nhận chi phí cho các hạng mục phát sinh ngoài hợp đồng</p>
-          </div>
-          <AssessExtraTasks tasks={extraTasks} opportunityId={contract?.opportunity?.id} />
-        </div>
       )}
 
       {activeTab === 'ADDENDUM' && (

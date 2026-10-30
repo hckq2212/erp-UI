@@ -752,6 +752,17 @@ export const ProjectDetailPage = () => {
             Dịch vụ
           </button>
         )}
+        {isCoreMember && (
+          <button
+            onClick={() => setActiveTab('EXTRA_SERVICES')}
+            className={cn(
+              "flex shrink-0 items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold transition-all",
+              activeTab === 'EXTRA_SERVICES' ? "bg-white text-blue-600 shadow-sm" : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
+            )}
+          >
+            Dịch vụ phát sinh
+          </button>
+        )}
         <button
           onClick={() => setActiveTab('EXTRA')}
           className={cn(
@@ -836,6 +847,18 @@ export const ProjectDetailPage = () => {
           budgetSummary={budgetSummary}
           isClosed={isClosed}
           isOnHold={isOnHold}
+        />
+      )}
+
+      {activeTab === 'EXTRA_SERVICES' && isCoreMember && (
+        <ContractInfo
+          contract={project.contract}
+          projectId={project.id}
+          project={project}
+          budgetSummary={budgetSummary}
+          isClosed={isClosed}
+          isOnHold={isOnHold}
+          serviceScope="extra"
         />
       )}
 
