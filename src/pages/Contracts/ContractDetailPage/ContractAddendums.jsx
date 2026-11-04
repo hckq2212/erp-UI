@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Decimal } from 'decimal.js';
 import { Calendar, Check, ChevronDown, ChevronRight, Eye, FileText, X, XCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { formatCurrency, formatNumber } from '../../../utils/format';
@@ -14,7 +15,6 @@ import {
     calculateProfitMargin as calculateSharedProfitMargin,
     normalizeServiceJobs,
     QuotationServicePricingTable,
-    roundToTenThousands as roundSharedPrice,
 } from '../../../components/quotations/QuotationServicePricingTable';
 
 const STATUS_LABELS = {
@@ -182,6 +182,14 @@ const getAddendumStatus = (addendum) => normalizeCode(addendum?.status);
 
 export const ContractAddendums = ({ addendums = [], currentUser }) => {
     const [selectedAddendum, setSelectedAddendum] = useState(null);
+    const [isDirty, setIsDirty] = useState(false);
+    const latestAddendum = selectedAddendum && addendums.find((item) => item.id === selectedAddendum.id);
+    const signature = (item) => JSON.stringify([item?.status, item?.selectedItems, item?.saleReviewNote, item?.bodReviewNote, item?.name, item?.description]);
+    const hasConflict = Boolean(isDirty && latestAddendum && signature(latestAddendum) !== signature(selectedAddendum));
+    const displayedAddendum = isDirty ? selectedAddendum : (latestAddendum || selectedAddendum);
+    const markDirty = () => { if (!isDirty) { setSelectedAddendum(displayedAddendum); setIsDirty(true); } };
+    const closeDetail = () => { setSelectedAddendum(null); setIsDirty(false); };
+    const reloadDetail = () => { setSelectedAddendum(latestAddendum); setIsDirty(false); setRejectRequest(null); };
     const [rejectRequest, setRejectRequest] = useState(null);
     const [rejectReason, setRejectReason] = useState('');
     const [saleApprove, { isLoading: isSaleApproving }] = useSaleApproveAddendumMutation();
@@ -215,6 +223,7 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
     };
 
     const handleAction = async (action, id, successMessage, note = '', extraBody = {}) => {
+        if (hasConflict) return;
         try {
             await action({ id, note, ...extraBody }).unwrap();
             toast.success(successMessage);
@@ -227,6 +236,7 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
     };
 
     const openRejectModal = (action, id, successMessage) => {
+        markDirty();
         setRejectReason('');
         setRejectRequest({ action, id, successMessage });
     };
@@ -257,7 +267,7 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
                         <button
                             key={addendum.id}
                             type="button"
-                            onClick={() => setSelectedAddendum(addendum)}
+                            onClick={() => { setIsDirty(false); setSelectedAddendum(addendum); }}
                             className="w-full overflow-hidden rounded-2xl border border-gray-100 bg-white text-left shadow-sm transition-all hover:border-purple-200 hover:shadow-md"
                         >
                             <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
@@ -308,16 +318,20 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
             </div>
 
             {selectedAddendum && (
-                selectedAddendum.type === 'ADD_SERVICES' ? (
+                displayedAddendum.type === 'ADD_SERVICES' ? (
                 <ServiceAddendumDetailModal
-                    addendum={selectedAddendum}
+                    key={signature(displayedAddendum)}
+                    addendum={displayedAddendum}
+                    onDirty={markDirty}
+                    hasConflict={hasConflict}
+                    onReload={reloadDetail}
                     servicesById={servicesById}
                     isSale={isSale}
                     isBod={isBod}
                     isPmOrAdmin={isPmOrAdmin}
-                    isMutating={isMutating}
+                    isMutating={isMutating || hasConflict}
                     formatDate={formatDate}
-                    onClose={() => setSelectedAddendum(null)}
+                    onClose={closeDetail}
                     onSaleApprove={(selectedItems) => handleAction(saleApprove, selectedAddendum.id, 'Đã duyệt phụ lục', '', { selectedItems })}
                     onSaleReject={() => openRejectModal(saleReject, selectedAddendum.id, 'Đã không duyệt phụ lục')}
                     onResubmit={(selectedItems) => handleAction(resubmitAddendum, selectedAddendum.id, 'Đã gửi lại phụ lục', '', { selectedItems })}
@@ -326,13 +340,17 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
                 />
                 ) : (
                 <AddendumDetailModal
-                    addendum={selectedAddendum}
+                    key={signature(displayedAddendum)}
+                    addendum={displayedAddendum}
+                    onDirty={markDirty}
+                    hasConflict={hasConflict}
+                    onReload={reloadDetail}
                     isSale={isSale}
                     isBod={isBod}
                     isPmOrAdmin={isPmOrAdmin}
-                    isMutating={isMutating}
+                    isMutating={isMutating || hasConflict}
                     formatDate={formatDate}
-                    onClose={() => setSelectedAddendum(null)}
+                    onClose={closeDetail}
                     onSaleApprove={(selectedItems) => handleAction(saleApprove, selectedAddendum.id, 'Đã duyệt phụ lục', '', { selectedItems })}
                     onSaleReject={() => openRejectModal(saleReject, selectedAddendum.id, 'Đã không duyệt phụ lục')}
                     onResubmit={(selectedItems) => handleAction(resubmitAddendum, selectedAddendum.id, 'Đã gửi lại phụ lục', '', { selectedItems })}
@@ -345,7 +363,7 @@ export const ContractAddendums = ({ addendums = [], currentUser }) => {
             {rejectRequest && (
                 <RejectReasonModal
                     reason={rejectReason}
-                    isLoading={isMutating}
+                    isLoading={isMutating || hasConflict}
                     onChange={setRejectReason}
                     onClose={() => {
                         setRejectRequest(null);
@@ -400,6 +418,9 @@ const RejectReasonModal = ({ reason, isLoading, onChange, onClose, onSubmit }) =
 
 const AddendumDetailModal = ({
     addendum,
+    onDirty,
+    hasConflict,
+    onReload,
     isSale,
     isBod,
     isPmOrAdmin,
@@ -440,6 +461,7 @@ const AddendumDetailModal = ({
     }, [addendum.id]);
 
     const handlePriceTypeChange = (type) => {
+        onDirty();
         setPriceType(type);
         if (type === PRICE_TYPES.CUSTOM) return;
 
@@ -450,6 +472,7 @@ const AddendumDetailModal = ({
     };
 
     const updateItemSellingPrice = (itemIndexes = [], value) => {
+        onDirty();
         setEditableItems((prev) => prev.map((item, index) => (
             itemIndexes.includes(index)
                 ? { ...item, sellingPrice: value }
@@ -458,6 +481,7 @@ const AddendumDetailModal = ({
     };
 
     const updatePackageSellingPrice = (pkg, value) => {
+        onDirty();
         const packageIndexes = pkg.items.flatMap((item) => item.itemIndexes || []);
         const packageIndexSet = new Set(packageIndexes);
         const newTotal = Number(value || 0);
@@ -542,6 +566,7 @@ const AddendumDetailModal = ({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6">
+                    {hasConflict && <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">Phụ lục đã thay đổi. Nội dung đang sửa được giữ lại; hãy xem bản mới nhất trước khi tiếp tục. <button type="button" onClick={onReload} className="ml-2 font-bold underline">Xem bản mới nhất</button></div>}
                     <div className="space-y-6">
 
                         {addendum.description && (
@@ -904,6 +929,9 @@ const AddendumDetailModal = ({
 const ServiceAddendumDetailModal = ({
     addendum,
     servicesById,
+    onDirty,
+    hasConflict,
+    onReload,
     isSale,
     isBod,
     isPmOrAdmin,
@@ -930,6 +958,7 @@ const ServiceAddendumDetailModal = ({
         setPriceType(PRICE_TYPES.CUSTOM);
         setPricingItems(sourceItems.map((item, index) => {
             const costPrice = Number(item.cost || 0);
+            const budget = Number(item.budget || 0);
             const selectedPrice = Number(item.sellingPrice || 0);
             const packageQuantity = Number(item.packageQuantity || 1);
             const quantity = Number(item.quantity || 1);
@@ -945,11 +974,12 @@ const ServiceAddendumDetailModal = ({
                 servicePackageId: item.servicePackageId,
                 unit: item.unit || '',
                 costPrice,
-                minPrice: roundSharedPrice(costPrice / 0.8),
-                recommendedPrice: roundSharedPrice(costPrice / 0.6),
+                budget,
+                minPrice: new Decimal(costPrice).plus(budget).div('0.8').div(10000).ceil().mul(10000).toNumber(),
+                recommendedPrice: new Decimal(costPrice).plus(budget).div('0.6').div(10000).ceil().mul(10000).toNumber(),
                 customPrice: selectedPrice,
                 selectedPrice,
-                profitMargin: calculateSharedProfitMargin(selectedPrice, costPrice),
+                profitMargin: calculateSharedProfitMargin(selectedPrice, costPrice, budget),
                 jobs: normalizeServiceJobs(item.jobs || []),
             };
         }));
@@ -958,7 +988,17 @@ const ServiceAddendumDetailModal = ({
     const selectedItemsForSubmit = pricingItems.map((item, index) => ({
         ...sourceItems[index],
         sellingPrice: Number(item.selectedPrice || 0),
+        budget: Number(item.budget || 0),
     }));
+
+    const submitPricing = (action) => {
+        if (isMutating) return;
+        if (selectedItemsForSubmit.some((item) => !Number.isSafeInteger(item.budget) || item.budget < 0)) {
+            toast.error('Ngân sách phải là số nguyên đồng không âm hợp lệ');
+            return;
+        }
+        action(selectedItemsForSubmit);
+    };
 
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4">
@@ -981,15 +1021,18 @@ const ServiceAddendumDetailModal = ({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6">
+                    {hasConflict && <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">Phụ lục đã thay đổi. Nội dung đang sửa được giữ lại; hãy xem bản mới nhất trước khi tiếp tục. <button type="button" onClick={onReload} className="ml-2 font-bold underline">Xem bản mới nhất</button></div>}
                     {addendum.description && <div className="mb-6 rounded-xl bg-purple-50 p-4"><p className="mb-1 text-sm font-medium text-gray-700">Ghi chú:</p><p className="whitespace-pre-wrap text-sm text-gray-600">{addendum.description}</p></div>}
                     <h4 className="mb-3 font-semibold text-gray-900">Chi tiết dịch vụ</h4>
                     <QuotationServicePricingTable
                         items={pricingItems}
-                        setItems={setPricingItems}
+                        setItems={(update) => { onDirty(); setPricingItems(update); }}
                         priceType={priceType}
                         setPriceType={setPriceType}
                         servicesById={servicesById}
                         mode={canEditPrices ? 'review' : 'readonly'}
+                        disabled={isMutating}
+                        customOnly
                         emptyMessage="Chưa có dịch vụ nào trong phụ lục."
                     />
 
@@ -1004,10 +1047,10 @@ const ServiceAddendumDetailModal = ({
 
                 <div className="flex flex-col gap-3 border-t border-gray-100 bg-gray-50/50 px-6 py-4 md:flex-row md:justify-end">
                     <button type="button" onClick={onClose} className="rounded-xl bg-white px-4 py-3 font-bold text-gray-700 shadow-sm hover:bg-gray-100">Đóng</button>
-                    {canResubmit && <button type="button" disabled={isMutating} onClick={() => onResubmit(selectedItemsForSubmit)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"><Check className="h-4 w-4" />Gửi lại</button>}
+                    {canResubmit && <button type="button" disabled={isMutating} onClick={() => submitPricing(onResubmit)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"><Check className="h-4 w-4" />Gửi lại</button>}
                     {canReview && <>
                         <button type="button" disabled={isMutating} onClick={canSaleReview ? onSaleReject : onBodReject} className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-50"><XCircle className="h-4 w-4" />Không duyệt</button>
-                        <button type="button" disabled={isMutating} onClick={canSaleReview ? () => onSaleApprove(selectedItemsForSubmit) : onBodApprove} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"><Check className="h-4 w-4" />Duyệt</button>
+                        <button type="button" disabled={isMutating} onClick={canSaleReview ? () => submitPricing(onSaleApprove) : onBodApprove} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"><Check className="h-4 w-4" />Duyệt</button>
                     </>}
                 </div>
             </div>

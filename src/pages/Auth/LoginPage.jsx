@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLoginMutation } from '../../api/auth';
 import { setCredentials, selectIsAuthenticated } from '../../store/authSlice';
-import { User, Lock, Eye, EyeOff, Grid3X3, ShieldCheck, TrendingUp, Headphones, Box } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, Grid3X3, ShieldCheck, TrendingUp, Headphones, Box, Check } from 'lucide-react';
 
 import bg from '../../assets/bg.jpg';
 import logo from '../../assets/logo.png';
@@ -150,14 +150,27 @@ export const LoginPage = () => {
 
             {/* Checkbox & Forgot Password */}
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <input
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                <span className="text-sm text-slate-900 group-hover:text-blue-600 transition-colors">
+              <label className="flex items-center gap-2.5 cursor-pointer group select-none">
+                <div className="relative flex items-center justify-center">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  <div
+                    className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                      rememberMe
+                        ? 'bg-[#F38820] border-[#F38820]'
+                        : 'border-slate-300 bg-white group-hover:border-slate-400'
+                    } peer-focus-visible:ring-2 peer-focus-visible:ring-[#F38820] peer-focus-visible:ring-offset-1`}
+                  >
+                    {rememberMe && (
+                      <Check className="w-3 h-3 text-white stroke-[3.5]" />
+                    )}
+                  </div>
+                </div>
+                <span className="text-sm text-slate-900 group-hover:text-primary transition-colors">
                   Ghi nhớ đăng nhập
                 </span>
               </label>

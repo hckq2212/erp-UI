@@ -30,6 +30,7 @@ export const useSSE = () => {
 
     eventSource.onopen = () => {
       console.log('[SSE] Connection established');
+      dispatch(api.util.invalidateTags(['Contracts', 'ContractAddendums', 'Projects', 'Tasks']));
     };
 
     eventSource.onmessage = (event) => {
@@ -103,6 +104,14 @@ export const useSSE = () => {
               tagsToInvalidate.push({ type: 'Tasks', id: payload.data.id });
             } else if (payload.event?.startsWith('contract_addendum_')) {
               tagsToInvalidate.push({ type: 'ContractAddendums', id: payload.data.id });
+              if (payload.data?.contractId) {
+                tagsToInvalidate.push({ type: 'Contracts', id: payload.data.contractId });
+              }
+              if (payload.data?.projectId) {
+                tagsToInvalidate.push({ type: 'Projects', id: payload.data.projectId });
+                tagsToInvalidate.push({ type: 'Tasks', id: 'LIST' });
+                tagsToInvalidate.push({ type: 'PaymentRequests', id: 'LIST' });
+              }
             } else if (payload.event?.startsWith('contract_')) {
               tagsToInvalidate.push({ type: 'Contracts', id: payload.data.id });
             } else if (payload.event?.startsWith('customer_')) {

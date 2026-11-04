@@ -33,7 +33,7 @@ import {
 import { getFilePreviewUrl } from '../../../utils/cloudinary';
 import { cn } from '../../../utils/cn';
 import { getTaskDisplayName } from '../../../utils/taskName';
-import { formatDate, formatNumber } from '../../../utils/format';
+import { formatCurrency, formatDate, formatNumber } from '../../../utils/format';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '../../../store/authSlice';
 import { getCurrentUserId, isSameUser } from '../../../utils/authUser';
@@ -332,7 +332,7 @@ const ServiceDetails = ({ serviceTasks, results, feedback, onOpenTask, canSeeAll
     </div>
 );
 
-export const ContractInfo = ({ contract, projectId, project, budgetSummary = null, isClosed: propIsClosed, isOnHold: propIsOnHold }) => {
+export const ContractInfo = ({ contract, projectId, project, budgetSummary = null, isClosed: propIsClosed, isOnHold: propIsOnHold, serviceScope = 'regular' }) => {
     const navigate = useNavigate();
     const [isAcceptanceModalOpen, setIsAcceptanceModalOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -341,10 +341,13 @@ export const ContractInfo = ({ contract, projectId, project, budgetSummary = nul
     const [editingServiceId, setEditingServiceId] = useState(null);
     const [nicknameDraft, setNicknameDraft] = useState('');
     const [updateContractServiceNickname, { isLoading: isUpdatingNickname }] = useUpdateContractServiceNicknameMutation();
-    const services = Array.isArray(contract?.services) ? contract.services : [];
+    const allServices = useMemo(() => Array.isArray(contract?.services) ? contract.services : [], [contract?.services]);
+    const services = useMemo(() => allServices.filter((item) =>
+        (item.addendumInfo?.type === 'ADD_SERVICES') === (serviceScope === 'extra')
+    ), [allServices, serviceScope]);
     const totalBudget = useMemo(() => {
-        return services.reduce((sum, item) => sum + Number(item.budget || 0), 0);
-    }, [services]);
+        return allServices.reduce((sum, item) => sum + Number(item.budget || 0), 0);
+    }, [allServices]);
 
     const serviceBudgets = useMemo(() => budgetSummary?.serviceBudgets || [], [budgetSummary]);
     const getServiceSpendInfo = (item) => {
@@ -550,14 +553,14 @@ export const ContractInfo = ({ contract, projectId, project, budgetSummary = nul
                         </div>
                         <div>
                             <div className="flex items-center gap-2.5 flex-wrap">
-                                <h2 className="text-lg font-bold text-gray-900">Hạng mục dịch vụ</h2>
+                                <h2 className="text-lg font-bold text-gray-900">{serviceScope === 'extra' ? 'Dịch vụ phát sinh' : 'Hạng mục dịch vụ'}</h2>
                                 <span className="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
-                                    Tổng ngân sách: {formatNumber(totalBudget)} VNĐ
+                                    Tổng ngân sách dự án: {formatNumber(totalBudget)} VNĐ
                                 </span>
                                 {budgetSummary && (
                                     <>
                                         <span className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-[#F38820]">
-                                            Đã chi: {formatNumber(budgetSummary.totalProjectSpent || 0)} VNĐ
+                                            Dự án đã chi: {formatNumber(budgetSummary.totalProjectSpent || 0)} VNĐ
                                         </span>
                                         <span className={cn(
                                             "inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-bold",
@@ -565,7 +568,7 @@ export const ContractInfo = ({ contract, projectId, project, budgetSummary = nul
                                                 ? "border-rose-200 bg-rose-50 text-rose-700"
                                                 : "border-emerald-200 bg-emerald-50 text-emerald-700"
                                         )}>
-                                            Còn lại: {formatNumber(budgetSummary.remainingProjectBudget ?? (totalBudget - (budgetSummary.totalProjectSpent || 0)))} VNĐ
+                                            Ngân sách dự án còn lại: {formatNumber(budgetSummary.remainingProjectBudget ?? (totalBudget - (budgetSummary.totalProjectSpent || 0)))} VNĐ
                                         </span>
                                     </>
                                 )}
@@ -610,7 +613,7 @@ export const ContractInfo = ({ contract, projectId, project, budgetSummary = nul
                     <EmptyState
                         text={
                             canSeeAllTasks
-                                ? 'Chưa có hạng mục dịch vụ'
+                                ? (serviceScope === 'extra' ? 'Chưa có dịch vụ phát sinh' : 'Chưa có hạng mục dịch vụ')
                                 : 'Bạn không có công việc nào trong các hạng mục dịch vụ của dự án'
                         }
                     />
@@ -688,6 +691,11 @@ export const ContractInfo = ({ contract, projectId, project, budgetSummary = nul
                                                                 </button>
                                                                 <div className="min-w-0 flex-1">
                                                                     <div className="flex flex-wrap items-center gap-2">
+                                                                        {item.addendumInfo?.type === 'ADD_SERVICES' && (
+                                                                            <span className="rounded-md bg-orange-50 px-2 py-1 text-xs font-bold text-orange-700" title={item.addendumInfo.name}>
+                                                                                Dịch vụ phát sinh
+                                                                            </span>
+                                                                        )}
                                                                         {serviceCode && (
                                                                             <span className="rounded-md bg-blue-50 px-2 py-1 font-mono text-xs font-black text-blue-700">
                                                                                 {serviceCode}
@@ -720,6 +728,7 @@ export const ContractInfo = ({ contract, projectId, project, budgetSummary = nul
                                                                         )}
                                                                     </div>
                                                                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-gray-400">
+                                                                        {item.addendumInfo?.type === 'ADD_SERVICES' && item.addendumInfo.name && <span>Phụ lục: {item.addendumInfo.name}</span>}
                                                                         <span>
                                                                             {canSeeAllTasks
                                                                                 ? `${serviceTasks.length} công việc`
@@ -735,6 +744,10 @@ export const ContractInfo = ({ contract, projectId, project, budgetSummary = nul
                                                                         )}
                                                                     </div>
 
+                                                                    <div className="mt-2.5 flex flex-wrap gap-4 text-xs">
+                                                                        <div><span className="text-gray-500">Giá vốn (gồm ngân sách): </span><strong className="text-gray-800">{item.pricingCost == null ? 'Chưa có dữ liệu' : formatCurrency(item.pricingCost)}</strong></div>
+                                                                        <div><span className="text-gray-500">Giá bán: </span><strong className="text-gray-800">{item.sellingPrice == null ? 'Chưa có dữ liệu' : formatCurrency(item.sellingPrice)}</strong></div>
+                                                                    </div>
                                                                     {/* Hàng chỉ số tài chính dịch vụ */}
                                                                     {item.service?.isBudget === true && (
                                                                     <div className="mt-2.5 flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">

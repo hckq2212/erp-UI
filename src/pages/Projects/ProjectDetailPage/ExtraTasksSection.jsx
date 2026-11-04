@@ -3,26 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { AlertCircle, ExternalLink, FileText } from 'lucide-react';
 import { TASK_STATUS_COLORS, TASK_STATUS_LABELS } from '../../../utils/enums';
 import { cn } from '../../../utils/cn';
-import { formatCurrency, formatDate } from '../../../utils/format';
+import { formatDate } from '../../../utils/format';
 import { getTaskDisplayName } from '../../../utils/taskName';
-
-const PRICING_LABELS = {
-    PENDING: 'Chờ định giá',
-    BILLABLE: 'Có phí',
-    NON_BILLABLE: 'Hỗ trợ'
-};
-
-const PRICING_CLASSES = {
-    PENDING: 'bg-orange-50 text-orange-700 border-orange-100',
-    BILLABLE: 'bg-blue-50 text-blue-700 border-blue-100',
-    NON_BILLABLE: 'bg-amber-50 text-amber-700 border-amber-100'
-};
-
-const getPricingStatus = (task) => {
-    if (task.pricingStatus) return task.pricingStatus;
-    if (task.status === 'AWAITING_PRICING') return 'PENDING';
-    return 'NON_BILLABLE';
-};
 
 export const ExtraTasksSection = ({ tasks = [] }) => {
     const navigate = useNavigate();
@@ -34,10 +16,7 @@ export const ExtraTasksSection = ({ tasks = [] }) => {
     }, [tasks]);
 
     const summary = useMemo(() => ({
-        total: extraTasks.length,
-        pending: extraTasks.filter((task) => getPricingStatus(task) === 'PENDING').length,
-        billable: extraTasks.filter((task) => getPricingStatus(task) === 'BILLABLE').length,
-        support: extraTasks.filter((task) => getPricingStatus(task) === 'NON_BILLABLE').length
+        total: extraTasks.length
     }), [extraTasks]);
 
     return (
@@ -58,9 +37,6 @@ export const ExtraTasksSection = ({ tasks = [] }) => {
 
                     <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
                         <SummaryPill label="Tổng" value={summary.total} />
-                        <SummaryPill label="Chờ giá" value={summary.pending} className="text-orange-700" />
-                        <SummaryPill label="Có phí" value={summary.billable} className="text-blue-700" />
-                        <SummaryPill label="Hỗ trợ" value={summary.support} className="text-amber-700" />
                     </div>
                 </div>
             </div>
@@ -77,18 +53,13 @@ export const ExtraTasksSection = ({ tasks = [] }) => {
                             <tr>
                                 <th className="px-5 py-3 font-semibold">Mã</th>
                                 <th className="px-5 py-3 font-semibold">Công việc</th>
-                                <th className="px-5 py-3 font-semibold">Loại</th>
-                                <th className="px-5 py-3 font-semibold text-right">Giá bán</th>
-                                <th className="px-5 py-3 font-semibold text-right">Giá vốn</th>
                                 <th className="px-5 py-3 font-semibold">Trạng thái</th>
-                                <th className="px-5 py-3 font-semibold">Báo giá</th>
                                 <th className="px-5 py-3 font-semibold text-right">Tạo ngày</th>
                                 <th className="px-5 py-3 font-semibold text-center">Hành động</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {extraTasks.map((task) => {
-                                const pricingStatus = getPricingStatus(task);
                                 return (
                                     <tr key={task.id} className="hover:bg-gray-50/60">
                                         <td className="px-5 py-4">
@@ -103,33 +74,10 @@ export const ExtraTasksSection = ({ tasks = [] }) => {
                                         <td className="px-5 py-4">
                                             <span className={cn(
                                                 'inline-flex rounded-lg border px-2 py-1 text-xs font-bold',
-                                                PRICING_CLASSES[pricingStatus] || PRICING_CLASSES.PENDING
-                                            )}>
-                                                {PRICING_LABELS[pricingStatus] || pricingStatus}
-                                            </span>
-                                        </td>
-                                        <td className="px-5 py-4 text-right font-semibold text-gray-800">
-                                            {formatCurrency(task.sellingPrice || 0) || '0 VNĐ'}
-                                        </td>
-                                        <td className="px-5 py-4 text-right text-gray-600">
-                                            {formatCurrency(task.cost || task.job?.costPrice || 0) || '0 VNĐ'}
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            <span className={cn(
-                                                'inline-flex rounded-lg border px-2 py-1 text-xs font-bold',
                                                 TASK_STATUS_COLORS[task.status] || 'bg-gray-50 text-gray-500 border-gray-100'
                                             )}>
                                                 {TASK_STATUS_LABELS[task.status] || task.status}
                                             </span>
-                                        </td>
-                                        <td className="px-5 py-4">
-                                            {task.quotation ? (
-                                                <span className="inline-flex rounded-lg border border-purple-100 bg-purple-50 px-2 py-1 text-xs font-bold text-purple-700">
-                                                    Đã có báo giá
-                                                </span>
-                                            ) : (
-                                                <span className="text-xs text-gray-400">---</span>
-                                            )}
                                         </td>
                                         <td className="px-5 py-4 text-right text-gray-500">
                                             {formatDate(task.createdAt) || '---'}
