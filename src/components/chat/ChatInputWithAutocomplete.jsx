@@ -23,7 +23,7 @@ import { useChatStore } from "../../store/useChatStore";
 import { useGetUsersQuery } from "../../api/users";
 import { useGetTasksQuery, useGetTasksByProjectQuery } from "../../api/tasks";
 import { useGetProjectsQuery } from "../../api/projects";
-import { buildTaskToken, buildUserToken, stripChatTokens, formatReplyPreview } from "../../utils/chatTokenHelper";
+import { buildTaskToken, buildProjectToken, buildUserToken, stripChatTokens, formatReplyPreview } from "../../utils/chatTokenHelper";
 import { uploadToCloudinary } from "../../utils/cloudinary";
 import { toast } from "react-toastify";
 import {
@@ -210,17 +210,38 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
                 }));
             }
 
-            // C. Chế độ 'ALL': Tìm kiếm task trực tiếp trên toàn hệ thống
+            // C. Chế độ 'ALL': Danh sách gộp phân nhóm Dự án & Công việc
+            const matchingProjects = allProjects.filter(p =>
+                !qLower ||
+                (p.name && p.name.toLowerCase().includes(qLower)) ||
+                (p.code && p.code.toLowerCase().includes(qLower)) ||
+                (p.customer?.name && p.customer.name.toLowerCase().includes(qLower))
+            ).slice(0, 4).map(p => ({
+                isProjectTag: true,
+                id: p.id,
+                name: p.name,
+                code: p.code,
+                customer: p.customer
+            }));
+
+            let matchingTasks = [];
             if (roomProjectId && roomTasks.length > 0) {
-                if (!qLower) return roomTasks.slice(0, 15);
-                return roomTasks.filter(task =>
+                if (!qLower) matchingTasks = roomTasks.slice(0, 15);
+                else matchingTasks = roomTasks.filter(task =>
                     (task.code && task.code.toLowerCase().includes(qLower)) ||
                     (task.name && task.name.toLowerCase().includes(qLower)) ||
                     (task.nickname && task.nickname.toLowerCase().includes(qLower))
                 ).slice(0, 15);
+            } else {
+                matchingTasks = (generalTasks || []).slice(0, 15);
             }
 
-            return generalTasks;
+            const taskItems = matchingTasks.map(t => ({
+                isTaskItem: true,
+                ...t
+            }));
+
+            return [...matchingProjects, ...taskItems];
         }
 
         if (triggerType === "USER") {
@@ -297,7 +318,7 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
     const checkHasContent = () => {
         if (!editorRef.current) return false;
         const text = editorRef.current.textContent?.trim() || "";
-        const hasChips = editorRef.current.querySelector(".inline-mention-user, .inline-mention-task, .inline-mention-all") !== null;
+        const hasChips = editorRef.current.querySelector(".inline-mention-user, .inline-mention-task, .inline-mention-all, .inline-mention-project") !== null;
         return text.length > 0 || hasChips;
     };
 
@@ -314,6 +335,8 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
                     result += buildUserToken(node.dataset.id, node.dataset.name);
                 } else if (node.dataset?.type === "task") {
                     result += buildTaskToken(node.dataset.id, node.dataset.code);
+                } else if (node.dataset?.type === "project") {
+                    result += buildProjectToken(node.dataset.id, node.dataset.name);
                 } else if (node.nodeName === "BR") {
                     result += "\n";
                 } else if (node.nodeName === "DIV" || node.nodeName === "P") {
@@ -410,7 +433,13 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
         const chip = document.createElement("span");
         chip.contentEditable = "false";
 
-        if (type === "TASK") {
+        if (type === "PROJECT" || item.isProjectTag) {
+            chip.className = "inline-mention-project inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-sans font-medium text-[13px] mx-1 select-none align-baseline cursor-default border border-teal-200/90 shadow-2xs";
+            chip.dataset.type = "project";
+            chip.dataset.id = item.id;
+            chip.dataset.name = item.name;
+            chip.innerText = `#📁 ${item.name}`;
+        } else if (type === "TASK") {
             chip.className = "inline-mention-task inline-flex items-center px-2 py-0.5 rounded-full bg-orange-100 text-[#F38820] font-mono font-bold text-[13px] mx-1 select-none align-baseline cursor-default border border-orange-200 shadow-2xs";
             chip.dataset.type = "task";
             chip.dataset.id = item.id;
@@ -513,6 +542,11 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
             setActiveSuggestionIndex(0);
             setSearchQuery("");
             if (editorRef.current) editorRef.current.focus();
+            return;
+        }
+
+        if (item.isProjectTag) {
+            insertMentionChip("PROJECT", item);
             return;
         }
 
@@ -1200,7 +1234,50 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
                             suggestions.map((item, idx) => {
                                 const isSelected = idx === activeSuggestionIndex;
 
-                                // 1. Item là DỰ ÁN
+                                // 0. Item là TAG DỰ ÁN (Chế độ Unified)
+                                if (item.isProjectTag) {
+                                    const isFirstProject = idx === 0;
+                                    return (
+                                        <React.Fragment key={`proj-tag-${item.id}`}>
+                                            {isFirstProject && (
+                                                <div className="px-3.5 py-1.5 bg-teal-50/80 text-teal-800 text-[11px] font-bold uppercase tracking-wider flex items-center justify-between border-b border-teal-100">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <FolderKanban className="w-3.5 h-3.5 text-teal-600" />
+                                                        <span>Dự án</span>
+                                                    </span>
+                                                    <span className="text-[10px] text-teal-600 font-normal">Tag dự án</span>
+                                                </div>
+                                            )}
+                                            <button
+                                                type="button"
+                                                data-index={idx}
+                                                onClick={() => handleSelectSuggestion(item)}
+                                                className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                                                    isSelected ? "bg-teal-50 text-teal-800 font-medium" : "text-slate-700 hover:bg-gray-50"
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    <div className="w-6 h-6 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs shrink-0">
+                                                        📁
+                                                    </div>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="font-semibold text-slate-800 text-xs truncate">
+                                                            {item.name}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-400 font-mono truncate">
+                                                            {item.code} {item.customer?.name ? `• ${item.customer.name}` : ""}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <span className="text-[10px] text-teal-700 bg-teal-100/70 px-1.5 py-0.5 rounded border border-teal-200 shrink-0 font-medium">
+                                                    Chọn
+                                                </span>
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                }
+
+                                // 1. Item là DỰ ÁN (Drilldown)
                                 if (item.isProjectItem) {
                                     const proj = item.project;
                                     return (
@@ -1233,30 +1310,39 @@ export function ChatInputWithAutocomplete({ onSendMessage, onTyping, room }) {
 
                                 // 2. Item là TASK
                                 if (triggerType === "TASK") {
+                                    const hasProjectsBefore = suggestions.some(s => s.isProjectTag);
+                                    const isFirstTask = item.isTaskItem && suggestions.findIndex(s => s.isTaskItem) === idx;
                                     return (
-                                        <button
-                                            key={`task-${item.id}`}
-                                            type="button"
-                                            data-index={idx}
-                                            onClick={() => handleSelectSuggestion(item)}
-                                            className={`w-full text-left px-3 py-2 text-xs flex flex-col transition-colors cursor-pointer ${
-                                                isSelected ? "bg-orange-50 text-[#F38820]" : "text-slate-700 hover:bg-gray-50"
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-mono font-bold text-xs text-[#F38820] bg-orange-100/70 px-1.5 py-0.5 rounded shrink-0">
-                                                    {item.code}
-                                                </span>
-                                                <span className="truncate font-medium text-slate-800 text-xs">
-                                                    {item.name}
-                                                </span>
-                                            </div>
-                                            {item.nickname && (
-                                                <span className="text-[10px] text-gray-500 italic mt-0.5 truncate">
-                                                    Biệt danh: {item.nickname}
-                                                </span>
+                                        <React.Fragment key={`task-${item.id}`}>
+                                            {hasProjectsBefore && isFirstTask && (
+                                                <div className="px-3.5 py-1.5 bg-orange-50/80 text-[#F38820] text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 border-t border-b border-orange-100 mt-1">
+                                                    <CheckSquare className="w-3.5 h-3.5 text-[#F38820]" />
+                                                    <span>Công việc (Tasks)</span>
+                                                </div>
                                             )}
-                                        </button>
+                                            <button
+                                                type="button"
+                                                data-index={idx}
+                                                onClick={() => handleSelectSuggestion(item)}
+                                                className={`w-full text-left px-3 py-2 text-xs flex flex-col transition-colors cursor-pointer ${
+                                                    isSelected ? "bg-orange-50 text-[#F38820]" : "text-slate-700 hover:bg-gray-50"
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-mono font-bold text-xs text-[#F38820] bg-orange-100/70 px-1.5 py-0.5 rounded shrink-0">
+                                                        {item.code}
+                                                    </span>
+                                                    <span className="truncate font-medium text-slate-800 text-xs">
+                                                        {item.name}
+                                                    </span>
+                                                </div>
+                                                {item.nickname && (
+                                                    <span className="text-[10px] text-gray-500 italic mt-0.5 truncate">
+                                                        Biệt danh: {item.nickname}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        </React.Fragment>
                                     );
                                 }
 

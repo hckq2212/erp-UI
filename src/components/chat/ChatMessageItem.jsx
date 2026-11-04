@@ -454,6 +454,25 @@ export function ChatMessageItem({
                 return <span key={index}>{token.content}</span>;
             }
 
+            if (token.type === "project") {
+                return (
+                    <button
+                        key={index}
+                        type="button"
+                        onClick={() => navigate(`/projects/${token.id}`)}
+                        title={`Xem chi tiết dự án: ${token.display}`}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 font-sans font-medium text-[13px] rounded-full border transition-all cursor-pointer select-none align-baseline ${
+                            isMe
+                                ? "bg-white/15 hover:bg-white text-white hover:text-teal-700 border-white/35 hover:border-white shadow-2xs"
+                                : "bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200/90 hover:border-teal-300 shadow-2xs"
+                        }`}
+                    >
+                        <Folder className="w-3.5 h-3.5 shrink-0 opacity-80" />
+                        <span>{token.display}</span>
+                    </button>
+                );
+            }
+
             if (token.type === "task") {
                 return (
                     <button
@@ -585,7 +604,7 @@ export function ChatMessageItem({
         rawContent === "[Tin nhắn thoại]";
     const hasText = Boolean(rawContent && (!hasAttachments || !isPlaceholderText));
     const tokens = parseChatTokens(rawContent);
-    const isSingleTagOnly = tokens.length === 1 && (tokens[0].type === "user" || tokens[0].type === "task" || tokens[0].type === "legacy-task");
+    const isSingleTagOnly = tokens.length === 1 && (tokens[0].type === "user" || tokens[0].type === "task" || tokens[0].type === "legacy-task" || tokens[0].type === "project");
     const hasFileAttachment = Boolean(
         message.attachments?.some((f) => !isImageFile(f) && !isAudioFile(f))
     );

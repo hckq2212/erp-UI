@@ -1,5 +1,7 @@
 export const buildTaskToken = (taskId, displayCode) => `#{${taskId}:${displayCode}}`;
 
+export const buildProjectToken = (projectId, projectName) => `#{project:${projectId}:${projectName}}`;
+
 export const buildUserToken = (userId, displayName) => `@{${userId}:${displayName}}`;
 
 export const buildAllToken = (displayName = "Tất cả mọi người") => `@{all:${displayName}}`;
@@ -7,7 +9,7 @@ export const buildAllToken = (displayName = "Tất cả mọi người") => `@{a
 export const parseChatTokens = (content) => {
     if (!content || typeof content !== 'string') return [];
 
-    const tokenRegex = /(@\{([A-Za-z0-9_-]+):([^}]+)\})|(#{([A-Za-z0-9_-]+):([^}]+)})|(@\{([A-Za-z0-9_-]+)\})/g;
+    const tokenRegex = /(@\{([A-Za-z0-9_-]+):([^}]+)\})|(#{project:([A-Za-z0-9_-]+):([^}]+)})|(#{([A-Za-z0-9_-]+):([^}]+)})|(@\{([A-Za-z0-9_-]+)\})/g;
 
     const parts = [];
     let lastIndex = 0;
@@ -31,17 +33,24 @@ export const parseChatTokens = (content) => {
                 display: match[3]
             });
         } else if (match[4]) {
-            // New task token #{taskId:DisplayCode}
+            // New project token #{project:projectId:ProjectName}
             parts.push({
-                type: 'task',
+                type: 'project',
                 id: match[5],
                 display: match[6]
             });
         } else if (match[7]) {
+            // New task token #{taskId:DisplayCode}
+            parts.push({
+                type: 'task',
+                id: match[8],
+                display: match[9]
+            });
+        } else if (match[10]) {
             // Legacy task token @{TaskCode}
             parts.push({
                 type: 'legacy-task',
-                code: match[8]
+                code: match[11]
             });
         }
 
@@ -64,6 +73,7 @@ export const stripChatTokens = (content) => {
     return segments.map(seg => {
         if (seg.type === "all") return `@${seg.display}`;
         if (seg.type === "user") return `@${seg.display}`;
+        if (seg.type === "project") return `#📁 ${seg.display}`;
         if (seg.type === "task") return `#${seg.display}`;
         if (seg.type === "legacy-task") return `#${seg.code}`;
         return seg.content;
