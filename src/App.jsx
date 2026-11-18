@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useMatch } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
 import { useGetMeQuery } from './api/auth';
@@ -87,8 +87,8 @@ const RouteLoadingFallback = () => (
 function AppContent() {
   const sessionExpired = useSelector(selectSessionExpired);
   const isAuthenticated = useSelector(selectIsAuthenticated);
-  const pathname = globalThis.location?.pathname || '/';
-  const shouldCheckSession = hasSessionMarker() && !sessionExpired && pathname !== '/login';
+  const isLoginRoute = useMatch('/login');
+  const shouldCheckSession = hasSessionMarker() && !sessionExpired;
 
   // Use the query to check if the user is logged in via cookies on startup
   const { isLoading } = useGetMeQuery(undefined, {
@@ -186,7 +186,7 @@ function AppContent() {
         </Routes>
       </Suspense>
 
-      <SessionExpiredModal />
+      {!isLoginRoute && <SessionExpiredModal />}
       {/* {isAuthenticated && <ChatBubbleWidget />} */}
     </>
   );

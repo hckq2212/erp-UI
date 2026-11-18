@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLoginMutation } from '../../api/auth';
-import { setCredentials, selectIsAuthenticated } from '../../store/authSlice';
+import { setCredentials, selectIsAuthenticated, selectSessionExpired } from '../../store/authSlice';
 import { User, Lock, Eye, EyeOff, Grid3X3, ShieldCheck, TrendingUp, Headphones, Box, Check } from 'lucide-react';
 
 import bg from '../../assets/bg.jpg';
@@ -19,6 +19,7 @@ export const LoginPage = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const sessionExpired = useSelector(selectSessionExpired);
   const [login, { isLoading }] = useLoginMutation();
 
   const from = location.state?.from?.pathname || '/';
@@ -34,10 +35,10 @@ export const LoginPage = () => {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !sessionExpired) {
       navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate, from]);
+  }, [isAuthenticated, sessionExpired, navigate, from]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
