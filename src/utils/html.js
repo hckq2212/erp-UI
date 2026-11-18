@@ -1,49 +1,51 @@
-const ALLOWED_TAGS = new Set([
-  'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'P', 'BR',
-  'UL', 'OL', 'LI', 'A', 'BLOCKQUOTE', 'DIV', 'SPAN', 'IMG', 'VIDEO',
-]);
+import createDOMPurify from 'dompurify';
 
-const ALLOWED_ATTRS = {
-  A: ['href', 'target', 'rel'],
-  IMG: ['src', 'alt', 'class', 'data-media-type'],
-  VIDEO: ['src', 'controls', 'muted', 'class', 'data-media-type'],
-  SPAN: ['class', 'data-mention', 'data-mention-id', 'contenteditable'],
+let purifyInstance = null;
+
+const getDOMPurify = () => {
+  if (purifyInstance) return purifyInstance;
+  const currentWindow = typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis.window : null);
+  if (currentWindow) {
+    purifyInstance = typeof createDOMPurify === 'function' ? createDOMPurify(currentWindow) : createDOMPurify;
+    if (purifyInstance?.addHook) {
+      purifyInstance.addHook('afterSanitizeAttributes', (node) => {
+        if (node.tagName === 'A') {
+          node.setAttribute('rel', 'noopener noreferrer');
+          if (node.getAttribute('target')) {
+            node.setAttribute('target', '_blank');
+          }
+        }
+      });
+    }
+  }
+  return purifyInstance;
 };
 
 export const sanitizeHtml = (html) => {
   if (!html) return '';
 
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-
-  const clean = (node) => {
-    [...node.childNodes].forEach((child) => {
-      if (child.nodeType === Node.ELEMENT_NODE) {
-        if (!ALLOWED_TAGS.has(child.tagName)) {
-          child.replaceWith(...child.childNodes);
-          return;
-        }
-
-        [...child.attributes].forEach((attr) => {
-          const allowed = ALLOWED_ATTRS[child.tagName] || [];
-          if (!allowed.includes(attr.name) || attr.value.trim().toLowerCase().startsWith('javascript:')) {
-            child.removeAttribute(attr.name);
-          }
-        });
-
-        if (child.tagName === 'A') {
-          child.setAttribute('target', '_blank');
-          child.setAttribute('rel', 'noopener noreferrer');
-        }
-
-        clean(child);
-      } else if (child.nodeType !== Node.TEXT_NODE) {
-        child.remove();
-      }
+  const purify = getDOMPurify();
+  if (purify?.sanitize) {
+    return purify.sanitize(html, {
+      ALLOWED_TAGS: [
+        'b', 'strong', 'i', 'em', 'u', 's', 'strike', 'p', 'br',
+        'ul', 'ol', 'li', 'a', 'blockquote', 'div', 'span', 'img', 'video',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td'
+      ],
+      ALLOWED_ATTR: [
+        'href', 'target', 'rel', 'class', 'alt', 'src', 'controls', 'muted',
+        'data-media-type', 'data-mention', 'data-mention-id', 'contenteditable'
+      ],
+      ALLOW_DATA_ATTR: true,
+      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
     });
-  };
+  }
 
-  clean(doc.body);
-  return doc.body.innerHTML;
+  // Fallback an toàn khi chạy ngoài browser (Node/test runner)
+  return String(html)
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/on\w+\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/javascript\s*:/gi, '');
 };
 
 export const htmlToPlainText = (html) => {

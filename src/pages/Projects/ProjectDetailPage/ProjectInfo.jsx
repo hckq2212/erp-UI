@@ -36,7 +36,7 @@ import { useGetMeQuery } from '../../../api/auth';
 import { getCurrentUserId, getUserAccountRole, isSameUser } from '../../../utils/authUser';
 import { TEAM_MEMBER_ROLE } from '../../../utils/enums';
 import { getFilePreviewUrl, uploadToCloudinary } from '../../../utils/cloudinary';
-import { htmlToPlainText } from '../../../utils/html';
+import { htmlToPlainText, sanitizeHtml } from '../../../utils/html';
 import { toast } from 'react-toastify';
 import { Modal } from '../../../components/ui/Modal';
 import { RichTextEditor } from '../../../components/ui/RichTextEditor';
@@ -226,7 +226,7 @@ const ProductSpecsView = ({ item }) => {
                     <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Chú thích</p>
                     <div
                         className="rich-content mt-0.5 text-xs italic text-slate-400"
-                        dangerouslySetInnerHTML={{ __html: item.note }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.note) }}
                     />
                 </div>
             )}

@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Info, Loader2, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { useGetQcProductInfoQuery } from '../../api/qc';
+import { sanitizeHtml } from '../../utils/html';
 
 const ExtractedTextBlock = ({ html }) => {
   return (
     <div className="rounded-lg border border-slate-300 bg-slate-50">
       <div
         className="rich-content px-2 py-1.5 font-medium text-slate-900 max-h-80 overflow-y-auto"
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
       />
     </div>
   );
