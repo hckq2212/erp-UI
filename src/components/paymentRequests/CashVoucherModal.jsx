@@ -23,6 +23,16 @@ const CREDIT_ACCOUNT_OPTIONS = [
     { value: 'CUSTOM', label: 'Tự nhập mã tài khoản khác...' },
 ];
 
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 export const CashVoucherModal = ({ request, initialVoucherInfo, onSave, onClose }) => {
     const todayStr = new Date().toISOString().split('T')[0];
     const defaultAmount = Number(request?.amount || 0);
@@ -100,12 +110,22 @@ export const CashVoucherModal = ({ request, initialVoucherInfo, onSave, onClose 
         const month = d.getMonth() + 1;
         const year = d.getFullYear();
 
+        const safeVoucherNo = escapeHtml(voucherNo);
+        const safeBookNo = escapeHtml(bookNo);
+        const safeDebitAccount = escapeHtml(debitAccount);
+        const safeCreditAccount = escapeHtml(creditAccount);
+        const safeReceiverName = escapeHtml(receiverName);
+        const safeReceiverAddress = escapeHtml(receiverAddress || '—');
+        const safeReason = escapeHtml(reason);
+        const safeAmountInWords = escapeHtml(amountInWords);
+        const safeAttachmentCount = escapeHtml(attachmentCount);
+
         const htmlContent = `
             <!DOCTYPE html>
             <html>
             <head>
                 <meta charset="utf-8" />
-                <title>Phiếu Chi ${voucherNo}</title>
+                <title>Phiếu Chi ${safeVoucherNo}</title>
                 <style>
                     @page { size: A4 portrait; margin: 15mm; }
                     body { font-family: "Times New Roman", Times, serif; font-size: 13pt; line-height: 1.4; color: #000; margin: 0; padding: 20px; }
@@ -152,19 +172,19 @@ export const CashVoucherModal = ({ request, initialVoucherInfo, onSave, onClose 
                 </div>
 
                 <div class="voucher-meta">
-                    <p>Quyển số: ${bookNo}</p>
-                    <p>Số: <strong>${voucherNo}</strong></p>
-                    <p>Nợ: <strong>${debitAccount}</strong></p>
-                    <p>Có: <strong>${creditAccount}</strong></p>
+                    <p>Quyển số: ${safeBookNo}</p>
+                    <p>Số: <strong>${safeVoucherNo}</strong></p>
+                    <p>Nợ: <strong>${safeDebitAccount}</strong></p>
+                    <p>Có: <strong>${safeCreditAccount}</strong></p>
                 </div>
 
                 <div class="content-section">
-                    <div class="line-item"><span class="line-label">Họ và tên người nhận tiền:</span><span class="line-dots">${receiverName}</span></div>
-                    <div class="line-item"><span class="line-label">Địa chỉ:</span><span class="line-dots">${receiverAddress || '—'}</span></div>
-                    <div class="line-item"><span class="line-label">Lý do chi:</span><span class="line-dots">${reason}</span></div>
+                    <div class="line-item"><span class="line-label">Họ và tên người nhận tiền:</span><span class="line-dots">${safeReceiverName}</span></div>
+                    <div class="line-item"><span class="line-label">Địa chỉ:</span><span class="line-dots">${safeReceiverAddress}</span></div>
+                    <div class="line-item"><span class="line-label">Lý do chi:</span><span class="line-dots">${safeReason}</span></div>
                     <div class="line-item"><span class="line-label">Số tiền:</span><span class="line-dots"><strong>${formatCurrency(amount)}</strong></span></div>
-                    <div class="line-item"><span class="line-label">(Viết bằng chữ):</span><span class="line-dots"><em>${amountInWords}</em></span></div>
-                    <div class="line-item"><span class="line-label">Kèm theo:</span><span class="line-dots">${attachmentCount} Chứng từ gốc</span></div>
+                    <div class="line-item"><span class="line-label">(Viết bằng chữ):</span><span class="line-dots"><em>${safeAmountInWords}</em></span></div>
+                    <div class="line-item"><span class="line-label">Kèm theo:</span><span class="line-dots">${safeAttachmentCount} Chứng từ gốc</span></div>
                 </div>
 
                 <div style="text-align: right; margin-top: 15px; font-style: italic; font-size: 11pt;">
@@ -197,7 +217,7 @@ export const CashVoucherModal = ({ request, initialVoucherInfo, onSave, onClose 
                             <div class="sig-title">Người nhận tiền</div>
                             <div class="sig-note">(Ký, họ tên)</div>
                             <div class="sig-space"></div>
-                            <div style="font-weight: 500;">${receiverName}</div>
+                            <div style="font-weight: 500;">${safeReceiverName}</div>
                         </td>
                     </tr>
                 </table>
