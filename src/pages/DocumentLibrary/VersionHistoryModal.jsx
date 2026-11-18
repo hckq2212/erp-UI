@@ -19,7 +19,9 @@ export const VersionHistoryModal = ({ isOpen, onClose, document }) => {
 
   const handleDownload = async (versionId) => {
     const result = await downloadVersion({ id: document.id, versionId }).unwrap();
-    window.open(result.downloadUrl, '_blank');
+    if (result?.downloadUrl && /^https?:\/\//i.test(result.downloadUrl)) {
+      window.open(result.downloadUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const handleRestore = async (versionId) => {

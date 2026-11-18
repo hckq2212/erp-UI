@@ -94,7 +94,9 @@ export const DocumentLibraryPage = () => {
 
   const handleDownload = async (doc) => {
     const result = await downloadDocument(doc.id).unwrap();
-    window.open(result.downloadUrl, '_blank');
+    if (result?.downloadUrl && /^https?:\/\//i.test(result.downloadUrl)) {
+      window.open(result.downloadUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const handleDeleteDocument = async (doc) => {
