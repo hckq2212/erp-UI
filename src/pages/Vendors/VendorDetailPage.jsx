@@ -311,7 +311,7 @@ export const VendorDetailPage = () => {
                                                 src={vendor.idCardFront}
                                                 alt="Mặt trước CCCD"
                                                 className="max-h-full max-w-full object-contain cursor-zoom-in transition-transform group-hover:scale-[1.02]"
-                                                onClick={() => window.open(vendor.idCardFront, '_blank')}
+                                                onClick={() => window.open(vendor.idCardFront, '_blank', 'noopener,noreferrer')}
                                             />
                                         ) : (
                                             <div className="text-center py-10">
@@ -329,7 +329,7 @@ export const VendorDetailPage = () => {
                                                 src={vendor.idCardBack}
                                                 alt="Mặt sau CCCD"
                                                 className="max-h-full max-w-full object-contain cursor-zoom-in transition-transform group-hover:scale-[1.02]"
-                                                onClick={() => window.open(vendor.idCardBack, '_blank')}
+                                                onClick={() => window.open(vendor.idCardBack, '_blank', 'noopener,noreferrer')}
                                             />
                                         ) : (
                                             <div className="text-center py-10">
